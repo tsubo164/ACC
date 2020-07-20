@@ -1,13 +1,12 @@
 #include <stdio.h>
+#include "parse.h"
 #include "lexer.h"
 
 int main(int argc, char **argv)
 {
-  struct lexer lex;
-  struct token tok;
+  struct parser parser;
   FILE *file = NULL;
   int n = 0, m = 0;
-  enum token_kind kind = TK_UNKNOWN;
 
   if (argc != 2) {
     printf("mcc: error: no input files\n");
@@ -19,31 +18,9 @@ int main(int argc, char **argv)
     return -1;
   }
 
-  lex.file = file;
+  parser.lex.file = file;
 
-  kind = lex_get_token(&lex, &tok);
-  if (kind == TK_NUM) {
-    n = tok.value;
-  } else {
-    printf("error:\n");
-    fclose(file);
-    return -1;
-  }
-  kind = lex_get_token(&lex, &tok);
-  if (kind == TK_PLUS) {
-  } else {
-    printf("error:\n");
-    fclose(file);
-    return -1;
-  }
-  kind = lex_get_token(&lex, &tok);
-  if (kind == TK_NUM) {
-    m = tok.value;
-  } else {
-    printf("error:\n");
-    fclose(file);
-    return -1;
-  }
+  additive_expression(&parser, &n, &m);
 
   fclose(file);
 

@@ -9,7 +9,7 @@ static int readc(struct lexer *l)
 
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
 {
-  int c = '\n';
+  int c = '\0';
 
 state_initial:
   c = readc(l);

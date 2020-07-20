@@ -1,12 +1,15 @@
 .PHONY: clean test
 
-mcc: main.o lexer.o
+mcc: main.o parse.o lexer.o
 	gcc -o $@ $^
 
-main.o: main.c lexer.h token.h
+main.o: main.c parse.h lexer.h
 	gcc -O2 -Wall -std=c89 --pedantic-errors -c $<
 
-lexer.o: lexer.c lexer.h token.h
+parse.o: parse.c parse.h lexer.h
+	gcc -O2 -Wall -std=c89 --pedantic-errors -c $<
+
+lexer.o: lexer.c lexer.h
 	gcc -O2 -Wall -std=c89 --pedantic-errors -c $<
 
 test:
