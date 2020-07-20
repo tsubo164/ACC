@@ -1,7 +1,13 @@
 .PHONY: clean test
 
-mcc: main.c
-	gcc -O2 -Wall -std=c89 --pedantic-errors -o $@ $<
+mcc: main.o lexer.o
+	gcc -o $@ $^
+
+main.o: main.c lexer.h token.h
+	gcc -O2 -Wall -std=c89 --pedantic-errors -c $<
+
+lexer.o: lexer.c lexer.h token.h
+	gcc -O2 -Wall -std=c89 --pedantic-errors -c $<
 
 test:
 	./mcc input.c
@@ -9,4 +15,4 @@ test:
 	./a.out
 
 clean:
-	rm -f mcc a.out *.s
+	rm -f mcc a.out *.o *.s
