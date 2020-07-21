@@ -20,7 +20,12 @@ int main(int argc, char **argv)
 
   parser.lex.file = file;
 
-  additive_expression(&parser, &n, &m);
+  {
+    struct ast_node *node;
+    node = additive_expression(&parser);
+    n = node->l->value;
+    m = node->r->value;
+  }
 
   fclose(file);
 

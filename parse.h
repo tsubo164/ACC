@@ -8,6 +8,18 @@ struct parser {
   struct token tok;
 };
 
-extern int additive_expression(struct parser *p, int *l, int *r);
+enum ast_node_kind {
+  ND_NUM,
+  ND_ADD
+};
+
+struct ast_node {
+  enum ast_node_kind kind;
+  struct ast_node *l;
+  struct ast_node *r;
+  int value;
+};
+
+extern struct ast_node *additive_expression(struct parser *p);
 
 #endif /* _H */
