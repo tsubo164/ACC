@@ -7,6 +7,17 @@ static int readc(struct lexer *l)
   return c;
 }
 
+void token_init(struct token *tok)
+{
+  tok->kind = TK_UNKNOWN;
+  tok->value = 0;
+}
+
+void lexer_init(struct lexer *lex)
+{
+  lex->file = NULL;
+}
+
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
 {
   int c = '\0';
@@ -26,7 +37,7 @@ state_initial:
 
   /* whitespace */
   case '+':
-    tok->kind = TK_PLUS;
+    tok->kind = c;
     goto state_final;
 
   /* whitespace */

@@ -3,14 +3,17 @@
 
 #include "lexer.h"
 
+#define TOKEN_BUFFER_SIZE 2
+
 struct parser {
   struct lexer lex;
-  struct token tok;
+  struct token tokbuf[TOKEN_BUFFER_SIZE];
+  int head, curr;
 };
 
 enum ast_node_kind {
-  ND_NUM,
-  ND_ADD
+  NOD_NUM,
+  NOD_ADD
 };
 
 struct ast_node {
@@ -19,6 +22,8 @@ struct ast_node {
   struct ast_node *r;
   int value;
 };
+
+extern void parser_init(struct parser *p);
 
 extern struct ast_node *additive_expression(struct parser *p);
 
