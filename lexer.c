@@ -35,8 +35,8 @@ state_initial:
     tok->value = c - '0';
     goto state_final;
 
-  /* whitespace */
-  case '+':
+  /* arithmetic */
+  case '+': case '-':
     tok->kind = c;
     goto state_final;
 

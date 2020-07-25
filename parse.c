@@ -90,11 +90,16 @@ struct ast_node *multiplicative_expression(struct parser *p)
 struct ast_node *additive_expression(struct parser *p)
 {
   node *base = multiplicative_expression(p);
+  int op;
+
   for (;;) {
     if (consume(p, '+')) {
-      base = new_node(NOD_ADD, base, multiplicative_expression(p));
+      op = NOD_ADD;
+    } else if (consume(p, '-')) {
+      op = NOD_SUB;
     } else {
       return base;
     }
+    base = new_node(op, base, multiplicative_expression(p));
   }
 }

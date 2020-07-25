@@ -4,13 +4,32 @@
 
 static void gen_code(FILE *file, struct ast_node *node)
 {
-  if (node->kind == NOD_ADD) {
+  switch (node->kind) {
+  case NOD_ADD:
     gen_code(file, node->l);
-    fprintf(file, "  mov rdx, rax\n");
+    fprintf(file, "  push rax\n");
     gen_code(file, node->r);
+
+    fprintf(file, "  pop rdx\n");
     fprintf(file, "  add rax, rdx\n");
-  } else if (node->kind == NOD_NUM) {
+    break;
+
+  case NOD_SUB:
+    gen_code(file, node->l);
+    fprintf(file, "  push rax\n");
+    gen_code(file, node->r);
+    fprintf(file, "  mov rdx, rax\n");
+
+    fprintf(file, "  pop rax\n");
+    fprintf(file, "  sub rax, rdx\n");
+    break;
+
+  case NOD_NUM:
     fprintf(file, "  mov rax, %d\n", node->value);
+    break;
+
+  default:
+    break;
   }
 }
 

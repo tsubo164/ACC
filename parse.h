@@ -13,7 +13,8 @@ struct parser {
 
 enum ast_node_kind {
   NOD_NUM,
-  NOD_ADD
+  NOD_ADD,
+  NOD_SUB
 };
 
 struct ast_node {
