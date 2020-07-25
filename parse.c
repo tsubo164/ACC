@@ -15,7 +15,6 @@ static struct ast_node *new_node(enum ast_node_kind kind,
 
 static enum token_kind gettok(struct parser *p)
 {
-  enum token_kind kind;
   const int N = TOKEN_BUFFER_SIZE;
 
   if (p->head == p->curr) {
@@ -26,8 +25,7 @@ static enum token_kind gettok(struct parser *p)
     return p->tokbuf[p->head].kind;
   }
 
-  kind = lex_get_token(&p->lex, &p->tokbuf[p->head]);
-  return kind;
+  return lex_get_token(&p->lex, &p->tokbuf[p->head]);
 }
 
 /* XXX typedef TEST */
@@ -62,11 +60,11 @@ void parser_init(struct parser *p)
 }
 
 /*
- * multiplicative_expression
+ * unary_expression
  *     : TK_NUM
  *     ;
  */
-struct ast_node *multiplicative_expression(struct parser *p)
+struct ast_node *unary_expression(struct parser *p)
 {
   const token *tok = consume(p, TK_NUM);
   node *nod = NULL;
@@ -82,9 +80,31 @@ struct ast_node *multiplicative_expression(struct parser *p)
 }
 
 /*
+ * multiplicative_expression
+ *     : unary_expression
+ *     | multiplicative_expression '*' unary_expression
+ *     ;
+ */
+struct ast_node *multiplicative_expression(struct parser *p)
+{
+  node *base = unary_expression(p);
+  int op;
+
+  for (;;) {
+    if (consume(p, '*')) {
+      op = NOD_MUL;
+    } else {
+      return base;
+    }
+    base = new_node(op, base, unary_expression(p));
+  }
+}
+
+/*
  * additive_expression
  *     : multiplicative_expression
  *     | additive_expression '+' multiplicative_expression
+ *     | additive_expression '-' multiplicative_expression
  *     ;
  */
 struct ast_node *additive_expression(struct parser *p)

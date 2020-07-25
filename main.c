@@ -24,6 +24,15 @@ static void gen_code(FILE *file, struct ast_node *node)
     fprintf(file, "  sub rax, rdx\n");
     break;
 
+  case NOD_MUL:
+    gen_code(file, node->l);
+    fprintf(file, "  push rax\n");
+    gen_code(file, node->r);
+
+    fprintf(file, "  pop rdx\n");
+    fprintf(file, "  imul rax, rdx\n");
+    break;
+
   case NOD_NUM:
     fprintf(file, "  mov rax, %d\n", node->value);
     break;

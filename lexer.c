@@ -36,7 +36,7 @@ state_initial:
     goto state_final;
 
   /* arithmetic */
-  case '+': case '-':
+  case '+': case '-': case '*':
     tok->kind = c;
     goto state_final;
 
