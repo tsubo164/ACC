@@ -83,6 +83,7 @@ struct ast_node *unary_expression(struct parser *p)
  * multiplicative_expression
  *     : unary_expression
  *     | multiplicative_expression '*' unary_expression
+ *     | multiplicative_expression '/' unary_expression
  *     ;
  */
 struct ast_node *multiplicative_expression(struct parser *p)
@@ -93,6 +94,8 @@ struct ast_node *multiplicative_expression(struct parser *p)
   for (;;) {
     if (consume(p, '*')) {
       op = NOD_MUL;
+    } else if (consume(p, '/')) {
+      op = NOD_DIV;
     } else {
       return base;
     }

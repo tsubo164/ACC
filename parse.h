@@ -15,7 +15,8 @@ enum ast_node_kind {
   NOD_NUM,
   NOD_ADD,
   NOD_SUB,
-  NOD_MUL
+  NOD_MUL,
+  NOD_DIV
 };
 
 struct ast_node {

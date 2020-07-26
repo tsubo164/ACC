@@ -9,7 +9,6 @@ static void gen_code(FILE *file, struct ast_node *node)
     gen_code(file, node->l);
     fprintf(file, "  push rax\n");
     gen_code(file, node->r);
-
     fprintf(file, "  pop rdx\n");
     fprintf(file, "  add rax, rdx\n");
     break;
@@ -19,7 +18,6 @@ static void gen_code(FILE *file, struct ast_node *node)
     fprintf(file, "  push rax\n");
     gen_code(file, node->r);
     fprintf(file, "  mov rdx, rax\n");
-
     fprintf(file, "  pop rax\n");
     fprintf(file, "  sub rax, rdx\n");
     break;
@@ -28,9 +26,18 @@ static void gen_code(FILE *file, struct ast_node *node)
     gen_code(file, node->l);
     fprintf(file, "  push rax\n");
     gen_code(file, node->r);
-
     fprintf(file, "  pop rdx\n");
     fprintf(file, "  imul rax, rdx\n");
+    break;
+
+  case NOD_DIV:
+    gen_code(file, node->l);
+    fprintf(file, "  push rax\n");
+    gen_code(file, node->r);
+    fprintf(file, "  mov rdi, rax\n");
+    fprintf(file, "  pop rax\n");
+    fprintf(file, "  cqo\n");
+    fprintf(file, "  idiv rdi\n");
     break;
 
   case NOD_NUM:
