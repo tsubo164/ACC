@@ -28,6 +28,6 @@ struct ast_node {
 
 extern void parser_init(struct parser *p);
 
-extern struct ast_node *additive_expression(struct parser *p);
+extern struct ast_node *parse(struct parser *p);
 
 #endif /* _H */

@@ -70,7 +70,7 @@ int main(int argc, char **argv)
   parser.lex.file = file;
 
   {
-    node = additive_expression(&parser);
+    node = parse(&parser);
     n = node->l->value;
     m = node->r->value;
   }

@@ -13,6 +13,11 @@ void token_init(struct token *tok)
   tok->value = 0;
 }
 
+enum token_kind kind_of(const struct token *tok)
+{
+  return tok->kind;
+}
+
 void lexer_init(struct lexer *lex)
 {
   lex->file = NULL;
@@ -37,6 +42,11 @@ state_initial:
 
   /* arithmetic */
   case '+': case '-': case '*': case '/':
+    tok->kind = c;
+    goto state_final;
+
+  /* parenthees */
+  case '(': case ')':
     tok->kind = c;
     goto state_final;
 
