@@ -5,6 +5,11 @@
 static void gen_code(FILE *file, struct ast_node *node)
 {
   switch (node->kind) {
+
+  case NOD_NUM:
+    fprintf(file, "  mov rax, %d\n", node->value);
+    break;
+
   case NOD_ADD:
     gen_code(file, node->l);
     fprintf(file, "  push rax\n");
@@ -40,8 +45,68 @@ static void gen_code(FILE *file, struct ast_node *node)
     fprintf(file, "  idiv rdi\n");
     break;
 
-  case NOD_NUM:
-    fprintf(file, "  mov rax, %d\n", node->value);
+  case NOD_LT:
+    gen_code(file, node->l);
+    fprintf(file, "  push rax\n");
+    gen_code(file, node->r);
+    fprintf(file, "  mov rdx, rax\n");
+    fprintf(file, "  pop rax\n");
+    fprintf(file, "  cmp rax, rdx\n");
+    fprintf(file, "  setl al\n");
+    fprintf(file, "  movzx rax, al\n");
+    break;
+
+  case NOD_GT:
+    gen_code(file, node->l);
+    fprintf(file, "  push rax\n");
+    gen_code(file, node->r);
+    fprintf(file, "  mov rdx, rax\n");
+    fprintf(file, "  pop rax\n");
+    fprintf(file, "  cmp rax, rdx\n");
+    fprintf(file, "  setg al\n");
+    fprintf(file, "  movzx rax, al\n");
+    break;
+
+  case NOD_LE:
+    gen_code(file, node->l);
+    fprintf(file, "  push rax\n");
+    gen_code(file, node->r);
+    fprintf(file, "  mov rdx, rax\n");
+    fprintf(file, "  pop rax\n");
+    fprintf(file, "  cmp rax, rdx\n");
+    fprintf(file, "  setle al\n");
+    fprintf(file, "  movzx rax, al\n");
+    break;
+
+  case NOD_GE:
+    gen_code(file, node->l);
+    fprintf(file, "  push rax\n");
+    gen_code(file, node->r);
+    fprintf(file, "  mov rdx, rax\n");
+    fprintf(file, "  pop rax\n");
+    fprintf(file, "  cmp rax, rdx\n");
+    fprintf(file, "  setge al\n");
+    fprintf(file, "  movzx rax, al\n");
+    break;
+
+  case NOD_EQ:
+    gen_code(file, node->l);
+    fprintf(file, "  push rax\n");
+    gen_code(file, node->r);
+    fprintf(file, "  pop rdx\n");
+    fprintf(file, "  cmp rax, rdx\n");
+    fprintf(file, "  sete al\n");
+    fprintf(file, "  movzx rax, al\n");
+    break;
+
+  case NOD_NE:
+    gen_code(file, node->l);
+    fprintf(file, "  push rax\n");
+    gen_code(file, node->r);
+    fprintf(file, "  pop rdx\n");
+    fprintf(file, "  cmp rax, rdx\n");
+    fprintf(file, "  setne al\n");
+    fprintf(file, "  movzx rax, al\n");
     break;
 
   default:
