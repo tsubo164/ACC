@@ -31,19 +31,13 @@ void lexer_init(struct lexer *lex)
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
 {
     int c = '\0';
+    tok->kind = TK_UNKNOWN;
+    tok->value = 0;
 
 state_initial:
     c = readc(l);
 
     switch (c) {
-
-    /* number */
-    case '.':
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
-        tok->kind = TK_NUM;
-        tok->value = c - '0';
-        goto state_final;
 
     /* arithmetic */
     case '+': case '-': case '*': case '/':
@@ -105,9 +99,37 @@ state_initial:
         tok->kind = c;
         goto state_final;
 
-    /* whitespace */
-    case ' ':
+    /* terminator */
+    case ';':
+        tok->kind = c;
+        goto state_final;
+
+    /* whitespaces */
+    case ' ': case '\n':
         goto state_initial;
+
+    /* number */
+    case '.':
+    case '0': case '1': case '2': case '3': case '4':
+    case '5': case '6': case '7': case '8': case '9':
+        tok->kind = TK_NUM;
+        tok->value = c - '0';
+        goto state_final;
+
+    /* word */
+    case 'A': case 'B': case 'C': case 'D': case 'E':
+    case 'F': case 'G': case 'H': case 'I': case 'J':
+    case 'K': case 'L': case 'M': case 'N': case 'O':
+    case 'P': case 'Q': case 'R': case 'S': case 'T':
+    case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
+    case 'a': case 'b': case 'c': case 'd': case 'e':
+    case 'f': case 'g': case 'h': case 'i': case 'j':
+    case 'k': case 'l': case 'm': case 'n': case 'o':
+    case 'p': case 'q': case 'r': case 's': case 't':
+    case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
+        tok->kind = TK_IDENT;
+        tok->value = c;
+        goto state_final;
 
     /* eof */
     case EOF:

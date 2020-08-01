@@ -114,6 +114,31 @@ static void gen_code(FILE *file, struct ast_node *node)
   }
 }
 
+/*
+int lex(const char *filename)
+{
+    struct lexer lex;
+    struct token tok;
+    FILE *file = NULL;
+
+    file = fopen(filename, "r");
+    if (!file) {
+        return -1;
+    }
+
+    lexer_init(&lex);
+    token_init(&tok);
+
+    lex.file = file;
+
+    while (lex_get_token(&lex, &tok) != TK_EOF) {
+        printf("[%s]\n", tok.word);
+    }
+
+    return 0;
+}
+*/
+
 int main(int argc, char **argv)
 {
   struct ast_node *node;

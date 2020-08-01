@@ -66,6 +66,7 @@ static void expect(struct parser *p, enum token_kind query)
         return;
     } else {
         /* XXX error handling */
+        printf("error: '%c' is expected\n", query);
         p->curr = (p->curr - 1 + N) % N;
         return;
     }
@@ -91,6 +92,7 @@ static struct ast_node *expression(struct parser *p);
 /*
  * primary_expression
  *     : TK_NUM
+ *     | TK_IDENT
  *     | '(' expression ')'
  *     ;
  */
@@ -104,6 +106,13 @@ static struct ast_node *primary_expression(struct parser *p)
     case TK_NUM:
         nod = new_node(NOD_NUM, NULL, NULL);
         nod->value = tok->value;
+        printf("[%d]", nod->value);
+        return nod;
+
+    case TK_IDENT:
+        nod = new_node(NOD_VAR, NULL, NULL);
+        nod->value = tok->value;
+        printf("[%c]", nod->value);
         return nod;
 
     case '(':
@@ -253,16 +262,88 @@ static struct ast_node *equality_expression(struct parser *p)
 }
 
 /*
- * expression
+ * assignment_expression
  *     : equality_expression
+ *     | primary_expression '=' assignment_expression
+ *     ;
+ */
+static struct ast_node *assignment_expression(struct parser *p)
+{
+    struct ast_node *base = equality_expression(p);
+
+    /*
+    for (;;) {
+    */
+        const struct token *tok = gettok2(p);
+
+        switch (tok->kind) {
+
+        case '=':
+            printf("[=]");
+            base = new_node(NOD_ASSIGN, base, assignment_expression(p));
+            break;
+
+        default:
+            ungettok(p);
+            return base;
+        }
+    /*
+    }
+    */
+            return base;
+}
+
+/*
+ * expression
+ *     : assignment_expression
  *     ;
  */
 static struct ast_node *expression(struct parser *p)
 {
-    return equality_expression(p);
+    return assignment_expression(p);
+}
+
+/*
+ * statement
+ *     : expression ';'
+ *     ;
+ */
+static struct ast_node *statement(struct parser *p)
+{
+    struct ast_node *base = expression(p);
+
+    expect(p, ';');
+
+    return base;
+}
+
+/*
+ * statement_list
+ *     : statement
+ *     | statement_list statement
+ *     ;
+ */
+static struct ast_node *statement_list(struct parser *p)
+{
+    struct ast_node *base = statement(p);
+
+    for (;;) {
+        const struct token *tok = gettok2(p);
+
+        switch (tok->kind) {
+
+        case TK_EOF:
+            return base;
+
+        default:
+            ungettok(p);
+            base = new_node(NOD_STATEMENT, base, statement(p));
+            break;
+        }
+    }
 }
 
 struct ast_node *parse(struct parser *p)
 {
-    return expression(p);
+    return statement_list(p);
 }

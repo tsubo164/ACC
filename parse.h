@@ -13,6 +13,9 @@ struct parser {
 
 enum ast_node_kind {
     NOD_NUM,
+    NOD_STATEMENT,
+    NOD_ASSIGN,
+    NOD_VAR,
     NOD_ADD,
     NOD_SUB,
     NOD_MUL,
