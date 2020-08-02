@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <ctype.h>
 #include "lexer.h"
 
@@ -17,8 +18,12 @@ static int unreadc(struct lexer *l)
 
 void token_init(struct token *tok)
 {
+    int i;
     tok->kind = TK_UNKNOWN;
     tok->value = 0;
+    for (i = 0; i < 128; i++) {
+        tok->word[i] = '\0';
+    }
 }
 
 void lexer_init(struct lexer *lex)
@@ -31,8 +36,12 @@ void lexer_init(struct lexer *lex)
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
 {
     int c = '\0';
+    char *wp;
+
     tok->kind = TK_UNKNOWN;
     tok->value = 0;
+    tok->word[0] = '\0';
+    wp = tok->word;
 
 state_initial:
     c = readc(l);
@@ -109,12 +118,9 @@ state_initial:
         goto state_initial;
 
     /* number */
-    case '.':
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
-        tok->kind = TK_NUM;
-        tok->value = c - '0';
-        goto state_final;
+        goto state_number;
 
     /* word */
     case 'A': case 'B': case 'C': case 'D': case 'E':
@@ -139,6 +145,24 @@ state_initial:
     /* unknown */
     default:
         tok->kind = TK_UNKNOWN;
+        goto state_final;
+    }
+
+state_number:
+    *wp++ = c;
+    c = readc(l);
+
+    switch (c) {
+
+    case '0': case '1': case '2': case '3': case '4':
+    case '5': case '6': case '7': case '8': case '9':
+        goto state_number;
+
+    default:
+        unreadc(l);
+        *wp = '\0';
+        tok->kind = TK_NUM;
+        tok->value = strtol(tok->word, &wp, 10);
         goto state_final;
     }
 

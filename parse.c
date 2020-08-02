@@ -106,13 +106,11 @@ static struct ast_node *primary_expression(struct parser *p)
     case TK_NUM:
         nod = new_node(NOD_NUM, NULL, NULL);
         nod->value = tok->value;
-        printf("[%d]", nod->value);
         return nod;
 
     case TK_IDENT:
         nod = new_node(NOD_VAR, NULL, NULL);
         nod->value = tok->value;
-        printf("[%c]", nod->value);
         return nod;
 
     case '(':
@@ -279,7 +277,6 @@ static struct ast_node *assignment_expression(struct parser *p)
         switch (tok->kind) {
 
         case '=':
-            printf("[=]");
             base = new_node(NOD_ASSIGN, base, assignment_expression(p));
             break;
 
@@ -337,7 +334,7 @@ static struct ast_node *statement_list(struct parser *p)
 
         default:
             ungettok(p);
-            base = new_node(NOD_STATEMENT, base, statement(p));
+            base = new_node(NOD_LIST, base, statement(p));
             break;
         }
     }

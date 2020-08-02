@@ -6,6 +6,34 @@ static void gen_code(FILE *file, struct ast_node *node)
 {
   switch (node->kind) {
 
+  case NOD_LIST:
+    gen_code(file, node->l);
+    gen_code(file, node->r);
+    break;
+
+  case NOD_VAR:
+    fprintf(file, "  mov rax, rbp\n");
+    fprintf(file, "  sub rax, 8\n");
+
+    fprintf(file, "  mov rdx, rax\n");
+    fprintf(file, "  mov rax, [rdx]\n");
+    break;
+
+  case NOD_ASSIGN:
+    /* assuming node->l is var */
+    fprintf(file, "  mov rax, rbp\n");
+    fprintf(file, "  sub rax, 8\n");
+    /*
+    gen_code(file, node->l);
+    */
+    fprintf(file, "  push rax\n");
+    gen_code(file, node->r);
+    fprintf(file, "  pop rdx\n");
+    fprintf(file, "  mov [rdx], rax\n");
+
+    fprintf(file, "  mov rax, [rdx]\n");
+    break;
+
   case NOD_NUM:
     fprintf(file, "  mov rax, %d\n", node->value);
     break;
@@ -114,31 +142,6 @@ static void gen_code(FILE *file, struct ast_node *node)
   }
 }
 
-/*
-int lex(const char *filename)
-{
-    struct lexer lex;
-    struct token tok;
-    FILE *file = NULL;
-
-    file = fopen(filename, "r");
-    if (!file) {
-        return -1;
-    }
-
-    lexer_init(&lex);
-    token_init(&tok);
-
-    lex.file = file;
-
-    while (lex_get_token(&lex, &tok) != TK_EOF) {
-        printf("[%s]\n", tok.word);
-    }
-
-    return 0;
-}
-*/
-
 int main(int argc, char **argv)
 {
   struct ast_node *node;
@@ -176,7 +179,14 @@ int main(int argc, char **argv)
   fprintf(file, ".global _main\n");
   fprintf(file, "_main:\n");
 
+  fprintf(file, "  push rbp\n");
+  fprintf(file, "  mov rbp, rsp\n");
+  fprintf(file, "  sub rsp, 8\n");
+
   gen_code(file, node);
+
+  fprintf(file, "  mov rsp, rbp\n");
+  fprintf(file, "  pop rbp\n");
 
   fprintf(file, "  ret\n");
   fclose(file);
