@@ -13,18 +13,18 @@ lexer.o: lexer.c lexer.h
 	gcc -O2 -Wall -std=c89 --pedantic-errors -c $<
 
 clean:
-	rm -f mcc a.out *.o *.s *-in.c test-lex
+	rm -f mcc a.out *.o *.s *_in.c test_lex
 
 run:
 	./mcc input.c
 	gcc input.s
 	./a.out
 
-test: test-lex
-	@./test-lex
+test: test_lex
+	@./test_lex
 
-test-lex: test-lex.o lexer.o
+test_lex: test_lex.o lexer.o
 	gcc -o $@ $^
 
-test-lex.o: test-lex.c lexer.h
+test_lex.o: test_lex.c lexer.h
 	gcc -O2 -Wall -std=c89 --pedantic-errors -c $<

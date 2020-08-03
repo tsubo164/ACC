@@ -37,15 +37,17 @@ enum token_kind {
 struct token {
     int kind;
     int value;
+    long file_pos;
     char word[128];
 };
 
 struct lexer {
     FILE *file;
-    int buf[2];
+    long file_pos;
 };
 
 extern void token_init(struct token *tok);
+extern long token_file_pos(const struct token *tok);
 
 extern void lexer_init(struct lexer *lex);
 

@@ -54,9 +54,13 @@ static void ungettok(struct parser *p)
 typedef struct token token;
 typedef struct ast_node node;
 
-/*
- * returns pointer to the token if that is one caller queries otherwise NULL
- */
+static void error(struct parser *p, const char *msg)
+{
+    const struct token *tok = &p->tokbuf[p->head];
+    p->error_pos = token_file_pos(tok);
+    p->error_msg = msg;
+}
+
 static void expect(struct parser *p, enum token_kind query)
 {
     const enum token_kind kind = gettok(p);
@@ -66,7 +70,7 @@ static void expect(struct parser *p, enum token_kind query)
         return;
     } else {
         /* XXX error handling */
-        printf("error: '%c' is expected\n", query);
+        error(p, "error: unexpected token");
         p->curr = (p->curr - 1 + N) % N;
         return;
     }
@@ -82,6 +86,9 @@ void parser_init(struct parser *p)
     lexer_init(&p->lex);
     p->head = 0;
     p->curr = 0;
+
+    p->error_pos = -1L;
+    p->error_msg = "";
 }
 
 /*
@@ -120,7 +127,7 @@ static struct ast_node *primary_expression(struct parser *p)
 
     default:
         ungettok(p);
-        printf("error: not a number\n");
+        error(p, "unexpected token in expression");
         return NULL;
     }
 }

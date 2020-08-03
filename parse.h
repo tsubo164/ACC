@@ -9,6 +9,9 @@ struct parser {
     struct lexer lex;
     struct token tokbuf[TOKEN_BUFFER_SIZE];
     int head, curr;
+
+    long error_pos;
+    const char *error_msg;
 };
 
 enum ast_node_kind {

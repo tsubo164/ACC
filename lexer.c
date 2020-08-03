@@ -4,16 +4,17 @@
 
 static int readc(struct lexer *l)
 {
-    l->buf[0] = l->buf[1];
-    l->buf[1] = fgetc(l->file);
-    return l->buf[1];
+    return fgetc(l->file);
 }
 
-static int unreadc(struct lexer *l)
+static void unreadc(struct lexer *l, int c)
 {
-    ungetc(l->buf[1], l->file);
-    l->buf[1] = l->buf[0];
-    return l->buf[1];
+    ungetc(c, l->file);
+}
+
+static long get_file_pos(struct lexer *l)
+{
+    return ftell(l->file);
 }
 
 void token_init(struct token *tok)
@@ -21,22 +22,28 @@ void token_init(struct token *tok)
     int i;
     tok->kind = TK_UNKNOWN;
     tok->value = 0;
+    tok->file_pos = 0L;
     for (i = 0; i < 128; i++) {
         tok->word[i] = '\0';
     }
 }
 
+long token_file_pos(const struct token *tok)
+{
+    return tok->file_pos;
+}
+
 void lexer_init(struct lexer *lex)
 {
     lex->file = NULL;
-    lex->buf[0] = '\0';
-    lex->buf[1] = '\0';
+    lex->file_pos = 0L;
 }
 
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
 {
     int c = '\0';
     char *wp;
+    long tok_pos;
 
     tok->kind = TK_UNKNOWN;
     tok->value = 0;
@@ -44,6 +51,7 @@ enum token_kind lex_get_token(struct lexer *l, struct token *tok)
     wp = tok->word;
 
 state_initial:
+    tok_pos = get_file_pos(l);
     c = readc(l);
 
     switch (c) {
@@ -61,7 +69,8 @@ state_initial:
             tok->kind = TK_NE;
             break;
         default:
-            tok->kind = unreadc(l);
+            unreadc(l, c);
+            tok->kind = '!';
             break;
         }
         goto state_final;
@@ -73,7 +82,8 @@ state_initial:
             tok->kind = TK_EQ;
             break;
         default:
-            tok->kind = unreadc(l);
+            unreadc(l, c);
+            tok->kind = '=';
             break;
         }
         goto state_final;
@@ -86,7 +96,8 @@ state_initial:
             tok->kind = TK_LE;
             break;
         default:
-            tok->kind = unreadc(l);
+            unreadc(l, c);
+            tok->kind = '<';
             break;
         }
         goto state_final;
@@ -98,7 +109,8 @@ state_initial:
             tok->kind = TK_GE;
             break;
         default:
-            tok->kind = unreadc(l);
+            unreadc(l, c);
+            tok->kind = '>';
             break;
         }
         goto state_final;
@@ -159,7 +171,7 @@ state_number:
         goto state_number;
 
     default:
-        unreadc(l);
+        unreadc(l, c);
         *wp = '\0';
         tok->kind = TK_NUM;
         tok->value = strtol(tok->word, &wp, 10);
@@ -167,5 +179,6 @@ state_number:
     }
 
 state_final:
+    tok->file_pos = tok_pos;
     return tok->kind;
 }
