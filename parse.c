@@ -1,5 +1,38 @@
 #include <stdlib.h>
+#include <string.h>
 #include "parse.h"
+
+struct symbol {
+    char *name;
+    int offset;
+};
+
+static struct symbol symtbl[32] = {{NULL, 0}};
+static int nsyms = 0;
+
+static struct symbol *lookup_symbol(const char *name)
+{
+    struct symbol *sym = NULL;
+    int i;
+
+    for (i = 0; i < nsyms; i++)
+    {
+        sym = &symtbl[i];
+
+        if (!strcmp(sym->name, name))
+        {
+            return sym;
+        }
+    }
+
+    sym = &symtbl[nsyms++];
+
+    sym->name = malloc(strlen(name) + 1);
+    strcpy(sym->name, name);
+    sym->offset = 8 * nsyms;
+
+    return sym;
+}
 
 static struct ast_node *new_node(enum ast_node_kind kind,
         struct ast_node *l, struct ast_node *r)
@@ -44,6 +77,11 @@ static const struct token *gettok2(struct parser *p)
     return &p->tokbuf[p->head];
 }
 
+static const struct token *current_token(const struct parser *p)
+{
+    return &p->tokbuf[p->curr];
+}
+
 static void ungettok(struct parser *p)
 {
     const int N = TOKEN_BUFFER_SIZE;
@@ -56,7 +94,7 @@ typedef struct ast_node node;
 
 static void error(struct parser *p, const char *msg)
 {
-    const struct token *tok = &p->tokbuf[p->head];
+    const struct token *tok = current_token(p);
     p->error_pos = token_file_pos(tok);
     p->error_msg = msg;
 }
@@ -64,14 +102,12 @@ static void error(struct parser *p, const char *msg)
 static void expect(struct parser *p, enum token_kind query)
 {
     const enum token_kind kind = gettok(p);
-    const int N = TOKEN_BUFFER_SIZE;
 
     if (kind == query) {
         return;
     } else {
-        /* XXX error handling */
-        error(p, "error: unexpected token");
-        p->curr = (p->curr - 1 + N) % N;
+        ungettok(p);
+        error(p, "unexpected token after this");
         return;
     }
 }
@@ -117,7 +153,10 @@ static struct ast_node *primary_expression(struct parser *p)
 
     case TK_IDENT:
         nod = new_node(NOD_VAR, NULL, NULL);
-        nod->value = tok->value;
+        {
+            struct symbol *sym = lookup_symbol(tok->word);
+            nod->value = sym->offset;
+        }
         return nod;
 
     case '(':

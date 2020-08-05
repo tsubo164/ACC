@@ -1,2 +1,4 @@
-a = 2 +  1 + 32;
-a =  *a + 7;
+foo = 40;
+bar = foo + 2;
+buz = bar + 3;
+buz = buz - foo;

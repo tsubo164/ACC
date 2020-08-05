@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "lexer.h"
 
 static int n_pass = 0;
@@ -21,6 +22,15 @@ static int n_total = 0;
         test_fail( #a" == "#b, __FILE__, __LINE__ ); \
         printf("  actual:   %ld\n", (a)); \
         printf("  expected: %ld\n", (b)); \
+    } } while (0)
+
+#define TEST_STRING(a, b) \
+    do { if (!strcmp(a,b)) {\
+        test_pass( #a" == "#b, __FILE__, __LINE__ ); \
+    } else { \
+        test_fail( #a" == "#b, __FILE__, __LINE__ ); \
+        printf("  actual:   %s\n", a); \
+        printf("  expected: %s\n", b); \
     } } while (0)
 
 #define TEST_REPORT() \
@@ -63,7 +73,7 @@ int main()
     const char *filename = "test_lex_in.c";
     {
         FILE *f = fopen(filename, "w");
-        fprintf(f, " a = 1 < \n ; 12 38234 7");
+        fprintf(f, " a = 1 < \n ; 12 38234 7 ab_ _xyz123 ");
         fclose(f);
     }
     {
@@ -79,7 +89,7 @@ int main()
 
         lex_get_token(&lex, &tok);
         TEST_INT(tok.kind, TK_IDENT);
-        TEST_INT(tok.value, 'a');
+        TEST_STRING(tok.word, "a");
         TEST_LONG(token_file_pos(&tok), 1L);
 
         lex_get_token(&lex, &tok);
@@ -112,6 +122,14 @@ int main()
         TEST_INT(tok.kind, TK_NUM);
         TEST_INT(tok.value, 7);
         TEST_LONG(token_file_pos(&tok), 22L);
+
+        lex_get_token(&lex, &tok);
+        TEST_INT(tok.kind, TK_IDENT);
+        TEST_STRING(tok.word, "ab_");
+
+        lex_get_token(&lex, &tok);
+        TEST_INT(tok.kind, TK_IDENT);
+        TEST_STRING(tok.word, "_xyz123");
 
         lex_get_token(&lex, &tok);
         TEST_INT(tok.kind, TK_EOF);

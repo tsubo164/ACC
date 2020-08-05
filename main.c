@@ -3,7 +3,27 @@
 #include "parse.h"
 #include "lexer.h"
 
-static void gen_code(FILE *file, struct ast_node *node)
+static int get_max_offset(const struct ast_node *node)
+{
+    int max, l, r;
+
+    if (node == NULL) {
+        return 0;
+    }
+
+    l = get_max_offset(node->l);
+    r = get_max_offset(node->r);
+    max = l > r ? l : r;
+
+    if (node->kind == NOD_VAR) {
+        return node->value > max ? node->value : max;
+    } else {
+        return max;
+    }
+
+}
+
+static void gen_code(FILE *file, const struct ast_node *node)
 {
     if (node == NULL) {
         return;
@@ -18,7 +38,7 @@ static void gen_code(FILE *file, struct ast_node *node)
 
     case NOD_VAR:
         fprintf(file, "  mov rax, rbp\n");
-        fprintf(file, "  sub rax, 8\n");
+        fprintf(file, "  sub rax, %d\n", node->value);
 
         fprintf(file, "  mov rdx, rax\n");
         fprintf(file, "  mov rax, [rdx]\n");
@@ -27,7 +47,7 @@ static void gen_code(FILE *file, struct ast_node *node)
     case NOD_ASSIGN:
         /* assuming node->l is var */
         fprintf(file, "  mov rax, rbp\n");
-        fprintf(file, "  sub rax, 8\n");
+        fprintf(file, "  sub rax, %d\n", node->l->value);
         /*
         gen_code(file, node->l);
         */
@@ -175,7 +195,7 @@ void print_error_message(const struct parser *p, const char *filename)
     for (;;) {
         if (ftell(fp) == err_pos) {
             found_error_location = 1;
-            err_col = x + 1; /* col start with 1 */
+            err_col = x;
             err_row = y;
         }
 
@@ -258,7 +278,7 @@ int main(int argc, char **argv)
 
     fprintf(file, "  push rbp\n");
     fprintf(file, "  mov rbp, rsp\n");
-    fprintf(file, "  sub rsp, 8\n");
+    fprintf(file, "  sub rsp, %d\n", get_max_offset(node));
 
     gen_code(file, node);
 
