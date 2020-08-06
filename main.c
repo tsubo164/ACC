@@ -36,6 +36,13 @@ static void gen_code(FILE *file, const struct ast_node *node)
         gen_code(file, node->r);
         break;
 
+    case NOD_RETURN:
+        gen_code(file, node->l);
+        fprintf(file, "  mov rsp, rbp\n");
+        fprintf(file, "  pop rbp\n");
+        fprintf(file, "  ret\n");
+        break;
+
     case NOD_VAR:
         fprintf(file, "  mov rax, rbp\n");
         fprintf(file, "  sub rax, %d\n", node->value);

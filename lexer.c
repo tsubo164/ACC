@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include <ctype.h>
 #include "lexer.h"
 
@@ -15,6 +16,15 @@ static void unreadc(struct lexer *l, int c)
 static long get_file_pos(struct lexer *l)
 {
     return ftell(l->file);
+}
+
+static void keyword_or_identifier(struct token *tok)
+{
+    if (!strcmp(tok->word, "return")) {
+        tok->kind = TK_RETURN;
+    } else {
+        tok->kind = TK_IDENT;
+    }
 }
 
 void token_init(struct token *tok)
@@ -232,7 +242,7 @@ state_word:
     default:
         *wp = '\0';
         unreadc(l, c);
-        tok->kind = TK_IDENT;
+        keyword_or_identifier(tok);
         goto state_final;
     }
 

@@ -16,6 +16,7 @@ struct parser {
 
 enum ast_node_kind {
     NOD_LIST,
+    NOD_RETURN,
     NOD_ASSIGN,
     NOD_VAR,
     NOD_NUM,

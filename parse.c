@@ -10,7 +10,7 @@ struct symbol {
 static struct symbol symtbl[32] = {{NULL, 0}};
 static int nsyms = 0;
 
-static struct symbol *lookup_symbol(const char *name)
+static const struct symbol *lookup_symbol(const char *name)
 {
     struct symbol *sym = NULL;
     int i;
@@ -46,22 +46,7 @@ static struct ast_node *new_node(enum ast_node_kind kind,
     return n;
 }
 
-static enum token_kind gettok(struct parser *p)
-{
-    const int N = TOKEN_BUFFER_SIZE;
-
-    if (p->head == p->curr) {
-        p->head = (p->head + 1) % N;
-        p->curr = (p->curr + 1) % N;
-    } else {
-        p->curr = (p->curr + 1) % N;
-        return p->tokbuf[p->head].kind;
-    }
-
-    return lex_get_token(&p->lex, &p->tokbuf[p->head]);
-}
-
-static const struct token *gettok2(struct parser *p)
+static const struct token *gettok(struct parser *p)
 {
     const int N = TOKEN_BUFFER_SIZE;
 
@@ -88,10 +73,6 @@ static void ungettok(struct parser *p)
     p->curr = (p->curr - 1 + N) % N;
 }
 
-/* XXX typedef TEST */
-typedef struct token token;
-typedef struct ast_node node;
-
 static void error(struct parser *p, const char *msg)
 {
     const struct token *tok = current_token(p);
@@ -101,9 +82,9 @@ static void error(struct parser *p, const char *msg)
 
 static void expect(struct parser *p, enum token_kind query)
 {
-    const enum token_kind kind = gettok(p);
+    const struct token *tok = gettok(p);
 
-    if (kind == query) {
+    if (tok->kind == query) {
         return;
     } else {
         ungettok(p);
@@ -141,28 +122,28 @@ static struct ast_node *expression(struct parser *p);
  */
 static struct ast_node *primary_expression(struct parser *p)
 {
-    const struct token *tok = gettok2(p);
-    node *nod = NULL;
+    const struct token *tok = gettok(p);
+    struct ast_node *base = NULL;
 
     switch (tok->kind) {
 
     case TK_NUM:
-        nod = new_node(NOD_NUM, NULL, NULL);
-        nod->value = tok->value;
-        return nod;
+        base = new_node(NOD_NUM, NULL, NULL);
+        base->value = tok->value;
+        return base;
 
     case TK_IDENT:
-        nod = new_node(NOD_VAR, NULL, NULL);
+        base = new_node(NOD_VAR, NULL, NULL);
         {
-            struct symbol *sym = lookup_symbol(tok->word);
-            nod->value = sym->offset;
+            const struct symbol *sym = lookup_symbol(tok->word);
+            base->value = sym->offset;
         }
-        return nod;
+        return base;
 
     case '(':
-        nod = expression(p);
+        base = expression(p);
         expect(p, ')');
-        return nod;
+        return base;
 
     default:
         ungettok(p);
@@ -183,7 +164,7 @@ static struct ast_node *multiplicative_expression(struct parser *p)
     struct ast_node *base = primary_expression(p);
 
     for (;;) {
-        const struct token *tok = gettok2(p);
+        const struct token *tok = gettok(p);
 
         switch (tok->kind) {
 
@@ -214,7 +195,7 @@ static struct ast_node *additive_expression(struct parser *p)
     struct ast_node *base = multiplicative_expression(p);
 
     for (;;) {
-        const struct token *tok = gettok2(p);
+        const struct token *tok = gettok(p);
 
         switch (tok->kind) {
 
@@ -247,7 +228,7 @@ static struct ast_node *relational_expression(struct parser *p)
     struct ast_node *base = additive_expression(p);
 
     for (;;) {
-        const struct token *tok = gettok2(p);
+        const struct token *tok = gettok(p);
 
         switch (tok->kind) {
 
@@ -286,7 +267,7 @@ static struct ast_node *equality_expression(struct parser *p)
     struct ast_node *base = relational_expression(p);
 
     for (;;) {
-        const struct token *tok = gettok2(p);
+        const struct token *tok = gettok(p);
 
         switch (tok->kind) {
 
@@ -318,7 +299,7 @@ static struct ast_node *assignment_expression(struct parser *p)
     /*
     for (;;) {
     */
-        const struct token *tok = gettok2(p);
+        const struct token *tok = gettok(p);
 
         switch (tok->kind) {
 
@@ -349,11 +330,25 @@ static struct ast_node *expression(struct parser *p)
 /*
  * statement
  *     : expression ';'
+ *     | TK_RETURN expression ';'
  *     ;
  */
 static struct ast_node *statement(struct parser *p)
 {
-    struct ast_node *base = expression(p);
+    struct ast_node *base;
+    const struct token *tok = gettok(p);
+
+    switch (tok->kind) {
+
+    case TK_RETURN:
+        base = new_node(NOD_RETURN, expression(p), NULL);
+        break;
+
+    default:
+        ungettok(p);
+        base = expression(p);
+        break;
+    }
 
     expect(p, ';');
 
@@ -371,7 +366,7 @@ static struct ast_node *statement_list(struct parser *p)
     struct ast_node *base = statement(p);
 
     for (;;) {
-        const struct token *tok = gettok2(p);
+        const struct token *tok = gettok(p);
 
         switch (tok->kind) {
 

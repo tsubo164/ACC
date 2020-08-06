@@ -25,8 +25,9 @@ enum token_kind {
 enum token_kind {
     TK_UNKNOWN = -1,
     TK_END_OF_ASCII = 127,
-    TK_IDENT,
     TK_NUM,
+    TK_IDENT,
+    TK_RETURN,
     TK_LE,
     TK_GE,
     TK_EQ,
