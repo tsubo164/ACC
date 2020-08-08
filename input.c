@@ -1,3 +1,5 @@
+a = 2 * - 7;
+return - a;
 foo = 40;
 bar = foo + 2;
 return foo;

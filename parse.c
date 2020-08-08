@@ -93,6 +93,19 @@ static void expect(struct parser *p, enum token_kind query)
     }
 }
 
+static void expect_or_error(struct parser *p, enum token_kind query, const char *error_msg)
+{
+    const struct token *tok = gettok(p);
+
+    if (tok->kind == query) {
+        return;
+    } else {
+        ungettok(p);
+        error(p, error_msg);
+        return;
+    }
+}
+
 void parser_init(struct parser *p)
 {
     int i;
@@ -128,6 +141,7 @@ static struct ast_node *primary_expression(struct parser *p)
     switch (tok->kind) {
 
     case TK_NUM:
+        /* ??? base = new_number(tok->value); */
         base = new_node(NOD_NUM, NULL, NULL);
         base->value = tok->value;
         return base;
@@ -153,15 +167,46 @@ static struct ast_node *primary_expression(struct parser *p)
 }
 
 /*
+ * unary_expression
+ *     : '+' primary_expression
+ *     | '-' primary_expression
+ *     ;
+ */
+static struct ast_node *unary_expression(struct parser *p)
+{
+    const struct token *tok = gettok(p);
+    struct ast_node *base = NULL;
+
+    switch (tok->kind) {
+
+    case '+':
+        base = primary_expression(p);
+        return base;
+
+    case '-':
+        /* ??? base = new_number(-1); */
+        base = new_node(NOD_NUM, NULL, NULL);
+        base->value = -1;
+        base = new_node(NOD_MUL, base, primary_expression(p));
+        return base;
+
+    default:
+        ungettok(p);
+        base = primary_expression(p);
+        return base;
+    }
+}
+
+/*
  * multiplicative_expression
- *     : primary_expression
- *     | multiplicative_expression '*' primary_expression
- *     | multiplicative_expression '/' primary_expression
+ *     : unary_expression
+ *     | multiplicative_expression '*' unary_expression
+ *     | multiplicative_expression '/' unary_expression
  *     ;
  */
 static struct ast_node *multiplicative_expression(struct parser *p)
 {
-    struct ast_node *base = primary_expression(p);
+    struct ast_node *base = unary_expression(p);
 
     for (;;) {
         const struct token *tok = gettok(p);
@@ -169,11 +214,11 @@ static struct ast_node *multiplicative_expression(struct parser *p)
         switch (tok->kind) {
 
         case '*':
-            base = new_node(NOD_MUL, base, primary_expression(p));
+            base = new_node(NOD_MUL, base, unary_expression(p));
             break;
 
         case '/':
-            base = new_node(NOD_DIV, base, primary_expression(p));
+            base = new_node(NOD_DIV, base, unary_expression(p));
             break;
 
         default:
@@ -350,7 +395,10 @@ static struct ast_node *statement(struct parser *p)
         break;
     }
 
+    /*
     expect(p, ';');
+    */
+    expect_or_error(p, ';', "missing ';' at end of statement");
 
     return base;
 }
