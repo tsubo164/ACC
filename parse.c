@@ -73,11 +73,19 @@ static void ungettok(struct parser *p)
     p->curr = (p->curr - 1 + N) % N;
 }
 
+/*
+ * XXX
+ * error_at(struct parser *p, long file_pos, const char *msg)
+ */
 static void error(struct parser *p, const char *msg)
 {
     const struct token *tok = current_token(p);
     p->error_pos = token_file_pos(tok);
     p->error_msg = msg;
+
+    /*
+    */
+    printf("!!error %ld\n", p->error_pos);
 }
 
 static void expect(struct parser *p, enum token_kind query)
@@ -141,7 +149,7 @@ static struct ast_node *primary_expression(struct parser *p)
     switch (tok->kind) {
 
     case TK_NUM:
-        /* ??? base = new_number(tok->value); */
+        /* XXX base = new_number(tok->value); */
         base = new_node(NOD_NUM, NULL, NULL);
         base->value = tok->value;
         return base;
@@ -160,8 +168,7 @@ static struct ast_node *primary_expression(struct parser *p)
         return base;
 
     default:
-        ungettok(p);
-        error(p, "unexpected token in expression");
+        error(p, "unexpected token");
         return NULL;
     }
 }
@@ -387,18 +394,23 @@ static struct ast_node *statement(struct parser *p)
 
     case TK_RETURN:
         base = new_node(NOD_RETURN, expression(p), NULL);
+        expect_or_error(p, ';', "missing ';' at end of return statement");
+        break;
+
+    case TK_IF:
+        expect_or_error(p, '(', "missing '(' after if");
+        base = new_node(NOD_IF, expression(p), NULL);
+        expect_or_error(p, ')', "missing ')' after if condition");
+        base->r = statement(p);
         break;
 
     default:
         ungettok(p);
         base = expression(p);
+        expect_or_error(p, ';', "missing ';' at end of statement");
         break;
     }
 
-    /*
-    expect(p, ';');
-    */
-    expect_or_error(p, ';', "missing ';' at end of statement");
 
     return base;
 }

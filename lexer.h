@@ -3,31 +3,16 @@
 
 #include <stdio.h>
 
-#if 0
-#define TOKEN_LIST(TOK) \
-    TOK(TK_IDENT, "identifier") \
-    TOK(TK_NUM, "number") \
-    TOK(TK_LE, "<=") \
-    TOK(TK_GE, ">=") \
-    TOK(TK_EQ, "==") \
-    TOK(TK_NE, "!=")
-
-enum token_kind {
-    TK_UNKNOWN = -1,
-    TK_END_OF_ASCII = 127,
-#define TOK(tag, str) tag,
-    TOKEN_LIST(TOK)
-#undef TOK
-    TK_EOF
-};
-#endif
-
 enum token_kind {
     TK_UNKNOWN = -1,
     TK_END_OF_ASCII = 127,
     TK_NUM,
     TK_IDENT,
+    /* keyword */
+    TK_ELSE,
+    TK_IF,
     TK_RETURN,
+    /* bin op */
     TK_LE,
     TK_GE,
     TK_EQ,

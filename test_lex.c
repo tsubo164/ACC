@@ -73,7 +73,8 @@ int main()
     const char *filename = "test_lex_in.c";
     {
         FILE *f = fopen(filename, "w");
-        fprintf(f, " a = 1 < \n ; 12 38234 7 ab_ _xyz123  return ");
+        fprintf(f, " a = 1 < \n ; 12 38234 7 ab_ _xyz123  return \n");
+        fprintf(f, "  if   else  ");
         fclose(f);
     }
     {
@@ -133,6 +134,12 @@ int main()
 
         lex_get_token(&lex, &tok);
         TEST_INT(tok.kind, TK_RETURN);
+
+        lex_get_token(&lex, &tok);
+        TEST_INT(tok.kind, TK_IF);
+
+        lex_get_token(&lex, &tok);
+        TEST_INT(tok.kind, TK_ELSE);
 
         lex_get_token(&lex, &tok);
         TEST_INT(tok.kind, TK_EOF);

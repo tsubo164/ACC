@@ -20,7 +20,11 @@ static long get_file_pos(struct lexer *l)
 
 static void keyword_or_identifier(struct token *tok)
 {
-    if (!strcmp(tok->word, "return")) {
+    if (!strcmp(tok->word, "else")) {
+        tok->kind = TK_ELSE;
+    } else if (!strcmp(tok->word, "if")) {
+        tok->kind = TK_IF;
+    } else if (!strcmp(tok->word, "return")) {
         tok->kind = TK_RETURN;
     } else {
         tok->kind = TK_IDENT;
