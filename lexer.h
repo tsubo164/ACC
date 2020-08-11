@@ -12,6 +12,7 @@ enum token_kind {
     TK_ELSE,
     TK_IF,
     TK_RETURN,
+    TK_WHILE,
     /* bin op */
     TK_LE,
     TK_GE,

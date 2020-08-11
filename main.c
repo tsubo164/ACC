@@ -25,6 +25,8 @@ static int get_max_offset(const struct ast_node *node)
 
 static void gen_code(FILE *file, const struct ast_node *node)
 {
+    static int label_id = 0;
+
     if (node == NULL) {
         return;
     }
@@ -40,14 +42,26 @@ static void gen_code(FILE *file, const struct ast_node *node)
         /* if */
         gen_code(file, node->l);
         fprintf(file, "  cmp rax, 0\n");
-        fprintf(file, "  je .L001_0\n");
+        fprintf(file, "  je .L%03d_0\n", label_id);
         /* then */
         gen_code(file, node->r->l);
-        fprintf(file, "  jmp .L001_1\n");
+        fprintf(file, "  jmp .L%03d_1\n", label_id);
         /* else */
-        fprintf(file, ".L001_0:\n");
+        fprintf(file, ".L%03d_0:\n", label_id);
         gen_code(file, node->r->r);
-        fprintf(file, ".L001_1:\n");
+        fprintf(file, ".L%03d_1:\n", label_id);
+        label_id++;
+        break;
+
+    case NOD_WHILE:
+        fprintf(file, ".L%03d_0:\n", label_id);
+        gen_code(file, node->l);
+        fprintf(file, "  cmp rax, 0\n");
+        fprintf(file, "  je .L%03d_1\n", label_id);
+        gen_code(file, node->r);
+        fprintf(file, "  jmp .L%03d_0\n", label_id);
+        fprintf(file, ".L%03d_1:\n", label_id);
+        label_id++;
         break;
 
     case NOD_RETURN:

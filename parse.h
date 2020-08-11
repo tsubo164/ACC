@@ -19,6 +19,7 @@ enum ast_node_kind {
     NOD_EXT,  /* to extend child nodes */
     NOD_IF,
     NOD_RETURN,
+    NOD_WHILE,
     NOD_ASSIGN,
     NOD_VAR,
     NOD_NUM,

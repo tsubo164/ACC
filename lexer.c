@@ -26,6 +26,8 @@ static void keyword_or_identifier(struct token *tok)
         tok->kind = TK_IF;
     } else if (!strcmp(tok->word, "return")) {
         tok->kind = TK_RETURN;
+    } else if (!strcmp(tok->word, "while")) {
+        tok->kind = TK_WHILE;
     } else {
         tok->kind = TK_IDENT;
     }

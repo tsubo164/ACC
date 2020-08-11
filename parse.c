@@ -410,6 +410,13 @@ static struct ast_node *statement(struct parser *p)
         }
         break;
 
+    case TK_WHILE:
+        expect_or_error(p, '(', "missing '(' after while");
+        base = new_node(NOD_WHILE, expression(p), NULL);
+        expect_or_error(p, ')', "missing ')' after while condition");
+        base->r = statement(p);
+        break;
+
     default:
         ungettok(p);
         base = expression(p);
