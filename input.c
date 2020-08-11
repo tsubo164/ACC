@@ -3,5 +3,7 @@ bar = foo + 2;
 
 if (bar < 20)
     return 7;
+else
+    foo = 111;
 
-return 3;
+return foo;

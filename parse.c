@@ -401,7 +401,13 @@ static struct ast_node *statement(struct parser *p)
         expect_or_error(p, '(', "missing '(' after if");
         base = new_node(NOD_IF, expression(p), NULL);
         expect_or_error(p, ')', "missing ')' after if condition");
-        base->r = statement(p);
+        base->r = new_node(NOD_EXT, statement(p), NULL);
+        tok = gettok(p);
+        if (tok->kind == TK_ELSE) {
+            base->r->r = statement(p);
+        } else {
+            ungettok(p);
+        }
         break;
 
     default:

@@ -37,11 +37,17 @@ static void gen_code(FILE *file, const struct ast_node *node)
         break;
 
     case NOD_IF:
+        /* if */
         gen_code(file, node->l);
         fprintf(file, "  cmp rax, 0\n");
-        fprintf(file, "  je .L001\n");
-        gen_code(file, node->r);
-        fprintf(file, ".L001:\n");
+        fprintf(file, "  je .L001_0\n");
+        /* then */
+        gen_code(file, node->r->l);
+        fprintf(file, "  jmp .L001_1\n");
+        /* else */
+        fprintf(file, ".L001_0:\n");
+        gen_code(file, node->r->r);
+        fprintf(file, ".L001_1:\n");
         break;
 
     case NOD_RETURN:
