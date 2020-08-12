@@ -133,6 +133,7 @@ void parser_init(struct parser *p)
  * forward declaration
  */
 static struct ast_node *expression(struct parser *p);
+static struct ast_node *statement(struct parser *p);
 
 /*
  * primary_expression
@@ -380,6 +381,38 @@ static struct ast_node *expression(struct parser *p)
 }
 
 /*
+ * compound_statement
+ *     : statement
+ *     | compound_statement statement
+ *     ;
+ */
+static struct ast_node *compound_statement(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+
+    expect_or_error(p, '{', "missing '{'");
+
+    for (;;) {
+        const struct token *tok = gettok(p);
+
+        switch (tok->kind) {
+
+        case '}':
+            return tree;
+
+        case TK_EOF:
+            error(p, "missing '}' at end of file");
+            return tree;
+
+        default:
+            ungettok(p);
+            tree = new_node(NOD_LIST, tree, statement(p));
+            break;
+        }
+    }
+}
+
+/*
  * statement
  *     : expression ';'
  *     | TK_RETURN expression ';'
@@ -417,6 +450,10 @@ static struct ast_node *statement(struct parser *p)
         base->r = statement(p);
         break;
 
+    case '{':
+        ungettok(p);
+        return compound_statement(p);
+
     default:
         ungettok(p);
         base = expression(p);
@@ -424,37 +461,14 @@ static struct ast_node *statement(struct parser *p)
         break;
     }
 
-
     return base;
-}
-
-/*
- * statement_list
- *     : statement
- *     | statement_list statement
- *     ;
- */
-static struct ast_node *statement_list(struct parser *p)
-{
-    struct ast_node *base = statement(p);
-
-    for (;;) {
-        const struct token *tok = gettok(p);
-
-        switch (tok->kind) {
-
-        case TK_EOF:
-            return base;
-
-        default:
-            ungettok(p);
-            base = new_node(NOD_LIST, base, statement(p));
-            break;
-        }
-    }
 }
 
 struct ast_node *parse(struct parser *p)
 {
-    return statement_list(p);
+    struct ast_node *tree = compound_statement(p);
+
+    expect_or_error(p, TK_EOF, "missing 'EOF' at end of file");
+
+    return tree;
 }
