@@ -22,6 +22,7 @@ enum ast_node_kind {
     NOD_WHILE,
     NOD_ASSIGN,
     NOD_VAR,
+    NOD_CALL,
     NOD_NUM,
     NOD_ADD,
     NOD_SUB,

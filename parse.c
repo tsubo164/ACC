@@ -156,9 +156,23 @@ static struct ast_node *primary_expression(struct parser *p)
         return base;
 
     case TK_IDENT:
-        base = new_node(NOD_VAR, NULL, NULL);
-        {
-            const struct symbol *sym = lookup_symbol(tok->word);
+        tok = gettok(p);
+        if (tok->kind == '(') {
+            /*
+            const struct symbol *sym;
+            */
+            expect_or_error(p, ')', "missing ')' after function call");
+            /*
+            sym = lookup_symbol(tok->word);
+            */
+            base = new_node(NOD_CALL, NULL, NULL);
+            return base;
+        } else {
+            const struct symbol *sym;
+            ungettok(p);
+            tok = current_token(p);
+            sym = lookup_symbol(tok->word);
+            base = new_node(NOD_VAR, NULL, NULL);
             base->value = sym->offset;
         }
         return base;

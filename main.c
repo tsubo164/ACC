@@ -20,7 +20,6 @@ static int get_max_offset(const struct ast_node *node)
     } else {
         return max;
     }
-
 }
 
 static void gen_code(FILE *file, const struct ast_node *node)
@@ -77,6 +76,16 @@ static void gen_code(FILE *file, const struct ast_node *node)
 
         fprintf(file, "  mov rdx, rax\n");
         fprintf(file, "  mov rax, [rdx]\n");
+        break;
+
+    case NOD_CALL:
+        /*
+        fprintf(file, "  push rax\n");
+        */
+        fprintf(file, "  call _func\n");
+        /*
+        fprintf(file, "  pop rdx\n");
+        */
         break;
 
     case NOD_ASSIGN:
@@ -308,12 +317,16 @@ int main(int argc, char **argv)
     }
 
     fprintf(file, ".intel_syntax noprefix\n");
-    fprintf(file, ".global _main\n");
+    fprintf(file, ".global _main, _func\n");
     fprintf(file, "_main:\n");
 
     fprintf(file, "  push rbp\n");
     fprintf(file, "  mov rbp, rsp\n");
-    fprintf(file, "  sub rsp, %d\n", get_max_offset(node));
+    {
+        int max_offset = get_max_offset(node);
+        max_offset += 16 - max_offset % 16;
+        fprintf(file, "  sub rsp, %d\n", max_offset);
+    }
 
     gen_code(file, node);
 

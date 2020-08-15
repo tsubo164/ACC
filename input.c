@@ -3,7 +3,7 @@
     bar = foo + 2;
     i = 1;
 
-    if (bar > 20) {
+    if (bar < 20) {
         bar = bar + 1;
         return bar;
     }
@@ -15,6 +15,8 @@
 
     while (0) {
     }
+
+    func();
 
     return i;
 }
