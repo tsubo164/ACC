@@ -39,7 +39,7 @@ void token_init(struct token *tok)
     tok->kind = TK_UNKNOWN;
     tok->value = 0;
     tok->file_pos = 0L;
-    for (i = 0; i < 128; i++) {
+    for (i = 0; i < TOKEN_WORD_SIZE; i++) {
         tok->word[i] = '\0';
     }
 }
@@ -142,6 +142,10 @@ state_initial:
 
     /* terminator */
     case ';':
+        tok->kind = c;
+        goto state_final;
+
+    case ',':
         tok->kind = c;
         goto state_final;
 

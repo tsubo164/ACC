@@ -21,11 +21,13 @@ enum token_kind {
     TK_EOF
 };
 
+#define TOKEN_WORD_SIZE 128
+
 struct token {
     int kind;
     int value;
     long file_pos;
-    char word[128];
+    char word[TOKEN_WORD_SIZE];
 };
 
 struct lexer {

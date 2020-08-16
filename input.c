@@ -16,7 +16,7 @@
     while (0) {
     }
 
-    func();
+    i = 2 * sub(42, 21);
 
     return i;
 }

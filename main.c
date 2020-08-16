@@ -16,7 +16,7 @@ static int get_max_offset(const struct ast_node *node)
     max = l > r ? l : r;
 
     if (node->kind == NOD_VAR) {
-        return node->value > max ? node->value : max;
+        return node->data.sym->offset > max ? node->data.sym->offset : max;
     } else {
         return max;
     }
@@ -24,6 +24,9 @@ static int get_max_offset(const struct ast_node *node)
 
 static void gen_code(FILE *file, const struct ast_node *node)
 {
+    /* x86-64 calling convention */
+    static char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+    static int reg_id = 0;
     static int label_id = 0;
 
     if (node == NULL) {
@@ -32,7 +35,7 @@ static void gen_code(FILE *file, const struct ast_node *node)
 
     switch (node->kind) {
 
-    case NOD_LIST:
+    case NOD_STMT:
         gen_code(file, node->l);
         gen_code(file, node->r);
         break;
@@ -72,26 +75,28 @@ static void gen_code(FILE *file, const struct ast_node *node)
 
     case NOD_VAR:
         fprintf(file, "  mov rax, rbp\n");
-        fprintf(file, "  sub rax, %d\n", node->value);
+        fprintf(file, "  sub rax, %d\n", node->data.sym->offset);
 
         fprintf(file, "  mov rdx, rax\n");
         fprintf(file, "  mov rax, [rdx]\n");
         break;
 
     case NOD_CALL:
-        /*
-        fprintf(file, "  push rax\n");
-        */
-        fprintf(file, "  call _func\n");
-        /*
-        fprintf(file, "  pop rdx\n");
-        */
+        reg_id = 0;
+        gen_code(file, node->l);
+        fprintf(file, "  call _%s\n", node->data.sym->name);
+        break;
+
+    case NOD_ARG:
+        gen_code(file, node->l);
+        gen_code(file, node->r);
+        fprintf(file, "  mov %s, rax\n", argreg[reg_id++]);
         break;
 
     case NOD_ASSIGN:
         /* assuming node->l is var */
         fprintf(file, "  mov rax, rbp\n");
-        fprintf(file, "  sub rax, %d\n", node->l->value);
+        fprintf(file, "  sub rax, %d\n", node->l->data.sym->offset);
         /*
         gen_code(file, node->l);
         */
@@ -104,7 +109,7 @@ static void gen_code(FILE *file, const struct ast_node *node)
         break;
 
     case NOD_NUM:
-        fprintf(file, "  mov rax, %d\n", node->value);
+        fprintf(file, "  mov rax, %d\n", node->data.ival);
         break;
 
     case NOD_ADD:
@@ -317,7 +322,7 @@ int main(int argc, char **argv)
     }
 
     fprintf(file, ".intel_syntax noprefix\n");
-    fprintf(file, ".global _main, _func\n");
+    fprintf(file, ".global _main\n");
     fprintf(file, "_main:\n");
 
     fprintf(file, "  push rbp\n");

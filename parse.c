@@ -2,15 +2,11 @@
 #include <string.h>
 #include "parse.h"
 
-struct symbol {
-    char *name;
-    int offset;
-};
-
 static struct symbol symtbl[32] = {{NULL, 0}};
 static int nsyms = 0;
+static int nvars = 0;
 
-static const struct symbol *lookup_symbol(const char *name)
+static const struct symbol *lookup_symbol(const char *name, enum symbol_kind kind)
 {
     struct symbol *sym = NULL;
     int i;
@@ -19,8 +15,7 @@ static const struct symbol *lookup_symbol(const char *name)
     {
         sym = &symtbl[i];
 
-        if (!strcmp(sym->name, name))
-        {
+        if (!strcmp(sym->name, name)) {
             return sym;
         }
     }
@@ -29,7 +24,13 @@ static const struct symbol *lookup_symbol(const char *name)
 
     sym->name = malloc(strlen(name) + 1);
     strcpy(sym->name, name);
-    sym->offset = 8 * nsyms;
+    sym->kind = kind;
+    sym->offset = 0;
+
+    if (kind == SYM_VAR) {
+        nvars++;
+        sym->offset = 8 * nvars;
+    }
 
     return sym;
 }
@@ -41,7 +42,7 @@ static struct ast_node *new_node(enum ast_node_kind kind,
     n->kind = kind;
     n->l = l;
     n->r = r;
-    n->value = 0;
+    n->data.ival = 0;
 
     return n;
 }
@@ -83,8 +84,6 @@ static void error(struct parser *p, const char *msg)
     p->error_pos = token_file_pos(tok);
     p->error_msg = msg;
 
-    /*
-    */
     printf("!!error %ld\n", p->error_pos);
 }
 
@@ -146,34 +145,42 @@ static struct ast_node *primary_expression(struct parser *p)
 {
     const struct token *tok = gettok(p);
     struct ast_node *base = NULL;
+    static char ident[TOKEN_WORD_SIZE] = {'\0'};
 
     switch (tok->kind) {
 
     case TK_NUM:
         /* XXX base = new_number(tok->value); */
         base = new_node(NOD_NUM, NULL, NULL);
-        base->value = tok->value;
+        base->data.ival = tok->value;
         return base;
 
     case TK_IDENT:
+        strcpy(ident, tok->word);
         tok = gettok(p);
         if (tok->kind == '(') {
-            /*
             const struct symbol *sym;
-            */
+            sym = lookup_symbol(ident, SYM_FUNC);
+
+            for (;;) {
+                base = new_node(NOD_ARG, base, expression(p));
+                tok = gettok(p);
+                if (tok->kind != ',') {
+                    ungettok(p);
+                    break;
+                }
+            }
+
             expect_or_error(p, ')', "missing ')' after function call");
-            /*
-            sym = lookup_symbol(tok->word);
-            */
-            base = new_node(NOD_CALL, NULL, NULL);
+            base = new_node(NOD_CALL, base, NULL);
+            base->data.sym = sym;
             return base;
         } else {
             const struct symbol *sym;
             ungettok(p);
-            tok = current_token(p);
-            sym = lookup_symbol(tok->word);
+            sym = lookup_symbol(ident, SYM_VAR);
             base = new_node(NOD_VAR, NULL, NULL);
-            base->value = sym->offset;
+            base->data.sym = sym;
         }
         return base;
 
@@ -208,7 +215,7 @@ static struct ast_node *unary_expression(struct parser *p)
     case '-':
         /* ??? base = new_number(-1); */
         base = new_node(NOD_NUM, NULL, NULL);
-        base->value = -1;
+        base->data.ival = -1;
         base = new_node(NOD_MUL, base, primary_expression(p));
         return base;
 
@@ -420,7 +427,7 @@ static struct ast_node *compound_statement(struct parser *p)
 
         default:
             ungettok(p);
-            tree = new_node(NOD_LIST, tree, statement(p));
+            tree = new_node(NOD_STMT, tree, statement(p));
             break;
         }
     }

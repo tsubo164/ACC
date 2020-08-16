@@ -17,8 +17,15 @@ clean:
 
 run:
 	./mcc input.c
-	gcc input.s
+	gcc -c input.s
+	gcc -c func.c
+	gcc input.o func.o
 	./a.out
+
+#run:
+#	./mcc input.c
+#	gcc input.s
+#	./a.out
 
 test: test_lex
 	@./test_lex
