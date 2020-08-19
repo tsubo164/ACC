@@ -1,3 +1,4 @@
+main()
 {
     foo = 40;
     bar = foo + 2;

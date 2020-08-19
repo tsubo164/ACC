@@ -22,6 +22,26 @@ static int get_max_offset(const struct ast_node *node)
     }
 }
 
+static void print_global_funcs(FILE *fp, const struct ast_node *node)
+{
+    static int nfuncs = 0;
+
+    if (node == NULL) {
+        return;
+    }
+
+    print_global_funcs(fp, node->l);
+    print_global_funcs(fp, node->r);
+
+    if (node->kind == NOD_FUNC_DEF) {
+        if (nfuncs > 0) {
+            fprintf(fp, ", ");
+        }
+        fprintf(fp, "_%s", node->data.sym->name);
+        nfuncs++;
+    }
+}
+
 static void gen_code(FILE *file, const struct ast_node *node)
 {
     /* x86-64 calling convention */
@@ -91,6 +111,24 @@ static void gen_code(FILE *file, const struct ast_node *node)
         gen_code(file, node->l);
         gen_code(file, node->r);
         fprintf(file, "  mov %s, rax\n", argreg[reg_id++]);
+        break;
+
+    case NOD_FUNC_DEF:
+        fprintf(file, "_%s:\n", node->data.sym->name);
+        fprintf(file, "  push rbp\n");
+        fprintf(file, "  mov rbp, rsp\n");
+        {
+            /* XXX tmp */
+            int max_offset = get_max_offset(node);
+            if (max_offset > 0) {
+                max_offset += 16 - max_offset % 16;
+                fprintf(file, "  sub rsp, %d\n", max_offset);
+            }
+        }
+        /*
+        gen_code(file, node->l);
+        */
+        gen_code(file, node->r);
         break;
 
     case NOD_ASSIGN:
@@ -285,7 +323,7 @@ void print_error_message(const struct parser *p, const char *filename)
 
 int main(int argc, char **argv)
 {
-    struct ast_node *node;
+    struct ast_node *tree;
     struct parser parser;
     FILE *file = NULL;
 
@@ -304,7 +342,7 @@ int main(int argc, char **argv)
     parser.lex.file = file;
 
     {
-        node = parse(&parser);
+        tree = parse(&parser);
 
         if (parser.error_pos >= 0) {
             print_error_message(&parser, argv[1]);
@@ -322,18 +360,11 @@ int main(int argc, char **argv)
     }
 
     fprintf(file, ".intel_syntax noprefix\n");
-    fprintf(file, ".global _main\n");
-    fprintf(file, "_main:\n");
+    fprintf(file, ".global ");
+    print_global_funcs(file, tree);
+    fprintf(file, "\n");
 
-    fprintf(file, "  push rbp\n");
-    fprintf(file, "  mov rbp, rsp\n");
-    {
-        int max_offset = get_max_offset(node);
-        max_offset += 16 - max_offset % 16;
-        fprintf(file, "  sub rsp, %d\n", max_offset);
-    }
-
-    gen_code(file, node);
+    gen_code(file, tree);
 
     fprintf(file, "  mov rsp, rbp\n");
     fprintf(file, "  pop rbp\n");

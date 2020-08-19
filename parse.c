@@ -485,9 +485,62 @@ static struct ast_node *statement(struct parser *p)
     return base;
 }
 
+static struct ast_node *func_def(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct ast_node *params = NULL;
+    const struct symbol *sym = NULL;
+    const struct token *tok = NULL;
+    int nparams = 0;
+
+    tok = gettok(p);
+    if (tok->kind != TK_IDENT) {
+        error(p, "missing function name");
+    }
+
+    tree = new_node(NOD_FUNC_DEF, NULL, NULL);
+    sym = lookup_symbol(tok->word, SYM_FUNC);
+    tree->data.sym = sym;
+    /*
+    printf("### %s\n", tree->data.sym->name);
+    */
+
+    expect_or_error(p, '(', "missing '(' after function name");
+
+    for (;;) {
+        tok = gettok(p);
+        if (tok->kind != TK_IDENT) {
+            ungettok(p);
+            break;
+        }
+
+        params = new_node(NOD_PARAM, params, NULL);
+        nparams++;
+        /*
+        printf("        - %s\n", tok->word);
+        */
+
+        tok = gettok(p);
+        if (tok->kind != ',') {
+            ungettok(p);
+            break;
+        }
+    }
+        /*
+        printf("nparams(%s) -> %d\n", tree->data.sym->name, nparams);
+        */
+
+    tree->l = params;
+
+    expect_or_error(p, ')', "missing ')' after function params");
+
+    tree->r = compound_statement(p);
+    return tree;
+}
+
 struct ast_node *parse(struct parser *p)
 {
-    struct ast_node *tree = compound_statement(p);
+    struct ast_node *tree = func_def(p);
 
     expect_or_error(p, TK_EOF, "missing 'EOF' at end of file");
 
