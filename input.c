@@ -1,14 +1,14 @@
-num()
+int num()
 {
     return 8;
 }
 
-add(x, y)
+int add(x, y)
 {
     return x + y;
 }
 
-main()
+int main()
 {
     return add(40, 2) + num();
 }

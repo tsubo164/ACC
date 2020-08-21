@@ -143,9 +143,9 @@ static struct ast_node *statement(struct parser *p);
  */
 static struct ast_node *primary_expression(struct parser *p)
 {
-    const struct token *tok = gettok(p);
     struct ast_node *base = NULL;
     static char ident[TOKEN_WORD_SIZE] = {'\0'};
+    const struct token *tok = gettok(p);
 
     switch (tok->kind) {
 
@@ -214,8 +214,8 @@ static struct ast_node *primary_expression(struct parser *p)
  */
 static struct ast_node *unary_expression(struct parser *p)
 {
-    const struct token *tok = gettok(p);
     struct ast_node *base = NULL;
+    const struct token *tok = gettok(p);
 
     switch (tok->kind) {
 
@@ -452,7 +452,7 @@ static struct ast_node *compound_statement(struct parser *p)
  */
 static struct ast_node *statement(struct parser *p)
 {
-    struct ast_node *base;
+    struct ast_node *base = NULL;
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
@@ -503,6 +503,11 @@ static struct ast_node *func_def(struct parser *p)
     const struct symbol *sym = NULL;
     const struct token *tok = NULL;
     int nparams = 0;
+
+    tok = gettok(p);
+    if (tok->kind != TK_INT) {
+        error(p, "missing return type after function name");
+    }
 
     tok = gettok(p);
     if (tok->kind != TK_IDENT) {
@@ -561,7 +566,7 @@ struct ast_node *parse(struct parser *p)
 
         switch (tok->kind) {
 
-        case TK_IDENT:
+        case TK_INT:
             ungettok(p);
             tree = new_node(NOD_LIST, tree, func_def(p));
             break;
@@ -570,16 +575,8 @@ struct ast_node *parse(struct parser *p)
             return tree;
 
         default:
-            error(p, "unexpected token");
+            error(p, "unexpected token in global scope");
             return tree;
         }
     }
-
-    /*
-    struct ast_node *tree = func_def(p);
-
-    expect_or_error(p, TK_EOF, "missing 'EOF' at end of file");
-
-    return tree;
-    */
 }

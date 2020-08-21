@@ -75,6 +75,7 @@ int main()
         FILE *f = fopen(filename, "w");
         fprintf(f, " a = 1 < \n ; 12 38234 7 ab_ _xyz123  return \n");
         fprintf(f, "  if   else while ");
+        fprintf(f, "  int ");
         fclose(f);
     }
     {
@@ -143,6 +144,9 @@ int main()
 
         lex_get_token(&lex, &tok);
         TEST_INT(tok.kind, TK_WHILE);
+
+        lex_get_token(&lex, &tok);
+        TEST_INT(tok.kind, TK_INT);
 
         lex_get_token(&lex, &tok);
         TEST_INT(tok.kind, TK_EOF);

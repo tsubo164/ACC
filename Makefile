@@ -15,17 +15,10 @@ lexer.o: lexer.c lexer.h
 clean:
 	rm -f mcc a.out *.o *.s *_in.c test_lex
 
-run:
+run: mcc
 	./mcc input.c
-	gcc -c input.s
-	gcc -c func.c
-	gcc input.o func.o
+	gcc input.s
 	./a.out
-
-#run:
-#	./mcc input.c
-#	gcc input.s
-#	./a.out
 
 test: test_lex
 	@./test_lex

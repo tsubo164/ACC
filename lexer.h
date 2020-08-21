@@ -8,11 +8,13 @@ enum token_kind {
     TK_END_OF_ASCII = 127,
     TK_NUM,
     TK_IDENT,
-    /* keyword */
+    /* keywords */
     TK_ELSE,
     TK_IF,
     TK_RETURN,
     TK_WHILE,
+    /* types */
+    TK_INT,
     /* bin op */
     TK_LE,
     TK_GE,
