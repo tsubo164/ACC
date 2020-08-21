@@ -27,7 +27,7 @@ static const struct symbol *lookup_symbol(const char *name, enum symbol_kind kin
     sym->kind = kind;
     sym->offset = 0;
 
-    if (kind == SYM_VAR) {
+    if (kind == SYM_VAR || kind == SYM_PARAM) {
         nvars++;
         sym->offset = 8 * nvars;
     }
@@ -180,6 +180,9 @@ static struct ast_node *primary_expression(struct parser *p)
             ungettok(p);
             sym = lookup_symbol(ident, SYM_VAR);
             base = new_node(NOD_VAR, NULL, NULL);
+            if (sym->kind == SYM_PARAM) {
+                base->kind = NOD_PARAM;
+            }
             base->data.sym = sym;
         }
         return base;
@@ -190,8 +193,16 @@ static struct ast_node *primary_expression(struct parser *p)
         return base;
 
     default:
+        /* XXX
+         * when parser expect an expression, does it accept
+         * blank or treat as an error?
+         */
+        ungettok(p);
+        return NULL;
+        /*
         error(p, "unexpected token");
         return NULL;
+        */
     }
 }
 
@@ -508,6 +519,7 @@ static struct ast_node *func_def(struct parser *p)
     expect_or_error(p, '(', "missing '(' after function name");
 
     for (;;) {
+        const struct symbol *symparam = NULL;
         tok = gettok(p);
         if (tok->kind != TK_IDENT) {
             ungettok(p);
@@ -515,6 +527,8 @@ static struct ast_node *func_def(struct parser *p)
         }
 
         params = new_node(NOD_PARAM, params, NULL);
+        symparam = lookup_symbol(tok->word, SYM_PARAM);
+        params->data.sym = symparam;
         nparams++;
         /*
         printf("        - %s\n", tok->word);
@@ -540,9 +554,32 @@ static struct ast_node *func_def(struct parser *p)
 
 struct ast_node *parse(struct parser *p)
 {
+    struct ast_node *tree = NULL;
+
+    for (;;) {
+        const struct token *tok = gettok(p);
+
+        switch (tok->kind) {
+
+        case TK_IDENT:
+            ungettok(p);
+            tree = new_node(NOD_LIST, tree, func_def(p));
+            break;
+
+        case TK_EOF:
+            return tree;
+
+        default:
+            error(p, "unexpected token");
+            return tree;
+        }
+    }
+
+    /*
     struct ast_node *tree = func_def(p);
 
     expect_or_error(p, TK_EOF, "missing 'EOF' at end of file");
 
     return tree;
+    */
 }

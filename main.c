@@ -15,7 +15,7 @@ static int get_max_offset(const struct ast_node *node)
     r = get_max_offset(node->r);
     max = l > r ? l : r;
 
-    if (node->kind == NOD_VAR) {
+    if (node->kind == NOD_VAR || node->kind == NOD_PARAM) {
         return node->data.sym->offset > max ? node->data.sym->offset : max;
     } else {
         return max;
@@ -42,6 +42,30 @@ static void print_global_funcs(FILE *fp, const struct ast_node *node)
     }
 }
 
+static void gen_params(FILE *file, const struct ast_node *node)
+{
+    /* x86-64 calling convention */
+    char *argreg[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
+    if (node == NULL) {
+        return;
+    }
+
+    switch (node->kind) {
+
+    case NOD_PARAM:
+        gen_params(file, node->l);
+
+        fprintf(file, "  mov rax, rbp\n");
+        fprintf(file, "  sub rax, %d\n", node->data.sym->offset);
+        fprintf(file, "  mov [rax], %s\n", argreg[node->data.sym->offset / 8 - 1]);
+        break;
+
+    default:
+        break;
+    }
+}
+
 static void gen_code(FILE *file, const struct ast_node *node)
 {
     /* x86-64 calling convention */
@@ -54,6 +78,11 @@ static void gen_code(FILE *file, const struct ast_node *node)
     }
 
     switch (node->kind) {
+
+    case NOD_LIST:
+        gen_code(file, node->l);
+        gen_code(file, node->r);
+        break;
 
     case NOD_STMT:
         gen_code(file, node->l);
@@ -93,6 +122,7 @@ static void gen_code(FILE *file, const struct ast_node *node)
         fprintf(file, "  ret\n");
         break;
 
+    case NOD_PARAM:
     case NOD_VAR:
         fprintf(file, "  mov rax, rbp\n");
         fprintf(file, "  sub rax, %d\n", node->data.sym->offset);
@@ -120,16 +150,39 @@ static void gen_code(FILE *file, const struct ast_node *node)
         {
             /* XXX tmp */
             int max_offset = get_max_offset(node);
+            /*
+        fprintf(file, "#-------------- %d\n", max_offset);
+            */
             if (max_offset > 0) {
-                max_offset += 16 - max_offset % 16;
+                /*
+                max_offset = 16 * (max_offset / 16 + 1);
+                */
+                if (max_offset % 16 > 0) {
+                    max_offset += 16 - max_offset % 16;
+                }
                 fprintf(file, "  sub rsp, %d\n", max_offset);
             }
         }
+        fprintf(file, "# param start\n");
+        gen_params(file, node->l);
+        fprintf(file, "# param end\n");
         /*
+        reg_id = 0;
         gen_code(file, node->l);
         */
         gen_code(file, node->r);
         break;
+
+        /*
+    case NOD_PARAM:
+        gen_code(file, node->l);
+        gen_code(file, node->r);
+
+        fprintf(file, "  mov rax, rbp\n");
+        fprintf(file, "  sub rax, %d\n", node->data.sym->offset);
+        fprintf(file, "  mov [rax], %s\n", argreg[reg_id++]);
+        break;
+        */
 
     case NOD_ASSIGN:
         /* assuming node->l is var */

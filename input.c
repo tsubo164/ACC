@@ -1,23 +1,14 @@
+num()
+{
+    return 8;
+}
+
+add(x, y)
+{
+    return x + y;
+}
+
 main()
 {
-    foo = 40;
-    bar = foo + 2;
-    i = 1;
-
-    if (bar < 20) {
-        bar = bar + 1;
-        return bar;
-    }
-
-    while (i < 10) {
-        i = i * 3;
-        i = i - 1;
-    }
-
-    while (0) {
-    }
-
-    i = 2 * sub(42, 21);
-
-    return i;
+    return add(40, 2) + num();
 }

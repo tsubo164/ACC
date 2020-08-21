@@ -16,7 +16,8 @@ struct parser {
 
 enum symbol_kind {
     SYM_VAR,
-    SYM_FUNC
+    SYM_FUNC,
+    SYM_PARAM
 };
 
 struct symbol {
@@ -26,6 +27,7 @@ struct symbol {
 };
 
 enum ast_node_kind {
+    NOD_LIST,
     NOD_STMT,
     NOD_EXT,  /* to extend child nodes */
     NOD_IF,
