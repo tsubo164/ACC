@@ -173,17 +173,6 @@ static void gen_code(FILE *file, const struct ast_node *node)
         gen_code(file, node->r);
         break;
 
-        /*
-    case NOD_PARAM:
-        gen_code(file, node->l);
-        gen_code(file, node->r);
-
-        fprintf(file, "  mov rax, rbp\n");
-        fprintf(file, "  sub rax, %d\n", node->data.sym->offset);
-        fprintf(file, "  mov [rax], %s\n", argreg[reg_id++]);
-        break;
-        */
-
     case NOD_ASSIGN:
         /* assuming node->l is var */
         fprintf(file, "  mov rax, rbp\n");

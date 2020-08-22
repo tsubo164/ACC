@@ -84,7 +84,7 @@ static void error(struct parser *p, const char *msg)
     p->error_pos = token_file_pos(tok);
     p->error_msg = msg;
 
-    printf("!!error %ld\n", p->error_pos);
+    printf("!!error %ld: %s\n", p->error_pos, msg);
 }
 
 static void expect(struct parser *p, enum token_kind query)
@@ -107,7 +107,6 @@ static void expect_or_error(struct parser *p, enum token_kind query, const char 
     if (tok->kind == query) {
         return;
     } else {
-        ungettok(p);
         error(p, error_msg);
         return;
     }
@@ -194,7 +193,7 @@ static struct ast_node *primary_expression(struct parser *p)
 
     default:
         /* XXX
-         * when parser expect an expression, does it accept
+         * when parser expects an expression, does it accept
          * blank or treat as an error?
          */
         ungettok(p);
@@ -503,6 +502,9 @@ static struct ast_node *func_def(struct parser *p)
     const struct symbol *sym = NULL;
     const struct token *tok = NULL;
     int nparams = 0;
+    int i;
+
+    nvars = 0;
 
     tok = gettok(p);
     if (tok->kind != TK_INT) {
@@ -523,11 +525,24 @@ static struct ast_node *func_def(struct parser *p)
 
     expect_or_error(p, '(', "missing '(' after function name");
 
+    /*
     for (;;) {
+    */
+    for (i = 0; i < 5; i++) {
         const struct symbol *symparam = NULL;
+
+        tok = gettok(p);
+        if (tok->kind != TK_INT) {
+            ungettok(p);
+            break;
+        }
+
         tok = gettok(p);
         if (tok->kind != TK_IDENT) {
+            expect_or_error(p, TK_IDENT, "missing parameter name");
+            /*
             ungettok(p);
+            */
             break;
         }
 
