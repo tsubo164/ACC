@@ -6,18 +6,28 @@ static struct symbol symtbl[32] = {{NULL, 0}};
 static int nsyms = 0;
 static int nvars = 0;
 
-static const struct symbol *lookup_symbol(const char *name, enum symbol_kind kind)
+static const struct symbol *lookup_symbol2(const char *name, enum symbol_kind kind)
 {
     struct symbol *sym = NULL;
     int i;
 
-    for (i = 0; i < nsyms; i++)
-    {
+    for (i = 0; i < nsyms; i++) {
         sym = &symtbl[i];
 
-        if (!strcmp(sym->name, name)) {
+        if (!strcmp(sym->name, name) /*&& sym->kind == kind*/) {
             return sym;
         }
+    }
+
+    return NULL;
+}
+
+static const struct symbol *insert_symbol2(const char *name, enum symbol_kind kind)
+{
+    struct symbol *sym = NULL;
+
+    if (lookup_symbol2(name, kind) != NULL) {
+        return NULL;
     }
 
     sym = &symtbl[nsyms++];
@@ -159,7 +169,12 @@ static struct ast_node *primary_expression(struct parser *p)
         tok = gettok(p);
         if (tok->kind == '(') {
             const struct symbol *sym;
-            sym = lookup_symbol(ident, SYM_FUNC);
+
+            sym = lookup_symbol2(ident, SYM_FUNC);
+            if (sym == NULL) {
+                error(p, "calling undefined function");
+                return NULL;
+            }
 
             for (;;) {
                 base = new_node(NOD_ARG, base, expression(p));
@@ -177,7 +192,13 @@ static struct ast_node *primary_expression(struct parser *p)
         } else {
             const struct symbol *sym;
             ungettok(p);
-            sym = lookup_symbol(ident, SYM_VAR);
+
+            sym = lookup_symbol2(ident, SYM_VAR);
+            if (sym == NULL) {
+                error(p, "using undeclared identifier");
+                return NULL;
+            }
+
             base = new_node(NOD_VAR, NULL, NULL);
             if (sym->kind == SYM_PARAM) {
                 base->kind = NOD_PARAM;
@@ -443,6 +464,37 @@ static struct ast_node *compound_statement(struct parser *p)
     }
 }
 
+static struct ast_node *var_def(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    const struct symbol *sym = NULL;
+    const struct token *tok = NULL;
+
+    tok = gettok(p);
+    if (tok->kind != TK_INT) {
+        error(p, "missing type name in declaration");
+    }
+
+    tok = gettok(p);
+    if (tok->kind != TK_IDENT) {
+        error(p, "missing parameter name");
+        return tree;;
+    }
+
+    sym = insert_symbol2(tok->word, SYM_VAR);
+    if (sym == NULL) {
+        error(p, "redefinition of variable");
+        return NULL;
+    }
+
+    tree = new_node(NOD_VAR, NULL, NULL);
+    tree->data.sym = sym;
+
+    expect_or_error(p, ';', "missing ';' at end of declaration");
+
+    return tree;
+}
+
 /*
  * statement
  *     : expression ';'
@@ -485,6 +537,10 @@ static struct ast_node *statement(struct parser *p)
         ungettok(p);
         return compound_statement(p);
 
+    case TK_INT:
+        ungettok(p);
+        return var_def(p);
+
     default:
         ungettok(p);
         base = expression(p);
@@ -517,7 +573,13 @@ static struct ast_node *func_def(struct parser *p)
     }
 
     tree = new_node(NOD_FUNC_DEF, NULL, NULL);
-    sym = lookup_symbol(tok->word, SYM_FUNC);
+
+    sym = insert_symbol2(tok->word, SYM_FUNC);
+    if (sym == NULL) {
+        error(p, "redefinition of function");
+        return NULL;
+    }
+
     tree->data.sym = sym;
     /*
     printf("### %s\n", tree->data.sym->name);
@@ -539,15 +601,18 @@ static struct ast_node *func_def(struct parser *p)
 
         tok = gettok(p);
         if (tok->kind != TK_IDENT) {
-            expect_or_error(p, TK_IDENT, "missing parameter name");
-            /*
-            ungettok(p);
-            */
+            error(p, "missing parameter name");
             break;
         }
 
         params = new_node(NOD_PARAM, params, NULL);
-        symparam = lookup_symbol(tok->word, SYM_PARAM);
+
+        symparam = insert_symbol2(tok->word, SYM_PARAM);
+        if (symparam == NULL) {
+            error(p, "redefinition of parameter");
+            return NULL;
+        }
+
         params->data.sym = symparam;
         nparams++;
         /*
