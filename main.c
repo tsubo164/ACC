@@ -66,6 +66,37 @@ static void gen_params(FILE *file, const struct ast_node *node)
     }
 }
 
+static void gen_code(FILE *file, const struct ast_node *node);
+
+static void gen_comment(FILE *file, const char *cmt)
+{
+    fprintf(file, "## %s\n", cmt);
+}
+
+static void gen_lvalue(FILE *file, const struct ast_node *node)
+{
+    if (node == NULL) {
+        return;
+    }
+
+    switch (node->kind) {
+
+    case NOD_PARAM:
+    case NOD_VAR:
+        fprintf(file, "  mov rax, rbp\n");
+        fprintf(file, "  sub rax, %d\n", node->data.sym->offset);
+        break;
+
+    case NOD_DEREF:
+        gen_code(file, node->l);
+        break;
+
+    default:
+        gen_comment(file, "this is not a lvalue");
+        break;
+    }
+}
+
 static void gen_code(FILE *file, const struct ast_node *node)
 {
     /* x86-64 calling convention */
@@ -124,11 +155,11 @@ static void gen_code(FILE *file, const struct ast_node *node)
 
     case NOD_PARAM:
     case NOD_VAR:
-        fprintf(file, "  mov rax, rbp\n");
-        fprintf(file, "  sub rax, %d\n", node->data.sym->offset);
+        gen_lvalue(file, node);
+        fprintf(file, "  mov rax, [rax]\n");
+        break;
 
-        fprintf(file, "  mov rdx, rax\n");
-        fprintf(file, "  mov rax, [rdx]\n");
+    case NOD_VAR_DEF:
         break;
 
     case NOD_CALL:
@@ -150,42 +181,35 @@ static void gen_code(FILE *file, const struct ast_node *node)
         {
             /* XXX tmp */
             int max_offset = get_max_offset(node);
-            /*
-        fprintf(file, "#-------------- %d\n", max_offset);
-            */
             if (max_offset > 0) {
-                /*
-                max_offset = 16 * (max_offset / 16 + 1);
-                */
                 if (max_offset % 16 > 0) {
                     max_offset += 16 - max_offset % 16;
                 }
                 fprintf(file, "  sub rsp, %d\n", max_offset);
             }
         }
-        fprintf(file, "# param start\n");
         gen_params(file, node->l);
-        fprintf(file, "# param end\n");
-        /*
-        reg_id = 0;
-        gen_code(file, node->l);
-        */
         gen_code(file, node->r);
         break;
 
     case NOD_ASSIGN:
-        /* assuming node->l is var */
-        fprintf(file, "  mov rax, rbp\n");
-        fprintf(file, "  sub rax, %d\n", node->l->data.sym->offset);
-        /*
-        gen_code(file, node->l);
-        */
+        gen_lvalue(file, node->l);
+
         fprintf(file, "  push rax\n");
         gen_code(file, node->r);
         fprintf(file, "  pop rdx\n");
         fprintf(file, "  mov [rdx], rax\n");
 
         fprintf(file, "  mov rax, [rdx]\n");
+        break;
+
+    case NOD_ADDR:
+        gen_lvalue(file, node->l);
+        break;
+
+    case NOD_DEREF:
+        gen_code(file, node->l);
+        fprintf(file, "  mov rax, [rax]\n");
         break;
 
     case NOD_NUM:

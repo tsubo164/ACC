@@ -230,6 +230,8 @@ static struct ast_node *primary_expression(struct parser *p)
  * unary_expression
  *     : '+' primary_expression
  *     | '-' primary_expression
+ *     | '*' unary_expression
+ *     | '&' unary_expression
  *     ;
  */
 static struct ast_node *unary_expression(struct parser *p)
@@ -248,6 +250,14 @@ static struct ast_node *unary_expression(struct parser *p)
         base = new_node(NOD_NUM, NULL, NULL);
         base->data.ival = -1;
         base = new_node(NOD_MUL, base, primary_expression(p));
+        return base;
+
+    case '*':
+        base = new_node(NOD_DEREF, unary_expression(p), NULL);
+        return base;
+
+    case '&':
+        base = new_node(NOD_ADDR, unary_expression(p), NULL);
         return base;
 
     default:
@@ -478,7 +488,7 @@ static struct ast_node *var_def(struct parser *p)
     tok = gettok(p);
     if (tok->kind != TK_IDENT) {
         error(p, "missing parameter name");
-        return tree;;
+        return NULL;;
     }
 
     sym = insert_symbol2(tok->word, SYM_VAR);
@@ -487,7 +497,7 @@ static struct ast_node *var_def(struct parser *p)
         return NULL;
     }
 
-    tree = new_node(NOD_VAR, NULL, NULL);
+    tree = new_node(NOD_VAR_DEF, NULL, NULL);
     tree->data.sym = sym;
 
     expect_or_error(p, ';', "missing ';' at end of declaration");

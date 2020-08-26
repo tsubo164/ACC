@@ -74,6 +74,11 @@ state_initial:
 
     switch (c) {
 
+    /* address */
+    case '&':
+        tok->kind = c;
+        goto state_final;
+
     /* arithmetic */
     case '+': case '-': case '*': case '/':
         tok->kind = c;
