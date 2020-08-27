@@ -1,12 +1,12 @@
 int main()
 {
     int a;
-    int b;
+    int *b;
 
     a = 40;
     b = &a;
 
     *b = *b + 2;
 
-    return *b;
+    return a;
 }

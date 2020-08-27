@@ -486,6 +486,13 @@ static struct ast_node *var_def(struct parser *p)
     }
 
     tok = gettok(p);
+    if (tok->kind == '*') {
+        /* pointer */
+    } else {
+        ungettok(p);
+    }
+
+    tok = gettok(p);
     if (tok->kind != TK_IDENT) {
         error(p, "missing parameter name");
         return NULL;;
