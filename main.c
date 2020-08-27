@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "parse.h"
 #include "lexer.h"
 
@@ -387,11 +388,25 @@ void print_error_message(const struct parser *p, const char *filename)
     printf(TERMINAL_DECORATION_RESET);
 }
 
+void make_output_filename(const char *input, char *output)
+{
+    const size_t len = strlen(input);
+    if (len > 255) {
+        return;
+    }
+
+    strcpy(output, input);
+    if (output[len - 1] == 'c') {
+        output[len - 1] = 's';
+    }
+}
+
 int main(int argc, char **argv)
 {
     struct ast_node *tree;
     struct parser parser;
     FILE *file = NULL;
+    char output[256] = {'\0'};
 
     if (argc != 2) {
         printf("mcc: error: no input files\n");
@@ -420,7 +435,8 @@ int main(int argc, char **argv)
 
     fclose(file);
 
-    file = fopen("input.s", "w");
+    make_output_filename(argv[1], output);
+    file = fopen(output, "w");
     if (!file) {
         return -1;
     }
