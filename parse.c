@@ -2,47 +2,18 @@
 #include <string.h>
 #include "parse.h"
 
-static struct symbol symtbl[32] = {{NULL, 0}};
-static int nsyms = 0;
-static int nvars = 0;
-
-static const struct symbol *lookup_symbol2(const char *name, enum symbol_kind kind)
+static const struct symbol *lookup_symbol2(
+            const struct parser *p,
+            const char *name, enum symbol_kind kind)
 {
-    struct symbol *sym = NULL;
-    int i;
-
-    for (i = 0; i < nsyms; i++) {
-        sym = &symtbl[i];
-
-        if (!strcmp(sym->name, name) /*&& sym->kind == kind*/) {
-            return sym;
-        }
-    }
-
-    return NULL;
+    return lookup_symbol(&p->symtbl, name, kind);
 }
 
-static const struct symbol *insert_symbol2(const char *name, enum symbol_kind kind)
+static const struct symbol *insert_symbol2(
+            struct parser *p,
+            const char *name, enum symbol_kind kind)
 {
-    struct symbol *sym = NULL;
-
-    if (lookup_symbol2(name, kind) != NULL) {
-        return NULL;
-    }
-
-    sym = &symtbl[nsyms++];
-
-    sym->name = malloc(strlen(name) + 1);
-    strcpy(sym->name, name);
-    sym->kind = kind;
-    sym->offset = 0;
-
-    if (kind == SYM_VAR || kind == SYM_PARAM) {
-        nvars++;
-        sym->offset = 8 * nvars;
-    }
-
-    return sym;
+    return insert_symbol(&p->symtbl, name, kind);
 }
 
 static struct ast_node *new_node(enum ast_node_kind kind,
@@ -135,6 +106,8 @@ void parser_init(struct parser *p)
 
     p->error_pos = -1L;
     p->error_msg = "";
+
+    init_symbol_table(&p->symtbl);
 }
 
 /*
@@ -170,7 +143,7 @@ static struct ast_node *primary_expression(struct parser *p)
         if (tok->kind == '(') {
             const struct symbol *sym;
 
-            sym = lookup_symbol2(ident, SYM_FUNC);
+            sym = lookup_symbol2(p, ident, SYM_FUNC);
             if (sym == NULL) {
                 error(p, "calling undefined function");
                 return NULL;
@@ -193,7 +166,7 @@ static struct ast_node *primary_expression(struct parser *p)
             const struct symbol *sym;
             ungettok(p);
 
-            sym = lookup_symbol2(ident, SYM_VAR);
+            sym = lookup_symbol2(p, ident, SYM_VAR);
             if (sym == NULL) {
                 error(p, "using undeclared identifier");
                 return NULL;
@@ -498,7 +471,7 @@ static struct ast_node *var_def(struct parser *p)
         return NULL;;
     }
 
-    sym = insert_symbol2(tok->word, SYM_VAR);
+    sym = insert_symbol2(p, tok->word, SYM_VAR);
     if (sym == NULL) {
         error(p, "redefinition of variable");
         return NULL;
@@ -577,8 +550,6 @@ static struct ast_node *func_def(struct parser *p)
     int nparams = 0;
     int i;
 
-    nvars = 0;
-
     tok = gettok(p);
     if (tok->kind != TK_INT) {
         error(p, "missing return type after function name");
@@ -591,23 +562,18 @@ static struct ast_node *func_def(struct parser *p)
 
     tree = new_node(NOD_FUNC_DEF, NULL, NULL);
 
-    sym = insert_symbol2(tok->word, SYM_FUNC);
+    sym = insert_symbol2(p, tok->word, SYM_FUNC);
     if (sym == NULL) {
         error(p, "redefinition of function");
         return NULL;
     }
 
     tree->data.sym = sym;
-    /*
-    printf("### %s\n", tree->data.sym->name);
-    */
 
     expect_or_error(p, '(', "missing '(' after function name");
 
-    /*
-    for (;;) {
-    */
-    for (i = 0; i < 5; i++) {
+    /* XXX limit 6 params */
+    for (i = 0; i < 6; i++) {
         const struct symbol *symparam = NULL;
 
         tok = gettok(p);
@@ -624,7 +590,7 @@ static struct ast_node *func_def(struct parser *p)
 
         params = new_node(NOD_PARAM, params, NULL);
 
-        symparam = insert_symbol2(tok->word, SYM_PARAM);
+        symparam = insert_symbol2(p, tok->word, SYM_PARAM);
         if (symparam == NULL) {
             error(p, "redefinition of parameter");
             return NULL;
@@ -632,9 +598,6 @@ static struct ast_node *func_def(struct parser *p)
 
         params->data.sym = symparam;
         nparams++;
-        /*
-        printf("        - %s\n", tok->word);
-        */
 
         tok = gettok(p);
         if (tok->kind != ',') {
@@ -642,9 +605,6 @@ static struct ast_node *func_def(struct parser *p)
             break;
         }
     }
-        /*
-        printf("nparams(%s) -> %d\n", tree->data.sym->name, nparams);
-        */
 
     tree->l = params;
 

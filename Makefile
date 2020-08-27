@@ -1,26 +1,37 @@
-.PHONY: acc clean run test
+CC = gcc
+OPT = -O2
+CFLAGS = $(OPT) -Wall -ansi --pedantic-errors -c
+
+.PHONY: all clean run run_cc test
 
 all: acc
 
-acc: main.o parse.o lexer.o
-	gcc -o $@ $^
+acc: main.o parse.o lexer.o symbol.o
+	$(CC) -o $@ $^
 
-main.o: main.c parse.h lexer.h
-	gcc -O2 -Wall -std=c89 --pedantic-errors -c $<
+main.o: main.c parse.h lexer.h symbol.h
+	$(CC) $(CFLAGS) $<
 
-parse.o: parse.c parse.h lexer.h
-	gcc -O2 -Wall -std=c89 --pedantic-errors -c $<
+parse.o: parse.c parse.h lexer.h symbol.h
+	$(CC) $(CFLAGS) $<
 
 lexer.o: lexer.c lexer.h
-	gcc -O2 -Wall -std=c89 --pedantic-errors -c $<
+	$(CC) $(CFLAGS) $<
+
+symbol.o: symbol.c symbol.h
+	$(CC) $(CFLAGS) $<
 
 clean:
-	rm -f acc a.out *.o *.s *_in.c test_lex
+	rm -f acc a.out *.o *.s
 	@$(MAKE) --no-print-directory -C tests $@
 
 run: acc
 	./acc input.c
-	gcc input.s
+	$(CC) input.s
+	./a.out
+
+run_cc:
+	$(CC) -Wall -ansi --pedantic-errors input.c
 	./a.out
 
 test: acc

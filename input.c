@@ -1,12 +1,16 @@
+int add(int x, int y)
+{
+    return x + y;
+}
+
 int main()
 {
     int a;
-    int *b;
 
-    a = 40;
-    b = &a;
+    a = add(40, 2);
 
-    *b = *b + 2;
-
-    return a;
+    if (a == 42)
+        return 0;
+    else
+        return 1;
 }

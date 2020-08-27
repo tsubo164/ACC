@@ -2,6 +2,7 @@
 #define PARSE_H
 
 #include "lexer.h"
+#include "symbol.h"
 
 #define TOKEN_BUFFER_SIZE 2
 
@@ -10,20 +11,10 @@ struct parser {
     struct token tokbuf[TOKEN_BUFFER_SIZE];
     int head, curr;
 
+    struct symbol_table symtbl;
+
     long error_pos;
     const char *error_msg;
-};
-
-enum symbol_kind {
-    SYM_VAR,
-    SYM_FUNC,
-    SYM_PARAM
-};
-
-struct symbol {
-    char *name;
-    int kind;
-    int offset;
 };
 
 enum ast_node_kind {
