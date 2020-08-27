@@ -1,6 +1,8 @@
-.PHONY: clean run test
+.PHONY: acc clean run test
 
-mcc: main.o parse.o lexer.o
+all: acc
+
+acc: main.o parse.o lexer.o
 	gcc -o $@ $^
 
 main.o: main.c parse.h lexer.h
@@ -13,18 +15,14 @@ lexer.o: lexer.c lexer.h
 	gcc -O2 -Wall -std=c89 --pedantic-errors -c $<
 
 clean:
-	rm -f mcc a.out *.o *.s *_in.c test_lex
+	rm -f acc a.out *.o *.s *_in.c test_lex
+	@$(MAKE) --no-print-directory -C tests $@
 
-run: mcc
-	./mcc input.c
+run: acc
+	./acc input.c
 	gcc input.s
 	./a.out
 
-test: test_lex
-	@./test_lex
+test: acc
+	@$(MAKE) --no-print-directory -C tests $@
 
-test_lex: test_lex.o lexer.o
-	gcc -o $@ $^
-
-test_lex.o: test_lex.c lexer.h
-	gcc -O2 -Wall -std=c89 --pedantic-errors -c $<

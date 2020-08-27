@@ -1,4 +1,4 @@
-ACC = ../mcc
+ACC = ../acc
 CC = cc
 RM = rm -f
 
@@ -7,6 +7,8 @@ targets := $(files)
 
 .PHONY: all clean $(targets)
 all: $(targets)
+
+test: all
 
 $(targets): %: %.c
 	@echo -n '  $< ==> '
