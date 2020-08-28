@@ -16,6 +16,16 @@ static const struct symbol *insert_symbol2(
     return insert_symbol(&p->symtbl, name, kind);
 }
 
+static int scope_begin(struct parser *p)
+{
+    return symbol_scope_begin(&p->symtbl);
+}
+
+static int scope_end(struct parser *p)
+{
+    return symbol_scope_end(&p->symtbl);
+}
+
 static struct ast_node *new_node(enum ast_node_kind kind,
         struct ast_node *l, struct ast_node *r)
 {
@@ -427,17 +437,19 @@ static struct ast_node *compound_statement(struct parser *p)
 
     expect_or_error(p, '{', "missing '{'");
 
+    scope_begin(p);
+
     for (;;) {
         const struct token *tok = gettok(p);
 
         switch (tok->kind) {
 
         case '}':
-            return tree;
+            goto final;
 
         case TK_EOF:
             error(p, "missing '}' at end of file");
-            return tree;
+            goto final;
 
         default:
             ungettok(p);
@@ -445,6 +457,10 @@ static struct ast_node *compound_statement(struct parser *p)
             break;
         }
     }
+
+final:
+    scope_end(p);
+    return tree;
 }
 
 static struct ast_node *var_def(struct parser *p)
@@ -572,6 +588,8 @@ static struct ast_node *func_def(struct parser *p)
 
     expect_or_error(p, '(', "missing '(' after function name");
 
+    scope_begin(p);
+
     /* XXX limit 6 params */
     for (i = 0; i < 6; i++) {
         const struct symbol *symparam = NULL;
@@ -611,6 +629,9 @@ static struct ast_node *func_def(struct parser *p)
     expect_or_error(p, ')', "missing ')' after function params");
 
     tree->r = compound_statement(p);
+
+    scope_end(p);
+
     return tree;
 }
 
