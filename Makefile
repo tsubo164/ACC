@@ -6,10 +6,13 @@ CFLAGS = $(OPT) -Wall -ansi --pedantic-errors -c
 
 all: acc
 
-acc: main.o parse.o lexer.o symbol.o
+acc: main.o gen_x86.o parse.o lexer.o symbol.o gen_x86.o
 	$(CC) -o $@ $^
 
 main.o: main.c parse.h lexer.h symbol.h
+	$(CC) $(CFLAGS) $<
+
+gen_x86.o: gen_x86.c gen_x86.h parse.h lexer.h symbol.h
 	$(CC) $(CFLAGS) $<
 
 parse.o: parse.c parse.h lexer.h symbol.h
