@@ -146,8 +146,8 @@ static void gen_code(FILE *file, const struct ast_node *node)
 
     case NOD_RETURN:
         gen_code(file, node->l);
-        fprintf(file, "  mov %%rbp, %%rsp\n");
-        fprintf(file, "  pop %%rbp\n");
+        fprintf(file, "  mov rsp, rbp\n");
+        fprintf(file, "  pop rbp\n");
         fprintf(file, "  ret\n");
         break;
 
@@ -174,12 +174,8 @@ static void gen_code(FILE *file, const struct ast_node *node)
 
     case NOD_FUNC_DEF:
         fprintf(file, "_%s:\n", node->data.sym->name);
-        /*
         fprintf(file, "  push rbp\n");
         fprintf(file, "  mov rbp, rsp\n");
-        */
-        fprintf(file, "  pushq %%rbp\n");
-        fprintf(file, "  movq %%rsp, %%rbp\n");
         {
             /* XXX tmp */
             int max_offset = get_max_offset(node);
@@ -187,7 +183,7 @@ static void gen_code(FILE *file, const struct ast_node *node)
                 if (max_offset % 16 > 0) {
                     max_offset += 16 - max_offset % 16;
                 }
-                fprintf(file, "  subq %d, %%rsp\n", max_offset);
+                fprintf(file, "  sub rsp, %d\n", max_offset);
             }
         }
         gen_params(file, node->l);
@@ -215,7 +211,7 @@ static void gen_code(FILE *file, const struct ast_node *node)
         break;
 
     case NOD_NUM:
-        fprintf(file, "  movl $%d, %%eax\n", node->data.ival);
+        fprintf(file, "  mov rax, %d\n", node->data.ival);
         break;
 
     case NOD_ADD:
@@ -324,6 +320,7 @@ static void gen_code(FILE *file, const struct ast_node *node)
 
 void gen_x86(FILE *file, const struct ast_node *tree)
 {
+    fprintf(file, ".intel_syntax noprefix\n");
     fprintf(file, ".global ");
     print_global_funcs(file, tree);
     fprintf(file, "\n");
