@@ -80,8 +80,22 @@ state_initial:
         goto state_final;
 
     /* arithmetic */
-    case '+': case '-': case '*': case '/':
+    case '+': case '-': case '*':
         tok->kind = c;
+        goto state_final;
+
+    case '/':
+        c = readc(l);
+        switch (c) {
+        case '/':
+            goto state_line_comment;
+        case '*':
+            goto state_block_comment;
+        default:
+            unreadc(l, c);
+            tok->kind = '/';
+            break;
+        }
         goto state_final;
 
     /* equality */
@@ -199,8 +213,7 @@ state_number:
     if (isdigit(c)) {
         *wp++ = c;
         goto state_number;
-    }
-    else {
+    } else {
         *wp = '\0';
         unreadc(l, c);
         tok->kind = TK_NUM;
@@ -232,8 +245,7 @@ state_word:
     if (isalnum(c) || c == '_') {
         *wp++ = c;
         goto state_word;
-    }
-    else {
+    } else {
         *wp = '\0';
         unreadc(l, c);
         tok->kind = TK_IDENT;
@@ -265,6 +277,52 @@ state_word:
         unreadc(l, c);
         keyword_or_identifier(tok);
         goto state_final;
+    }
+
+state_line_comment:
+#if 0
+    c = readc(l);
+
+    if (c == '\n') {
+        goto state_initial;
+    } else {
+        goto state_line_comment;
+    }
+#endif
+    c = readc(l);
+
+    switch (c) {
+
+    case '\n':
+        goto state_initial;
+
+    default:
+        goto state_line_comment;
+    }
+
+state_block_comment:
+    c = readc(l);
+
+    switch (c) {
+
+    case '*':
+        c = readc(l);
+        switch (c) {
+        case '/':
+            goto state_initial;
+        default:
+            unreadc(l, c);
+            goto state_block_comment;
+        }
+
+    case EOF:
+        /* XXX tmp */
+        unreadc(l, c);
+        printf("error: unterminated /* comment\n");
+        goto state_initial;
+
+    default:
+        goto state_block_comment;
     }
 
 state_final:

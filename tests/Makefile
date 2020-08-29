@@ -2,7 +2,7 @@ ACC = ../acc
 CC = cc
 RM = rm -f
 
-files   := test_0000 test_0001
+files   := test_0000 test_0001 test_0002
 targets := $(files)
 
 .PHONY: all clean $(targets)
