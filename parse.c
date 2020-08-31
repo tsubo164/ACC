@@ -9,7 +9,7 @@ static const struct symbol *lookup_symbol2(
     return lookup_symbol(&p->symtbl, name, kind);
 }
 
-static const struct symbol *insert_symbol2(
+static struct symbol *insert_symbol2(
             struct parser *p,
             const char *name, enum symbol_kind kind)
 {
@@ -466,7 +466,7 @@ final:
 static struct ast_node *var_def(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    const struct symbol *sym = NULL;
+    struct symbol *sym = NULL;
     const struct token *tok = NULL;
 
     tok = gettok(p);
@@ -492,6 +492,7 @@ static struct ast_node *var_def(struct parser *p)
         error(p, "redefinition of variable");
         return NULL;
     }
+    sym->data_type = TYP_INT;
 
     tree = new_node(NOD_VAR_DEF, NULL, NULL);
     tree->data.sym = sym;
@@ -592,7 +593,7 @@ static struct ast_node *func_def(struct parser *p)
 
     /* XXX limit 6 params */
     for (i = 0; i < 6; i++) {
-        const struct symbol *symparam = NULL;
+        struct symbol *symparam = NULL;
 
         tok = gettok(p);
         if (tok->kind != TK_INT) {
@@ -613,6 +614,7 @@ static struct ast_node *func_def(struct parser *p)
             error(p, "redefinition of parameter");
             return NULL;
         }
+        symparam->data_type = TYP_INT;
 
         params->data.sym = symparam;
         nparams++;

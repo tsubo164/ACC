@@ -1,6 +1,10 @@
 #ifndef SYMBOL_H
 #define SYMBOL_H
 
+enum symbol_data_type {
+    TYP_INT
+};
+
 enum symbol_kind {
     SYM_SCOPE_BEGIN,
     SYM_SCOPE_END,
@@ -14,6 +18,8 @@ struct symbol {
     int kind;
     int offset;
 
+    int data_type;
+    int local_var_id;
     int scope_level;
 };
 
@@ -23,6 +29,7 @@ struct symbol_table {
     int symbol_count;
     int nvars;
 
+    int local_var_id;
     int current_scope_level;
 };
 
@@ -31,7 +38,7 @@ extern void init_symbol_table(struct symbol_table *table);
 extern const struct symbol *lookup_symbol(const struct symbol_table *table,
         const char *name, enum symbol_kind kind);
 
-extern const struct symbol *insert_symbol(struct symbol_table *table,
+extern struct symbol *insert_symbol(struct symbol_table *table,
         const char *name, enum symbol_kind kind);
 
 extern int symbol_scope_begin(struct symbol_table *table);
