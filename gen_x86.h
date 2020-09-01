@@ -3,6 +3,6 @@
 
 #include "parse.h"
 
-extern void gen_x86(FILE *file, const struct ast_node *tree);
+extern void gen_x86(FILE *fp, const struct ast_node *tree);
 
 #endif /* _H */

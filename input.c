@@ -9,15 +9,14 @@ int add(int x, int y)
 {
     return x + y;
 }
-/*
-*/
 
 int main()
 {
     int a;
-    a = add(31, 13) + num()/**/;
-    //a = num();
-    //num();
+    a = add(31, 13) +  2 * num();
+    /*
+    a = num();
+    */
     /*
     a = 42;
     */
