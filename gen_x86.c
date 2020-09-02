@@ -3,7 +3,7 @@
 
 static int att_syntax = 1;
 
-enum data_size {
+enum data_tag {
     BYTE = 0,
     WORD,
     LONG,
@@ -11,19 +11,33 @@ enum data_size {
     NO_SUFFIX
 };
 
-static const int data_size_table[] = {
-    1,
-    2,
-    4,
-    8
+struct data_spec {
+    int size;
+    const char *suffix;
+    const char *directive;
 };
 
-static const char *directive_table[] = {
-    "byte  ptr",
-    "word  ptr",
-    "dword ptr",
-    "qword ptr"
+const struct data_spec data_spec_table[] = {
+    {1, "b", "byte  ptr"},
+    {2, "w", "word  ptr"},
+    {4, "l", "dword ptr"},
+    {8, "q", "qword ptr"}
 };
+
+static int get_data_size(int tag)
+{
+    return data_spec_table[tag].size;
+}
+
+static const char *get_data_suffix(int tag)
+{
+    return data_spec_table[tag].suffix;
+}
+
+static const char *get_data_directive(int tag)
+{
+    return data_spec_table[tag].directive;
+}
 
 /* register tables */
 static const char *A__[]  = {"al",  "ax", "eax", "rax"};
@@ -44,32 +58,41 @@ static const char *RDX__[]  = {"rdx",  "rdx", "rdx", "rdx"};
 static const char *RBP__[]  = {"rbp",  "rbp", "rbp", "rbp"};
 static const char *RSP__[]  = {"rsp",  "rsp", "rsp", "rsp"};
 
-/* mnemonic tables */
-static const char *MOV_[]  = {"movb",  "movw",  "movl",  "movq",  "mov" };
-static const char *ADD_[]  = {"addb",  "addw",  "addl",  "addq",  "add" };
-static const char *SUB_[]  = {"subb",  "subw",  "subl",  "subq",  "sub" };
-static const char *IMUL_[] = {"imulb", "imulw", "imull", "imulq", "imul" };
-static const char *IDIV_[] = {"idivb", "idivw", "idivl", "idivq", "idiv" };
-static const char *CMP_[]  = {"cmpb", "cmpw", "cmpl", "cmpq", "cmp" };
-static const char *POP_[]  = {"popb",  "popw",  "popl",  "popq",  "pop" };
-static const char *PUSH_[] = {"pushb", "pushw", "pushl", "pushq", "push"};
-static const char *CALL_[] = {"callb", "callw", "calll", "callq", "call"};
-static const char *RET_[]  = {"retb",  "retw",  "retl",  "retq",  "ret" };
-static const char *MOVZB_[]  = {"movzbb",  "movzbw",  "movzbl",  "movzbq",  "movzb" };
+struct opecode {
+    const char *mnemonic;
+    int has_suffix;
+};
 
-static const char *SETE_[]   = {"sete",  "sete",  "sete",  "sete",  "sete" };
-static const char *SETNE_[]  = {"setne",  "setne",  "setne",  "setne",  "setne" };
-static const char *SETL_[]   = {"setl",  "setl",  "setl",  "setl",  "setl" };
-static const char *SETG_[]   = {"setg",  "setg",  "setg",  "setg",  "setg" };
-static const char *SETLE_[]  = {"setle",  "setle",  "setle",  "setle",  "setle" };
-static const char *SETGE_[]  = {"setge",  "setge",  "setge",  "setge",  "setge" };
-static const char *CLTD_[]   = {"cltd",  "cltd",  "cltd",  "cltd",  "cltd" };
+/* opecodes */
+const struct opecode MOV_   = {"mov",   1};
+const struct opecode ADD_   = {"add",   1};
+const struct opecode SUB_   = {"sub",   1};
+const struct opecode IMUL_  = {"imul",  1};
+const struct opecode IDIV_  = {"idiv",  1};
+const struct opecode CMP_   = {"cmp",   1};
+const struct opecode POP_   = {"pop",   1};
+const struct opecode PUSH_  = {"push",  1};
+const struct opecode CALL_  = {"call",  1};
+const struct opecode RET_   = {"ret",   1};
+const struct opecode MOVZB_ = {"movzb", 1};
+
+const struct opecode JE_    = {"je",  0};
+const struct opecode JMP_   = {"jmp", 0};
+
+const struct opecode SETE_  = {"sete",  0};
+const struct opecode SETNE_ = {"setne", 0};
+const struct opecode SETL_  = {"setl",  0};
+const struct opecode SETG_  = {"setg",  0};
+const struct opecode SETLE_ = {"setle", 0};
+const struct opecode SETGE_ = {"setge", 0};
+const struct opecode CLTD_  = {"cltd",  0};
 
 enum operand_kind {
     OPR_NONE,
     OPR_REG,
     OPR_ADDR,
     OPR_IMME,
+    OPR_LABEL,
     OPR_STR
 };
 
@@ -79,6 +102,8 @@ struct operand {
     const char *string;
     long immediate;
     int disp;
+    int label_id;
+    int block_id;
 };
 
 /* dynamic name registers */
@@ -149,12 +174,44 @@ struct operand arg(int index)
     return o;
 }
 
-static const char *reg(const struct operand *oper, int suffix)
+/* .LBB1_2, ... */
+struct operand label(int block_id, int label_id)
 {
-    return oper->reg_table[suffix];
+    struct operand o = {0};
+    o.kind = OPR_LABEL;
+    o.block_id = block_id;
+    o.label_id = label_id;
+
+    return o;
 }
 
-static void code_operand__(FILE *fp, int suffix, const struct operand *oper)
+static const char *reg(const struct operand *oper, int tag)
+{
+    return oper->reg_table[tag];
+}
+
+static void gen_opecode__(FILE *fp, int tag, const struct opecode *op)
+{
+    int n = 0;
+    int pad = 0;
+    const char *sfx = "";
+
+    if (att_syntax) {
+        sfx = get_data_suffix(tag);
+    }
+
+    if (!op->has_suffix) {
+        sfx = "";
+    }
+
+    fprintf(fp, "%s%s%n", op->mnemonic, sfx, &n);
+
+    pad = n > 6 ? 0 : 6 - n;
+
+    fprintf(fp, "%*s", pad, "");
+}
+
+static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
 {
     switch (oper->kind) {
 
@@ -163,25 +220,25 @@ static void code_operand__(FILE *fp, int suffix, const struct operand *oper)
 
     case OPR_REG:
         if (att_syntax) {
-            fprintf(fp, "%%%s", reg(oper, suffix));
+            fprintf(fp, "%%%s", reg(oper, tag));
         } else {
-            fprintf(fp, "%s", reg(oper, suffix));
+            fprintf(fp, "%s", reg(oper, tag));
         }
         break;
 
     case OPR_ADDR:
         if (att_syntax) {
             if (oper->disp != 0) {
-                fprintf(fp, "%+d(%%%s)", oper->disp, reg(oper, suffix));
+                fprintf(fp, "%+d(%%%s)", oper->disp, reg(oper, tag));
             } else {
-                fprintf(fp, "(%%%s)", reg(oper, suffix));
+                fprintf(fp, "(%%%s)", reg(oper, tag));
             }
         } else {
             if (oper->disp != 0) {
                 fprintf(fp, "%s [%s%+d]",
-                    directive_table[suffix], reg(oper, suffix), oper->disp);
+                    get_data_directive(tag), reg(oper, tag), oper->disp);
             } else {
-                fprintf(fp, "%s [%s]", directive_table[suffix], reg(oper, suffix));
+                fprintf(fp, "%s [%s]", get_data_directive(tag), reg(oper, tag));
             }
         }
         break;
@@ -194,6 +251,10 @@ static void code_operand__(FILE *fp, int suffix, const struct operand *oper)
         }
         break;
 
+    case OPR_LABEL:
+        fprintf(fp, ".LBB%d_%d", oper->block_id, oper->label_id);
+        break;
+
     case OPR_STR:
         fprintf(fp, "_%s", oper->string);
         break;
@@ -203,23 +264,14 @@ static void code_operand__(FILE *fp, int suffix, const struct operand *oper)
     }
 }
 
-static void code__(FILE *fp, int suffix,
-        const char **op, const struct operand *oper1, const struct operand *oper2)
+static void code__(FILE *fp, int tag,
+        const struct opecode *op, const struct operand *oper1, const struct operand *oper2)
 {
     const struct operand *o1 = NULL, *o2 = NULL;
-    int sfx = NO_SUFFIX;
 
     fprintf(fp, "    ");
 
-    if (att_syntax) {
-        sfx = suffix;
-    }
-
-    if (oper1 == NULL && oper2 == NULL) {
-        fprintf(fp, "%s",   op[sfx]);
-    } else {
-        fprintf(fp, "%-5s", op[sfx]);
-    }
+    gen_opecode__(fp, tag, op);
 
     if (oper1 != NULL && oper2 == NULL) {
         o1 = oper1;
@@ -235,41 +287,44 @@ static void code__(FILE *fp, int suffix,
 
     if (o1) {
         fprintf(fp, " ");
-        code_operand__(fp, suffix, o1);
+        gen_operand__(fp, tag, o1);
     }
 
     if (o2) {
         fprintf(fp, ", ");
-        code_operand__(fp, suffix, o2);
+        gen_operand__(fp, tag, o2);
     }
 
     fprintf(fp, "\n");
 }
 
-static void code1(FILE *fp, int suffix,
-        const char **op)
+static void code1(FILE *fp, int tag,
+        struct opecode op)
 {
-    code__(fp, suffix, op, NULL, NULL);
+    struct opecode o0 = op;
+    code__(fp, tag, &o0, NULL, NULL);
 }
 
-static void code2(FILE *fp, int suffix,
-        const char **op, struct operand oper1)
+static void code2(FILE *fp, int tag,
+        struct opecode op, struct operand oper1)
 {
+    struct opecode o0 = op;
     struct operand o1 = oper1;
 
-    code__(fp, suffix, op, &o1, NULL);
+    code__(fp, tag, &o0, &o1, NULL);
 }
 
-static void code3(FILE *fp, int suffix,
-        const char **op, struct operand oper1, struct operand oper2)
+static void code3(FILE *fp, int tag,
+        struct opecode op, struct operand oper1, struct operand oper2)
 {
+    struct opecode o0 = op;
     struct operand o1 = oper1;
     struct operand o2 = oper2;
 
-    code__(fp, suffix, op, &o1, &o2);
+    code__(fp, tag, &o0, &o1, &o2);
 }
 
-static int get_suffix(const struct ast_node *node)
+static int get_data_tag_from_type(const struct ast_node *node)
 {
     int type;
 
@@ -294,20 +349,7 @@ static int get_local_var_id(const struct ast_node *node)
     return node->data.sym->local_var_id;
 }
 
-static int get_data_size(const struct ast_node *node)
-{
-    int suffix;
-
-    if (node == NULL) {
-        return 0;
-    }
-
-    suffix = get_suffix(node);
-
-    return data_size_table[suffix];
-}
-
-static int get_offset(const struct ast_node *node)
+static int get_mem_offset(const struct ast_node *node)
 {
     int size;
     int id;
@@ -316,7 +358,7 @@ static int get_offset(const struct ast_node *node)
         return 0;
     }
 
-    size = get_data_size(node);
+    size = get_data_size(get_data_tag_from_type(node));
     id = node->data.sym->local_var_id;
 
     /* id starts with 0 */
@@ -336,7 +378,7 @@ static int get_max_offset(const struct ast_node *node)
     max = l > r ? l : r;
 
     if (node->kind == NOD_VAR || node->kind == NOD_PARAM) {
-        const int offset = get_offset(node);
+        const int offset = get_mem_offset(node);
         return offset > max ? offset : max;
     } else {
         return max;
@@ -377,11 +419,11 @@ static void gen_params(FILE *fp, const struct ast_node *node)
     case NOD_PARAM:
         gen_params(fp, node->l);
         {
-            const int suffix = get_suffix(node);
+            const int tag = get_data_tag_from_type(node);
             const int index = get_local_var_id(node);
-            const int disp = -get_offset(node);
+            const int disp = -get_mem_offset(node);
 
-            code3(fp, suffix, MOV_, arg(index), addr2(RBP, disp));
+            code3(fp, tag, MOV_, arg(index), addr2(RBP, disp));
         }
         break;
 
@@ -395,6 +437,11 @@ static void gen_comment(FILE *fp, const char *cmt)
     fprintf(fp, "## %s\n", cmt);
 }
 
+static void gen_label(FILE *fp, int block_id, int label_id)
+{
+    fprintf(fp, ".LBB%d_%d:\n", block_id, label_id);
+}
+
 static void gen_lvalue(FILE *fp, const struct ast_node *node)
 {
     if (node == NULL) {
@@ -406,7 +453,7 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
     case NOD_PARAM:
     case NOD_VAR:
         code3(fp, QUAD, MOV_, BP_, A_);
-        code3(fp, QUAD, SUB_, imme(get_offset(node)), A_);
+        code3(fp, QUAD, SUB_, imme(get_mem_offset(node)), A_);
         break;
 
     case NOD_DEREF:
@@ -419,7 +466,7 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
     }
 }
 
-static void gen_relational(FILE *fp, const struct ast_node *node, const char **op)
+static void gen_relational(FILE *fp, const struct ast_node *node, struct opecode op)
 {
     gen_code(fp, node->l);
     code2(fp, QUAD, PUSH_, A_);
@@ -431,7 +478,7 @@ static void gen_relational(FILE *fp, const struct ast_node *node, const char **o
     code3(fp, QUAD, MOVZB_, AL, A_);
 }
 
-static void gen_equality(FILE *fp, const struct ast_node *node, const char **op)
+static void gen_equality(FILE *fp, const struct ast_node *node, struct opecode op)
 {
     gen_code(fp, node->l);
     code2(fp, QUAD, PUSH_, A_);
@@ -445,7 +492,7 @@ static void gen_equality(FILE *fp, const struct ast_node *node, const char **op)
 static void gen_code(FILE *fp, const struct ast_node *node)
 {
     static int reg_id = 0;
-    static int label_id = 0;
+    static int block_id = 0;
 
     if (node == NULL) {
         return;
@@ -466,27 +513,27 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_IF:
         /* if */
         gen_code(fp, node->l);
-        fprintf(fp, "  cmp rax, 0\n");
-        fprintf(fp, "  je .L%03d_0\n", label_id);
+        code3(fp, QUAD, CMP_, imme(0), A_);
+        code2(fp, QUAD, JE_,  label(block_id, 0));
         /* then */
         gen_code(fp, node->r->l);
-        fprintf(fp, "  jmp .L%03d_1\n", label_id);
+        code2(fp, QUAD, JMP_, label(block_id, 1));
         /* else */
-        fprintf(fp, ".L%03d_0:\n", label_id);
+        gen_label(fp, block_id, 0);
         gen_code(fp, node->r->r);
-        fprintf(fp, ".L%03d_1:\n", label_id);
-        label_id++;
+        gen_label(fp, block_id, 1);
+        block_id++;
         break;
 
     case NOD_WHILE:
-        fprintf(fp, ".L%03d_0:\n", label_id);
+        gen_label(fp, block_id, 0);
         gen_code(fp, node->l);
-        fprintf(fp, "  cmp rax, 0\n");
-        fprintf(fp, "  je .L%03d_1\n", label_id);
+        code3(fp, QUAD, CMP_, imme(0), A_);
+        code2(fp, QUAD, JE_,  label(block_id, 1));
         gen_code(fp, node->r);
-        fprintf(fp, "  jmp .L%03d_0\n", label_id);
-        fprintf(fp, ".L%03d_1:\n", label_id);
-        label_id++;
+        code2(fp, QUAD, JMP_, label(block_id, 0));
+        gen_label(fp, block_id, 1);
+        block_id++;
         break;
 
     case NOD_RETURN:
@@ -500,10 +547,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_PARAM:
     case NOD_VAR:
         {
-            const int suffix = get_suffix(node);
-            const int disp = -get_offset(node);
+            const int tag = get_data_tag_from_type(node);
+            const int disp = -get_mem_offset(node);
 
-            code3(fp, suffix, MOV_, addr2(RBP, disp), A_);
+            code3(fp, tag, MOV_, addr2(RBP, disp), A_);
         }
         break;
 
