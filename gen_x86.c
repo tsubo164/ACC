@@ -3,7 +3,7 @@
 
 static int att_syntax = 1;
 
-enum data_suffix {
+enum data_size {
     BYTE = 0,
     WORD,
     LONG,
@@ -25,30 +25,45 @@ static const char *directive_table[] = {
     "qword ptr"
 };
 
-static const char *AX__[]  = {"al",  "ax", "eax", "rax"};
-static const char *BX__[]  = {"bl",  "bx", "ebx", "rbx"};
-static const char *CX__[]  = {"cl",  "cx", "ecx", "rcx"};
-static const char *DX__[]  = {"dl",  "dx", "edx", "rdx"};
+/* register tables */
+static const char *A__[]  = {"al",  "ax", "eax", "rax"};
+static const char *B__[]  = {"bl",  "bx", "ebx", "rbx"};
+static const char *C__[]  = {"cl",  "cx", "ecx", "rcx"};
+static const char *D__[]  = {"dl",  "dx", "edx", "rdx"};
 static const char *SI__[]  = {"sil", "si", "esi", "rsi"};
 static const char *DI__[]  = {"dil", "di", "edi", "rdi"};
 static const char *BP__[]  = {"bpl", "bp", "ebp", "rbp"};
 static const char *SP__[]  = {"spl", "sp", "esp", "rsp"};
 static const char *R8__[]  = {"r8b", "r8w", "r8d", "r8"};
 static const char *R9__[]  = {"r9b", "r9w", "r9d", "r9"};
+static const char **ARG_REG__[] = {DI__, SI__, D__, C__, R8__, R9__};
+
+static const char *AL__[]   = {"al",  "al", "al", "al"};
+static const char *RAX__[]  = {"rax",  "rax", "rax", "rax"};
+static const char *RDX__[]  = {"rdx",  "rdx", "rdx", "rdx"};
+static const char *RBP__[]  = {"rbp",  "rbp", "rbp", "rbp"};
+static const char *RSP__[]  = {"rsp",  "rsp", "rsp", "rsp"};
+
+/* mnemonic tables */
 static const char *MOV_[]  = {"movb",  "movw",  "movl",  "movq",  "mov" };
 static const char *ADD_[]  = {"addb",  "addw",  "addl",  "addq",  "add" };
 static const char *SUB_[]  = {"subb",  "subw",  "subl",  "subq",  "sub" };
 static const char *IMUL_[] = {"imulb", "imulw", "imull", "imulq", "imul" };
+static const char *IDIV_[] = {"idivb", "idivw", "idivl", "idivq", "idiv" };
+static const char *CMP_[]  = {"cmpb", "cmpw", "cmpl", "cmpq", "cmp" };
 static const char *POP_[]  = {"popb",  "popw",  "popl",  "popq",  "pop" };
 static const char *PUSH_[] = {"pushb", "pushw", "pushl", "pushq", "push"};
 static const char *CALL_[] = {"callb", "callw", "calll", "callq", "call"};
 static const char *RET_[]  = {"retb",  "retw",  "retl",  "retq",  "ret" };
-static const char **ARG_REG__[] = {DI__, SI__, DX__, CX__, R8__, R9__};
+static const char *MOVZB_[]  = {"movzbb",  "movzbw",  "movzbl",  "movzbq",  "movzb" };
 
-static const char *RAX__[] = {"rax", "rax", "rax", "rax"};
-static const char *RDX__[] = {"rdx", "rdx", "rdx", "rdx"};
-static const char *RBP__[] = {"rbp", "rbp", "rbp", "rbp"};
-static const char *RSP__[] = {"rsp", "rsp", "rsp", "rsp"};
+static const char *SETE_[]   = {"sete",  "sete",  "sete",  "sete",  "sete" };
+static const char *SETNE_[]  = {"setne",  "setne",  "setne",  "setne",  "setne" };
+static const char *SETL_[]   = {"setl",  "setl",  "setl",  "setl",  "setl" };
+static const char *SETG_[]   = {"setg",  "setg",  "setg",  "setg",  "setg" };
+static const char *SETLE_[]  = {"setle",  "setle",  "setle",  "setle",  "setle" };
+static const char *SETGE_[]  = {"setge",  "setge",  "setge",  "setge",  "setge" };
+static const char *CLTD_[]   = {"cltd",  "cltd",  "cltd",  "cltd",  "cltd" };
 
 enum operand_kind {
     OPR_NONE,
@@ -66,19 +81,23 @@ struct operand {
     int disp;
 };
 
-const struct operand AX_ = {OPR_REG, AX__, 0, 0};
-const struct operand BX_ = {OPR_REG, BX__, 0, 0};
-const struct operand CX_ = {OPR_REG, CX__, 0, 0};
-const struct operand DX_ = {OPR_REG, DX__, 0, 0};
-const struct operand SI_ = {OPR_REG, SI__, 0, 0};
-const struct operand DI_ = {OPR_REG, DI__, 0, 0};
-const struct operand BP_ = {OPR_REG, BP__, 0, 0};
-const struct operand SP_ = {OPR_REG, SP__, 0, 0};
+/* dynamic name registers */
+const struct operand A_  = {OPR_REG, A__,  NULL, 0, 0};
+const struct operand B_  = {OPR_REG, B__,  NULL, 0, 0};
+const struct operand C_  = {OPR_REG, C__,  NULL, 0, 0};
+const struct operand D_  = {OPR_REG, D__,  NULL, 0, 0};
+const struct operand SI_ = {OPR_REG, SI__, NULL, 0, 0};
+const struct operand DI_ = {OPR_REG, DI__, NULL, 0, 0};
+const struct operand BP_ = {OPR_REG, BP__, NULL, 0, 0};
+const struct operand SP_ = {OPR_REG, SP__, NULL, 0, 0};
 
-const struct operand RAX = {OPR_REG, RAX__, 0, 0};
-const struct operand RDX = {OPR_REG, RDX__, 0, 0};
-const struct operand RBP = {OPR_REG, RBP__, 0, 0};
-const struct operand RSP = {OPR_REG, RSP__, 0, 0};
+/* static name registers */
+const struct operand AL  = {OPR_REG, AL__, NULL, 0, 0};
+
+const struct operand RAX = {OPR_REG, RAX__, NULL, 0, 0};
+const struct operand RDX = {OPR_REG, RDX__, NULL, 0, 0};
+const struct operand RBP = {OPR_REG, RBP__, NULL, 0, 0};
+const struct operand RSP = {OPR_REG, RSP__, NULL, 0, 0};
 
 /* 2, 0x8, ... */
 struct operand imme(long value)
@@ -130,6 +149,11 @@ struct operand arg(int index)
     return o;
 }
 
+static const char *reg(const struct operand *oper, int suffix)
+{
+    return oper->reg_table[suffix];
+}
+
 static void code_operand__(FILE *fp, int suffix, const struct operand *oper)
 {
     switch (oper->kind) {
@@ -139,25 +163,25 @@ static void code_operand__(FILE *fp, int suffix, const struct operand *oper)
 
     case OPR_REG:
         if (att_syntax) {
-            fprintf(fp, "%%%s", oper->reg_table[suffix]);
+            fprintf(fp, "%%%s", reg(oper, suffix));
         } else {
-            fprintf(fp, "%s", oper->reg_table[suffix]);
+            fprintf(fp, "%s", reg(oper, suffix));
         }
         break;
 
     case OPR_ADDR:
         if (att_syntax) {
             if (oper->disp != 0) {
-                fprintf(fp, "%+d(%%%s)", oper->disp, oper->reg_table[suffix]);
+                fprintf(fp, "%+d(%%%s)", oper->disp, reg(oper, suffix));
             } else {
-                fprintf(fp, "(%%%s)", oper->reg_table[suffix]);
+                fprintf(fp, "(%%%s)", reg(oper, suffix));
             }
         } else {
             if (oper->disp != 0) {
                 fprintf(fp, "%s [%s%+d]",
-                    directive_table[suffix], oper->reg_table[suffix], oper->disp);
+                    directive_table[suffix], reg(oper, suffix), oper->disp);
             } else {
-                fprintf(fp, "%s [%s]", directive_table[suffix], oper->reg_table[suffix]);
+                fprintf(fp, "%s [%s]", directive_table[suffix], reg(oper, suffix));
             }
         }
         break;
@@ -339,6 +363,9 @@ static void print_global_funcs(FILE *fp, const struct ast_node *node)
     }
 }
 
+/* forward declaration */
+static void gen_code(FILE *fp, const struct ast_node *node);
+
 static void gen_params(FILE *fp, const struct ast_node *node)
 {
     if (node == NULL) {
@@ -363,8 +390,6 @@ static void gen_params(FILE *fp, const struct ast_node *node)
     }
 }
 
-static void gen_code(FILE *fp, const struct ast_node *node);
-
 static void gen_comment(FILE *fp, const char *cmt)
 {
     fprintf(fp, "## %s\n", cmt);
@@ -380,12 +405,8 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
 
     case NOD_PARAM:
     case NOD_VAR:
-        /*
-        fprintf(fp, "  mov rax, rbp\n");
-        fprintf(fp, "  sub rax, %d\n", get_offset(node));
-        */
-        code3(fp, QUAD, MOV_, BP_, AX_);
-        code3(fp, QUAD, SUB_, imme(get_offset(node)), AX_);
+        code3(fp, QUAD, MOV_, BP_, A_);
+        code3(fp, QUAD, SUB_, imme(get_offset(node)), A_);
         break;
 
     case NOD_DEREF:
@@ -396,6 +417,29 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
         gen_comment(fp, "this is not a lvalue");
         break;
     }
+}
+
+static void gen_relational(FILE *fp, const struct ast_node *node, const char **op)
+{
+    gen_code(fp, node->l);
+    code2(fp, QUAD, PUSH_, A_);
+    gen_code(fp, node->r);
+    code3(fp, QUAD, MOV_, A_, D_);
+    code2(fp, QUAD, POP_, A_);
+    code3(fp, QUAD, CMP_, D_, A_);
+    code2(fp, QUAD, op, AL);
+    code3(fp, QUAD, MOVZB_, AL, A_);
+}
+
+static void gen_equality(FILE *fp, const struct ast_node *node, const char **op)
+{
+    gen_code(fp, node->l);
+    code2(fp, QUAD, PUSH_, A_);
+    gen_code(fp, node->r);
+    code2(fp, QUAD, POP_, D_);
+    code3(fp, QUAD, CMP_, D_, A_);
+    code2(fp, QUAD, op,   AL);
+    code3(fp, QUAD, MOVZB_, AL, A_);
 }
 
 static void gen_code(FILE *fp, const struct ast_node *node)
@@ -447,15 +491,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_RETURN:
         gen_code(fp, node->l);
-        /* XXX size based on return type */
+        /* XXX type */
         code3(fp, QUAD, MOV_, RBP, RSP);
         code2(fp, QUAD, POP_, RBP);
         code1(fp, QUAD, RET_);
-        /*
-        fprintf(fp, "  mov rsp, rbp\n");
-        fprintf(fp, "  pop rbp\n");
-        fprintf(fp, "  ret\n");
-        */
         break;
 
     case NOD_PARAM:
@@ -464,7 +503,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             const int suffix = get_suffix(node);
             const int disp = -get_offset(node);
 
-            code3(fp, suffix, MOV_, addr2(RBP, disp), AX_);
+            code3(fp, suffix, MOV_, addr2(RBP, disp), A_);
         }
         break;
 
@@ -474,27 +513,17 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_CALL:
         reg_id = 0;
         gen_code(fp, node->l);
-        /*
-        fprintf(fp, "  call _%s\n", node->data.sym->name);
-        */
         code2(fp, QUAD, CALL_, str(node->data.sym->name));
         break;
 
     case NOD_ARG:
         gen_code(fp, node->l);
         gen_code(fp, node->r);
-        /*
-        fprintf(fp, "  mov %s, rax\n", argreg[reg_id++]);
-        */
-        code3(fp, QUAD, MOV_, AX_, arg(reg_id++));
+        code3(fp, QUAD, MOV_, A_, arg(reg_id++));
         break;
 
     case NOD_FUNC_DEF:
         fprintf(fp, "_%s:\n", node->data.sym->name);
-        /*
-        fprintf(fp, "    push    rbp\n");
-        fprintf(fp, "    mov     rbp, rsp\n");
-        */
         code2(fp, QUAD, PUSH_, RBP);
         code3(fp, QUAD, MOV_,  RSP, RBP);
         {
@@ -504,9 +533,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
                 if (max_offset % 16 > 0) {
                     max_offset += 16 - max_offset % 16;
                 }
-                /*
-                fprintf(fp, "  sub  rsp, %d\n", max_offset);
-                */
                 code3(fp, QUAD, SUB_, imme(max_offset), RSP);
             }
         }
@@ -516,18 +542,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_ASSIGN:
         gen_lvalue(fp, node->l);
-
-        /*
-        fprintf(fp, "  push rax\n");
-        gen_code(fp, node->r);
-        fprintf(fp, "  pop rdx\n");
-        fprintf(fp, "  mov  dword ptr[rdx], eax\n");
-        */
-        /* XXX */
+        /* XXX type */
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
         code2(fp, QUAD, POP_,  RDX);
-        code3(fp, LONG, MOV_, AX_, addr1(RDX));
+        code3(fp, LONG, MOV_, A_, addr1(RDX));
         break;
 
     case NOD_ADDR:
@@ -540,123 +559,66 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_NUM:
-        /*
-        fprintf(fp, "  mov rax, %d\n", node->data.ival);
-        */
-        code3(fp, QUAD, MOV_, imme(node->data.ival), AX_);
+        code3(fp, QUAD, MOV_, imme(node->data.ival), A_);
         break;
 
     case NOD_ADD:
         gen_code(fp, node->l);
-        /*
-        fprintf(fp, "  push rax\n");
-        */
-        code2(fp, QUAD, PUSH_, AX_);
+        code2(fp, QUAD, PUSH_, A_);
         gen_code(fp, node->r);
-        /*
-        fprintf(fp, "  pop rdx\n");
-        fprintf(fp, "  add rax, rdx\n");
-        */
-        code2(fp, QUAD, POP_, DX_);
-        code3(fp, QUAD, ADD_, DX_, AX_);
+        code2(fp, QUAD, POP_, D_);
+        code3(fp, QUAD, ADD_, D_, A_);
         break;
 
     case NOD_SUB:
         gen_code(fp, node->l);
-        fprintf(fp, "  push rax\n");
+        code2(fp, QUAD, PUSH_, A_);
         gen_code(fp, node->r);
-        fprintf(fp, "  mov rdx, rax\n");
-        fprintf(fp, "  pop rax\n");
-        fprintf(fp, "  sub rax, rdx\n");
+        code3(fp, QUAD, MOV_, A_, D_);
+        code2(fp, QUAD, POP_, A_);
+        code3(fp, QUAD, SUB_, D_, A_);
         break;
 
     case NOD_MUL:
         gen_code(fp, node->l);
-        /*
-        fprintf(fp, "  push rax\n");
-        */
-        code2(fp, QUAD, PUSH_, AX_);
+        code2(fp, QUAD, PUSH_, A_);
         gen_code(fp, node->r);
-        /*
-        fprintf(fp, "  pop rdx\n");
-        fprintf(fp, "  imul rax, rdx\n");
-        */
-        code2(fp, QUAD, POP_,  DX_);
-        code3(fp, QUAD, IMUL_, DX_, AX_);
+        code2(fp, QUAD, POP_,  D_);
+        code3(fp, QUAD, IMUL_, D_, A_);
         break;
 
     case NOD_DIV:
         gen_code(fp, node->l);
-        fprintf(fp, "  push rax\n");
+        code2(fp, QUAD, PUSH_, A_);
         gen_code(fp, node->r);
-        fprintf(fp, "  mov rdi, rax\n");
-        fprintf(fp, "  pop rax\n");
-        fprintf(fp, "  cqo\n");
-        fprintf(fp, "  idiv rdi\n");
+        code3(fp, QUAD, MOV_, A_, DI_);
+        code2(fp, QUAD, POP_, A_);
+        code1(fp, QUAD, CLTD_); /* rax -> rdx:rax */
+        code2(fp, QUAD, IDIV_, DI_);
         break;
 
     case NOD_LT:
-        gen_code(fp, node->l);
-        fprintf(fp, "  push rax\n");
-        gen_code(fp, node->r);
-        fprintf(fp, "  mov rdx, rax\n");
-        fprintf(fp, "  pop rax\n");
-        fprintf(fp, "  cmp rax, rdx\n");
-        fprintf(fp, "  setl al\n");
-        fprintf(fp, "  movzx rax, al\n");
+        gen_relational(fp, node, SETL_);
         break;
 
     case NOD_GT:
-        gen_code(fp, node->l);
-        fprintf(fp, "  push rax\n");
-        gen_code(fp, node->r);
-        fprintf(fp, "  mov rdx, rax\n");
-        fprintf(fp, "  pop rax\n");
-        fprintf(fp, "  cmp rax, rdx\n");
-        fprintf(fp, "  setg al\n");
-        fprintf(fp, "  movzx rax, al\n");
+        gen_relational(fp, node, SETG_);
         break;
 
     case NOD_LE:
-        gen_code(fp, node->l);
-        fprintf(fp, "  push rax\n");
-        gen_code(fp, node->r);
-        fprintf(fp, "  mov rdx, rax\n");
-        fprintf(fp, "  pop rax\n");
-        fprintf(fp, "  cmp rax, rdx\n");
-        fprintf(fp, "  setle al\n");
-        fprintf(fp, "  movzx rax, al\n");
+        gen_relational(fp, node, SETLE_);
         break;
 
     case NOD_GE:
-        gen_code(fp, node->l);
-        fprintf(fp, "  push rax\n");
-        gen_code(fp, node->r);
-        fprintf(fp, "  mov rdx, rax\n");
-        fprintf(fp, "  pop rax\n");
-        fprintf(fp, "  cmp rax, rdx\n");
-        fprintf(fp, "  setge al\n");
-        fprintf(fp, "  movzx rax, al\n");
+        gen_relational(fp, node, SETGE_);
         break;
 
     case NOD_EQ:
-        gen_code(fp, node->l);
-        fprintf(fp, "  push rax\n");
-        gen_code(fp, node->r);
-        fprintf(fp, "  pop rdx\n");
-        fprintf(fp, "  cmp rax, rdx\n");
-        fprintf(fp, "  sete al\n");
-        fprintf(fp, "  movzx rax, al\n");
+        gen_equality(fp, node, SETE_);
         break;
 
     case NOD_NE:
-        gen_code(fp, node->l);
-        fprintf(fp, "  push rax\n");
-        gen_code(fp, node->r);
-        fprintf(fp, "  pop rdx\n");
-        fprintf(fp, "  cmp rax, rdx\n");
-        fprintf(fp, "  setne al\n");
-        fprintf(fp, "  movzx rax, al\n");
+        gen_equality(fp, node, SETNE_);
         break;
 
     default:
