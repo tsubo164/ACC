@@ -1,41 +1,14 @@
-int foo()
-{
-    int i;
-    i = 0;
-
-    while (i < 10) {
-        i = 2 * i + 1;
-    }
-
-    return i; /* 15 */
-}
-
-int num()
-{
-    int n;
-    n = 7;
-    return n;
-}
-
-int add(int x, int y)
-{
-    return x + y;
-}
-
 int main()
 {
     int a;
-    int b;
-    int c;
-    int d;
+    int *b;
 
-    a = add(21, 7) +  2 * num(); /* 42 */
+    a = 40;
+    b = &a;
 
-    b = 42 / num() < 7; /* 1 */
+    *b = *b + 2;
 
-    c = foo() > 14; /* 1 */
-
-    if (a + b + c == 44)
+    if (a == 42)
         return 0;
     else
         return 1;

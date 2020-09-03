@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "gen_x86.h"
 
 static int att_syntax = 1;
@@ -20,7 +21,10 @@ struct data_spec {
 const struct data_spec data_spec_table[] = {
     {1, "b", "byte  ptr"},
     {2, "w", "word  ptr"},
+    {8, "q", "qword ptr"},
+    /* XXX type
     {4, "l", "dword ptr"},
+    */
     {8, "q", "qword ptr"}
 };
 
@@ -44,19 +48,19 @@ static const char *A__[]  = {"al",  "ax", "eax", "rax"};
 static const char *B__[]  = {"bl",  "bx", "ebx", "rbx"};
 static const char *C__[]  = {"cl",  "cx", "ecx", "rcx"};
 static const char *D__[]  = {"dl",  "dx", "edx", "rdx"};
-static const char *SI__[]  = {"sil", "si", "esi", "rsi"};
-static const char *DI__[]  = {"dil", "di", "edi", "rdi"};
-static const char *BP__[]  = {"bpl", "bp", "ebp", "rbp"};
-static const char *SP__[]  = {"spl", "sp", "esp", "rsp"};
-static const char *R8__[]  = {"r8b", "r8w", "r8d", "r8"};
-static const char *R9__[]  = {"r9b", "r9w", "r9d", "r9"};
+static const char *SI__[] = {"sil", "si", "esi", "rsi"};
+static const char *DI__[] = {"dil", "di", "edi", "rdi"};
+static const char *BP__[] = {"bpl", "bp", "ebp", "rbp"};
+static const char *SP__[] = {"spl", "sp", "esp", "rsp"};
+static const char *R8__[] = {"r8b", "r8w", "r8d", "r8"};
+static const char *R9__[] = {"r9b", "r9w", "r9d", "r9"};
 static const char **ARG_REG__[] = {DI__, SI__, D__, C__, R8__, R9__};
 
-static const char *AL__[]   = {"al",  "al", "al", "al"};
-static const char *RAX__[]  = {"rax",  "rax", "rax", "rax"};
-static const char *RDX__[]  = {"rdx",  "rdx", "rdx", "rdx"};
-static const char *RBP__[]  = {"rbp",  "rbp", "rbp", "rbp"};
-static const char *RSP__[]  = {"rsp",  "rsp", "rsp", "rsp"};
+static const char *AL__[]  = {"al",  "al", "al", "al"};
+static const char *RAX__[] = {"rax",  "rax", "rax", "rax"};
+static const char *RDX__[] = {"rdx",  "rdx", "rdx", "rdx"};
+static const char *RBP__[] = {"rbp",  "rbp", "rbp", "rbp"};
+static const char *RSP__[] = {"rsp",  "rsp", "rsp", "rsp"};
 
 struct opecode {
     const char *mnemonic;
@@ -192,7 +196,7 @@ static const char *reg(const struct operand *oper, int tag)
 
 static void gen_opecode__(FILE *fp, int tag, const struct opecode *op)
 {
-    int n = 0;
+    int len = 0;
     int pad = 0;
     const char *sfx = "";
 
@@ -204,9 +208,10 @@ static void gen_opecode__(FILE *fp, int tag, const struct opecode *op)
         sfx = "";
     }
 
-    fprintf(fp, "%s%s%n", op->mnemonic, sfx, &n);
+    fprintf(fp, "%s%s", op->mnemonic, sfx);
 
-    pad = n > 6 ? 0 : 6 - n;
+    len = strlen(op->mnemonic) + strlen(sfx);
+    pad = len > 6 ? 0 : 6 - len;
 
     fprintf(fp, "%*s", pad, "");
 }
@@ -423,7 +428,10 @@ static void gen_params(FILE *fp, const struct ast_node *node)
             const int index = get_local_var_id(node);
             const int disp = -get_mem_offset(node);
 
+            /* XXX type
             code3(fp, tag, MOV_, arg(index), addr2(RBP, disp));
+            */
+            code3(fp, QUAD, MOV_, arg(index), addr2(RBP, disp));
         }
         break;
 
@@ -550,7 +558,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             const int tag = get_data_tag_from_type(node);
             const int disp = -get_mem_offset(node);
 
+            /* XXX type */
+            /*
             code3(fp, tag, MOV_, addr2(RBP, disp), A_);
+            */
+            code3(fp, QUAD, MOV_, addr2(RBP, disp), A_);
         }
         break;
 
@@ -593,7 +605,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
         code2(fp, QUAD, POP_,  RDX);
-        code3(fp, LONG, MOV_, A_, addr1(RDX));
+        code3(fp, QUAD, MOV_, A_, addr1(RDX));
         break;
 
     case NOD_ADDR:
@@ -602,7 +614,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_DEREF:
         gen_code(fp, node->l);
-        fprintf(fp, "  mov rax, [rax]\n");
+        code3(fp, QUAD, MOV_, addr1(A_), A_);
         break;
 
     case NOD_NUM:
