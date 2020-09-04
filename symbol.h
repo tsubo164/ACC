@@ -1,6 +1,9 @@
 #ifndef SYMBOL_H
 #define SYMBOL_H
 
+/* XXX */
+struct data_type;
+
 enum symbol_data_type {
     TYP_INT
 };
@@ -18,6 +21,7 @@ struct symbol {
     int kind;
     int offset;
 
+    const struct data_type *dtype;
     int data_type;
     int local_var_id;
     int scope_level;

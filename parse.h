@@ -46,8 +46,12 @@ enum ast_node_kind {
     NOD_NE
 };
 
+/* XXX */
+struct data_type;
+
 struct ast_node {
     enum ast_node_kind kind;
+    const struct data_type *dtype;
     struct ast_node *l;
     struct ast_node *r;
     union {
@@ -59,5 +63,19 @@ struct ast_node {
 extern void parser_init(struct parser *p);
 
 extern struct ast_node *parse(struct parser *p);
+
+enum data_type_kind {
+    DATA_TYPE_VOID,
+    DATA_TYPE_INT,
+    DATA_TYPE_PTR
+};
+
+struct data_type {
+    int kind;
+    int size;
+};
+
+extern const struct data_type *type_void();
+extern const struct data_type *type_int();
 
 #endif /* _H */

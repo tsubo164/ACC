@@ -26,6 +26,28 @@ static int scope_end(struct parser *p)
     return symbol_scope_end(&p->symtbl);
 }
 
+static const struct data_type *promote_data_type(
+        const struct ast_node *n1, const struct ast_node *n2)
+{
+    if (!n1 && !n2) {
+        return type_void();
+    }
+
+    if (!n1) {
+        return n2->dtype;
+    }
+
+    if (!n2) {
+        return n1->dtype;
+    }
+
+    if (n1->dtype->kind > n2->dtype->kind) {
+        return n1->dtype;
+    } else {
+        return n2->dtype;
+    }
+}
+
 static struct ast_node *new_node(enum ast_node_kind kind,
         struct ast_node *l, struct ast_node *r)
 {
@@ -34,6 +56,8 @@ static struct ast_node *new_node(enum ast_node_kind kind,
     n->l = l;
     n->r = r;
     n->data.ival = 0;
+
+    n->dtype = promote_data_type(l, r);
 
     return n;
 }
@@ -145,6 +169,7 @@ static struct ast_node *primary_expression(struct parser *p)
         /* XXX base = new_number(tok->value); */
         base = new_node(NOD_NUM, NULL, NULL);
         base->data.ival = tok->value;
+        base->dtype = type_int();
         return base;
 
     case TK_IDENT:
@@ -160,7 +185,12 @@ static struct ast_node *primary_expression(struct parser *p)
             }
 
             for (;;) {
-                base = new_node(NOD_ARG, base, expression(p));
+                struct ast_node *expr = expression(p);
+                if (expr == NULL) {
+                    break;
+                }
+
+                base = new_node(NOD_ARG, base, expr);
                 tok = gettok(p);
                 if (tok->kind != ',') {
                     ungettok(p);
@@ -171,6 +201,7 @@ static struct ast_node *primary_expression(struct parser *p)
             expect_or_error(p, ')', "missing ')' after function call");
             base = new_node(NOD_CALL, base, NULL);
             base->data.sym = sym;
+            base->dtype = sym->dtype;
             return base;
         } else {
             const struct symbol *sym;
@@ -187,6 +218,7 @@ static struct ast_node *primary_expression(struct parser *p)
                 base->kind = NOD_PARAM;
             }
             base->data.sym = sym;
+            base->dtype = sym->dtype;
         }
         return base;
 
@@ -493,6 +525,7 @@ static struct ast_node *var_def(struct parser *p)
         return NULL;
     }
     sym->data_type = TYP_INT;
+    sym->dtype = type_int();
 
     tree = new_node(NOD_VAR_DEF, NULL, NULL);
     tree->data.sym = sym;
@@ -562,7 +595,7 @@ static struct ast_node *func_def(struct parser *p)
 {
     struct ast_node *tree = NULL;
     struct ast_node *params = NULL;
-    const struct symbol *sym = NULL;
+    struct symbol *sym = NULL;
     const struct token *tok = NULL;
     int nparams = 0;
     int i;
@@ -585,6 +618,7 @@ static struct ast_node *func_def(struct parser *p)
         return NULL;
     }
 
+    sym->dtype = type_int();
     tree->data.sym = sym;
 
     expect_or_error(p, '(', "missing '(' after function name");
@@ -615,6 +649,7 @@ static struct ast_node *func_def(struct parser *p)
             return NULL;
         }
         symparam->data_type = TYP_INT;
+        symparam->dtype = type_int();
 
         params->data.sym = symparam;
         nparams++;
@@ -659,4 +694,17 @@ struct ast_node *parse(struct parser *p)
             return tree;
         }
     }
+}
+
+static const struct data_type VOID_ = {DATA_TYPE_VOID, 0};
+static const struct data_type INT_  = {DATA_TYPE_INT,  4};
+
+const struct data_type *type_void()
+{
+    return &VOID_;
+}
+
+const struct data_type *type_int()
+{
+    return &INT_;
 }

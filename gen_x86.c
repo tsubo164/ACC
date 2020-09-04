@@ -5,11 +5,11 @@
 static int att_syntax = 1;
 
 enum data_tag {
+    VARI = -1, /* variable based on context */
     BYTE = 0,
     WORD,
     LONG,
-    QUAD,
-    NO_SUFFIX
+    QUAD
 };
 
 struct data_spec {
@@ -21,10 +21,7 @@ struct data_spec {
 const struct data_spec data_spec_table[] = {
     {1, "b", "byte  ptr"},
     {2, "w", "word  ptr"},
-    {8, "q", "qword ptr"},
-    /* XXX type
     {4, "l", "dword ptr"},
-    */
     {8, "q", "qword ptr"}
 };
 
@@ -55,12 +52,6 @@ static const char *SP__[] = {"spl", "sp", "esp", "rsp"};
 static const char *R8__[] = {"r8b", "r8w", "r8d", "r8"};
 static const char *R9__[] = {"r9b", "r9w", "r9d", "r9"};
 static const char **ARG_REG__[] = {DI__, SI__, D__, C__, R8__, R9__};
-
-static const char *AL__[]  = {"al",  "al", "al", "al"};
-static const char *RAX__[] = {"rax",  "rax", "rax", "rax"};
-static const char *RDX__[] = {"rdx",  "rdx", "rdx", "rdx"};
-static const char *RBP__[] = {"rbp",  "rbp", "rbp", "rbp"};
-static const char *RSP__[] = {"rsp",  "rsp", "rsp", "rsp"};
 
 struct opecode {
     const char *mnemonic;
@@ -102,6 +93,7 @@ enum operand_kind {
 
 struct operand {
     int kind;
+    int data_tag;
     const char **reg_table;
     const char *string;
     long immediate;
@@ -109,29 +101,30 @@ struct operand {
     int label_id;
     int block_id;
 };
+#define INIT_OPERAND {OPR_NONE, VARI}
 
-/* dynamic name registers */
-const struct operand A_  = {OPR_REG, A__,  NULL, 0, 0};
-const struct operand B_  = {OPR_REG, B__,  NULL, 0, 0};
-const struct operand C_  = {OPR_REG, C__,  NULL, 0, 0};
-const struct operand D_  = {OPR_REG, D__,  NULL, 0, 0};
-const struct operand SI_ = {OPR_REG, SI__, NULL, 0, 0};
-const struct operand DI_ = {OPR_REG, DI__, NULL, 0, 0};
-const struct operand BP_ = {OPR_REG, BP__, NULL, 0, 0};
-const struct operand SP_ = {OPR_REG, SP__, NULL, 0, 0};
+/* variable name registers */
+const struct operand A_  = {OPR_REG, VARI, A__};
+const struct operand B_  = {OPR_REG, VARI, B__};
+const struct operand C_  = {OPR_REG, VARI, C__};
+const struct operand D_  = {OPR_REG, VARI, D__};
+const struct operand SI_ = {OPR_REG, VARI, SI__};
+const struct operand DI_ = {OPR_REG, VARI, DI__};
+const struct operand BP_ = {OPR_REG, VARI, BP__};
+const struct operand SP_ = {OPR_REG, VARI, SP__};
 
-/* static name registers */
-const struct operand AL  = {OPR_REG, AL__, NULL, 0, 0};
+/* fixed name registers */
+const struct operand AL  = {OPR_REG, BYTE, A__};
 
-const struct operand RAX = {OPR_REG, RAX__, NULL, 0, 0};
-const struct operand RDX = {OPR_REG, RDX__, NULL, 0, 0};
-const struct operand RBP = {OPR_REG, RBP__, NULL, 0, 0};
-const struct operand RSP = {OPR_REG, RSP__, NULL, 0, 0};
+const struct operand RAX = {OPR_REG, QUAD, A__};
+const struct operand RDX = {OPR_REG, QUAD, D__};
+const struct operand RBP = {OPR_REG, QUAD, BP__};
+const struct operand RSP = {OPR_REG, QUAD, SP__};
 
 /* 2, 0x8, ... */
 struct operand imme(long value)
 {
-    struct operand o = {0};
+    struct operand o = INIT_OPERAND;
     o.kind = OPR_IMME;
     o.immediate = value;
 
@@ -161,7 +154,7 @@ struct operand addr2(struct operand oper, int disp)
 /* _main, .L001, ... */
 struct operand str(const char *value)
 {
-    struct operand o = {0};
+    struct operand o = INIT_OPERAND;
     o.kind = OPR_STR;
     o.string = value;
 
@@ -171,7 +164,7 @@ struct operand str(const char *value)
 /* rdi, rsi, ... */
 struct operand arg(int index)
 {
-    struct operand o = {0};
+    struct operand o = INIT_OPERAND;
     o.kind = OPR_REG;
     o.reg_table = ARG_REG__[index];
 
@@ -191,13 +184,35 @@ struct operand label(int block_id, int label_id)
 
 static const char *reg(const struct operand *oper, int tag)
 {
-    return oper->reg_table[tag];
+    if (oper->data_tag == VARI) {
+        return oper->reg_table[tag];
+    } else {
+        return oper->reg_table[oper->data_tag];
+    }
 }
 
-static void gen_opecode__(FILE *fp, int tag, const struct opecode *op)
+static int promote_tag(int tag, const struct operand *oper)
+{
+    int t;
+
+    if (oper == NULL) {
+        return tag;
+    }
+
+    /* register that holds address doesn't affect promotion
+     * as we don't know the size of data the address points to
+     */
+    if (oper->kind == OPR_ADDR) {
+        return tag;
+    }
+
+    t = oper->data_tag;
+    return tag > t ? tag : t;
+}
+
+static void gen_opecode__(FILE *fp, int tag, const struct opecode *op, int *nchars)
 {
     int len = 0;
-    int pad = 0;
     const char *sfx = "";
 
     if (att_syntax) {
@@ -211,9 +226,8 @@ static void gen_opecode__(FILE *fp, int tag, const struct opecode *op)
     fprintf(fp, "%s%s", op->mnemonic, sfx);
 
     len = strlen(op->mnemonic) + strlen(sfx);
-    pad = len > 6 ? 0 : 6 - len;
 
-    fprintf(fp, "%*s", pad, "");
+    *nchars = len;
 }
 
 static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
@@ -273,10 +287,15 @@ static void code__(FILE *fp, int tag,
         const struct opecode *op, const struct operand *oper1, const struct operand *oper2)
 {
     const struct operand *o1 = NULL, *o2 = NULL;
+    int nchars = 0;
+    int dtag_ = tag;
+
+    dtag_ = promote_tag(dtag_, oper1);
+    dtag_ = promote_tag(dtag_, oper2);
 
     fprintf(fp, "    ");
 
-    gen_opecode__(fp, tag, op);
+    gen_opecode__(fp, dtag_, op, &nchars);
 
     if (oper1 != NULL && oper2 == NULL) {
         o1 = oper1;
@@ -291,13 +310,15 @@ static void code__(FILE *fp, int tag,
     }
 
     if (o1) {
-        fprintf(fp, " ");
-        gen_operand__(fp, tag, o1);
+        const int max_pad = 7;
+        const int pad = nchars > max_pad ? 0 : max_pad - nchars;
+        fprintf(fp, "%*s", pad, "");
+        gen_operand__(fp, dtag_, o1);
     }
 
     if (o2) {
         fprintf(fp, ", ");
-        gen_operand__(fp, tag, o2);
+        gen_operand__(fp, dtag_, o2);
     }
 
     fprintf(fp, "\n");
@@ -342,6 +363,22 @@ static int get_data_tag_from_type(const struct ast_node *node)
     switch (type) {
     case TYP_INT: return LONG;
     default:      return QUAD;
+    }
+}
+
+static int get_data_tag_from_type2(const struct ast_node *node)
+{
+    const struct data_type *dt;
+
+    if (node == NULL) {
+        return 0;
+    }
+
+    dt = node->dtype;
+
+    switch (dt->kind) {
+    case DATA_TYPE_INT: return LONG;
+    default:            return QUAD;
     }
 }
 
@@ -410,6 +447,29 @@ static void print_global_funcs(FILE *fp, const struct ast_node *node)
     }
 }
 
+/* XXX */
+static void code2__(FILE *fp, const struct ast_node *node,
+        struct opecode op, struct operand oper1)
+{
+    const struct opecode o0 = op;
+    const struct operand o1 = oper1;
+    const int tag = get_data_tag_from_type2(node);
+
+    code__(fp, tag, &o0, &o1, NULL);
+}
+
+/* XXX */
+static void code3__(FILE *fp, const struct ast_node *node,
+        struct opecode op, struct operand oper1, struct operand oper2)
+{
+    const struct opecode o0 = op;
+    const struct operand o1 = oper1;
+    const struct operand o2 = oper2;
+    const int tag = get_data_tag_from_type2(node);
+
+    code__(fp, tag, &o0, &o1, &o2);
+}
+
 /* forward declaration */
 static void gen_code(FILE *fp, const struct ast_node *node);
 
@@ -424,7 +484,9 @@ static void gen_params(FILE *fp, const struct ast_node *node)
     case NOD_PARAM:
         gen_params(fp, node->l);
         {
+            /* XXX type
             const int tag = get_data_tag_from_type(node);
+            */
             const int index = get_local_var_id(node);
             const int disp = -get_mem_offset(node);
 
@@ -555,14 +617,17 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_PARAM:
     case NOD_VAR:
         {
+            /* XXX
             const int tag = get_data_tag_from_type(node);
+            */
             const int disp = -get_mem_offset(node);
 
             /* XXX type */
             /*
             code3(fp, tag, MOV_, addr2(RBP, disp), A_);
-            */
             code3(fp, QUAD, MOV_, addr2(RBP, disp), A_);
+            */
+            code3__(fp, node, MOV_, addr2(RBP, disp), A_);
         }
         break;
 
@@ -601,11 +666,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_ASSIGN:
         gen_lvalue(fp, node->l);
-        /* XXX type */
-        code2(fp, QUAD, PUSH_, RAX);
+        code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
-        code2(fp, QUAD, POP_,  RDX);
-        code3(fp, QUAD, MOV_, A_, addr1(RDX));
+        code2__(fp, node, POP_,  RDX);
+        code3__(fp, node, MOV_, A_, addr1(RDX));
         break;
 
     case NOD_ADDR:
@@ -618,15 +682,22 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_NUM:
-        code3(fp, QUAD, MOV_, imme(node->data.ival), A_);
+        code3__(fp, node, MOV_, imme(node->data.ival), A_);
         break;
 
     case NOD_ADD:
+#if 0
         gen_code(fp, node->l);
         code2(fp, QUAD, PUSH_, A_);
         gen_code(fp, node->r);
         code2(fp, QUAD, POP_, D_);
         code3(fp, QUAD, ADD_, D_, A_);
+#endif
+        gen_code(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code2__(fp, node, POP_, RDX);
+        code3__(fp, node, ADD_, D_, A_);
         break;
 
     case NOD_SUB:
