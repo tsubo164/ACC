@@ -72,10 +72,12 @@ enum data_type_kind {
 
 struct data_type {
     int kind;
-    int size;
+    int byte_size;
+    struct data_type *ptr_to;
 };
 
-extern const struct data_type *type_void();
-extern const struct data_type *type_int();
+extern struct data_type *type_void();
+extern struct data_type *type_int();
+extern struct data_type *type_ptr();
 
 #endif /* _H */

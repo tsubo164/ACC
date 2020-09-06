@@ -7,7 +7,7 @@ static void init_symbol(struct symbol *sym)
 {
     sym->name = NULL;
     sym->kind = SYM_SCOPE_BEGIN;
-    sym->offset = 0;
+    sym->mem_offset = 0;
 
     sym->data_type = TYP_INT;
     sym->local_var_id = 0;
@@ -37,14 +37,16 @@ void init_symbol_table(struct symbol_table *table)
     }
 
     table->symbol_count = 0;
+    /*
     table->nvars = 0;
+    */
 
     table->local_var_id = 0;
     /* 0 means global scope */
     table->current_scope_level = 0;
 }
 
-const struct symbol *lookup_symbol(const struct symbol_table *table,
+struct symbol *lookup_symbol(struct symbol_table *table,
         const char *name, enum symbol_kind kind)
 {
     /* lowest level so far during search */
@@ -53,7 +55,7 @@ const struct symbol *lookup_symbol(const struct symbol_table *table,
 
     /* search backwards */
     for (i = table->symbol_count - 1; i >= 0; i--) {
-        const struct symbol *sym = &table->data[i];
+        struct symbol *sym = &table->data[i];
 
         /* step down one level */
         if (sym->kind == SYM_SCOPE_BEGIN) {
@@ -90,7 +92,9 @@ struct symbol *insert_symbol(struct symbol_table *table,
     }
 
     if (kind == SYM_FUNC) {
+        /*
         table->nvars = 0;
+        */
         /* reset id */
         table->local_var_id = 0;
     }
@@ -98,8 +102,10 @@ struct symbol *insert_symbol(struct symbol_table *table,
     sym = push_symbol(table, name, kind);
 
     if (kind == SYM_VAR || kind == SYM_PARAM) {
+        /*
         table->nvars++;
-        sym->offset = 8 * table->nvars;
+        sym->mem_offset = 8 * table->nvars;
+        */
 
         sym->local_var_id = table->local_var_id++;
     }

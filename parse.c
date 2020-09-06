@@ -2,8 +2,8 @@
 #include <string.h>
 #include "parse.h"
 
-static const struct symbol *lookup_symbol2(
-            const struct parser *p,
+static struct symbol *lookup_symbol2(
+            struct parser *p,
             const char *name, enum symbol_kind kind)
 {
     return lookup_symbol(&p->symtbl, name, kind);
@@ -269,6 +269,8 @@ static struct ast_node *unary_expression(struct parser *p)
 
     case '*':
         base = new_node(NOD_DEREF, unary_expression(p), NULL);
+        /* XXX */
+        base->dtype = base->dtype->ptr_to;;
         return base;
 
     case '&':
@@ -499,6 +501,8 @@ static struct ast_node *var_def(struct parser *p)
 {
     struct ast_node *tree = NULL;
     struct symbol *sym = NULL;
+    /* XXX this would change to non const */
+    struct data_type *dtype = NULL;
     const struct token *tok = NULL;
 
     tok = gettok(p);
@@ -509,8 +513,10 @@ static struct ast_node *var_def(struct parser *p)
     tok = gettok(p);
     if (tok->kind == '*') {
         /* pointer */
+        dtype = type_ptr();
     } else {
         ungettok(p);
+        dtype = type_int();
     }
 
     tok = gettok(p);
@@ -519,13 +525,17 @@ static struct ast_node *var_def(struct parser *p)
         return NULL;;
     }
 
+    if (dtype->kind == DATA_TYPE_PTR) {
+        dtype->ptr_to = type_int();
+    }
+
     sym = insert_symbol2(p, tok->word, SYM_VAR);
     if (sym == NULL) {
         error(p, "redefinition of variable");
         return NULL;
     }
     sym->data_type = TYP_INT;
-    sym->dtype = type_int();
+    sym->dtype = dtype;
 
     tree = new_node(NOD_VAR_DEF, NULL, NULL);
     tree->data.sym = sym;
@@ -652,6 +662,7 @@ static struct ast_node *func_def(struct parser *p)
         symparam->dtype = type_int();
 
         params->data.sym = symparam;
+        params->dtype = symparam->dtype;
         nparams++;
 
         tok = gettok(p);
@@ -696,15 +707,21 @@ struct ast_node *parse(struct parser *p)
     }
 }
 
-static const struct data_type VOID_ = {DATA_TYPE_VOID, 0};
-static const struct data_type INT_  = {DATA_TYPE_INT,  4};
+static struct data_type VOID_ = {DATA_TYPE_VOID, 0};
+static struct data_type INT_  = {DATA_TYPE_INT,  4};
+static struct data_type PTR_  = {DATA_TYPE_PTR,  8};
 
-const struct data_type *type_void()
+struct data_type *type_void()
 {
     return &VOID_;
 }
 
-const struct data_type *type_int()
+struct data_type *type_int()
 {
     return &INT_;
+}
+
+struct data_type *type_ptr()
+{
+    return &PTR_;
 }

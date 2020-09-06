@@ -19,7 +19,7 @@ enum symbol_kind {
 struct symbol {
     char *name;
     int kind;
-    int offset;
+    int mem_offset;
 
     const struct data_type *dtype;
     int data_type;
@@ -31,7 +31,9 @@ struct symbol {
 struct symbol_table {
     struct symbol data[SYMBOL_TABLE_SIZE];
     int symbol_count;
+    /*
     int nvars;
+    */
 
     int local_var_id;
     int current_scope_level;
@@ -39,7 +41,7 @@ struct symbol_table {
 
 extern void init_symbol_table(struct symbol_table *table);
 
-extern const struct symbol *lookup_symbol(const struct symbol_table *table,
+extern struct symbol *lookup_symbol(struct symbol_table *table,
         const char *name, enum symbol_kind kind);
 
 extern struct symbol *insert_symbol(struct symbol_table *table,

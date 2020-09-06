@@ -65,10 +65,10 @@ const struct opecode SUB_   = {"sub",   1};
 const struct opecode IMUL_  = {"imul",  1};
 const struct opecode IDIV_  = {"idiv",  1};
 const struct opecode CMP_   = {"cmp",   1};
-const struct opecode POP_   = {"pop",   1};
-const struct opecode PUSH_  = {"push",  1};
-const struct opecode CALL_  = {"call",  1};
-const struct opecode RET_   = {"ret",   1};
+const struct opecode POP_   = {"pop",   0};
+const struct opecode PUSH_  = {"push",  0};
+const struct opecode CALL_  = {"call",  0};
+const struct opecode RET_   = {"ret",   0};
 const struct opecode MOVZB_ = {"movzb", 1};
 
 const struct opecode JE_    = {"je",  0};
@@ -324,6 +324,7 @@ static void code__(FILE *fp, int tag,
     fprintf(fp, "\n");
 }
 
+#if 0
 static void code1(FILE *fp, int tag,
         struct opecode op)
 {
@@ -358,13 +359,17 @@ static int get_data_tag_from_type(const struct ast_node *node)
         return 0;
     }
 
+    /*
     type = node->data.sym->data_type;
+    */
+    type = node->data.sym->dtype->kind;
 
     switch (type) {
     case TYP_INT: return LONG;
     default:      return QUAD;
     }
 }
+#endif
 
 static int get_data_tag_from_type2(const struct ast_node *node)
 {
@@ -378,6 +383,7 @@ static int get_data_tag_from_type2(const struct ast_node *node)
 
     switch (dt->kind) {
     case DATA_TYPE_INT: return LONG;
+    case DATA_TYPE_PTR: return QUAD;
     default:            return QUAD;
     }
 }
@@ -400,7 +406,10 @@ static int get_mem_offset(const struct ast_node *node)
         return 0;
     }
 
+    /*
     size = get_data_size(get_data_tag_from_type(node));
+    */
+    size = get_data_size(get_data_tag_from_type2(node));
     id = node->data.sym->local_var_id;
 
     /* id starts with 0 */
@@ -448,6 +457,16 @@ static void print_global_funcs(FILE *fp, const struct ast_node *node)
 }
 
 /* XXX */
+static void code1__(FILE *fp, const struct ast_node *node,
+        struct opecode op)
+{
+    const struct opecode o0 = op;
+    const int tag = get_data_tag_from_type2(node);
+
+    code__(fp, tag, &o0, NULL, NULL);
+}
+
+/* XXX */
 static void code2__(FILE *fp, const struct ast_node *node,
         struct opecode op, struct operand oper1)
 {
@@ -492,8 +511,9 @@ static void gen_params(FILE *fp, const struct ast_node *node)
 
             /* XXX type
             code3(fp, tag, MOV_, arg(index), addr2(RBP, disp));
-            */
             code3(fp, QUAD, MOV_, arg(index), addr2(RBP, disp));
+            */
+            code3__(fp, node, MOV_, arg(index), addr2(RBP, disp));
         }
         break;
 
@@ -522,8 +542,14 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
 
     case NOD_PARAM:
     case NOD_VAR:
+        /* XXX
         code3(fp, QUAD, MOV_, BP_, A_);
         code3(fp, QUAD, SUB_, imme(get_mem_offset(node)), A_);
+        */
+        fprintf(fp, "## <<< %s\n", node->data.sym->name);
+        code3__(fp, node, MOV_, BP_, RAX);
+        code3__(fp, node, SUB_, imme(get_mem_offset(node)), RAX);
+        fprintf(fp, "## >>>\n");
         break;
 
     case NOD_DEREF:
@@ -538,6 +564,7 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
 
 static void gen_relational(FILE *fp, const struct ast_node *node, struct opecode op)
 {
+#if 0
     gen_code(fp, node->l);
     code2(fp, QUAD, PUSH_, A_);
     gen_code(fp, node->r);
@@ -546,10 +573,20 @@ static void gen_relational(FILE *fp, const struct ast_node *node, struct opecode
     code3(fp, QUAD, CMP_, D_, A_);
     code2(fp, QUAD, op, AL);
     code3(fp, QUAD, MOVZB_, AL, A_);
+#endif
+    gen_code(fp, node->l);
+    code2__(fp, node, PUSH_, RAX);
+    gen_code(fp, node->r);
+    code3__(fp, node, MOV_, A_, D_);
+    code2__(fp, node, POP_, RAX);
+    code3__(fp, node, CMP_, D_, A_);
+    code2__(fp, node, op, AL);
+    code3__(fp, node, MOVZB_, AL, A_);
 }
 
 static void gen_equality(FILE *fp, const struct ast_node *node, struct opecode op)
 {
+#if 0
     gen_code(fp, node->l);
     code2(fp, QUAD, PUSH_, A_);
     gen_code(fp, node->r);
@@ -557,6 +594,14 @@ static void gen_equality(FILE *fp, const struct ast_node *node, struct opecode o
     code3(fp, QUAD, CMP_, D_, A_);
     code2(fp, QUAD, op,   AL);
     code3(fp, QUAD, MOVZB_, AL, A_);
+#endif
+    gen_code(fp, node->l);
+    code2__(fp, node, PUSH_, RAX);
+    gen_code(fp, node->r);
+    code2__(fp, node, POP_, RDX);
+    code3__(fp, node, CMP_, D_, A_);
+    code2__(fp, node, op,   AL);
+    code3__(fp, node, MOVZB_, AL, A_);
 }
 
 static void gen_code(FILE *fp, const struct ast_node *node)
@@ -581,6 +626,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_IF:
+#if 0
         /* if */
         gen_code(fp, node->l);
         code3(fp, QUAD, CMP_, imme(0), A_);
@@ -593,9 +639,23 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->r->r);
         gen_label(fp, block_id, 1);
         block_id++;
+#endif
+        /* if */
+        gen_code(fp, node->l);
+        code3__(fp, node, CMP_, imme(0), A_);
+        code2__(fp, node, JE_,  label(block_id, 0));
+        /* then */
+        gen_code(fp, node->r->l);
+        code2__(fp, node, JMP_, label(block_id, 1));
+        /* else */
+        gen_label(fp, block_id, 0);
+        gen_code(fp, node->r->r);
+        gen_label(fp, block_id, 1);
+        block_id++;
         break;
 
     case NOD_WHILE:
+#if 0
         gen_label(fp, block_id, 0);
         gen_code(fp, node->l);
         code3(fp, QUAD, CMP_, imme(0), A_);
@@ -604,14 +664,27 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, QUAD, JMP_, label(block_id, 0));
         gen_label(fp, block_id, 1);
         block_id++;
+#endif
+        gen_label(fp, block_id, 0);
+        gen_code(fp, node->l);
+        code3__(fp, node, CMP_, imme(0), A_);
+        code2__(fp, node, JE_,  label(block_id, 1));
+        gen_code(fp, node->r);
+        code2__(fp, node, JMP_, label(block_id, 0));
+        gen_label(fp, block_id, 1);
+        block_id++;
         break;
 
     case NOD_RETURN:
         gen_code(fp, node->l);
-        /* XXX type */
+        /* XXX
         code3(fp, QUAD, MOV_, RBP, RSP);
         code2(fp, QUAD, POP_, RBP);
         code1(fp, QUAD, RET_);
+        */
+        code3__(fp, node, MOV_, RBP, RSP);
+        code2__(fp, node, POP_, RBP);
+        code1__(fp, node, RET_);
         break;
 
     case NOD_PARAM:
@@ -637,19 +710,29 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_CALL:
         reg_id = 0;
         gen_code(fp, node->l);
+        /* XXX
         code2(fp, QUAD, CALL_, str(node->data.sym->name));
+        */
+        code2__(fp, node, CALL_, str(node->data.sym->name));
         break;
 
     case NOD_ARG:
         gen_code(fp, node->l);
         gen_code(fp, node->r);
+        /* XXX
         code3(fp, QUAD, MOV_, A_, arg(reg_id++));
+        */
+        code3__(fp, node, MOV_, A_, arg(reg_id++));
         break;
 
     case NOD_FUNC_DEF:
         fprintf(fp, "_%s:\n", node->data.sym->name);
+        /* XXX
         code2(fp, QUAD, PUSH_, RBP);
         code3(fp, QUAD, MOV_,  RSP, RBP);
+        */
+        code2__(fp, node, PUSH_, RBP);
+        code3__(fp, node, MOV_,  RSP, RBP);
         {
             /* XXX tmp */
             int max_offset = get_max_offset(node);
@@ -657,7 +740,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
                 if (max_offset % 16 > 0) {
                     max_offset += 16 - max_offset % 16;
                 }
+                /* XXX
                 code3(fp, QUAD, SUB_, imme(max_offset), RSP);
+                */
+                code3__(fp, node, SUB_, imme(max_offset), RSP);
             }
         }
         gen_params(fp, node->l);
@@ -678,7 +764,12 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_DEREF:
         gen_code(fp, node->l);
+        /*
         code3(fp, QUAD, MOV_, addr1(A_), A_);
+        */
+        gen_comment(fp, "****************");
+        code3__(fp, node, MOV_, addr1(RAX), A_);
+        gen_comment(fp, "****************");
         break;
 
     case NOD_NUM:
@@ -701,23 +792,39 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_SUB:
+#if 0
         gen_code(fp, node->l);
         code2(fp, QUAD, PUSH_, A_);
         gen_code(fp, node->r);
         code3(fp, QUAD, MOV_, A_, D_);
         code2(fp, QUAD, POP_, A_);
         code3(fp, QUAD, SUB_, D_, A_);
+#endif
+        gen_code(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code3__(fp, node, MOV_, A_, D_);
+        code2__(fp, node, POP_, RAX);
+        code3__(fp, node, SUB_, D_, A_);
         break;
 
     case NOD_MUL:
+#if 0
         gen_code(fp, node->l);
         code2(fp, QUAD, PUSH_, A_);
         gen_code(fp, node->r);
         code2(fp, QUAD, POP_,  D_);
         code3(fp, QUAD, IMUL_, D_, A_);
+#endif
+        gen_code(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code2__(fp, node, POP_,  RDX);
+        code3__(fp, node, IMUL_, D_, A_);
         break;
 
     case NOD_DIV:
+#if 0
         gen_code(fp, node->l);
         code2(fp, QUAD, PUSH_, A_);
         gen_code(fp, node->r);
@@ -725,6 +832,14 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, QUAD, POP_, A_);
         code1(fp, QUAD, CLTD_); /* rax -> rdx:rax */
         code2(fp, QUAD, IDIV_, DI_);
+#endif
+        gen_code(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code3__(fp, node, MOV_, A_, DI_);
+        code2__(fp, node, POP_, RAX);
+        code1__(fp, node, CLTD_); /* rax -> rdx:rax */
+        code2__(fp, node, IDIV_, DI_);
         break;
 
     case NOD_LT:
