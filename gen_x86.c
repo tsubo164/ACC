@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "gen_x86.h"
+#include "type.h"
 
 static int att_syntax = 1;
 
@@ -25,10 +26,12 @@ const struct data_spec data_spec_table[] = {
     {8, "q", "qword ptr"}
 };
 
+/* XXX
 static int get_data_size(int tag)
 {
     return data_spec_table[tag].size;
 }
+*/
 
 static const char *get_data_suffix(int tag)
 {
@@ -352,38 +355,7 @@ static int get_local_var_id(const struct ast_node *node)
 
 static int get_mem_offset(const struct ast_node *node)
 {
-    int size;
-    int id;
-
-    if (node == NULL) {
-        return 0;
-    }
-
-    size = get_data_size(get_data_tag_from_type2(node));
-    id = node->data.sym->local_var_id;
-
-    /* id starts with 0 */
-    return size * (id + 1);
-}
-
-static int get_max_offset(const struct ast_node *node)
-{
-    int max, l, r;
-
-    if (node == NULL) {
-        return 0;
-    }
-
-    l = get_max_offset(node->l);
-    r = get_max_offset(node->r);
-    max = l > r ? l : r;
-
-    if (node->kind == NOD_VAR || node->kind == NOD_PARAM) {
-        const int offset = get_mem_offset(node);
-        return offset > max ? offset : max;
-    } else {
-        return max;
-    }
+    return node->data.sym->mem_offset;
 }
 
 static void print_global_funcs(FILE *fp, const struct ast_node *node)
@@ -600,20 +572,15 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_FUNC_DEF:
+        /* prologue */
         fprintf(fp, "_%s:\n", node->data.sym->name);
         code2__(fp, node, PUSH_, RBP);
         code3__(fp, node, MOV_,  RSP, RBP);
-        {
-            /* XXX tmp */
-            int max_offset = get_max_offset(node);
-            if (max_offset > 0) {
-                if (max_offset % 16 > 0) {
-                    max_offset += 16 - max_offset % 16;
-                }
-                code3__(fp, node, SUB_, imme(max_offset), RSP);
-            }
-        }
+        code3__(fp, node, SUB_, imme(node->data.sym->mem_offset), RSP);
+
+        /* load params */
         gen_params(fp, node->l);
+        /* body */
         gen_code(fp, node->r);
         break;
 
@@ -704,6 +671,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
 void gen_x86(FILE *fp, const struct ast_node *tree)
 {
+    /* XXX */
     if (!att_syntax) {
         fprintf(fp, ".intel_syntax noprefix\n");
     }

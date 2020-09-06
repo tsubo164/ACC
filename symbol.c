@@ -37,9 +37,6 @@ void init_symbol_table(struct symbol_table *table)
     }
 
     table->symbol_count = 0;
-    /*
-    table->nvars = 0;
-    */
 
     table->local_var_id = 0;
     /* 0 means global scope */
@@ -92,9 +89,6 @@ struct symbol *insert_symbol(struct symbol_table *table,
     }
 
     if (kind == SYM_FUNC) {
-        /*
-        table->nvars = 0;
-        */
         /* reset id */
         table->local_var_id = 0;
     }
@@ -102,11 +96,6 @@ struct symbol *insert_symbol(struct symbol_table *table,
     sym = push_symbol(table, name, kind);
 
     if (kind == SYM_VAR || kind == SYM_PARAM) {
-        /*
-        table->nvars++;
-        sym->mem_offset = 8 * table->nvars;
-        */
-
         sym->local_var_id = table->local_var_id++;
     }
 
@@ -127,4 +116,57 @@ int symbol_scope_end(struct symbol_table *table)
     table->current_scope_level--;
 
     return table->current_scope_level;
+}
+
+static int next_aligned(int current_offset, int next_align)
+{
+    int next_offset = current_offset;
+
+    if (current_offset % next_align > 0) {
+        const int padding = next_align - current_offset % next_align;
+        next_offset += padding;
+    }
+
+    return next_offset;
+}
+
+int symbol_assign_local_storage(struct symbol_table *table)
+{
+    int i;
+    int N = table->symbol_count;
+    int total_mem_offset = 0;
+    struct symbol *func = NULL;
+
+    for (i = 0; i < N; i++) {
+        struct symbol *sym = &table->data[i];
+
+        if (sym->kind == SYM_FUNC) {
+            func = sym;
+            total_mem_offset = 0;
+            continue;
+        }
+
+        if (sym->kind == SYM_SCOPE_BEGIN) {
+            continue;
+        }
+
+        if (sym->kind == SYM_SCOPE_END) {
+            if (sym->scope_level == 1) {
+                /* end of function */
+                func->mem_offset = next_aligned(total_mem_offset, 16);
+            }
+            continue;
+        }
+
+        if (sym->kind == SYM_VAR || sym->kind == SYM_PARAM) {
+            int align = sym->dtype->byte_size;
+            int alloc = sym->dtype->byte_size;
+
+            total_mem_offset = next_aligned(total_mem_offset, align);
+            total_mem_offset += alloc;
+
+            sym->mem_offset = total_mem_offset;
+        }
+    }
+    return 0;
 }

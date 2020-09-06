@@ -125,6 +125,7 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    symbol_assign_local_storage(&parser.symtbl);
     gen_x86(file, tree);
 
     fclose(file);

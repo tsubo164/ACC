@@ -1,8 +1,7 @@
 #ifndef SYMBOL_H
 #define SYMBOL_H
 
-/* XXX */
-struct data_type;
+#include "type.h"
 
 enum symbol_data_type {
     TYP_INT
@@ -31,9 +30,6 @@ struct symbol {
 struct symbol_table {
     struct symbol data[SYMBOL_TABLE_SIZE];
     int symbol_count;
-    /*
-    int nvars;
-    */
 
     int local_var_id;
     int current_scope_level;
@@ -49,5 +45,8 @@ extern struct symbol *insert_symbol(struct symbol_table *table,
 
 extern int symbol_scope_begin(struct symbol_table *table);
 extern int symbol_scope_end(struct symbol_table *table);
+
+/* XXX semantic? this includes mem offset logic that depends on architure */
+extern int symbol_assign_local_storage(struct symbol_table *table);
 
 #endif /* _H */
