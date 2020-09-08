@@ -154,10 +154,8 @@ state_initial:
 
     /* parenthees */
     case '(': case ')':
-        tok->kind = c;
-        goto state_final;
-
     case '{': case '}':
+    case '[': case ']':
         tok->kind = c;
         goto state_final;
 

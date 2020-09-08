@@ -3,14 +3,14 @@
 #include "parse.h"
 #include "type.h"
 
-static struct symbol *lookup_symbol2(
+static struct symbol *lookup_symbol_(
             struct parser *p,
             const char *name, enum symbol_kind kind)
 {
     return lookup_symbol(&p->symtbl, name, kind);
 }
 
-static struct symbol *insert_symbol2(
+static struct symbol *insert_symbol_(
             struct parser *p,
             const char *name, enum symbol_kind kind)
 {
@@ -179,7 +179,7 @@ static struct ast_node *primary_expression(struct parser *p)
         if (tok->kind == '(') {
             const struct symbol *sym;
 
-            sym = lookup_symbol2(p, ident, SYM_FUNC);
+            sym = lookup_symbol_(p, ident, SYM_FUNC);
             if (sym == NULL) {
                 error(p, "calling undefined function");
                 return NULL;
@@ -208,7 +208,7 @@ static struct ast_node *primary_expression(struct parser *p)
             const struct symbol *sym;
             ungettok(p);
 
-            sym = lookup_symbol2(p, ident, SYM_VAR);
+            sym = lookup_symbol_(p, ident, SYM_VAR);
             if (sym == NULL) {
                 error(p, "using undeclared identifier");
                 return NULL;
@@ -334,6 +334,15 @@ static struct ast_node *additive_expression(struct parser *p)
 
         case '+':
             base = new_node(NOD_ADD, base, multiplicative_expression(p));
+            /* XXX */
+            if (base->l->dtype->kind == DATA_TYPE_ARRAY) {
+                struct ast_node *size, *mul;
+
+                size = new_node(NOD_NUM, NULL, NULL);
+                size->data.ival = base->l->dtype->ptr_to->byte_size;
+                mul = new_node(NOD_MUL, size, base->r);
+                base->r = mul;
+            }
             break;
 
         case '-':
@@ -506,36 +515,56 @@ static struct ast_node *var_def(struct parser *p)
     struct data_type *dtype = NULL;
     const struct token *tok = NULL;
 
+    /* type */
     tok = gettok(p);
     if (tok->kind != TK_INT) {
         error(p, "missing type name in declaration");
     }
+    dtype = type_int();
 
+    /* pointer */
     tok = gettok(p);
     if (tok->kind == '*') {
-        /* pointer */
+        struct data_type *curr_type = dtype;
         dtype = type_ptr();
+        dtype->ptr_to = curr_type;
     } else {
         ungettok(p);
-        dtype = type_int();
     }
 
+    /* identifier */
     tok = gettok(p);
     if (tok->kind != TK_IDENT) {
-        error(p, "missing parameter name");
+        error(p, "missing variable name");
         return NULL;;
     }
 
-    if (dtype->kind == DATA_TYPE_PTR) {
-        dtype->ptr_to = type_int();
-    }
-
-    sym = insert_symbol2(p, tok->word, SYM_VAR);
+    sym = insert_symbol_(p, tok->word, SYM_VAR);
     if (sym == NULL) {
         error(p, "redefinition of variable");
         return NULL;
     }
-    sym->data_type = TYP_INT;
+
+    /* array */
+    tok = gettok(p);
+    if (tok->kind == '[') {
+        struct data_type *curr_type = dtype;
+        int array_len = 0;
+
+        tok = gettok(p);
+        if (tok->kind != TK_NUM) {
+            error(p, "missing constant after array '['");
+        }
+        array_len = tok->value;
+
+        expect_or_error(p, ']', "missing ']' at end of array definition");
+
+        dtype = type_array(curr_type, array_len);
+    } else {
+        ungettok(p);
+    }
+
+    /* commit */
     sym->dtype = dtype;
 
     tree = new_node(NOD_VAR_DEF, NULL, NULL);
@@ -623,7 +652,7 @@ static struct ast_node *func_def(struct parser *p)
 
     tree = new_node(NOD_FUNC_DEF, NULL, NULL);
 
-    sym = insert_symbol2(p, tok->word, SYM_FUNC);
+    sym = insert_symbol_(p, tok->word, SYM_FUNC);
     if (sym == NULL) {
         error(p, "redefinition of function");
         return NULL;
@@ -654,12 +683,11 @@ static struct ast_node *func_def(struct parser *p)
 
         params = new_node(NOD_PARAM, params, NULL);
 
-        symparam = insert_symbol2(p, tok->word, SYM_PARAM);
+        symparam = insert_symbol_(p, tok->word, SYM_PARAM);
         if (symparam == NULL) {
             error(p, "redefinition of parameter");
             return NULL;
         }
-        symparam->data_type = TYP_INT;
         symparam->dtype = type_int();
 
         params->data.sym = symparam;

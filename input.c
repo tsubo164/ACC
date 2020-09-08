@@ -1,19 +1,10 @@
-int add(int x, int y)
-{
-    return x + y;
-}
-
 int main()
 {
-    int a;
-    int *b;
+    int a[4];
 
-    a = 39;
-    b = &a;
+    *(a + 1 + 1) = 42;
 
-    *b = *b + 3;
-
-    if (a == 42)
+    if (*(a + 2) == 42)
         return 0;
     else
         return 1;

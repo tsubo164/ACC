@@ -9,9 +9,35 @@ static void init_symbol(struct symbol *sym)
     sym->kind = SYM_SCOPE_BEGIN;
     sym->mem_offset = 0;
 
-    sym->data_type = TYP_INT;
     sym->local_var_id = 0;
     sym->scope_level = 0;
+}
+
+/* XXX */
+struct symbol_table *new_symbol_table()
+{
+    struct symbol_table *table;
+    int i;
+
+    table = malloc(sizeof(struct symbol_table));
+
+    for (i = 0; i < SYMBOL_TABLE_SIZE; i++) {
+        init_symbol(&table->data[i]);
+    }
+
+    table->symbol_count = 0;
+    table->local_var_id = 0;
+    /* 0 means global scope */
+    table->current_scope_level = 0;
+
+    return table;
+}
+
+void free_symbol_table(struct symbol_table *table)
+{
+    if (table) {
+        free(table);
+    }
 }
 
 static struct symbol *push_symbol(struct symbol_table *table, const char *name, int kind)
@@ -159,11 +185,12 @@ int symbol_assign_local_storage(struct symbol_table *table)
         }
 
         if (sym->kind == SYM_VAR || sym->kind == SYM_PARAM) {
-            int align = sym->dtype->byte_size;
-            int alloc = sym->dtype->byte_size;
+            const int size  = sym->dtype->byte_size;
+            const int align = sym->dtype->alignment;
+            const int len   = sym->dtype->array_len;
 
             total_mem_offset = next_aligned(total_mem_offset, align);
-            total_mem_offset += alloc;
+            total_mem_offset += len * size;
 
             sym->mem_offset = total_mem_offset;
         }

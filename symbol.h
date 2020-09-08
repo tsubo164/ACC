@@ -3,10 +3,6 @@
 
 #include "type.h"
 
-enum symbol_data_type {
-    TYP_INT
-};
-
 enum symbol_kind {
     SYM_SCOPE_BEGIN,
     SYM_SCOPE_END,
@@ -21,7 +17,6 @@ struct symbol {
     int mem_offset;
 
     const struct data_type *dtype;
-    int data_type;
     int local_var_id;
     int scope_level;
 };
@@ -45,6 +40,10 @@ extern struct symbol *insert_symbol(struct symbol_table *table,
 
 extern int symbol_scope_begin(struct symbol_table *table);
 extern int symbol_scope_end(struct symbol_table *table);
+
+/* XXX */
+extern struct symbol_table *new_symbol_table();
+extern void free_symbol_table(struct symbol_table *table);
 
 /* XXX semantic? this includes mem offset logic that depends on architure */
 extern int symbol_assign_local_storage(struct symbol_table *table);
