@@ -220,6 +220,43 @@ static struct ast_node *primary_expression(struct parser *p)
             }
             base->data.sym = sym;
             base->dtype = sym->dtype;
+
+#if 1
+            /* XXX ----------------------- */
+            {
+                /* array */
+                tok = gettok(p);
+                if (tok->kind == '[') {
+                    /*
+                    printf("    dtype: %s\n", data_type_to_string(base->dtype));
+                    */
+
+                    base = new_node(NOD_ADD, base, expression(p));
+            /* XXX */
+            if (base->l->dtype->kind == DATA_TYPE_ARRAY) {
+                struct ast_node *size, *mul;
+
+                size = new_node(NOD_NUM, NULL, NULL);
+                size->data.ival = base->l->dtype->ptr_to->byte_size;
+                mul = new_node(NOD_MUL, size, base->r);
+                base->r = mul;
+            }
+
+                    expect_or_error(p, ']', "missing ']' at end of array");
+
+                    base = new_node(NOD_DEREF, base, NULL);
+                    /* XXX */
+                    base->dtype = base->dtype->ptr_to;;
+                    /*
+                    printf("    dtype: %s\n", data_type_to_string(base->dtype));
+                    */
+
+                } else {
+                    ungettok(p);
+                }
+            }
+            /* XXX ----------------------- */
+#endif
         }
         return base;
 
