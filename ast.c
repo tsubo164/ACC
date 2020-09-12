@@ -1,0 +1,107 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include "ast.h"
+
+/*
+static const struct data_type *promote_data_type(
+        const struct ast_node *n1, const struct ast_node *n2)
+{
+    if (!n1 && !n2) {
+        return type_void();
+    }
+
+    if (!n1) {
+        return n2->dtype;
+    }
+
+    if (!n2) {
+        return n1->dtype;
+    }
+
+    if (n1->dtype->kind > n2->dtype->kind) {
+        return n1->dtype;
+    } else {
+        return n2->dtype;
+    }
+}
+*/
+
+struct ast_node *new_ast_node(enum ast_node_kind kind,
+        struct ast_node *l, struct ast_node *r)
+{
+    struct ast_node *n = malloc(sizeof(struct ast_node));
+    n->kind = kind;
+    n->l = l;
+    n->r = r;
+
+    /*
+    n->dtype = promote_data_type(l, r);
+    */
+    n->dtype = type_void();
+
+    n->data.ival = 0;
+
+    return n;
+}
+
+void free_ast_node(struct ast_node *node)
+{
+    if (!node) {
+        return;
+    }
+
+    free_ast_node(node->l);
+    free_ast_node(node->r);
+}
+
+void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
+{
+    if (!node || !sym) {
+        return;
+    }
+
+    node->data.sym = sym;
+    node->dtype = sym->dtype;
+}
+
+#define AST_NODE_LIST(N) \
+    N(NOD_LIST) \
+    N(NOD_STMT) \
+    N(NOD_EXT) \
+    N(NOD_IF) \
+    N(NOD_RETURN) \
+    N(NOD_WHILE) \
+    N(NOD_ASSIGN) \
+    N(NOD_VAR) \
+    N(NOD_VAR_DEF) \
+    N(NOD_ADDR) \
+    N(NOD_DEREF) \
+    N(NOD_CALL) \
+    N(NOD_FUNC_DEF) \
+    N(NOD_ARG) \
+    N(NOD_PARAM) \
+    N(NOD_NUM) \
+    N(NOD_ADD) \
+    N(NOD_SUB) \
+    N(NOD_MUL) \
+    N(NOD_DIV) \
+    N(NOD_LT) \
+    N(NOD_GT) \
+    N(NOD_LE) \
+    N(NOD_GE) \
+    N(NOD_EQ) \
+    N(NOD_NE)
+
+const char *node_to_string(const struct ast_node *node)
+{
+    if (node == NULL) {
+        return "null";
+    }
+
+#define N(kind) case kind: return #kind;
+    switch (node->kind) {
+AST_NODE_LIST(N)
+    default: return "unknown";
+    }
+#undef N
+}

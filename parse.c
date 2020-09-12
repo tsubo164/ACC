@@ -27,40 +27,10 @@ static int scope_end(struct parser *p)
     return symbol_scope_end(&p->symtbl);
 }
 
-static const struct data_type *promote_data_type(
-        const struct ast_node *n1, const struct ast_node *n2)
-{
-    if (!n1 && !n2) {
-        return type_void();
-    }
-
-    if (!n1) {
-        return n2->dtype;
-    }
-
-    if (!n2) {
-        return n1->dtype;
-    }
-
-    if (n1->dtype->kind > n2->dtype->kind) {
-        return n1->dtype;
-    } else {
-        return n2->dtype;
-    }
-}
-
 static struct ast_node *new_node(enum ast_node_kind kind,
         struct ast_node *l, struct ast_node *r)
 {
-    struct ast_node *n = malloc(sizeof(struct ast_node));
-    n->kind = kind;
-    n->l = l;
-    n->r = r;
-    n->data.ival = 0;
-
-    n->dtype = promote_data_type(l, r);
-
-    return n;
+    return new_ast_node(kind, l, r);
 }
 
 static const struct token *gettok(struct parser *p)
@@ -201,8 +171,11 @@ static struct ast_node *primary_expression(struct parser *p)
 
             expect_or_error(p, ')', "missing ')' after function call");
             base = new_node(NOD_CALL, base, NULL);
+            /*
             base->data.sym = sym;
             base->dtype = sym->dtype;
+            */
+            ast_node_set_symbol(base, sym);
             return base;
         } else {
             const struct symbol *sym;
@@ -218,8 +191,11 @@ static struct ast_node *primary_expression(struct parser *p)
             if (sym->kind == SYM_PARAM) {
                 base->kind = NOD_PARAM;
             }
+#if 0
             base->data.sym = sym;
             base->dtype = sym->dtype;
+#endif
+            ast_node_set_symbol(base, sym);
 
 #if 1
             /* XXX ----------------------- */
@@ -233,6 +209,7 @@ static struct ast_node *primary_expression(struct parser *p)
 
                     base = new_node(NOD_ADD, base, expression(p));
             /* XXX */
+                    /*
             if (base->l->dtype->kind == DATA_TYPE_ARRAY) {
                 struct ast_node *size, *mul;
 
@@ -241,12 +218,15 @@ static struct ast_node *primary_expression(struct parser *p)
                 mul = new_node(NOD_MUL, size, base->r);
                 base->r = mul;
             }
+                    */
 
                     expect_or_error(p, ']', "missing ']' at end of array");
 
                     base = new_node(NOD_DEREF, base, NULL);
                     /* XXX */
+                    /*
                     base->dtype = base->dtype->ptr_to;;
+                    */
                     /*
                     printf("    dtype: %s\n", data_type_to_string(base->dtype));
                     */
@@ -308,7 +288,9 @@ static struct ast_node *unary_expression(struct parser *p)
     case '*':
         base = new_node(NOD_DEREF, unary_expression(p), NULL);
         /* XXX */
+        /*
         base->dtype = base->dtype->ptr_to;;
+        */
         return base;
 
     case '&':
@@ -372,6 +354,7 @@ static struct ast_node *additive_expression(struct parser *p)
         case '+':
             base = new_node(NOD_ADD, base, multiplicative_expression(p));
             /* XXX */
+            /*
             if (base->l->dtype->kind == DATA_TYPE_ARRAY) {
                 struct ast_node *size, *mul;
 
@@ -380,6 +363,7 @@ static struct ast_node *additive_expression(struct parser *p)
                 mul = new_node(NOD_MUL, size, base->r);
                 base->r = mul;
             }
+            */
             break;
 
         case '-':
@@ -602,10 +586,14 @@ static struct ast_node *var_def(struct parser *p)
     }
 
     /* commit */
-    sym->dtype = dtype;
 
     tree = new_node(NOD_VAR_DEF, NULL, NULL);
+#if 0
+    sym->dtype = dtype;
     tree->data.sym = sym;
+#endif
+    sym->dtype = dtype;
+    ast_node_set_symbol(tree, sym);
 
     expect_or_error(p, ';', "missing ';' at end of declaration");
 
@@ -687,16 +675,21 @@ static struct ast_node *func_def(struct parser *p)
         error(p, "missing function name");
     }
 
-    tree = new_node(NOD_FUNC_DEF, NULL, NULL);
-
     sym = insert_symbol_(p, tok->word, SYM_FUNC);
     if (sym == NULL) {
         error(p, "redefinition of function");
         return NULL;
     }
 
-    sym->dtype = type_int();
+    tree = new_node(NOD_FUNC_DEF, NULL, NULL);
+
+#if 0
     tree->data.sym = sym;
+    /* XXX */
+    tree->dtype = sym->dtype;
+#endif
+    sym->dtype = type_int();
+    ast_node_set_symbol(tree, sym);
 
     expect_or_error(p, '(', "missing '(' after function name");
 

@@ -1,9 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "parse.h"
-#include "lexer.h"
 #include "gen_x86.h"
+#include "lexer.h"
+#include "parse.h"
+#include "semantics.h"
 
 #define TERMINAL_COLOR_BLACK   "\x1b[30m"
 #define TERMINAL_COLOR_RED     "\x1b[31m"
@@ -126,6 +127,7 @@ int main(int argc, char **argv)
     }
 
     symbol_assign_local_storage(&parser.symtbl);
+    semantic_analysis(tree, &parser.symtbl);
     gen_x86(file, tree);
 
     fclose(file);

@@ -45,7 +45,7 @@ extern int symbol_scope_end(struct symbol_table *table);
 extern struct symbol_table *new_symbol_table();
 extern void free_symbol_table(struct symbol_table *table);
 
-/* XXX semantic? this includes mem offset logic that depends on architure */
+/* XXX semantics? this includes mem offset logic that depends on architure */
 extern int symbol_assign_local_storage(struct symbol_table *table);
 
 #endif /* _H */
