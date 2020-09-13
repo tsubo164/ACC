@@ -402,26 +402,26 @@ static void code3__(FILE *fp, const struct ast_node *node,
 /* forward declaration */
 static void gen_code(FILE *fp, const struct ast_node *node);
 
-static int gen_indexed_param(FILE *fp, const struct ast_node *node, int index)
+static int gen_one_param(FILE *fp, const struct ast_node *node)
 {
-    if (node == NULL) {
-        return index;
+    if (!node) {
+        return 0;
     }
 
     if (node->kind == NOD_PARAM) {
-        int next_index = gen_indexed_param(fp, node->l, index);
+        const int next_index = gen_one_param(fp, node->l);
         const int disp = -get_mem_offset(node);
 
         code3__(fp, node, MOV_, arg(next_index), addr2(RBP, disp));
-        return ++next_index;
+        return next_index + 1;
     } else {
-        return index;
+        return 0;
     }
 }
 
-static void gen_params(FILE *fp, const struct ast_node *node)
+static void gen_param_list(FILE *fp, const struct ast_node *node)
 {
-    gen_indexed_param(fp, node, 0);
+    gen_one_param(fp, node);
 }
 
 static void gen_comment(FILE *fp, const char *cmt)
@@ -492,7 +492,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     switch (node->kind) {
 
-    case NOD_LIST:
+    case NOD_GLOBAL:
         gen_code(fp, node->l);
         gen_code(fp, node->r);
         break;
@@ -568,7 +568,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, SUB_, imme(get_mem_offset(node)), RSP);
 
         /* load params */
-        gen_params(fp, node->l);
+        gen_param_list(fp, node->l);
         /* body */
         gen_code(fp, node->r);
         break;
@@ -658,12 +658,71 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     }
 }
 
-void gen_x86(FILE *fp, const struct ast_node *tree)
+static void gen_global_var_list(FILE *fp, const struct symbol_table *table)
+{
+    const int N = table->symbol_count;
+    int nvars = 0;
+    int i;
+
+    fprintf(fp, ".global ");
+    /* XXX */
+    for (i = 0; i < N; i++) {
+        const struct symbol *sym = &table->data[i];
+
+        if (sym->kind == SYM_VAR && sym->scope_level == 0) {
+            if (nvars > 0) {
+                fprintf(fp, ", _%s", sym->name);
+            } else {
+                fprintf(fp, "_%s", sym->name);
+            }
+            nvars++;
+        }
+    }
+    fprintf(fp, "\n");
+}
+
+static void gen_global_var_labels(FILE *fp, const struct symbol_table *table)
+{
+    const int N = table->symbol_count;
+    int i;
+
+    /* XXX */
+    for (i = 0; i < N; i++) {
+        const struct symbol *sym = &table->data[i];
+
+        if (sym->kind == SYM_VAR && sym->scope_level == 0) {
+            const char *datasize;
+            switch (sym->dtype->kind) {
+            case DATA_TYPE_INT:
+                datasize = "long";
+                break;
+            case DATA_TYPE_PTR:
+            case DATA_TYPE_ARRAY:
+                datasize = "quad";
+                break;
+            default:
+                datasize = "byte";
+                break;
+            }
+            fprintf(fp, "_%s:\n", sym->name);
+            fprintf(fp, "    .%s 0\n", datasize);
+        }
+    }
+    fprintf(fp, "\n");
+}
+void gen_x86(FILE *fp,
+        const struct ast_node *tree, const struct symbol_table *table)
 {
     /* XXX */
     if (!att_syntax) {
         fprintf(fp, ".intel_syntax noprefix\n");
     }
+
+    fprintf(fp, ".data\n");
+    gen_global_var_list(fp, table);
+    gen_global_var_labels(fp, table);
+
+    fprintf(fp, ".text\n");
     fprintf(fp, ".global ");
     print_global_funcs(fp, tree);
     fprintf(fp, "\n");

@@ -5,7 +5,7 @@
 #include "type.h"
 
 enum ast_node_kind {
-    NOD_LIST,
+    NOD_GLOBAL,
     NOD_STMT,
     NOD_EXT,  /* to extend child nodes */
     NOD_IF,

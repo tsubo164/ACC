@@ -46,6 +46,9 @@ extern struct symbol *insert_symbol(struct symbol_table *table,
 extern int symbol_scope_begin(struct symbol_table *table);
 extern int symbol_scope_end(struct symbol_table *table);
 
+/* iteration */
+extern struct symbol *next_symbol(const struct symbol_table *table, struct symbol *sym);
+
 /* XXX */
 extern struct symbol_table *new_symbol_table();
 extern void free_symbol_table(struct symbol_table *table);

@@ -876,7 +876,26 @@ static struct ast_node *global_entry(struct parser *p)
         scope_end(p);
 
     } else {
+        ungettok(p);
+
         sym = insert_symbol_(p, ident, SYM_VAR);
+
+        /* XXX FIXME next */
+        if (sym == NULL) {
+            error(p, "redefinition of function");
+            return NULL;
+        }
+
+        tree = new_node(NOD_VAR_DEF, NULL, NULL);
+        sym->dtype = dtype;
+        ast_node_set_symbol(tree, sym);
+        /*
+        */
+        expect_or_error(p, ';', "missing ';' at end of statement");
+        /*
+        tree = NULL;
+        printf("    [%s]: level: %d\n", sym->name, sym->scope_level);
+        */
     }
 
     /* ------------------------------------------ */
@@ -895,9 +914,9 @@ struct ast_node *parse(struct parser *p)
         case TK_INT:
             ungettok(p);
             /*
-            tree = new_node(NOD_LIST, tree, func_def(p));
+            tree = new_node(NOD_GLOBAL, tree, func_def(p));
             */
-            tree = new_node(NOD_LIST, tree, global_entry(p));
+            tree = new_node(NOD_GLOBAL, tree, global_entry(p));
             break;
 
         case TK_EOF:

@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 
     symbol_assign_local_storage(&parser.symtbl);
     semantic_analysis(tree, &parser.symtbl);
-    gen_x86(file, tree);
+    gen_x86(file, tree, &parser.symtbl);
 
     fclose(file);
 
