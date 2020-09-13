@@ -7,6 +7,7 @@ enum symbol_kind {
     SYM_SCOPE_BEGIN,
     SYM_SCOPE_END,
     SYM_VAR,
+    SYM_GLOBAL_VAR,
     SYM_FUNC,
     SYM_PARAM
 };
@@ -17,7 +18,9 @@ struct symbol {
     int mem_offset;
 
     const struct data_type *dtype;
+    /*
     int local_var_id;
+    */
     int scope_level;
 };
 
@@ -26,7 +29,9 @@ struct symbol_table {
     struct symbol data[SYMBOL_TABLE_SIZE];
     int symbol_count;
 
+    /*
     int local_var_id;
+    */
     int current_scope_level;
 };
 

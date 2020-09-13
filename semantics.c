@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "semantics.h"
 
+#if 0
 static void promote_data_type2(struct ast_node *node)
 {
     const struct ast_node *n1, *n2;
@@ -42,7 +43,6 @@ static void promote_data_type2(struct ast_node *node)
         return;
     }
 }
-#if 0
 #endif
 
 static const struct data_type *promote_data_type(
@@ -215,6 +215,7 @@ static int promote_type(struct ast_node *node)
     return 0;
 }
 
+#if 0
 static int promote_type__(struct ast_node *node)
 {
     if (!node) {
@@ -248,6 +249,8 @@ static int promote_type__(struct ast_node *node)
 
     return 0;
 }
+#endif
+
 int semantic_analysis(struct ast_node *tree, struct symbol_table *table)
 {
     /*

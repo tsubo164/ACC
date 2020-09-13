@@ -344,15 +344,6 @@ static int get_data_tag_from_type2(const struct ast_node *node)
     }
 }
 
-static int get_local_var_id(const struct ast_node *node)
-{
-    if (node == NULL) {
-        return 0;
-    }
-
-    return node->data.sym->local_var_id;
-}
-
 static int get_mem_offset(const struct ast_node *node)
 {
     return node->data.sym->mem_offset;
@@ -411,28 +402,26 @@ static void code3__(FILE *fp, const struct ast_node *node,
 /* forward declaration */
 static void gen_code(FILE *fp, const struct ast_node *node);
 
-static void gen_params(FILE *fp, const struct ast_node *node)
+static int gen_indexed_param(FILE *fp, const struct ast_node *node, int index)
 {
     if (node == NULL) {
-        return;
+        return index;
     }
 
-    switch (node->kind) {
+    if (node->kind == NOD_PARAM) {
+        int next_index = gen_indexed_param(fp, node->l, index);
+        const int disp = -get_mem_offset(node);
 
-    case NOD_PARAM:
-        gen_params(fp, node->l);
-        {
-            /* XXX */
-            const int index = get_local_var_id(node);
-            const int disp = -get_mem_offset(node);
-
-            code3__(fp, node, MOV_, arg(index), addr2(RBP, disp));
-        }
-        break;
-
-    default:
-        break;
+        code3__(fp, node, MOV_, arg(next_index), addr2(RBP, disp));
+        return ++next_index;
+    } else {
+        return index;
     }
+}
+
+static void gen_params(FILE *fp, const struct ast_node *node)
+{
+    gen_indexed_param(fp, node, 0);
 }
 
 static void gen_comment(FILE *fp, const char *cmt)
@@ -576,7 +565,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         fprintf(fp, "_%s:\n", node->data.sym->name);
         code2__(fp, node, PUSH_, RBP);
         code3__(fp, node, MOV_,  RSP, RBP);
-        code3__(fp, node, SUB_, imme(node->data.sym->mem_offset), RSP);
+        code3__(fp, node, SUB_, imme(get_mem_offset(node)), RSP);
 
         /* load params */
         gen_params(fp, node->l);

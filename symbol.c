@@ -9,7 +9,9 @@ static void init_symbol(struct symbol *sym)
     sym->kind = SYM_SCOPE_BEGIN;
     sym->mem_offset = 0;
 
+    /*
     sym->local_var_id = 0;
+    */
     sym->scope_level = 0;
 }
 
@@ -26,7 +28,9 @@ struct symbol_table *new_symbol_table()
     }
 
     table->symbol_count = 0;
+    /*
     table->local_var_id = 0;
+    */
     /* 0 means global scope */
     table->current_scope_level = 0;
 
@@ -64,7 +68,9 @@ void init_symbol_table(struct symbol_table *table)
 
     table->symbol_count = 0;
 
+    /*
     table->local_var_id = 0;
+    */
     /* 0 means global scope */
     table->current_scope_level = 0;
 }
@@ -116,13 +122,17 @@ struct symbol *insert_symbol(struct symbol_table *table,
 
     if (kind == SYM_FUNC) {
         /* reset id */
+        /*
         table->local_var_id = 0;
+        */
     }
 
     sym = push_symbol(table, name, kind);
 
     if (kind == SYM_VAR || kind == SYM_PARAM) {
+        /*
         sym->local_var_id = table->local_var_id++;
+        */
     }
 
     return sym;

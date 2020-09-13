@@ -656,6 +656,7 @@ static struct ast_node *statement(struct parser *p)
     return base;
 }
 
+#if 0
 static struct ast_node *func_def(struct parser *p)
 {
     struct ast_node *tree = NULL;
@@ -741,6 +742,146 @@ static struct ast_node *func_def(struct parser *p)
 
     return tree;
 }
+#endif
+
+static struct ast_node *func_params(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    /*
+    struct ast_node *params = NULL;
+    struct symbol *sym = NULL;
+    */
+    const struct token *tok = NULL;
+    int nparams = 0;
+    int i;
+
+#if 0
+    tok = gettok(p);
+    if (tok->kind != TK_INT) {
+        error(p, "missing return type after function name");
+    }
+
+    tok = gettok(p);
+    if (tok->kind != TK_IDENT) {
+        error(p, "missing function name");
+    }
+
+    sym = insert_symbol_(p, tok->word, SYM_FUNC);
+    if (sym == NULL) {
+        error(p, "redefinition of function");
+        return NULL;
+    }
+
+    tree = new_node(NOD_FUNC_DEF, NULL, NULL);
+
+#if 0
+    tree->data.sym = sym;
+    /* XXX */
+    tree->dtype = sym->dtype;
+#endif
+    sym->dtype = type_int();
+    ast_node_set_symbol(tree, sym);
+#endif
+
+    expect_or_error(p, '(', "missing '(' after function name");
+
+    /*
+    scope_begin(p);
+    */
+
+    /* XXX limit 6 params */
+    for (i = 0; i < 6; i++) {
+        struct symbol *symparam = NULL;
+
+        tok = gettok(p);
+        if (tok->kind != TK_INT) {
+            ungettok(p);
+            break;
+        }
+
+        tok = gettok(p);
+        if (tok->kind != TK_IDENT) {
+            error(p, "missing parameter name");
+            break;
+        }
+
+        tree = new_node(NOD_PARAM, tree, NULL);
+
+        symparam = insert_symbol_(p, tok->word, SYM_PARAM);
+        if (symparam == NULL) {
+            error(p, "redefinition of parameter");
+            return NULL;
+        }
+        symparam->dtype = type_int();
+
+        tree->data.sym = symparam;
+        tree->dtype = symparam->dtype;
+        nparams++;
+
+        tok = gettok(p);
+        if (tok->kind != ',') {
+            ungettok(p);
+            break;
+        }
+    }
+
+    expect_or_error(p, ')', "missing ')' after function params");
+
+    return tree;
+}
+
+static struct ast_node *global_entry(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct symbol *sym = NULL;
+    const struct token *tok = NULL;
+    const struct data_type *dtype = NULL;
+    static char ident[TOKEN_WORD_SIZE] = {'\0'};
+
+    tok = gettok(p);
+    if (tok->kind != TK_INT) {
+        error(p, "missing type before ideintifier");
+    }
+    dtype = type_int();
+
+    tok = gettok(p);
+    if (tok->kind != TK_IDENT) {
+        error(p, "missing ideintifier");
+    }
+    strcpy(ident, tok->word);
+
+    /* func or var */
+    tok = gettok(p);
+    if (tok->kind == '(') {
+        ungettok(p);
+
+        sym = insert_symbol_(p, ident, SYM_FUNC);
+
+        /* XXX FIXME next */
+        if (sym == NULL) {
+            error(p, "redefinition of function");
+            return NULL;
+        }
+
+        tree = new_node(NOD_FUNC_DEF, NULL, NULL);
+
+        sym->dtype = dtype;
+        ast_node_set_symbol(tree, sym);
+
+        scope_begin(p);
+
+        tree->l = func_params(p);
+        tree->r = compound_statement(p);
+
+        scope_end(p);
+
+    } else {
+        sym = insert_symbol_(p, ident, SYM_VAR);
+    }
+
+    /* ------------------------------------------ */
+    return tree;
+}
 
 struct ast_node *parse(struct parser *p)
 {
@@ -753,7 +894,10 @@ struct ast_node *parse(struct parser *p)
 
         case TK_INT:
             ungettok(p);
+            /*
             tree = new_node(NOD_LIST, tree, func_def(p));
+            */
+            tree = new_node(NOD_LIST, tree, global_entry(p));
             break;
 
         case TK_EOF:
