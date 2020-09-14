@@ -188,8 +188,10 @@ static struct ast_node *primary_expression(struct parser *p)
             }
 
             base = new_node(NOD_VAR, NULL, NULL);
-            if (sym->kind == SYM_PARAM) {
+            if (is_param(sym)) {
                 base->kind = NOD_PARAM;
+            } else if (is_global_var(sym)) {
+                base->kind = NOD_GLOBAL_VAR;
             }
 #if 0
             base->data.sym = sym;

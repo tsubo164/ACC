@@ -35,6 +35,11 @@ struct symbol_table {
     int current_scope_level;
 };
 
+/* symbol */
+extern int is_global_var(const struct symbol *sym);
+extern int is_param(const struct symbol *sym);
+
+/* symbol table */
 extern void init_symbol_table(struct symbol_table *table);
 
 extern struct symbol *lookup_symbol(struct symbol_table *table,

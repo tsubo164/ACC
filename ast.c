@@ -73,6 +73,7 @@ void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
     N(NOD_WHILE) \
     N(NOD_ASSIGN) \
     N(NOD_VAR) \
+    N(NOD_GLOBAL_VAR) \
     N(NOD_VAR_DEF) \
     N(NOD_ADDR) \
     N(NOD_DEREF) \

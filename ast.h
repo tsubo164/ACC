@@ -13,6 +13,7 @@ enum ast_node_kind {
     NOD_WHILE,
     NOD_ASSIGN,
     NOD_VAR,
+    NOD_GLOBAL_VAR,
     NOD_VAR_DEF,
     NOD_ADDR,
     NOD_DEREF,
