@@ -14,16 +14,18 @@ enum data_tag {
 };
 
 struct data_spec {
+    /*
     int size;
+    */
     const char *suffix;
     const char *directive;
 };
 
 const struct data_spec data_spec_table[] = {
-    {1, "b", "byte  ptr"},
-    {2, "w", "word  ptr"},
-    {4, "l", "dword ptr"},
-    {8, "q", "qword ptr"}
+    {/*1,*/ "b", "byte  ptr"},
+    {/*2,*/ "w", "word  ptr"},
+    {/*4,*/ "l", "dword ptr"},
+    {/*8,*/ "q", "qword ptr"}
 };
 
 /* XXX
@@ -50,6 +52,7 @@ static const char *C__[]  = {"cl",  "cx", "ecx", "rcx"};
 static const char *D__[]  = {"dl",  "dx", "edx", "rdx"};
 static const char *SI__[] = {"sil", "si", "esi", "rsi"};
 static const char *DI__[] = {"dil", "di", "edi", "rdi"};
+static const char *IP__[] = {"ipl", "ip", "eip", "rip"};
 static const char *BP__[] = {"bpl", "bp", "ebp", "rbp"};
 static const char *SP__[] = {"spl", "sp", "esp", "rsp"};
 static const char *R8__[] = {"r8b", "r8w", "r8d", "r8"};
@@ -71,6 +74,7 @@ const struct opecode CMP_   = {"cmp",   1};
 const struct opecode POP_   = {"pop",   0};
 const struct opecode PUSH_  = {"push",  0};
 const struct opecode CALL_  = {"call",  0};
+const struct opecode LEA_   = {"lea",   0};
 const struct opecode RET_   = {"ret",   0};
 const struct opecode MOVZB_ = {"movzb", 1};
 
@@ -113,6 +117,7 @@ const struct operand C_  = {OPR_REG, VARI, C__};
 const struct operand D_  = {OPR_REG, VARI, D__};
 const struct operand SI_ = {OPR_REG, VARI, SI__};
 const struct operand DI_ = {OPR_REG, VARI, DI__};
+const struct operand IP_ = {OPR_REG, VARI, IP__};
 const struct operand BP_ = {OPR_REG, VARI, BP__};
 const struct operand SP_ = {OPR_REG, VARI, SP__};
 
@@ -121,6 +126,7 @@ const struct operand AL  = {OPR_REG, BYTE, A__};
 
 const struct operand RAX = {OPR_REG, QUAD, A__};
 const struct operand RDX = {OPR_REG, QUAD, D__};
+const struct operand RIP = {OPR_REG, QUAD, IP__};
 const struct operand RBP = {OPR_REG, QUAD, BP__};
 const struct operand RSP = {OPR_REG, QUAD, SP__};
 
@@ -150,6 +156,16 @@ struct operand addr2(struct operand oper, int disp)
     struct operand o = oper;
     o.kind = OPR_ADDR;
     o.disp = disp;
+
+    return o;
+}
+
+/* XXX disp(base) */
+struct operand addr2_pc_rel(struct operand oper, const char *disp)
+{
+    struct operand o = oper;
+    o.kind = OPR_ADDR;
+    o.string = disp;
 
     return o;
 }
@@ -250,6 +266,10 @@ static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
 
     case OPR_ADDR:
         if (att_syntax) {
+            if (oper->string) {
+                /* XXX */
+                fprintf(fp, "_%s(%%%s)", oper->string, reg(oper, tag));
+            } else
             if (oper->disp != 0) {
                 fprintf(fp, "%+d(%%%s)", oper->disp, reg(oper, tag));
             } else {
@@ -448,6 +468,10 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
         code3__(fp, node, SUB_, imme(get_mem_offset(node)), RAX);
         break;
 
+    case NOD_GLOBAL_VAR:
+        code3__(fp, node, LEA_, addr2_pc_rel(RIP, node->data.sym->name), RAX);
+        break;
+
     case NOD_DEREF:
         gen_code(fp, node->l);
         break;
@@ -543,6 +567,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
             code3__(fp, node, MOV_, addr2(RBP, disp), A_);
         }
+        break;
+
+    case NOD_GLOBAL_VAR:
+        code3__(fp, node, MOV_, addr2_pc_rel(RIP, node->data.sym->name), RAX);
         break;
 
     case NOD_VAR_DEF:
