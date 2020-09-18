@@ -562,11 +562,15 @@ static struct ast_node *var_def(struct parser *p)
         return NULL;;
     }
 
+#if 0
     sym = insert_symbol_(p, tok->word, SYM_VAR);
     if (sym == NULL) {
         error(p, "redefinition of variable");
         return NULL;
     }
+#endif
+    /* XXX */
+    sym = define_variable(&p->symtbl, tok->word);
 
     /* array */
     tok = gettok(p);
@@ -793,7 +797,7 @@ static struct ast_node *func_params(struct parser *p)
 
     /* XXX limit 6 params */
     for (i = 0; i < 6; i++) {
-        struct symbol *symparam = NULL;
+        struct symbol *sym = NULL;
 
         tok = gettok(p);
         if (tok->kind != TK_INT) {
@@ -809,15 +813,21 @@ static struct ast_node *func_params(struct parser *p)
 
         tree = new_node(NOD_PARAM, tree, NULL);
 
-        symparam = insert_symbol_(p, tok->word, SYM_PARAM);
-        if (symparam == NULL) {
+        /* XXX */
+        sym = define_variable(&p->symtbl, tok->word);
+        sym->kind = SYM_PARAM;
+#if 0
+        printf("    [%s]: %p\n", sym->name, (void *)sym);
+        sym = insert_symbol_(p, tok->word, SYM_PARAM);
+        if (sym == NULL) {
             error(p, "redefinition of parameter");
             return NULL;
         }
-        symparam->dtype = type_int();
+#endif
+        sym->dtype = type_int();
 
-        tree->data.sym = symparam;
-        tree->dtype = symparam->dtype;
+        tree->data.sym = sym;
+        tree->dtype = sym->dtype;
         nparams++;
 
         tok = gettok(p);
@@ -880,6 +890,7 @@ static struct ast_node *global_entry(struct parser *p)
     } else {
         ungettok(p);
 
+#if 0
         sym = insert_symbol_(p, ident, SYM_VAR);
 
         /* XXX FIXME next */
@@ -887,6 +898,12 @@ static struct ast_node *global_entry(struct parser *p)
             error(p, "redefinition of function");
             return NULL;
         }
+#endif
+        /* XXX */
+        sym = define_variable(&p->symtbl, ident);
+        /*
+        printf("    [%s]: %p\n", sym->name, (void *)sym);
+        */
 
         tree = new_node(NOD_VAR_DEF, NULL, NULL);
         sym->dtype = dtype;

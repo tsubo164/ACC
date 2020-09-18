@@ -251,17 +251,34 @@ static int promote_type__(struct ast_node *node)
 }
 #endif
 
+static int analize_symbol_usage(struct symbol_table *table)
+{
+    const int N = get_symbol_count(table);
+    int i;
+
+    for (i = 0; i < N; i++) {
+        const struct symbol *sym = get_symbol(table, i);
+
+        if (symbol_flag_is_on(sym, IS_REDEFINED)) {
+            fprintf(stderr, "ERROR: redifinition of %s\n", sym->name);
+        }
+    }
+    return 0;
+}
+
 int semantic_analysis(struct ast_node *tree, struct symbol_table *table)
 {
     /*
-    */
     int promo;
+    */
 
     /*
     promo = promote_type__(tree);
     */
 
-    promo = promote_type(tree);
+    analize_symbol_usage(table);
+
+    promote_type(tree);
 
     return 0;
 }

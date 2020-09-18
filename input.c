@@ -1,15 +1,18 @@
 /* global variables and pointer */
 
+int x;
+
 int add(int x, int y)
 {
     return x + y;
 }
 
-int x;
 int z;
 
 int main()
 {
+    int x;
+
     int a;
     int *p;
 

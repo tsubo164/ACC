@@ -7,6 +7,7 @@ static void init_symbol(struct symbol *sym)
 {
     sym->name = NULL;
     sym->kind = SYM_SCOPE_BEGIN;
+    sym->flag = 0;
     sym->mem_offset = 0;
 
     /*
@@ -27,6 +28,16 @@ int is_global_var(const struct symbol *sym)
 int is_param(const struct symbol *sym)
 {
     return sym->kind == SYM_PARAM;
+}
+
+void symbol_flag_on(struct symbol *sym, int flag)
+{
+    sym->flag |= flag;
+}
+
+int symbol_flag_is_on(const struct symbol *sym, int flag)
+{
+    return sym->flag & flag;
 }
 
 /* XXX */
@@ -152,6 +163,21 @@ struct symbol *insert_symbol(struct symbol_table *table,
     return sym;
 }
 
+struct symbol *define_variable(struct symbol_table *table, const char *name)
+{
+    struct symbol *sym = lookup_symbol(table, name, SYM_VAR);
+    const int cur_lv = table->current_scope_level;
+
+    if (sym && sym->scope_level == cur_lv) {
+        symbol_flag_on(sym, IS_REDEFINED);
+        return sym;
+    }
+
+    sym = push_symbol(table, name, SYM_VAR);
+
+    return sym;
+}
+
 int symbol_scope_begin(struct symbol_table *table)
 {
     table->current_scope_level++;
@@ -166,6 +192,19 @@ int symbol_scope_end(struct symbol_table *table)
     table->current_scope_level--;
 
     return table->current_scope_level;
+}
+
+int get_symbol_count(const struct symbol_table *table)
+{
+    return table->symbol_count;
+}
+
+struct symbol *get_symbol(struct symbol_table *table, int index)
+{
+    if (index < 0 || index >= get_symbol_count(table)) {
+        return NULL;
+    }
+    return &table->data[index];
 }
 
 static int next_aligned(int current_offset, int next_align)
