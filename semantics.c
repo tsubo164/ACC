@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include "semantics.h"
+#include "message.h"
 
 #if 0
 static void promote_data_type2(struct ast_node *node)
@@ -251,7 +252,7 @@ static int promote_type__(struct ast_node *node)
 }
 #endif
 
-static int analize_symbol_usage(struct symbol_table *table)
+static int analize_symbol_usage(struct symbol_table *table, struct message_list *messages)
 {
     const int N = get_symbol_count(table);
     int i;
@@ -260,23 +261,16 @@ static int analize_symbol_usage(struct symbol_table *table)
         const struct symbol *sym = get_symbol(table, i);
 
         if (symbol_flag_is_on(sym, IS_REDEFINED)) {
-            fprintf(stderr, "ERROR: redifinition of %s\n", sym->name);
+            add_error(messages, "redefinition of variable", sym->file_pos);
         }
     }
     return 0;
 }
 
-int semantic_analysis(struct ast_node *tree, struct symbol_table *table)
+int semantic_analysis(struct ast_node *tree,
+        struct symbol_table *table, struct message_list *messages)
 {
-    /*
-    int promo;
-    */
-
-    /*
-    promo = promote_type__(tree);
-    */
-
-    analize_symbol_usage(table);
+    analize_symbol_usage(table, messages);
 
     promote_type(tree);
 

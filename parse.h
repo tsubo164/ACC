@@ -18,6 +18,9 @@ struct parser {
     const char *error_msg;
 };
 
+extern struct parser *new_parser();
+extern void free_parser(struct parser *p);
+
 extern void parser_init(struct parser *p);
 
 extern struct ast_node *parse(struct parser *p);

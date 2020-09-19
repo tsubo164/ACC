@@ -3,9 +3,11 @@
 #include <string.h>
 #include "gen_x86.h"
 #include "lexer.h"
+#include "message.h"
 #include "parse.h"
 #include "semantics.h"
 
+#if 0
 #define TERMINAL_COLOR_BLACK   "\x1b[30m"
 #define TERMINAL_COLOR_RED     "\x1b[31m"
 #define TERMINAL_COLOR_GREEN   "\x1b[32m"
@@ -72,6 +74,7 @@ void print_error_message(const struct parser *p, const char *filename)
     printf(TERMINAL_COLOR_RESET);
     printf(TERMINAL_DECORATION_RESET);
 }
+#endif
 
 void make_output_filename(const char *input, char *output)
 {
@@ -88,8 +91,10 @@ void make_output_filename(const char *input, char *output)
 
 int main(int argc, char **argv)
 {
+    struct parser *parser;
     struct ast_node *tree;
-    struct parser parser;
+    struct message_list *messages;
+
     FILE *file = NULL;
     char output[256] = {'\0'};
 
@@ -104,33 +109,51 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    parser_init(&parser);
-    parser.lex.file = file;
+    parser = new_parser();
+    parser->lex.file = file;
 
+    messages = new_message_list();
+
+    /* XXX */
     {
-        tree = parse(&parser);
-
-        if (parser.error_pos >= 0) {
-            print_error_message(&parser, argv[1]);
+        tree = parse(parser);
+        /*
+        if (parser->error_pos >= 0) {
+            print_error_message(parser, argv[1]);
 
             fclose(file);
             exit(EXIT_FAILURE);
         }
+        */
+    }
+
+    symbol_assign_local_storage(&parser->symtbl);
+    semantic_analysis(tree, &parser->symtbl, messages);
+
+    /* ------------------------- */
+    if (messages->error_count > 0) {
+
+        print_error_messages(file, argv[1], messages);
+
+        fclose(file);
+        exit(EXIT_FAILURE);
     }
 
     fclose(file);
 
+    /* ------------------------- */
     make_output_filename(argv[1], output);
     file = fopen(output, "w");
     if (!file) {
         return -1;
     }
-
-    symbol_assign_local_storage(&parser.symtbl);
-    semantic_analysis(tree, &parser.symtbl);
-    gen_x86(file, tree, &parser.symtbl);
+    gen_x86(file, tree, &parser->symtbl);
 
     fclose(file);
+
+    /* ------------------------- */
+    free_message_list(messages);
+    free_parser(parser);
 
     return 0;
 }

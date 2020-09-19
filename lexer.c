@@ -69,8 +69,8 @@ enum token_kind lex_get_token(struct lexer *l, struct token *tok)
     wp = tok->word;
 
 state_initial:
-    tok_pos = get_file_pos(l);
     c = readc(l);
+    tok_pos = get_file_pos(l);
 
     switch (c) {
 

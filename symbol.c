@@ -14,6 +14,9 @@ static void init_symbol(struct symbol *sym)
     sym->local_var_id = 0;
     */
     sym->scope_level = 0;
+
+    /* XXX */
+    sym->file_pos = 0L;
 }
 
 int is_global_var(const struct symbol *sym)
@@ -174,6 +177,21 @@ struct symbol *define_variable(struct symbol_table *table, const char *name)
     }
 
     sym = push_symbol(table, name, SYM_VAR);
+
+    return sym;
+}
+
+struct symbol *define_function(struct symbol_table *table, const char *name)
+{
+    struct symbol *sym = lookup_symbol(table, name, SYM_FUNC);
+    const int cur_lv = table->current_scope_level;
+
+    if (sym && sym->scope_level == cur_lv) {
+        symbol_flag_on(sym, IS_REDEFINED);
+        return sym;
+    }
+
+    sym = push_symbol(table, name, SYM_FUNC);
 
     return sym;
 }

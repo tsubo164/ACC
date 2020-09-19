@@ -31,6 +31,9 @@ struct symbol {
     int local_var_id;
     */
     int scope_level;
+
+    /* XXX */
+    long file_pos;
 };
 
 #define SYMBOL_TABLE_SIZE 128
@@ -61,6 +64,7 @@ extern struct symbol *insert_symbol(struct symbol_table *table,
 
 /* XXX */
 extern struct symbol *define_variable(struct symbol_table *table, const char *name);
+extern struct symbol *define_function(struct symbol_table *table, const char *name);
 
 extern int symbol_scope_begin(struct symbol_table *table);
 extern int symbol_scope_end(struct symbol_table *table);
@@ -77,4 +81,4 @@ extern void free_symbol_table(struct symbol_table *table);
 /* XXX semantics? this includes mem offset logic that depends on architure */
 extern int symbol_assign_local_storage(struct symbol_table *table);
 
-#endif /* _H */
+#endif /* SYMBOL_H */

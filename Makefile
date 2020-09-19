@@ -5,7 +5,7 @@ LDFLAGS =
 RM      = rm -f
 
 target_name := acc
-files       := ast gen_x86 lexer main parse semantics symbol type
+files       := ast gen_x86 lexer main message parse semantics symbol type
 
 target  := $(target_name)
 sources := $(addsuffix .c, $(files))
