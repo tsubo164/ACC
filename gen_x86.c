@@ -562,10 +562,20 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_PARAM:
     case NOD_VAR:
         {
+#if 0
             /* XXX */
             const int disp = -get_mem_offset(node);
 
             code3__(fp, node, MOV_, addr2(RBP, disp), A_);
+#endif
+            /* XXX */
+            const int disp = -get_mem_offset(node);
+
+            if (node->dtype->kind == DATA_TYPE_ARRAY) {
+                code3__(fp, node, LEA_, addr2(RBP, disp), A_);
+            } else {
+                code3__(fp, node, MOV_, addr2(RBP, disp), A_);
+            }
         }
         break;
 
@@ -692,12 +702,16 @@ static void gen_global_var_list(FILE *fp, const struct symbol_table *table)
     int nvars = 0;
     int i;
 
-    fprintf(fp, ".global ");
     /* XXX */
     for (i = 0; i < N; i++) {
         const struct symbol *sym = &table->data[i];
 
         if (sym->kind == SYM_VAR && sym->scope_level == 0) {
+            if (nvars == 0) {
+                fprintf(fp, ".data\n");
+                fprintf(fp, ".global ");
+            }
+
             if (nvars > 0) {
                 fprintf(fp, ", _%s", sym->name);
             } else {
@@ -706,12 +720,16 @@ static void gen_global_var_list(FILE *fp, const struct symbol_table *table)
             nvars++;
         }
     }
-    fprintf(fp, "\n");
+
+    if (nvars > 0) {
+        fprintf(fp, "\n");
+    }
 }
 
 static void gen_global_var_labels(FILE *fp, const struct symbol_table *table)
 {
     const int N = table->symbol_count;
+    int nvars = 0;
     int i;
 
     /* XXX */
@@ -734,9 +752,14 @@ static void gen_global_var_labels(FILE *fp, const struct symbol_table *table)
             }
             fprintf(fp, "_%s:\n", sym->name);
             fprintf(fp, "    .%s 0\n", datasize);
+
+            nvars++;
         }
     }
-    fprintf(fp, "\n");
+
+    if (nvars > 0) {
+        fprintf(fp, "\n");
+    }
 }
 void gen_x86(FILE *fp,
         const struct ast_node *tree, const struct symbol_table *table)
@@ -746,7 +769,6 @@ void gen_x86(FILE *fp,
         fprintf(fp, ".intel_syntax noprefix\n");
     }
 
-    fprintf(fp, ".data\n");
     gen_global_var_list(fp, table);
     gen_global_var_labels(fp, table);
 

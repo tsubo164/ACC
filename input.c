@@ -14,14 +14,20 @@ int z;
 int main()
 {
     int x[2];
-    /*
     int a;
+    /*
     */
 
-    x[0] = 7;
-
-    return 0;
     /*
+    x[0] = 7;
+    a = 7;
+    */
+    x[0] = 2;
+    *(x + 1) = -7;
+
+    /*
+    return 0;
+    */
     x[0] = x[1] - x[0];
 
     a = 51;
@@ -30,5 +36,4 @@ int main()
         return 0;
     else
         return 1;
-    */
 }
