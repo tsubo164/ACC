@@ -13,8 +13,8 @@ test: all
 $(targets): %: %.c
 	@echo -n '  $< ==> '
 	@$(ACC) $<
-	@$(CC) -o $@ $@.s
-	@./$@ && echo "\033[0;32mOK\033[0;39m"
+	@$(CC) -o $@.out $@.s
+	@./$@.out && echo "\033[0;32mOK\033[0;39m"
 
 clean:
 	$(RM) $(targets) *.s

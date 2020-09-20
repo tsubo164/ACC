@@ -1,5 +1,6 @@
 /* global variables and pointer */
 
+/*
 int x;
 
 int add(int x, int y)
@@ -8,24 +9,26 @@ int add(int x, int y)
 }
 
 int z;
+*/
 
 int main()
 {
-    int x;
-
+    int x[2];
+    /*
     int a;
-    int *p;
+    */
 
-    p = &x;
+    x[0] = 7;
 
-    *p = 3; /* x = 3 */
+    return 0;
+    /*
+    x[0] = x[1] - x[0];
 
-    a = add(39, x); /* a = 42 */
+    a = 51;
 
-    z = a; /* z = 42 */
-
-    if (z + *p == 45)
+    if (a + x[0] == 42)
         return 0;
     else
         return 1;
+    */
 }
