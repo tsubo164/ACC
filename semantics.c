@@ -152,8 +152,8 @@ static int promote_type(struct ast_node *node)
     case NOD_SUB:
     case NOD_MUL:
     case NOD_DIV:
-    case NOD_ASSIGN:
         /*
+    case NOD_ASSIGN:
     case NOD_EQ:
         */
         node->dtype = promote_data_type(node->l, node->r);
@@ -166,6 +166,9 @@ static int promote_type(struct ast_node *node)
         */
         break;
 
+    case NOD_ASSIGN:
+        node->dtype = node->l->dtype;
+        break;
         /*
     case NOD_NUM:
         break;

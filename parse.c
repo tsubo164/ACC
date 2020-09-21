@@ -143,8 +143,8 @@ static struct ast_node *statement(struct parser *p);
 
 /*
  * primary_expression
- *     : TK_NUM
- *     | TK_IDENT
+ *     : TOK_NUM
+ *     | TOK_IDENT
  *     | '(' expression ')'
  *     ;
  */
@@ -156,14 +156,14 @@ static struct ast_node *primary_expression(struct parser *p)
 
     switch (tok->kind) {
 
-    case TK_NUM:
+    case TOK_NUM:
         /* XXX base = new_number(tok->value); */
         base = new_node(NOD_NUM, NULL, NULL);
         base->data.ival = tok->value;
         base->dtype = type_int();
         return base;
 
-    case TK_IDENT:
+    case TOK_IDENT:
         strcpy(ident, tok->word);
         tok = gettok(p);
         if (tok->kind == '(') {
@@ -404,8 +404,8 @@ static struct ast_node *additive_expression(struct parser *p)
  *     : additive_expression
  *     | relational_expression '<' additive_expression
  *     | relational_expression '>' additive_expression
- *     | relational_expression TK_LE additive_expression
- *     | relational_expression TK_GE additive_expression
+ *     | relational_expression TOK_LE additive_expression
+ *     | relational_expression TOK_GE additive_expression
  *     ;
  */
 static struct ast_node *relational_expression(struct parser *p)
@@ -425,11 +425,11 @@ static struct ast_node *relational_expression(struct parser *p)
             base = new_node(NOD_GT, base, additive_expression(p));
             break;
 
-        case TK_LE:
+        case TOK_LE:
             base = new_node(NOD_LE, base, additive_expression(p));
             break;
 
-        case TK_GE:
+        case TOK_GE:
             base = new_node(NOD_GE, base, additive_expression(p));
             break;
 
@@ -443,8 +443,8 @@ static struct ast_node *relational_expression(struct parser *p)
 /*
  * equality_expression
  *     : relational_expression
- *     | equality_expression TK_EQ relational_expression
- *     | equality_expression TK_NE relational_expression
+ *     | equality_expression TOK_EQ relational_expression
+ *     | equality_expression TOK_NE relational_expression
  *     ;
  */
 static struct ast_node *equality_expression(struct parser *p)
@@ -456,11 +456,11 @@ static struct ast_node *equality_expression(struct parser *p)
 
         switch (tok->kind) {
 
-        case TK_EQ:
+        case TOK_EQ:
             base = new_node(NOD_EQ, base, relational_expression(p));
             break;
 
-        case TK_NE:
+        case TOK_NE:
             base = new_node(NOD_NE, base, relational_expression(p));
             break;
 
@@ -534,7 +534,7 @@ static struct ast_node *compound_statement(struct parser *p)
         case '}':
             goto final;
 
-        case TK_EOF:
+        case TOK_EOF:
             error(p, "missing '}' at end of file");
             goto final;
 
@@ -558,12 +558,27 @@ static struct ast_node *var_def(struct parser *p)
     struct data_type *dtype = NULL;
     const struct token *tok = NULL;
 
+#if 0
     /* type */
     tok = gettok(p);
-    if (tok->kind != TK_INT) {
+    if (tok->kind != TOK_INT) {
         error(p, "missing type name in declaration");
     }
     dtype = type_int();
+#endif
+    /* type */
+    tok = gettok(p);
+    switch (tok->kind) {
+    case TOK_CHAR:
+        dtype = type_char();
+        break;
+    case TOK_INT: 
+        dtype = type_int();
+        break;
+    default:
+        error(p, "missing type name in declaration");
+        break;
+    }
 
     /* pointer */
     tok = gettok(p);
@@ -577,7 +592,7 @@ static struct ast_node *var_def(struct parser *p)
 
     /* identifier */
     tok = gettok(p);
-    if (tok->kind != TK_IDENT) {
+    if (tok->kind != TOK_IDENT) {
         error(p, "missing variable name");
         return NULL;;
     }
@@ -601,7 +616,7 @@ static struct ast_node *var_def(struct parser *p)
         int array_len = 0;
 
         tok = gettok(p);
-        if (tok->kind != TK_NUM) {
+        if (tok->kind != TOK_NUM) {
             error(p, "missing constant after array '['");
         }
         array_len = tok->value;
@@ -631,7 +646,7 @@ static struct ast_node *var_def(struct parser *p)
 /*
  * statement
  *     : expression ';'
- *     | TK_RETURN expression ';'
+ *     | TOK_RETURN expression ';'
  *     ;
  */
 static struct ast_node *statement(struct parser *p)
@@ -641,25 +656,25 @@ static struct ast_node *statement(struct parser *p)
 
     switch (tok->kind) {
 
-    case TK_RETURN:
+    case TOK_RETURN:
         base = new_node(NOD_RETURN, expression(p), NULL);
         expect_or_error(p, ';', "missing ';' at end of return statement");
         break;
 
-    case TK_IF:
+    case TOK_IF:
         expect_or_error(p, '(', "missing '(' after if");
         base = new_node(NOD_IF, expression(p), NULL);
         expect_or_error(p, ')', "missing ')' after if condition");
         base->r = new_node(NOD_EXT, statement(p), NULL);
         tok = gettok(p);
-        if (tok->kind == TK_ELSE) {
+        if (tok->kind == TOK_ELSE) {
             base->r->r = statement(p);
         } else {
             ungettok(p);
         }
         break;
 
-    case TK_WHILE:
+    case TOK_WHILE:
         expect_or_error(p, '(', "missing '(' after while");
         base = new_node(NOD_WHILE, expression(p), NULL);
         expect_or_error(p, ')', "missing ')' after while condition");
@@ -670,7 +685,8 @@ static struct ast_node *statement(struct parser *p)
         ungettok(p);
         return compound_statement(p);
 
-    case TK_INT:
+    case TOK_CHAR:
+    case TOK_INT:
         ungettok(p);
         return var_def(p);
 
@@ -698,13 +714,13 @@ static struct ast_node *func_params(struct parser *p)
         struct symbol *sym = NULL;
 
         tok = gettok(p);
-        if (tok->kind != TK_INT) {
+        if (tok->kind != TOK_INT) {
             ungettok(p);
             break;
         }
 
         tok = gettok(p);
-        if (tok->kind != TK_IDENT) {
+        if (tok->kind != TOK_IDENT) {
             error(p, "missing parameter name");
             break;
         }
@@ -743,13 +759,13 @@ static struct ast_node *global_entry(struct parser *p)
     long fpos;
 
     tok = gettok(p);
-    if (tok->kind != TK_INT) {
+    if (tok->kind != TOK_INT) {
         error(p, "missing type before ideintifier");
     }
     dtype = type_int();
 
     tok = gettok(p);
-    if (tok->kind != TK_IDENT) {
+    if (tok->kind != TOK_IDENT) {
         error(p, "missing ideintifier");
     }
     strcpy(ident, tok->word);
@@ -803,12 +819,12 @@ struct ast_node *parse(struct parser *p)
 
         switch (tok->kind) {
 
-        case TK_INT:
+        case TOK_INT:
             ungettok(p);
             tree = new_node(NOD_GLOBAL, tree, global_entry(p));
             break;
 
-        case TK_EOF:
+        case TOK_EOF:
             return tree;
 
         default:

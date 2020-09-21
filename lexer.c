@@ -20,25 +20,27 @@ static long get_file_pos(struct lexer *l)
 
 static void keyword_or_identifier(struct token *tok)
 {
-    if (!strcmp(tok->word, "else")) {
-        tok->kind = TK_ELSE;
+    if (!strcmp(tok->word, "char")) {
+        tok->kind = TOK_CHAR;
+    } else if (!strcmp(tok->word, "else")) {
+        tok->kind = TOK_ELSE;
     } else if (!strcmp(tok->word, "if")) {
-        tok->kind = TK_IF;
+        tok->kind = TOK_IF;
     } else if (!strcmp(tok->word, "int")) {
-        tok->kind = TK_INT;
+        tok->kind = TOK_INT;
     } else if (!strcmp(tok->word, "return")) {
-        tok->kind = TK_RETURN;
+        tok->kind = TOK_RETURN;
     } else if (!strcmp(tok->word, "while")) {
-        tok->kind = TK_WHILE;
+        tok->kind = TOK_WHILE;
     } else {
-        tok->kind = TK_IDENT;
+        tok->kind = TOK_IDENT;
     }
 }
 
 void token_init(struct token *tok)
 {
     int i;
-    tok->kind = TK_UNKNOWN;
+    tok->kind = TOK_UNKNOWN;
     tok->value = 0;
     tok->file_pos = 0L;
     for (i = 0; i < TOKEN_WORD_SIZE; i++) {
@@ -63,7 +65,7 @@ enum token_kind lex_get_token(struct lexer *l, struct token *tok)
     char *wp;
     long tok_pos;
 
-    tok->kind = TK_UNKNOWN;
+    tok->kind = TOK_UNKNOWN;
     tok->value = 0;
     tok->word[0] = '\0';
     wp = tok->word;
@@ -103,7 +105,7 @@ state_initial:
         c = readc(l);
         switch (c) {
         case '=':
-            tok->kind = TK_NE;
+            tok->kind = TOK_NE;
             break;
         default:
             unreadc(l, c);
@@ -116,7 +118,7 @@ state_initial:
         c = readc(l);
         switch (c) {
         case '=':
-            tok->kind = TK_EQ;
+            tok->kind = TOK_EQ;
             break;
         default:
             unreadc(l, c);
@@ -130,7 +132,7 @@ state_initial:
         c = readc(l);
         switch (c) {
         case '=':
-            tok->kind = TK_LE;
+            tok->kind = TOK_LE;
             break;
         default:
             unreadc(l, c);
@@ -143,7 +145,7 @@ state_initial:
         c = readc(l);
         switch (c) {
         case '=':
-            tok->kind = TK_GE;
+            tok->kind = TOK_GE;
             break;
         default:
             unreadc(l, c);
@@ -195,12 +197,12 @@ state_initial:
 
     /* eof */
     case EOF:
-        tok->kind = TK_EOF;
+        tok->kind = TOK_EOF;
         goto state_final;
 
     /* unknown */
     default:
-        tok->kind = TK_UNKNOWN;
+        tok->kind = TOK_UNKNOWN;
         goto state_final;
     }
 
@@ -214,7 +216,7 @@ state_number:
     } else {
         *wp = '\0';
         unreadc(l, c);
-        tok->kind = TK_NUM;
+        tok->kind = TOK_NUM;
         tok->value = strtol(tok->word, &wp, 10);
         goto state_final;
     }
@@ -231,7 +233,7 @@ state_number:
     default:
         *wp = '\0';
         unreadc(l, c);
-        tok->kind = TK_NUM;
+        tok->kind = TOK_NUM;
         tok->value = strtol(tok->word, &wp, 10);
         goto state_final;
     }
@@ -246,7 +248,7 @@ state_word:
     } else {
         *wp = '\0';
         unreadc(l, c);
-        tok->kind = TK_IDENT;
+        tok->kind = TOK_IDENT;
         goto state_final;
     }
 #endif

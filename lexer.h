@@ -4,23 +4,24 @@
 #include <stdio.h>
 
 enum token_kind {
-    TK_UNKNOWN = -1,
-    TK_END_OF_ASCII = 127,
-    TK_NUM,
-    TK_IDENT,
+    TOK_UNKNOWN = -1,
+    TOK_END_OF_ASCII = 127,
+    TOK_NUM,
+    TOK_IDENT,
     /* keywords */
-    TK_ELSE,
-    TK_IF,
-    TK_RETURN,
-    TK_WHILE,
+    TOK_ELSE,
+    TOK_IF,
+    TOK_RETURN,
+    TOK_WHILE,
     /* types */
-    TK_INT,
+    TOK_CHAR,
+    TOK_INT,
     /* bin op */
-    TK_LE,
-    TK_GE,
-    TK_EQ,
-    TK_NE,
-    TK_EOF
+    TOK_LE,
+    TOK_GE,
+    TOK_EQ,
+    TOK_NE,
+    TOK_EOF
 };
 
 #define TOKEN_WORD_SIZE 128

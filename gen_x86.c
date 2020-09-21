@@ -76,6 +76,7 @@ const struct opecode PUSH_  = {"push",  0};
 const struct opecode CALL_  = {"call",  0};
 const struct opecode LEA_   = {"lea",   0};
 const struct opecode RET_   = {"ret",   0};
+const struct opecode MOVSB_ = {"movsb", 1};
 const struct opecode MOVZB_ = {"movzb", 1};
 
 const struct opecode JE_    = {"je",  0};
@@ -123,6 +124,7 @@ const struct operand SP_ = {OPR_REG, VARI, SP__};
 
 /* fixed name registers */
 const struct operand AL  = {OPR_REG, BYTE, A__};
+const struct operand EAX = {OPR_REG, LONG, A__};
 
 const struct operand RAX = {OPR_REG, QUAD, A__};
 const struct operand RDX = {OPR_REG, QUAD, D__};
@@ -358,9 +360,10 @@ static int get_data_tag_from_type2(const struct ast_node *node)
     dt = node->dtype;
 
     switch (dt->kind) {
-    case DATA_TYPE_INT: return LONG;
-    case DATA_TYPE_PTR: return QUAD;
-    default:            return QUAD;
+    case DATA_TYPE_CHAR: return BYTE;
+    case DATA_TYPE_INT:  return LONG;
+    case DATA_TYPE_PTR:  return QUAD;
+    default:             return QUAD;
     }
 }
 
@@ -411,11 +414,37 @@ static void code2__(FILE *fp, const struct ast_node *node,
 static void code3__(FILE *fp, const struct ast_node *node,
         struct opecode op, struct operand oper1, struct operand oper2)
 {
+#if 0
     const struct opecode o0 = op;
     const struct operand o1 = oper1;
     const struct operand o2 = oper2;
     const int tag = get_data_tag_from_type2(node);
 
+    code__(fp, tag, &o0, &o1, &o2);
+#endif
+    struct opecode o0 = op;
+    struct operand o1 = oper1;
+    struct operand o2 = oper2;
+    int tag = get_data_tag_from_type2(node);
+
+    /* XXX */
+    /* this rule comes from x86-64 machine instructions.
+     * it depends on the size of register when loading from memory.
+     * it is independent of language data types.
+     */
+    if (!strcmp(op.mnemonic, "mov") &&
+        oper1.kind == OPR_ADDR &&
+        oper2.kind == OPR_REG)
+    {
+        switch (tag) {
+        case BYTE:
+            o0 = MOVSB_;
+            o2 = EAX;
+            break;
+        default:
+            break;
+        }
+    }
     code__(fp, tag, &o0, &o1, &o2);
 }
 
@@ -576,6 +605,24 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             } else {
                 code3__(fp, node, MOV_, addr2(RBP, disp), A_);
             }
+#if 0
+            /* XXX */
+            const int disp = -get_mem_offset(node);
+
+            switch (node->dtype->kind) {
+            case DATA_TYPE_CHAR:
+                gen_comment(fp, "==================");
+                code3__(fp, node, MOVSB_, addr2(RBP, disp), EAX);
+                gen_comment(fp, "==================");
+                break;
+            case DATA_TYPE_ARRAY:
+                code3__(fp, node, LEA_, addr2(RBP, disp), A_);
+                break;
+            default:
+                code3__(fp, node, MOV_, addr2(RBP, disp), A_);
+                break;
+            }
+#endif
         }
         break;
 
@@ -626,6 +673,17 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_DEREF:
         gen_code(fp, node->l);
         code3__(fp, node, MOV_, addr1(RAX), A_);
+#if 0
+            /* XXX */
+            switch (node->dtype->kind) {
+            case DATA_TYPE_CHAR:
+                code3__(fp, node, MOVSB_, addr1(RAX), EAX);
+                break;
+            default:
+                code3__(fp, node, MOV_, addr1(RAX), A_);
+                break;
+            }
+#endif
         break;
 
     case NOD_NUM:
@@ -739,6 +797,9 @@ static void gen_global_var_labels(FILE *fp, const struct symbol_table *table)
         if (sym->kind == SYM_VAR && sym->scope_level == 0) {
             const char *datasize;
             switch (sym->dtype->kind) {
+            case DATA_TYPE_CHAR:
+                datasize = "byte";
+                break;
             case DATA_TYPE_INT:
                 datasize = "long";
                 break;
