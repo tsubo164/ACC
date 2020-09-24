@@ -628,7 +628,7 @@ static struct ast_node *var_def(struct parser *p)
         ungettok(p);
     }
 
-    /* commit */
+    /* commit var */
 
     tree = new_node(NOD_VAR_DEF, NULL, NULL);
 #if 0
@@ -637,6 +637,14 @@ static struct ast_node *var_def(struct parser *p)
 #endif
     sym->dtype = dtype;
     ast_node_set_symbol(tree, sym);
+
+    /* initialization */
+    tok = gettok(p);
+    if (tok->kind == '=') {
+        tree->l = expression(p);
+    } else {
+        ungettok(p);
+    }
 
     expect_or_error(p, ';', "missing ';' at end of declaration");
 
@@ -758,12 +766,28 @@ static struct ast_node *global_entry(struct parser *p)
     /* XXX */
     long fpos;
 
+#if 0
     tok = gettok(p);
     if (tok->kind != TOK_INT) {
         error(p, "missing type before ideintifier");
     }
     dtype = type_int();
+#endif
+    /* type */
+    tok = gettok(p);
+    switch (tok->kind) {
+    case TOK_CHAR:
+        dtype = type_char();
+        break;
+    case TOK_INT: 
+        dtype = type_int();
+        break;
+    default:
+        error(p, "missing type name in declaration");
+        break;
+    }
 
+    /* ideintifier */
     tok = gettok(p);
     if (tok->kind != TOK_IDENT) {
         error(p, "missing ideintifier");
@@ -802,6 +826,17 @@ static struct ast_node *global_entry(struct parser *p)
         sym->dtype = dtype;
         ast_node_set_symbol(tree, sym);
 
+        /* XXX initialization */
+        tok = gettok(p);
+        if (tok->kind == '=') {
+            tree->l = expression(p);
+            if (tree->l->kind == NOD_NUM) {
+                sym->mem_offset = tree->l->data.ival;
+            }
+        } else {
+            ungettok(p);
+        }
+
         /* XXX */
         sym->file_pos = fpos;
         expect_or_error(p, ';', "missing ';' at end of statement");
@@ -819,6 +854,7 @@ struct ast_node *parse(struct parser *p)
 
         switch (tok->kind) {
 
+        case TOK_CHAR:
         case TOK_INT:
             ungettok(p);
             tree = new_node(NOD_GLOBAL, tree, global_entry(p));

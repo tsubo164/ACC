@@ -491,6 +491,8 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
 
     switch (node->kind) {
 
+        /* XXX */
+    case NOD_VAR_DEF:
     case NOD_PARAM:
     case NOD_VAR:
         code3__(fp, node, MOV_, BP_, RAX);
@@ -631,6 +633,12 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_VAR_DEF:
+        /* XXX */
+        gen_lvalue(fp, node);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->l);
+        code2__(fp, node, POP_,  RDX);
+        code3__(fp, node, MOV_, A_, addr1(RDX));
         break;
 
     case NOD_CALL:
@@ -812,6 +820,10 @@ static void gen_global_var_labels(FILE *fp, const struct symbol_table *table)
                 break;
             }
             fprintf(fp, "_%s:\n", sym->name);
+            /* XXX */
+            /*
+            fprintf(fp, "    .%s %d\n", datasize, sym->mem_offset);
+            */
             fprintf(fp, "    .%s 0\n", datasize);
 
             nvars++;
@@ -822,6 +834,64 @@ static void gen_global_var_labels(FILE *fp, const struct symbol_table *table)
         fprintf(fp, "\n");
     }
 }
+
+static int gen_global_var_label(FILE *fp, const struct ast_node *node)
+{
+    int nvars_l = 0;
+    int nvars_r = 0;
+    int total_nvars = 0;
+
+    if (!node)
+        return 0;
+
+    if (node->kind == NOD_GLOBAL) {
+        nvars_l = gen_global_var_label(fp, node->l);
+        nvars_r = gen_global_var_label(fp, node->r);
+        total_nvars = nvars_l + nvars_r;
+    }
+
+    if (node->kind == NOD_VAR_DEF) {
+        const struct symbol *sym = node->data.sym;
+
+        if (sym->kind == SYM_VAR && sym->scope_level == 0) {
+            const char *datasize;
+            switch (sym->dtype->kind) {
+            case DATA_TYPE_CHAR:
+                datasize = "byte";
+                break;
+            case DATA_TYPE_INT:
+                datasize = "long";
+                break;
+            case DATA_TYPE_PTR:
+            case DATA_TYPE_ARRAY:
+                datasize = "quad";
+                break;
+            default:
+                datasize = "byte";
+                break;
+            }
+            fprintf(fp, "_%s:\n", sym->name);
+            /* XXX */
+            if (node->l && node->l->kind == NOD_NUM) {
+                fprintf(fp, "    .%s %d\n", datasize, node->l->data.ival);
+            } else {
+                fprintf(fp, "    .%s 0\n", datasize);
+            }
+
+            return total_nvars + 1;
+        }
+    }
+    return total_nvars;
+}
+
+static void gen_global_var_label_list(FILE *fp, const struct ast_node *node)
+{
+    const int nvars = gen_global_var_label(fp, node);
+    if (nvars > 0) {
+        fprintf(fp, "\n");
+    }
+}
+
 void gen_x86(FILE *fp,
         const struct ast_node *tree, const struct symbol_table *table)
 {
@@ -831,7 +901,14 @@ void gen_x86(FILE *fp,
     }
 
     gen_global_var_list(fp, table);
-    gen_global_var_labels(fp, table);
+    /* XXX */
+    if (0) {
+        gen_global_var_labels(fp, table);
+    }
+    else
+    {
+        gen_global_var_label_list(fp, tree);
+    }
 
     fprintf(fp, ".text\n");
     fprintf(fp, ".global ");

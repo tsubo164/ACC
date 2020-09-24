@@ -1,3 +1,4 @@
+/* initialization for local and global variables */
 int x = 8;
 char y;
 
