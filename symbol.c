@@ -196,6 +196,21 @@ struct symbol *define_function(struct symbol_table *table, const char *name)
     return sym;
 }
 
+struct symbol *define_struct(struct symbol_table *table, const char *name)
+{
+    struct symbol *sym = lookup_symbol(table, name, SYM_STRUCT);
+    const int cur_lv = table->current_scope_level;
+
+    if (sym && sym->scope_level == cur_lv) {
+        symbol_flag_on(sym, IS_REDEFINED);
+        return sym;
+    }
+
+    sym = push_symbol(table, name, SYM_STRUCT);
+
+    return sym;
+}
+
 int symbol_scope_begin(struct symbol_table *table)
 {
     table->current_scope_level++;
@@ -243,6 +258,7 @@ int symbol_assign_local_storage(struct symbol_table *table)
     int N = table->symbol_count;
     int total_mem_offset = 0;
     struct symbol *func = NULL;
+    struct symbol *struct_ = NULL;
 
     for (i = 0; i < N; i++) {
         struct symbol *sym = &table->data[i];
@@ -253,27 +269,74 @@ int symbol_assign_local_storage(struct symbol_table *table)
             continue;
         }
 
+        if (sym->kind == SYM_STRUCT) {
+            struct_ = sym;
+            total_mem_offset = 0;
+            continue;
+        }
+
         if (sym->kind == SYM_SCOPE_BEGIN) {
             continue;
         }
 
         if (sym->kind == SYM_SCOPE_END) {
-            if (sym->scope_level == 1) {
-                /* end of function */
+            /* XXX */
+            if (sym->scope_level == 1 && func) {
+                /* end of function. backpatching memoffset for local vars */
                 func->mem_offset = next_aligned(total_mem_offset, 16);
+                func = NULL;
+            }
+            /* XXX */
+            if (/* sym->scope_level == 1 && */ struct_) {
+                /* end of function. backpatching memoffset for local vars */
+                struct_->mem_offset = next_aligned(total_mem_offset, 8);
+                {
+                    struct data_type *dtype = type_struct(struct_->name);
+                    dtype->byte_size = struct_->mem_offset;
+                    dtype->alignment = 8;
+                    dtype->array_len = 1;
+                    struct_->dtype = dtype;
+                    /*
+                    */
+                }
+                struct_ = NULL;
             }
             continue;
         }
 
         if (sym->kind == SYM_VAR || sym->kind == SYM_PARAM) {
-            const int size  = sym->dtype->byte_size;
-            const int align = sym->dtype->alignment;
-            const int len   = sym->dtype->array_len;
+            int size  = sym->dtype->byte_size;
+            int align = sym->dtype->alignment;
+            int len   = sym->dtype->array_len;
 
+            if (sym->dtype->kind == DATA_TYPE_STRUCT) {
+                struct symbol *strc = lookup_symbol(table, sym->dtype->tag, SYM_STRUCT);
+                size  = strc->dtype->byte_size;
+                align = strc->dtype->alignment;
+                len   = strc->dtype->array_len;
+            }
+                /*
+    printf("    %s\n", sym->name);
+    printf("        %d\n", sym->kind);
+    printf("        %d\n", size);
+    printf("        %d\n", align);
+    printf("        %d\n", len);
+                */
+
+                /*
+            printf("        total_mem_offset: %d\n", total_mem_offset);
+            printf("        align           : %d\n", align);
+                */
             total_mem_offset = next_aligned(total_mem_offset, align);
+                /*
+            printf("        total_mem_offset: %d\n", total_mem_offset);
+                */
             total_mem_offset += len * size;
 
             sym->mem_offset = total_mem_offset;
+                /*
+            printf("        total_mem_offset: %d\n", total_mem_offset);
+                */
         }
     }
     return 0;

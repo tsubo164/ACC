@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "semantics.h"
 #include "message.h"
 
@@ -76,7 +77,7 @@ static const struct data_type *promote_data_type(
     }
 }
 
-static int promote_type(struct ast_node *node)
+static int promote_type(struct ast_node *node, struct symbol_table *table)
 {
     if (!node) {
         return 0;
@@ -100,8 +101,8 @@ static int promote_type(struct ast_node *node)
     */
 
 
-    promote_type(node->l);
-    promote_type(node->r);
+    promote_type(node->l, table);
+    promote_type(node->r, table);
 
     /* promote */
     /*
@@ -188,6 +189,52 @@ static int promote_type(struct ast_node *node)
         break;
 #if 0
 #endif
+    case NOD_STRUCT_REF:
+        /*
+        printf("    node->dtype: %s\n", node->l->data.sym->name);
+        printf("    node->dtype: %d\n", node->l->dtype->kind);
+        */
+        {
+            const struct symbol *sym;
+            const char *mem = node->r->sval;
+            /*
+            printf("    struct tag: %s\n", node->l->data.sym->dtype->tag);
+            printf("        member: %s\n", mem);
+            */
+
+            sym = lookup_symbol(table, node->l->data.sym->dtype->tag, SYM_STRUCT);
+        /*
+            printf("    struct tag: %s\n", sym->dtype->tag);
+            printf("%d\n", node->l->dtype->kind);
+        */
+            for (;;) {
+                if (sym->kind == SYM_SCOPE_END) {
+                    /* end of struct definition */
+                    break;
+                }
+
+                if (sym->name && !strcmp(sym->name, mem)) {
+                    node->r->data.sym = sym;
+                    node->dtype = node->r->dtype;
+                    /*
+                    printf("%d\n", sym->dtype->kind);
+                    */
+
+                    /* struct var data type <- member data type */
+                    node->dtype = sym->dtype;
+                    node->r->dtype = sym->dtype;
+
+                    break;
+                }
+                sym++;
+            }
+        }
+        /*
+        printf("    node->dtype: %d\n", node->l->dtype->kind);
+        printf("    node->dtype: %d\n", node->r->dtype->kind);
+        printf("    node->dtype: %d\n", node->dtype->kind);
+        */
+        break;
 
     default:
         /*
@@ -275,7 +322,7 @@ int semantic_analysis(struct ast_node *tree,
 {
     analize_symbol_usage(table, messages);
 
-    promote_type(tree);
+    promote_type(tree, table);
 
     return 0;
 }

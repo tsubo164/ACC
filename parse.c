@@ -3,7 +3,11 @@
 #include "parse.h"
 #include "type.h"
 
-static struct symbol *lookup_symbol_(
+#define MEM_ALLOC_ARRAY(type,n) ((type *) malloc(sizeof(type)*(n)))
+#define MEM_ALLOC(type) (MEM_ALLOC_ARRAY(type,1))
+#define MEM_FREE(ptr) free(ptr)
+
+static const struct symbol *lookup_symbol_(
             struct parser *p,
             const char *name, enum symbol_kind kind)
 {
@@ -60,6 +64,18 @@ static void ungettok(struct parser *p)
 {
     const int N = TOKEN_BUFFER_SIZE;
     p->curr = (p->curr - 1 + N) % N;
+}
+
+static const struct token *consume(struct parser *p, int token_kind)
+{
+    const struct token *tok = gettok(p);
+
+    if (tok->kind != token_kind) {
+        ungettok(p);
+        return NULL;
+    }
+
+    return tok;
 }
 
 /*
@@ -140,6 +156,45 @@ void parser_init(struct parser *p)
  */
 static struct ast_node *expression(struct parser *p);
 static struct ast_node *statement(struct parser *p);
+
+/*
+ * identifier
+ *     : TOK_IDENT
+ *     ;
+ */
+/* XXX */
+static struct ast_node *identifier(struct parser *p)
+{
+    char *ident = NULL;
+    struct ast_node *tree = NULL;
+    const struct token *tok = consume(p, TOK_IDENT);
+
+    if (!tok)
+        return NULL;
+
+    tree = new_node(NOD_VAR, NULL, NULL);
+
+    ident = (char *) calloc(strlen(tok->word)+1, sizeof(char));
+    strcpy(ident, tok->word);
+    tree->sval = ident;
+
+    return tree;
+}
+#if a
+static Node *identifier(Parser *p)
+{
+    Node *tree = NULL;
+    const Token *tok = consume(p, TOK_IDENT);
+
+    if (!tok)
+        return NULL;
+
+    tree = new_node(NOD_VAR, NULL, NULL);
+    tree->word = tok->word;
+
+    return tree;
+}
+#endif
 
 /*
  * primary_expression
@@ -282,6 +337,55 @@ static struct ast_node *primary_expression(struct parser *p)
 }
 
 /*
+ * postfix_expression
+ *     : primary_expression
+ *     | postfix_expression '.' TOK_IDENT
+ *     ;
+ */
+static struct ast_node *postfix_expression(struct parser *p)
+{
+    struct ast_node *tree = primary_expression(p);
+
+    for (;;) {
+        const struct token *tok = gettok(p);
+
+        switch (tok->kind) {
+
+        case '.':
+            /* XXX fix this identifier */
+            tree = new_node(NOD_STRUCT_REF, tree, identifier(p));
+            return tree;
+
+        default:
+            ungettok(p);
+            return tree;
+        }
+    }
+}
+#if a
+static Node *postfix_expr(Parser *p)
+{
+    Node *tree = primary_expr(p);
+
+    for (;;) {
+        const Token *tok = gettok(p);
+
+        switch (tok->kind) {
+
+        case '.':
+            /* XXX fix this */
+            tree = new_node(NOD_STRUCT_REF, tree, primary_expr(p));
+            return tree;
+
+        default:
+            ungettok(p);
+            return tree;
+        }
+    }
+}
+#endif
+
+/*
  * unary_expression
  *     : '+' primary_expression
  *     | '-' primary_expression
@@ -297,31 +401,47 @@ static struct ast_node *unary_expression(struct parser *p)
     switch (tok->kind) {
 
     case '+':
+        /* XXX */
+        base = postfix_expression(p);
+        /*
         base = primary_expression(p);
+        */
         return base;
 
     case '-':
         /* ??? base = new_number(-1); */
         base = new_node(NOD_NUM, NULL, NULL);
         base->data.ival = -1;
+        /* XXX */
+        base = new_node(NOD_MUL, base, postfix_expression(p));
+        /*
         base = new_node(NOD_MUL, base, primary_expression(p));
+        */
         return base;
 
     case '*':
-        base = new_node(NOD_DEREF, unary_expression(p), NULL);
         /* XXX */
+        base = new_node(NOD_DEREF, postfix_expression(p), NULL);
         /*
-        base->dtype = base->dtype->ptr_to;;
+        base = new_node(NOD_DEREF, unary_expression(p), NULL);
         */
         return base;
 
     case '&':
+        /* XXX */
+        base = new_node(NOD_ADDR, postfix_expression(p), NULL);
+        /*
         base = new_node(NOD_ADDR, unary_expression(p), NULL);
+        */
         return base;
 
     default:
         ungettok(p);
+        /* XXX */
+        base = postfix_expression(p);
+        /*
         base = primary_expression(p);
+        */
         return base;
     }
 }
@@ -550,6 +670,65 @@ final:
     return tree;
 }
 
+#if n
+static struct ast_node declarator(struct parser *p)
+{
+    switch (kind) {
+
+    case '*':
+        ungettok(p);
+        return new_node(NOD_DECL, pointer(), NULL);
+
+    default:
+        break;
+    }
+}
+
+static struct ast_node direct_declarator(struct parser *p)
+{
+    switch (kind) {
+
+    case TOK_IDENT:
+        ungettok(p);
+        return identifier(p);
+
+    default:
+        break;
+    }
+}
+
+static struct ast_node *var_decl(struct parser *p)
+{
+    struct ast_node *tree, *ptr, *ident, *arr, *init;
+
+    type  = type_specifier(p);
+    if (!type) {
+        return;
+    }
+
+    ptr = pointer(p);
+    if (!ptr) {
+    }
+
+    ident = identifier(p);
+    if (!ident) {
+        return;
+    }
+
+    arr = array(p);
+    if (!arr) {
+    }
+
+    init = initializer(p);
+    if (!init) {
+    }
+
+    expect(p, ';', "missing ';' at end of declaration");
+
+    return tree;
+}
+#endif
+
 static struct ast_node *var_def(struct parser *p)
 {
     struct ast_node *tree = NULL;
@@ -574,6 +753,16 @@ static struct ast_node *var_def(struct parser *p)
         break;
     case TOK_INT: 
         dtype = type_int();
+        break;
+    case TOK_STRUCT: 
+        tok = gettok(p);
+        dtype = type_struct(tok->word);
+        {
+            /* XXX */
+            const struct symbol *strc = lookup_symbol(&p->symtbl, tok->word, SYM_STRUCT);
+            if (!strc)
+                error(p, "undefined struct");
+        }
         break;
     default:
         error(p, "missing type name in declaration");
@@ -695,6 +884,7 @@ static struct ast_node *statement(struct parser *p)
 
     case TOK_CHAR:
     case TOK_INT:
+    case TOK_STRUCT:
         ungettok(p);
         return var_def(p);
 
@@ -769,7 +959,7 @@ static struct ast_node *global_entry(struct parser *p)
 #if 0
     tok = gettok(p);
     if (tok->kind != TOK_INT) {
-        error(p, "missing type before ideintifier");
+        error(p, "missing type before identifier");
     }
     dtype = type_int();
 #endif
@@ -787,10 +977,10 @@ static struct ast_node *global_entry(struct parser *p)
         break;
     }
 
-    /* ideintifier */
+    /* identifier */
     tok = gettok(p);
     if (tok->kind != TOK_IDENT) {
-        error(p, "missing ideintifier");
+        error(p, "missing identifier");
     }
     strcpy(ident, tok->word);
     /* XXX */
@@ -845,6 +1035,66 @@ static struct ast_node *global_entry(struct parser *p)
     return tree;
 }
 
+static struct ast_node *struct_decl(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct ast_node *members = NULL;
+    struct symbol *sym = NULL;
+
+    /*
+    */
+    const struct token *tok = NULL;
+    struct token ident;
+
+    expect_or_error(p, TOK_STRUCT, "missing struct");
+
+    /* identifier */
+    tok = gettok(p);
+    if (tok->kind != TOK_IDENT) {
+        error(p, "missing identifier");
+    }
+    ident = *tok;
+
+    tree = new_node(NOD_STRUCT_DECL, NULL, NULL);
+
+    /* XXX */
+    sym = define_struct(&p->symtbl, ident.word);
+    scope_begin(p);
+
+    expect_or_error(p, '{', "missing '{' after struct tag");
+
+    for (;;) {
+        tok = gettok(p);
+        switch (tok->kind) {
+        case TOK_CHAR:
+        case TOK_INT:
+            ungettok(p);
+            members = new_node(NOD_MEMBER_DECL, members, var_def(p));
+            break;
+
+        default:
+            ungettok(p);
+            goto end_member;
+        }
+    }
+
+end_member:
+    scope_end(p);
+
+        /* XXX */
+    /*
+        sym->dtype = type_struct(sym->name);
+        ast_node_set_symbol(tree, sym);
+    */
+
+    tree->l = members;
+
+    expect_or_error(p, '}', "missing '}' after struct declaration");
+    expect_or_error(p, ';', "missing ';' at end of struct declaration");
+
+    return tree;
+}
+
 struct ast_node *parse(struct parser *p)
 {
     struct ast_node *tree = NULL;
@@ -858,6 +1108,11 @@ struct ast_node *parse(struct parser *p)
         case TOK_INT:
             ungettok(p);
             tree = new_node(NOD_GLOBAL, tree, global_entry(p));
+            break;
+
+        case TOK_STRUCT:
+            ungettok(p);
+            tree = new_node(NOD_GLOBAL, tree, struct_decl(p));
             break;
 
         case TOK_EOF:

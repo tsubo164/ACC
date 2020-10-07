@@ -126,6 +126,12 @@ int main(int argc, char **argv)
         }
         */
     }
+    {
+        /* XXX */
+        /*
+        print_tree(tree);
+        */
+    }
 
     symbol_assign_local_storage(&parser->symtbl);
     semantic_analysis(tree, &parser->symtbl, messages);

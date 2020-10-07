@@ -2,6 +2,19 @@
 #include <stdlib.h>
 #include "ast.h"
 
+#define TERMINAL_COLOR_BLACK   "\x1b[30m"
+#define TERMINAL_COLOR_RED     "\x1b[31m"
+#define TERMINAL_COLOR_GREEN   "\x1b[32m"
+#define TERMINAL_COLOR_YELLOW  "\x1b[33m"
+#define TERMINAL_COLOR_BLUE    "\x1b[34m"
+#define TERMINAL_COLOR_MAGENTA "\x1b[35m"
+#define TERMINAL_COLOR_CYAN    "\x1b[36m"
+#define TERMINAL_COLOR_WHITE   "\x1b[37m"
+#define TERMINAL_COLOR_RESET   "\x1b[39m"
+
+#define TERMINAL_DECORATION_BOLD    "\x1b[1m"
+#define TERMINAL_DECORATION_RESET   "\x1b[0m"
+
 /*
 static const struct data_type *promote_data_type(
         const struct ast_node *n1, const struct ast_node *n2)
@@ -72,6 +85,9 @@ void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
     N(NOD_RETURN) \
     N(NOD_WHILE) \
     N(NOD_ASSIGN) \
+    N(NOD_STRUCT_DECL) \
+    N(NOD_MEMBER_DECL) \
+    N(NOD_STRUCT_REF) \
     N(NOD_VAR) \
     N(NOD_GLOBAL_VAR) \
     N(NOD_VAR_DEF) \
@@ -105,4 +121,54 @@ AST_NODE_LIST(N)
     default: return "unknown";
     }
 #undef N
+}
+
+static void print_tree_recursive(const struct ast_node *tree, int depth)
+{
+    if (!tree)
+        return;
+
+    {
+        int i;
+        for (i = 0; i < depth; i++) {
+            /*
+            printf("|   ");
+            */
+            printf("    ");
+        }
+    }
+
+    printf("%s", node_to_string(tree));
+    switch (tree->kind) {
+    case NOD_FUNC_DEF:
+    case NOD_PARAM:
+    case NOD_VAR_DEF:
+    case NOD_VAR:
+        /*
+        printf(" (%s)", tree->data.sym->name);
+        printf(" => ");
+        */
+        printf(" ");
+        printf(TERMINAL_COLOR_GREEN);
+        printf(TERMINAL_DECORATION_BOLD);
+        /* XXX */
+        if (tree->data.sym)
+            printf("%s", tree->data.sym->name);
+        else
+            printf("%s", tree->sval);
+        printf(TERMINAL_DECORATION_RESET);
+        printf(TERMINAL_COLOR_RESET);
+        break;
+    default:
+        break;
+    }
+    printf("\n");
+
+    print_tree_recursive(tree->l, depth + 1);
+    print_tree_recursive(tree->r, depth + 1);
+}
+
+void print_tree(const struct ast_node *tree)
+{
+    print_tree_recursive(tree, 0);
 }

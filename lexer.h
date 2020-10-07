@@ -12,6 +12,7 @@ enum token_kind {
     TOK_ELSE,
     TOK_IF,
     TOK_RETURN,
+    TOK_STRUCT,
     TOK_WHILE,
     /* types */
     TOK_CHAR,

@@ -507,6 +507,21 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->l);
         break;
 
+    case NOD_STRUCT_REF:
+        /*
+        printf("    node->dtype: %d\n", node->l->dtype->kind);
+        printf("    node->dtype: %d\n", node->r->dtype->kind);
+        printf("    node->dtype: %d\n", node->dtype->kind);
+        printf("    node->dtype: %d\n", node->r->data.sym->mem_offset);
+        printf("    node->dtype: %p\n", (void *)node->r->data.sym);
+        */
+        {
+            const int disp = get_mem_offset(node->r);
+            gen_lvalue(fp, node->l);
+            code3__(fp, node, ADD_, imme(disp), RAX);
+        }
+        break;
+
     default:
         gen_comment(fp, "this is not a lvalue");
         break;
@@ -626,6 +641,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             }
 #endif
         }
+        break;
+
+    case NOD_STRUCT_REF:
+        gen_lvalue(fp, node);
+        code3__(fp, node, MOV_, addr1(RAX), A_);
         break;
 
     case NOD_GLOBAL_VAR:

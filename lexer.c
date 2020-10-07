@@ -30,6 +30,8 @@ static void keyword_or_identifier(struct token *tok)
         tok->kind = TOK_INT;
     } else if (!strcmp(tok->word, "return")) {
         tok->kind = TOK_RETURN;
+    } else if (!strcmp(tok->word, "struct")) {
+        tok->kind = TOK_STRUCT;
     } else if (!strcmp(tok->word, "while")) {
         tok->kind = TOK_WHILE;
     } else {
@@ -78,6 +80,11 @@ state_initial:
 
     /* address */
     case '&':
+        tok->kind = c;
+        goto state_final;
+
+    /* access */
+    case '.':
         tok->kind = c;
         goto state_final;
 

@@ -12,6 +12,9 @@ enum ast_node_kind {
     NOD_RETURN,
     NOD_WHILE,
     NOD_ASSIGN,
+    NOD_STRUCT_DECL,
+    NOD_MEMBER_DECL,
+    NOD_STRUCT_REF,
     NOD_VAR,
     NOD_GLOBAL_VAR,
     NOD_VAR_DEF,
@@ -43,6 +46,7 @@ struct ast_node {
         int ival;
         const struct symbol *sym;
     } data;
+    const char *sval;
 };
 
 extern struct ast_node *new_ast_node(enum ast_node_kind kind,
@@ -52,5 +56,6 @@ extern void free_ast_node(struct ast_node *node);
 extern void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym);
 
 extern const char *node_to_string(const struct ast_node *node);
+extern void print_tree(const struct ast_node *tree);
 
 #endif /* AST_H */
