@@ -20,34 +20,38 @@ static long get_file_pos(struct lexer *l)
 
 static void keyword_or_identifier(struct token *tok)
 {
-    if (!strcmp(tok->word, "char")) {
+    const char *text = tok->text;
+
+    if (!strcmp(text, "char")) {
         tok->kind = TOK_CHAR;
-    } else if (!strcmp(tok->word, "else")) {
+    } else if (!strcmp(text, "else")) {
         tok->kind = TOK_ELSE;
-    } else if (!strcmp(tok->word, "if")) {
+    } else if (!strcmp(text, "if")) {
         tok->kind = TOK_IF;
-    } else if (!strcmp(tok->word, "int")) {
+    } else if (!strcmp(text, "int")) {
         tok->kind = TOK_INT;
-    } else if (!strcmp(tok->word, "return")) {
+    } else if (!strcmp(text, "return")) {
         tok->kind = TOK_RETURN;
-    } else if (!strcmp(tok->word, "struct")) {
+    } else if (!strcmp(text, "struct")) {
         tok->kind = TOK_STRUCT;
-    } else if (!strcmp(tok->word, "while")) {
+    } else if (!strcmp(text, "while")) {
         tok->kind = TOK_WHILE;
     } else {
         tok->kind = TOK_IDENT;
     }
 }
 
+static const char *make_text(struct lexer *l, const char *str)
+{
+    return insert_string(l->strtab, str);
+}
+
 void token_init(struct token *tok)
 {
-    int i;
     tok->kind = TOK_UNKNOWN;
     tok->value = 0;
     tok->file_pos = 0L;
-    for (i = 0; i < TOKEN_WORD_SIZE; i++) {
-        tok->word[i] = '\0';
-    }
+    tok->text = NULL;
 }
 
 long token_file_pos(const struct token *tok)
@@ -63,14 +67,15 @@ void lexer_init(struct lexer *lex)
 
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
 {
+    static char textbuf[1024] = {'\0'};
+    char *tp;
     int c = '\0';
-    char *wp;
     long tok_pos;
 
-    tok->kind = TOK_UNKNOWN;
-    tok->value = 0;
-    tok->word[0] = '\0';
-    wp = tok->word;
+    token_init(tok);
+
+    textbuf[0] = '\0';
+    tp = textbuf;
 
 state_initial:
     c = readc(l);
@@ -184,7 +189,7 @@ state_initial:
     /* number */
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
-        *wp++ = c;
+        *tp++ = c;
         goto state_number;
 
     /* word */
@@ -199,7 +204,7 @@ state_initial:
     case 'k': case 'l': case 'm': case 'n': case 'o':
     case 'p': case 'q': case 'r': case 's': case 't':
     case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
-        *wp++ = c;
+        *tp++ = c;
         goto state_word;
 
     /* eof */
@@ -214,51 +219,25 @@ state_initial:
     }
 
 state_number:
-#if 0
-    c = readc(l);
-
-    if (isdigit(c)) {
-        *wp++ = c;
-        goto state_number;
-    } else {
-        *wp = '\0';
-        unreadc(l, c);
-        tok->kind = TOK_NUM;
-        tok->value = strtol(tok->word, &wp, 10);
-        goto state_final;
-    }
-#endif
     c = readc(l);
 
     switch (c) {
 
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
-        *wp++ = c;
+        *tp++ = c;
         goto state_number;
 
     default:
-        *wp = '\0';
+        *tp = '\0';
         unreadc(l, c);
+        tok->text = make_text(l, textbuf);
         tok->kind = TOK_NUM;
-        tok->value = strtol(tok->word, &wp, 10);
+        tok->value = strtol(tok->text, &tp, 10);
         goto state_final;
     }
 
 state_word:
-#if 0
-    c = readc(l);
-
-    if (isalnum(c) || c == '_') {
-        *wp++ = c;
-        goto state_word;
-    } else {
-        *wp = '\0';
-        unreadc(l, c);
-        tok->kind = TOK_IDENT;
-        goto state_final;
-    }
-#endif
     c = readc(l);
 
     switch (c) {
@@ -276,26 +255,18 @@ state_word:
     case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
-        *wp++ = c;
+        *tp++ = c;
         goto state_word;
 
     default:
-        *wp = '\0';
+        *tp = '\0';
         unreadc(l, c);
+        tok->text = make_text(l, textbuf);
         keyword_or_identifier(tok);
         goto state_final;
     }
 
 state_line_comment:
-#if 0
-    c = readc(l);
-
-    if (c == '\n') {
-        goto state_initial;
-    } else {
-        goto state_line_comment;
-    }
-#endif
     c = readc(l);
 
     switch (c) {

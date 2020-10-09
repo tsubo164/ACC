@@ -6,75 +6,7 @@
 #include "message.h"
 #include "parse.h"
 #include "semantics.h"
-
-#if 0
-#define TERMINAL_COLOR_BLACK   "\x1b[30m"
-#define TERMINAL_COLOR_RED     "\x1b[31m"
-#define TERMINAL_COLOR_GREEN   "\x1b[32m"
-#define TERMINAL_COLOR_YELLOW  "\x1b[33m"
-#define TERMINAL_COLOR_BLUE    "\x1b[34m"
-#define TERMINAL_COLOR_MAGENTA "\x1b[35m"
-#define TERMINAL_COLOR_CYAN    "\x1b[36m"
-#define TERMINAL_COLOR_WHITE   "\x1b[37m"
-#define TERMINAL_COLOR_RESET   "\x1b[39m"
-
-#define TERMINAL_DECORATION_BOLD    "\x1b[1m"
-#define TERMINAL_DECORATION_RESET   "\x1b[0m"
-
-void print_error_message(const struct parser *p, const char *filename)
-{
-    FILE *fp = p->lex.file;
-    long err_pos = p->error_pos;
-    int found_error_location = 0;
-    int err_col, err_row;
-    int x = 0, y = 1; /* scanning pos row and column */
-    int c = '\0';
-    char line[1024] = {'\0'};
-
-    fseek(fp, 0L, SEEK_SET);
-
-    for (;;) {
-        if (ftell(fp) == err_pos) {
-            found_error_location = 1;
-            err_col = x;
-            err_row = y;
-        }
-
-        c = fgetc(fp);
-
-        if (c == '\n' || c == EOF) {
-            if (found_error_location) {
-                line[x] = '\0';
-                break;
-            } else {
-                y++;
-                x = 0;
-                line[x] = '\0';
-            }
-        } else {
-            line[x++] = c;
-        }
-    }
-
-    printf(TERMINAL_DECORATION_BOLD);
-        printf("%s:", filename);
-        printf("%d:%d: ", err_row, err_col);
-        printf(TERMINAL_COLOR_RED);
-            printf("error: ");
-        printf(TERMINAL_COLOR_RESET);
-        printf("%s\n", p->error_msg);
-    printf(TERMINAL_DECORATION_RESET);
-
-    printf("%s\n", line);
-    printf("%*s", err_col, "");
-
-    printf(TERMINAL_DECORATION_BOLD);
-    printf(TERMINAL_COLOR_GREEN);
-        printf("%c\n", '^');
-    printf(TERMINAL_COLOR_RESET);
-    printf(TERMINAL_DECORATION_RESET);
-}
-#endif
+#include "string_table.h"
 
 void make_output_filename(const char *input, char *output)
 {
@@ -91,9 +23,10 @@ void make_output_filename(const char *input, char *output)
 
 int main(int argc, char **argv)
 {
-    struct parser *parser;
-    struct ast_node *tree;
-    struct message_list *messages;
+    struct string_table *strtab = NULL;
+    struct parser *parser = NULL;
+    struct ast_node *tree = NULL;
+    struct message_list *messages = NULL;
 
     FILE *file = NULL;
     char output[256] = {'\0'};
@@ -109,29 +42,18 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    strtab = new_string_table();
     parser = new_parser();
     parser->lex.file = file;
+    parser->lex.strtab = strtab;
 
     messages = new_message_list();
 
+    tree = parse(parser);
     /* XXX */
-    {
-        tree = parse(parser);
-        /*
-        if (parser->error_pos >= 0) {
-            print_error_message(parser, argv[1]);
-
-            fclose(file);
-            exit(EXIT_FAILURE);
-        }
-        */
-    }
-    {
-        /* XXX */
-        /*
-        print_tree(tree);
-        */
-    }
+    /*
+    print_tree(tree);
+    */
 
     symbol_assign_local_storage(&parser->symtbl);
     semantic_analysis(tree, &parser->symtbl, messages);
@@ -160,6 +82,7 @@ int main(int argc, char **argv)
     /* ------------------------- */
     free_message_list(messages);
     free_parser(parser);
+    free_string_table(strtab);
 
     return 0;
 }

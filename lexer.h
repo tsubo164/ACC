@@ -2,6 +2,7 @@
 #define LEXER_H
 
 #include <stdio.h>
+#include "string_table.h"
 
 enum token_kind {
     TOK_UNKNOWN = -1,
@@ -25,24 +26,26 @@ enum token_kind {
     TOK_EOF
 };
 
-#define TOKEN_WORD_SIZE 128
-
 struct token {
     int kind;
     int value;
     long file_pos;
-    char word[TOKEN_WORD_SIZE];
+    const char *text;
 };
 
 struct lexer {
     FILE *file;
     long file_pos;
+    struct string_table *strtab;
 };
 
 extern void token_init(struct token *tok);
 extern long token_file_pos(const struct token *tok);
 
 extern void lexer_init(struct lexer *lex);
+
+extern struct lexer *new_lexer(FILE *fp, struct string_table *strtab);
+extern void free_lexer(struct lexer *lex);
 
 extern enum token_kind lex_get_token(struct lexer *l, struct token *tok);
 

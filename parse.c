@@ -7,6 +7,9 @@
 #define MEM_ALLOC(type) (MEM_ALLOC_ARRAY(type,1))
 #define MEM_FREE(ptr) free(ptr)
 
+/* TODO remove this later */
+#define TOKEN_WORD_SIZE 128
+
 static const struct symbol *lookup_symbol_(
             struct parser *p,
             const char *name, enum symbol_kind kind)
@@ -174,8 +177,13 @@ static struct ast_node *identifier(struct parser *p)
 
     tree = new_node(NOD_VAR, NULL, NULL);
 
+    /*
     ident = (char *) calloc(strlen(tok->word)+1, sizeof(char));
     strcpy(ident, tok->word);
+    tree->sval = ident;
+    */
+    ident = (char *) calloc(strlen(tok->text)+1, sizeof(char));
+    strcpy(ident, tok->text);
     tree->sval = ident;
 
     return tree;
@@ -219,7 +227,10 @@ static struct ast_node *primary_expression(struct parser *p)
         return base;
 
     case TOK_IDENT:
+        /*
         strcpy(ident, tok->word);
+        */
+        strcpy(ident, tok->text);
         tok = gettok(p);
         if (tok->kind == '(') {
             const struct symbol *sym;
@@ -756,10 +767,16 @@ static struct ast_node *var_def(struct parser *p)
         break;
     case TOK_STRUCT: 
         tok = gettok(p);
+        /*
         dtype = type_struct(tok->word);
+        */
+        dtype = type_struct(tok->text);
         {
             /* XXX */
+            /*
             const struct symbol *strc = lookup_symbol(&p->symtbl, tok->word, SYM_STRUCT);
+            */
+            const struct symbol *strc = lookup_symbol(&p->symtbl, tok->text, SYM_STRUCT);
             if (!strc)
                 error(p, "undefined struct");
         }
@@ -794,7 +811,10 @@ static struct ast_node *var_def(struct parser *p)
     }
 #endif
     /* XXX */
+    /*
     sym = define_variable(&p->symtbl, tok->word);
+    */
+    sym = define_variable(&p->symtbl, tok->text);
     /* XXX */
     sym->file_pos = tok->file_pos;
 
@@ -926,7 +946,10 @@ static struct ast_node *func_params(struct parser *p)
         tree = new_node(NOD_PARAM, tree, NULL);
 
         /* XXX */
+        /*
         sym = define_variable(&p->symtbl, tok->word);
+        */
+        sym = define_variable(&p->symtbl, tok->text);
         sym->kind = SYM_PARAM;
         sym->dtype = type_int();
 
@@ -982,7 +1005,10 @@ static struct ast_node *global_entry(struct parser *p)
     if (tok->kind != TOK_IDENT) {
         error(p, "missing identifier");
     }
+    /*
     strcpy(ident, tok->word);
+    */
+    strcpy(ident, tok->text);
     /* XXX */
     fpos = tok->file_pos;
 
@@ -1058,7 +1084,10 @@ static struct ast_node *struct_decl(struct parser *p)
     tree = new_node(NOD_STRUCT_DECL, NULL, NULL);
 
     /* XXX */
+    /*
     sym = define_struct(&p->symtbl, ident.word);
+    */
+    sym = define_struct(&p->symtbl, ident.text);
     scope_begin(p);
 
     expect_or_error(p, '{', "missing '{' after struct tag");
