@@ -34,7 +34,13 @@ enum ast_node_kind {
     NOD_LE,
     NOD_GE,
     NOD_EQ,
-    NOD_NE
+    NOD_NE,
+    /* data types */
+    NOD_TYPE_CHAR,
+    NOD_TYPE_INT,
+    NOD_TYPE_POINTER,
+    NOD_TYPE_ARRAY,
+    NOD_TYPE_STRUCT
 };
 
 struct ast_node {

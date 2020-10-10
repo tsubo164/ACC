@@ -740,6 +740,105 @@ static struct ast_node *var_decl(struct parser *p)
 }
 #endif
 
+static struct ast_node *var_def2(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct symbol *sym = NULL;
+    /* XXX this would change to non const */
+    struct data_type *dtype = NULL;
+    const struct token *tok = NULL;
+
+    struct ast_node *type = NULL;
+
+    /* type */
+    tok = gettok(p);
+    switch (tok->kind) {
+    case TOK_CHAR:
+        dtype = type_char();
+        type = new_node(NOD_TYPE_CHAR, NULL, NULL);
+        break;
+    case TOK_INT:
+        dtype = type_int();
+        type = new_node(NOD_TYPE_INT, NULL, NULL);
+        break;
+    case TOK_STRUCT:
+        tok = gettok(p);
+        dtype = type_struct(tok->text);
+        {
+            const struct symbol *strc = lookup_symbol(&p->symtbl, tok->text, SYM_STRUCT);
+            if (!strc)
+                error(p, "undefined struct");
+        }
+        type = new_node(NOD_TYPE_STRUCT, NULL, NULL);
+        type->sval = tok->text;
+        break;
+    default:
+        error(p, "missing type name in declaration");
+        break;
+    }
+
+    /* pointer */
+    tok = gettok(p);
+    if (tok->kind == '*') {
+        dtype = type_ptr(dtype);
+        type = new_node(NOD_TYPE_POINTER, type, NULL);
+    } else {
+        ungettok(p);
+    }
+
+    /* identifier */
+    tok = gettok(p);
+    if (tok->kind != TOK_IDENT) {
+        error(p, "missing variable name");
+        return NULL;;
+    }
+
+    /* XXX */
+    sym = define_variable(&p->symtbl, tok->text);
+    sym->file_pos = tok->file_pos;
+
+    /* array */
+    tok = gettok(p);
+    if (tok->kind == '[') {
+        struct data_type *curr_type = dtype;
+        int array_len = 0;
+
+        tok = gettok(p);
+        if (tok->kind != TOK_NUM) {
+            error(p, "missing constant after array '['");
+        }
+        array_len = tok->value;
+
+        expect_or_error(p, ']', "missing ']' at end of array definition");
+
+        dtype = type_array(curr_type, array_len);
+        type = new_node(NOD_TYPE_ARRAY, type, NULL);
+        type->data.ival = array_len;
+    } else {
+        ungettok(p);
+    }
+
+    /* commit var */
+
+    tree = new_node(NOD_VAR_DEF, NULL, NULL);
+    sym->dtype = dtype;
+    ast_node_set_symbol(tree, sym);
+
+    /* initialization */
+    tok = gettok(p);
+    if (tok->kind == '=') {
+        tree->l = expression(p);
+    } else {
+        ungettok(p);
+    }
+
+    tree->r = type;
+
+    expect_or_error(p, ';', "missing ';' at end of declaration");
+
+    return tree;
+}
+
 static struct ast_node *var_def(struct parser *p)
 {
     struct ast_node *tree = NULL;
@@ -748,6 +847,10 @@ static struct ast_node *var_def(struct parser *p)
     struct data_type *dtype = NULL;
     const struct token *tok = NULL;
 
+        /* XXX */
+        return var_def2(p);
+        /*
+        */
 #if 0
     /* type */
     tok = gettok(p);
@@ -789,9 +892,7 @@ static struct ast_node *var_def(struct parser *p)
     /* pointer */
     tok = gettok(p);
     if (tok->kind == '*') {
-        struct data_type *curr_type = dtype;
-        dtype = type_ptr();
-        dtype->ptr_to = curr_type;
+        dtype = type_ptr(dtype);
     } else {
         ungettok(p);
     }

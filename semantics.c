@@ -77,7 +77,147 @@ static const struct data_type *promote_data_type(
     }
 }
 
-static int promote_type(struct ast_node *node, struct symbol_table *table)
+static struct data_type *make_type(const struct ast_node *node)
+{
+    if (!node)
+        return NULL;
+
+    switch (node->kind) {
+
+    case NOD_TYPE_CHAR:
+        return type_char();
+
+    case NOD_TYPE_INT:
+        return type_int();
+
+    case NOD_TYPE_POINTER:
+        return type_ptr(make_type(node->l));
+
+    case NOD_TYPE_ARRAY:
+        return type_array(make_type(node->l), node->data.ival);
+
+    case NOD_TYPE_STRUCT:
+        return type_struct(node->sval);
+
+    default:
+        return NULL;
+    }
+}
+
+static int promote_type2(struct ast_node *node, struct symbol_table *table)
+{
+    if (!node) {
+        return 0;
+    }
+
+    promote_type2(node->l, table);
+    promote_type2(node->r, table);
+
+    /* promote */
+    switch (node->kind) {
+
+    case NOD_ADD:
+        node->dtype = promote_data_type(node->l, node->r);
+
+        if (node->l->dtype->kind == DATA_TYPE_ARRAY) {
+            struct ast_node *size, *mul;
+
+            size = new_ast_node(NOD_NUM, NULL, NULL);
+            size->data.ival = node->l->dtype->ptr_to->byte_size;
+            mul = new_ast_node(NOD_MUL, size, node->r);
+            node->r = mul;
+        } else {
+            /*
+            node->dtype = promote_data_type(node->l, node->r);
+            */
+        }
+        break;
+
+    case NOD_SUB:
+    case NOD_MUL:
+    case NOD_DIV:
+        /*
+    case NOD_ASSIGN:
+    case NOD_EQ:
+        */
+        node->dtype = promote_data_type(node->l, node->r);
+        break;
+
+    case NOD_ASSIGN:
+        node->dtype = node->l->dtype;
+        break;
+        /*
+    case NOD_NUM:
+        break;
+        */
+
+        /*
+    case NOD_VAR:
+        node->dtype = node->data.sym->dtype;
+        break;
+        */
+
+    case NOD_DEREF:
+        node->dtype = promote_data_type(node->l, node->r);
+        node->dtype = node->dtype->ptr_to;;
+        break;
+
+    case NOD_STRUCT_REF:
+        {
+            const struct symbol *sym;
+            const char *mem = node->r->sval;
+
+            sym = lookup_symbol(table, node->l->data.sym->dtype->tag, SYM_STRUCT);
+            for (;;) {
+                if (sym->kind == SYM_SCOPE_END) {
+                    /* end of struct definition */
+                    break;
+                }
+
+                if (sym->name && !strcmp(sym->name, mem)) {
+                    node->r->data.sym = sym;
+                    node->dtype = node->r->dtype;
+
+                    /* struct var data type <- member data type */
+                    node->dtype = sym->dtype;
+                    node->r->dtype = sym->dtype;
+
+                    break;
+                }
+                sym++;
+            }
+        }
+        break;
+
+    case NOD_VAR_DEF:
+#if 0
+        {
+            const struct data_type *dtype = node->dtype;
+            printf("==========================\n");
+            print_data_type(dtype);
+        }
+#endif
+        if (node->r) {
+            node->dtype = make_type(node->r);
+#if 0
+            {
+                const struct data_type *dtype = node->dtype;
+                printf("--------------------------\n");
+                print_data_type(dtype);
+                printf("==========================\n");
+            }
+#endif
+        }
+        break;
+
+    default:
+        break;
+    }
+
+    return 0;
+}
+
+int promote_type(struct ast_node *node, struct symbol_table *table)
 {
     if (!node) {
         return 0;
@@ -322,7 +462,11 @@ int semantic_analysis(struct ast_node *tree,
 {
     analize_symbol_usage(table, messages);
 
+    /* XXX */
+    promote_type2(tree, table);
+    /*
     promote_type(tree, table);
+    */
 
     return 0;
 }

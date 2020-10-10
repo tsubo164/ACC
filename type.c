@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "type.h"
 
@@ -21,6 +22,19 @@ const char *data_type_to_string(const struct data_type *dtype)
     }
 }
 
+void print_data_type(const struct data_type *dtype)
+{
+    if (!dtype)
+        return;
+
+    printf("    name:      %s\n", data_type_to_string(dtype));
+    printf("    kind:      %d\n", dtype->kind);
+    printf("    byte_size: %d\n", dtype->byte_size);
+    printf("    array_len: %d\n", dtype->array_len);
+    printf("    tag:       %s\n", dtype->tag);
+    printf("    ptr_to:    %p\n", (void *) dtype->ptr_to);
+}
+
 struct data_type *type_void()
 {
     return &VOID_;
@@ -36,12 +50,13 @@ struct data_type *type_int()
     return &INT_;
 }
 
-struct data_type *type_ptr()
+struct data_type *type_ptr(struct data_type *base_type)
 {
     struct data_type *dtype;
 
     dtype = malloc(sizeof(struct data_type));
     *dtype = PTR_;
+    dtype->ptr_to = base_type;
 
     return dtype;
 }

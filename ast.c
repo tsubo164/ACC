@@ -107,7 +107,12 @@ void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
     N(NOD_LE) \
     N(NOD_GE) \
     N(NOD_EQ) \
-    N(NOD_NE)
+    N(NOD_NE) \
+    N(NOD_TYPE_CHAR) \
+    N(NOD_TYPE_INT) \
+    N(NOD_TYPE_POINTER) \
+    N(NOD_TYPE_ARRAY) \
+    N(NOD_TYPE_STRUCT)
 
 const char *node_to_string(const struct ast_node *node)
 {
@@ -125,8 +130,10 @@ AST_NODE_LIST(N)
 
 static void print_tree_recursive(const struct ast_node *tree, int depth)
 {
+    /*
     if (!tree)
         return;
+    */
 
     {
         int i;
@@ -136,6 +143,11 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
             */
             printf("    ");
         }
+    }
+
+    if (!tree) {
+        printf("(null)\n");
+        return;
     }
 
     printf("%s", node_to_string(tree));
