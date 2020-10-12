@@ -829,13 +829,13 @@ static struct ast_node *var_def2(struct parser *p)
     /* initialization */
     tok = gettok(p);
     if (tok->kind == '=') {
-        tree->l = expression(p);
+        tree->r = expression(p);
     } else {
         ungettok(p);
     }
 
     /* TODO change to ->l */
-    tree->r = type;
+    tree->l = type;
     tree->sval = ident;
 
     expect_or_error(p, ';', "missing ';' at end of declaration");
@@ -1052,7 +1052,7 @@ static struct ast_node *func_params(struct parser *p)
         }
         ident = tok->text;
 
-        tree = new_node(NOD_PARAM, tree, NULL);
+        tree = new_node(NOD_PARAM, NULL, tree);
 
         /* XXX */
         /*
@@ -1067,7 +1067,7 @@ static struct ast_node *func_params(struct parser *p)
         nparams++;
 
         /* TODO change to ->l */
-        tree->r = type;
+        tree->l = type;
         tree->sval = ident;
 
         tok = gettok(p);
@@ -1150,9 +1150,9 @@ static struct ast_node *global_entry(struct parser *p)
         tree->r = compound_statement(p);
         tree->sval = ident;
 
-        tree = new_node(NOD_FUNC_DECL, tree, NULL);
+        tree = new_node(NOD_FUNC_DECL, NULL, tree);
         /* TODO change to ->l */
-        tree->r = type;
+        tree->l = type;
         tree->sval = ident;
         /*
         */
@@ -1172,16 +1172,16 @@ static struct ast_node *global_entry(struct parser *p)
         /* XXX initialization */
         tok = gettok(p);
         if (tok->kind == '=') {
-            tree->l = expression(p);
-            if (tree->l->kind == NOD_NUM) {
-                sym->mem_offset = tree->l->data.ival;
+            tree->r = expression(p);
+            if (tree->r->kind == NOD_NUM) {
+                sym->mem_offset = tree->r->data.ival;
             }
         } else {
             ungettok(p);
         }
 
         /* TODO change to ->l */
-        tree->r = type;
+        tree->l = type;
         tree->sval = ident;
         /*
         */

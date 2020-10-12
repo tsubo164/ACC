@@ -458,7 +458,7 @@ static int gen_one_param(FILE *fp, const struct ast_node *node)
     }
 
     if (node->kind == NOD_PARAM) {
-        const int next_index = gen_one_param(fp, node->l);
+        const int next_index = gen_one_param(fp, node->r);
         const int disp = -get_mem_offset(node);
 
         code3__(fp, node, MOV_, arg(next_index), addr2(RBP, disp));
@@ -661,7 +661,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         /* XXX */
         gen_lvalue(fp, node);
         code2__(fp, node, PUSH_, RAX);
-        gen_code(fp, node->l);
+        gen_code(fp, node->r); /* generates init expr */
         code2__(fp, node, POP_,  RDX);
         code3__(fp, node, MOV_, A_, addr1(RDX));
         break;
@@ -880,6 +880,8 @@ static int gen_global_var_label(FILE *fp, const struct ast_node *node)
 
         if (sym->kind == SYM_VAR && sym->scope_level == 0) {
             const char *datasize;
+            const struct ast_node *init = NULL;
+
             switch (sym->dtype->kind) {
             case DATA_TYPE_CHAR:
                 datasize = "byte";
@@ -897,8 +899,10 @@ static int gen_global_var_label(FILE *fp, const struct ast_node *node)
             }
             fprintf(fp, "_%s:\n", sym->name);
             /* XXX */
-            if (node->l && node->l->kind == NOD_NUM) {
-                fprintf(fp, "    .%s %d\n", datasize, node->l->data.ival);
+            init = node->r;
+
+            if (init && init->kind == NOD_NUM) {
+                fprintf(fp, "    .%s %d\n", datasize, init->data.ival);
             } else {
                 fprintf(fp, "    .%s 0\n", datasize);
             }

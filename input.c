@@ -9,14 +9,16 @@ char a = 11;
 
 int twice(int x)
 {
-    return 2/* * x*/;
+    return 2 * x;
 }
 
 int main()
 {
     int f;
 
-    return twice(a);
+    f = 3;
+
+    return twice(a + f);
 }
 
 /*

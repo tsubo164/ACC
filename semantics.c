@@ -199,15 +199,18 @@ static int promote_type2(struct ast_node *node, struct symbol_table *table)
             print_data_type(dtype);
         }
 #endif
-        if (node->r) {
-            node->dtype = make_type(node->r);
+        {
+            const struct ast_node *type = node->l;
+            if (type) {
+                node->dtype = make_type(type);
 #if 0
-            {
-                const struct data_type *dtype = node->dtype;
-                printf("--------------------------\n");
-                print_data_type(dtype);
-            }
+                {
+                    const struct data_type *dtype = node->dtype;
+                    printf("--------------------------\n");
+                    print_data_type(dtype);
+                }
 #endif
+            }
         }
         break;
 
