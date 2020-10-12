@@ -1148,6 +1148,14 @@ static struct ast_node *global_entry(struct parser *p)
 
         tree->l = func_params(p);
         tree->r = compound_statement(p);
+        tree->sval = ident;
+
+        tree = new_node(NOD_FUNC_DECL, tree, NULL);
+        /* TODO change to ->l */
+        tree->r = type;
+        tree->sval = ident;
+        /*
+        */
 
         scope_end(p);
 

@@ -22,6 +22,7 @@ enum ast_node_kind {
     NOD_DEREF,
     NOD_CALL,
     NOD_FUNC_DEF,
+    NOD_FUNC_DECL,
     NOD_ARG,
     NOD_PARAM,
     NOD_NUM,

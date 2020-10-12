@@ -572,6 +572,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->r);
         break;
 
+    case NOD_FUNC_DECL:
+        gen_code(fp, node->l);
+        gen_code(fp, node->r);
+        break;
+
     case NOD_IF:
         /* if */
         gen_code(fp, node->l);

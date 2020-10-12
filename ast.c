@@ -95,6 +95,7 @@ void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
     N(NOD_DEREF) \
     N(NOD_CALL) \
     N(NOD_FUNC_DEF) \
+    N(NOD_FUNC_DECL) \
     N(NOD_ARG) \
     N(NOD_PARAM) \
     N(NOD_NUM) \
@@ -123,7 +124,7 @@ const char *node_to_string(const struct ast_node *node)
 #define N(kind) case kind: return #kind;
     switch (node->kind) {
 AST_NODE_LIST(N)
-    default: return "unknown";
+    default: return "**unknown**";
     }
 #undef N
 }
@@ -147,6 +148,9 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
 
     if (!tree) {
         printf("(null)\n");
+        /*
+        printf(".\n");
+        */
         return;
     }
 
