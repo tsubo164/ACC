@@ -1,8 +1,22 @@
+/*
 struct point {
     int x;
     int y;
 };
+*/
 
+int twice(int x)
+{
+    return 2 * x;
+}
+
+int main()
+{
+
+    return twice(3);
+}
+
+/*
 int main()
 {
     int a;
@@ -23,3 +37,4 @@ int main()
 
     return a + pt.x;
 }
+*/

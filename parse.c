@@ -832,6 +832,7 @@ static struct ast_node *var_def2(struct parser *p)
         ungettok(p);
     }
 
+    /* TODO change to ->l */
     tree->r = type;
 
     expect_or_error(p, ';', "missing ';' at end of declaration");
@@ -1032,11 +1033,13 @@ static struct ast_node *func_params(struct parser *p)
     for (i = 0; i < 6; i++) {
         struct symbol *sym = NULL;
 
+        struct ast_node *type = NULL;
         tok = gettok(p);
         if (tok->kind != TOK_INT) {
             ungettok(p);
             break;
         }
+        type = new_node(NOD_TYPE_INT, NULL, NULL);
 
         tok = gettok(p);
         if (tok->kind != TOK_IDENT) {
@@ -1057,6 +1060,9 @@ static struct ast_node *func_params(struct parser *p)
         tree->data.sym = sym;
         tree->dtype = sym->dtype;
         nparams++;
+
+        /* TODO change to ->l */
+        tree->r = type;
 
         tok = gettok(p);
         if (tok->kind != ',') {
