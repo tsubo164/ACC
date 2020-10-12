@@ -5,15 +5,18 @@ struct point {
 };
 */
 
+char a = 11;
+
 int twice(int x)
 {
-    return 2 * x;
+    return 2/* * x*/;
 }
 
 int main()
 {
+    int f;
 
-    return twice(3);
+    return twice(a);
 }
 
 /*

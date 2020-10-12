@@ -749,6 +749,7 @@ static struct ast_node *var_def2(struct parser *p)
     const struct token *tok = NULL;
 
     struct ast_node *type = NULL;
+    const char *ident = NULL;
 
     /* type */
     tok = gettok(p);
@@ -792,6 +793,7 @@ static struct ast_node *var_def2(struct parser *p)
         error(p, "missing variable name");
         return NULL;;
     }
+    ident = tok->text;
 
     /* XXX */
     sym = define_variable(&p->symtbl, tok->text);
@@ -834,6 +836,7 @@ static struct ast_node *var_def2(struct parser *p)
 
     /* TODO change to ->l */
     tree->r = type;
+    tree->sval = ident;
 
     expect_or_error(p, ';', "missing ';' at end of declaration");
 
@@ -1034,6 +1037,7 @@ static struct ast_node *func_params(struct parser *p)
         struct symbol *sym = NULL;
 
         struct ast_node *type = NULL;
+        const char *ident = NULL;
         tok = gettok(p);
         if (tok->kind != TOK_INT) {
             ungettok(p);
@@ -1046,6 +1050,7 @@ static struct ast_node *func_params(struct parser *p)
             error(p, "missing parameter name");
             break;
         }
+        ident = tok->text;
 
         tree = new_node(NOD_PARAM, tree, NULL);
 
@@ -1063,6 +1068,7 @@ static struct ast_node *func_params(struct parser *p)
 
         /* TODO change to ->l */
         tree->r = type;
+        tree->sval = ident;
 
         tok = gettok(p);
         if (tok->kind != ',') {
@@ -1082,10 +1088,12 @@ static struct ast_node *global_entry(struct parser *p)
     struct symbol *sym = NULL;
     const struct token *tok = NULL;
     const struct data_type *dtype = NULL;
-    static char ident[TOKEN_WORD_SIZE] = {'\0'};
+    static char ident_[TOKEN_WORD_SIZE] = {'\0'};
     /* XXX */
     long fpos;
 
+    struct ast_node *type = NULL;
+    const char *ident = NULL;
 #if 0
     tok = gettok(p);
     if (tok->kind != TOK_INT) {
@@ -1098,9 +1106,11 @@ static struct ast_node *global_entry(struct parser *p)
     switch (tok->kind) {
     case TOK_CHAR:
         dtype = type_char();
+        type = new_node(NOD_TYPE_CHAR, NULL, NULL);
         break;
     case TOK_INT: 
         dtype = type_int();
+        type = new_node(NOD_TYPE_INT, NULL, NULL);
         break;
     default:
         error(p, "missing type name in declaration");
@@ -1115,9 +1125,11 @@ static struct ast_node *global_entry(struct parser *p)
     /*
     strcpy(ident, tok->word);
     */
-    strcpy(ident, tok->text);
+    strcpy(ident_, tok->text);
     /* XXX */
     fpos = tok->file_pos;
+
+    ident = tok->text;
 
     /* func or var */
     tok = gettok(p);
@@ -1125,7 +1137,7 @@ static struct ast_node *global_entry(struct parser *p)
         ungettok(p);
 
         /* XXX */
-        sym = define_function(&p->symtbl, ident);
+        sym = define_function(&p->symtbl, ident_);
 
         tree = new_node(NOD_FUNC_DEF, NULL, NULL);
 
@@ -1143,7 +1155,7 @@ static struct ast_node *global_entry(struct parser *p)
         ungettok(p);
 
         /* XXX */
-        sym = define_variable(&p->symtbl, ident);
+        sym = define_variable(&p->symtbl, ident_);
 
         tree = new_node(NOD_VAR_DEF, NULL, NULL);
         sym->dtype = dtype;
@@ -1159,6 +1171,12 @@ static struct ast_node *global_entry(struct parser *p)
         } else {
             ungettok(p);
         }
+
+        /* TODO change to ->l */
+        tree->r = type;
+        tree->sval = ident;
+        /*
+        */
 
         /* XXX */
         sym->file_pos = fpos;

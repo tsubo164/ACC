@@ -195,6 +195,7 @@ static int promote_type2(struct ast_node *node, struct symbol_table *table)
         {
             const struct data_type *dtype = node->dtype;
             printf("==========================\n");
+            printf("    var:       %s\n", node->sval);
             print_data_type(dtype);
         }
 #endif
