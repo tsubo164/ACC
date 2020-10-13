@@ -457,7 +457,7 @@ static int gen_one_param(FILE *fp, const struct ast_node *node)
         return 0;
     }
 
-    if (node->kind == NOD_PARAM) {
+    if (node->kind == NOD_PARAM_DEF) {
         const int next_index = gen_one_param(fp, node->r);
         const int disp = -get_mem_offset(node);
 

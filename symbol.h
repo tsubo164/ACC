@@ -65,6 +65,7 @@ extern struct symbol *insert_symbol(struct symbol_table *table,
         const char *name, enum symbol_kind kind);
 
 /* XXX */
+extern struct symbol *define_symbol(struct symbol_table *table, const char *name, int kind);
 extern struct symbol *define_variable(struct symbol_table *table, const char *name);
 extern struct symbol *define_function(struct symbol_table *table, const char *name);
 extern struct symbol *define_struct(struct symbol_table *table, const char *name);

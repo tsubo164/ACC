@@ -10,6 +10,11 @@ int twice(int parm)
     return 2 * parm;
 }
 
+int add(int x, int y)
+{
+    return x + y;
+}
+
 int main()
 {
     struct point pt;
@@ -22,7 +27,7 @@ int main()
 
     local = -8;
 
-    return twice(glbl + local);
+    return twice(glbl + local) + add(11, 22);
 }
 
 /*

@@ -123,7 +123,31 @@ static void scope_end(struct symbol_table *table)
 #endif
 }
 
-static void make_symbol(struct ast_node *node, struct symbol_table *table)
+static void define_sym(struct ast_node *node, struct symbol_table *table, int sym_kind)
+{
+#if TEST
+    printf("     [%s]\n", node->sval);
+#else
+    const char *name = node->sval;
+    struct symbol *sym = define_symbol(table, name, sym_kind);
+
+    node->data.sym = sym;sym;
+#endif
+}
+
+static void use_sym(struct ast_node *node, struct symbol_table *table, int sym_kind)
+{
+#if TEST
+    printf("     %s\n", node->sval);
+#else
+    const char *name = node->sval;
+    struct symbol *sym = use_symbol(table, name, sym_kind);
+
+    node->data.sym = sym;sym;
+#endif
+}
+
+static void add_symbols(struct ast_node *node, struct symbol_table *table)
 {
     if (!node)
         return;
@@ -131,41 +155,51 @@ static void make_symbol(struct ast_node *node, struct symbol_table *table)
     switch (node->kind) {
 
     case NOD_GLOBAL_VAR:
-    case NOD_VAR_DEF:
     case NOD_VAR:
     case NOD_PARAM:
-    case NOD_CALL:
-        printf("     %s\n", node->sval);
-        make_symbol(node->l, table);
-        make_symbol(node->r, table);
+        use_sym(node, table, SYM_VAR);
+        add_symbols(node->l, table);
+        add_symbols(node->r, table);
         break;
 
-    case NOD_STRUCT_DECL:
-        printf("     struct %s\n", node->sval);
-        scope_begin(table);
-        make_symbol(node->l, table);
-        make_symbol(node->r, table);
-        scope_end(table);
+    case NOD_CALL:
+        use_sym(node, table, SYM_FUNC);
+        add_symbols(node->l, table);
+        add_symbols(node->r, table);
+        break;
+
+    case NOD_VAR_DEF:
+        define_sym(node, table, SYM_VAR);
+        add_symbols(node->l, table);
+        add_symbols(node->r, table);
         break;
 
     case NOD_FUNC_DEF:
-        printf("     %s\n", node->sval);
+        define_sym(node, table, SYM_FUNC);
         scope_begin(table);
-        make_symbol(node->l, table);
-        make_symbol(node->r, table);
+        add_symbols(node->l, table);
+        add_symbols(node->r, table);
+        scope_end(table);
+        break;
+
+    case NOD_STRUCT_DECL:
+        define_sym(node, table, SYM_STRUCT);
+        scope_begin(table);
+        add_symbols(node->l, table);
+        add_symbols(node->r, table);
         scope_end(table);
         break;
 
     case NOD_COMPOUND:
         scope_begin(table);
-        make_symbol(node->l, table);
-        make_symbol(node->r, table);
+        add_symbols(node->l, table);
+        add_symbols(node->r, table);
         scope_end(table);
         break;
 
     default:
-        make_symbol(node->l, table);
-        make_symbol(node->r, table);
+        add_symbols(node->l, table);
+        add_symbols(node->r, table);
         break;
     }
 }
@@ -533,7 +567,7 @@ int semantic_analysis(struct ast_node *tree,
     analize_symbol_usage(table, messages);
 
     /*
-    make_symbol(tree, table);
+    add_symbols(tree, table);
     */
     /* XXX */
     promote_type2(tree, table);

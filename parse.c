@@ -1063,7 +1063,7 @@ static struct ast_node *func_params(struct parser *p)
         }
         ident = tok->text;
 
-        tree = new_node(NOD_PARAM, NULL, tree);
+        tree = new_node(NOD_PARAM_DEF, NULL, tree);
 
         /* XXX */
         /*

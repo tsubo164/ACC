@@ -166,6 +166,34 @@ struct symbol *insert_symbol(struct symbol_table *table,
     return sym;
 }
 
+struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind)
+{
+    struct symbol *sym = lookup_symbol(table, name, kind);
+    const int cur_lv = table->current_scope_level;
+
+    if (!sym) {
+        sym = push_symbol(table, name, kind);
+        symbol_flag_on(sym, IS_USED);
+    }
+
+    return sym;
+}
+
+struct symbol *define_symbol(struct symbol_table *table, const char *name, int kind)
+{
+    struct symbol *sym = lookup_symbol(table, name, kind);
+    const int cur_lv = table->current_scope_level;
+
+    if (sym && sym->scope_level == cur_lv) {
+        symbol_flag_on(sym, IS_REDEFINED);
+        return sym;
+    }
+
+    sym = push_symbol(table, name, kind);
+
+    return sym;
+}
+
 struct symbol *define_variable(struct symbol_table *table, const char *name)
 {
     struct symbol *sym = lookup_symbol(table, name, SYM_VAR);
