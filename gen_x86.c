@@ -572,6 +572,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->r);
         break;
 
+    case NOD_COMPOUND:
     case NOD_FUNC_DECL:
         gen_code(fp, node->l);
         gen_code(fp, node->r);
@@ -659,11 +660,14 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_VAR_DEF:
         /* XXX */
-        gen_lvalue(fp, node);
-        code2__(fp, node, PUSH_, RAX);
-        gen_code(fp, node->r); /* generates init expr */
-        code2__(fp, node, POP_,  RDX);
-        code3__(fp, node, MOV_, A_, addr1(RDX));
+        if (node->r) {
+            /* if var def has init expr */
+            gen_lvalue(fp, node);
+            code2__(fp, node, PUSH_, RAX);
+            gen_code(fp, node->r); /* generates init expr */
+            code2__(fp, node, POP_,  RDX);
+            code3__(fp, node, MOV_, A_, addr1(RDX));
+        }
         break;
 
     case NOD_CALL:

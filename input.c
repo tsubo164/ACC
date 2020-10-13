@@ -1,24 +1,28 @@
-/*
 struct point {
     int x;
     int y;
 };
-*/
 
-char a = 11;
+char glbl = 11;
 
-int twice(int x)
+int twice(int parm)
 {
-    return 2 * x;
+    return 2 * parm;
 }
 
 int main()
 {
-    int f;
+    struct point pt;
+    int local;
 
-    f = 3;
+    /*
+    int i;
+    int j;
+    */
 
-    return twice(a + f);
+    local = -8;
+
+    return twice(glbl + local);
 }
 
 /*

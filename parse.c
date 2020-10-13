@@ -214,8 +214,10 @@ static Node *identifier(Parser *p)
 static struct ast_node *primary_expression(struct parser *p)
 {
     struct ast_node *base = NULL;
-    static char ident[TOKEN_WORD_SIZE] = {'\0'};
+    static char ident_[TOKEN_WORD_SIZE] = {'\0'};
     const struct token *tok = gettok(p);
+
+    const char *ident = NULL;
 
     switch (tok->kind) {
 
@@ -230,12 +232,14 @@ static struct ast_node *primary_expression(struct parser *p)
         /*
         strcpy(ident, tok->word);
         */
-        strcpy(ident, tok->text);
+        strcpy(ident_, tok->text);
+        ident = tok->text;
+
         tok = gettok(p);
         if (tok->kind == '(') {
             const struct symbol *sym;
 
-            sym = lookup_symbol_(p, ident, SYM_FUNC);
+            sym = lookup_symbol_(p, ident_, SYM_FUNC);
             if (sym == NULL) {
                 error(p, "calling undefined function");
                 return NULL;
@@ -262,12 +266,15 @@ static struct ast_node *primary_expression(struct parser *p)
             base->dtype = sym->dtype;
             */
             ast_node_set_symbol(base, sym);
+
+            base->sval = ident;
+
             return base;
         } else {
             const struct symbol *sym;
             ungettok(p);
 
-            sym = lookup_symbol_(p, ident, SYM_VAR);
+            sym = lookup_symbol_(p, ident_, SYM_VAR);
             if (sym == NULL) {
                 error(p, "using undeclared identifier");
                 return NULL;
@@ -285,6 +292,7 @@ static struct ast_node *primary_expression(struct parser *p)
 #endif
             ast_node_set_symbol(base, sym);
 
+            base->sval = ident;
 #if 1
             /* XXX ----------------------- */
             {
@@ -677,6 +685,9 @@ static struct ast_node *compound_statement(struct parser *p)
     }
 
 final:
+        /* TODO */
+        tree = new_node(NOD_COMPOUND, tree, NULL);
+
     scope_end(p);
     return tree;
 }
@@ -1150,6 +1161,11 @@ static struct ast_node *global_entry(struct parser *p)
         tree->r = compound_statement(p);
         tree->sval = ident;
 
+        /* TODO scope */
+        /*
+        tree = new_node(NOD_SCOPE, tree, NULL);
+        */
+
         tree = new_node(NOD_FUNC_DECL, NULL, tree);
         /* TODO change to ->l */
         tree->l = type;
@@ -1215,6 +1231,8 @@ static struct ast_node *struct_decl(struct parser *p)
     ident = *tok;
 
     tree = new_node(NOD_STRUCT_DECL, NULL, NULL);
+
+    tree->sval = tok->text;
 
     /* XXX */
     /*

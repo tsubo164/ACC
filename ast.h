@@ -6,6 +6,7 @@
 
 enum ast_node_kind {
     NOD_GLOBAL,
+    NOD_COMPOUND,
     NOD_STMT,
     NOD_EXT,  /* to extend child nodes */
     NOD_IF,

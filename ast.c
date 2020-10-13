@@ -79,6 +79,7 @@ void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
 
 #define AST_NODE_LIST(N) \
     N(NOD_GLOBAL) \
+    N(NOD_COMPOUND) \
     N(NOD_STMT) \
     N(NOD_EXT) \
     N(NOD_IF) \

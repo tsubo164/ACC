@@ -104,6 +104,72 @@ static struct data_type *make_type(const struct ast_node *node)
     }
 }
 
+#define TEST 1
+static void scope_begin(struct symbol_table *table)
+{
+#if TEST
+    printf("     {\n");
+#else
+    symbol_scope_begin(table);
+#endif
+}
+
+static void scope_end(struct symbol_table *table)
+{
+#if TEST
+    printf("     }\n");
+#else
+    symbol_scope_end(table);
+#endif
+}
+
+static void make_symbol(struct ast_node *node, struct symbol_table *table)
+{
+    if (!node)
+        return;
+
+    switch (node->kind) {
+
+    case NOD_GLOBAL_VAR:
+    case NOD_VAR_DEF:
+    case NOD_VAR:
+    case NOD_PARAM:
+    case NOD_CALL:
+        printf("     %s\n", node->sval);
+        make_symbol(node->l, table);
+        make_symbol(node->r, table);
+        break;
+
+    case NOD_STRUCT_DECL:
+        printf("     struct %s\n", node->sval);
+        scope_begin(table);
+        make_symbol(node->l, table);
+        make_symbol(node->r, table);
+        scope_end(table);
+        break;
+
+    case NOD_FUNC_DEF:
+        printf("     %s\n", node->sval);
+        scope_begin(table);
+        make_symbol(node->l, table);
+        make_symbol(node->r, table);
+        scope_end(table);
+        break;
+
+    case NOD_COMPOUND:
+        scope_begin(table);
+        make_symbol(node->l, table);
+        make_symbol(node->r, table);
+        scope_end(table);
+        break;
+
+    default:
+        make_symbol(node->l, table);
+        make_symbol(node->r, table);
+        break;
+    }
+}
+
 static int promote_type2(struct ast_node *node, struct symbol_table *table)
 {
     if (!node) {
@@ -466,6 +532,9 @@ int semantic_analysis(struct ast_node *tree,
 {
     analize_symbol_usage(table, messages);
 
+    /*
+    make_symbol(tree, table);
+    */
     /* XXX */
     promote_type2(tree, table);
     /*
