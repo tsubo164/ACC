@@ -777,7 +777,7 @@ static struct ast_node *var_def2(struct parser *p)
         tok = gettok(p);
         dtype = type_struct(tok->text);
         {
-            const struct symbol *strc = lookup_symbol(&p->symtbl, tok->text, SYM_STRUCT);
+            const struct symbol *strc = lookup_symbol_(p, tok->text, SYM_STRUCT);
             if (!strc)
                 error(p, "undefined struct");
         }
@@ -892,9 +892,9 @@ static struct ast_node *var_def(struct parser *p)
         {
             /* XXX */
             /*
-            const struct symbol *strc = lookup_symbol(&p->symtbl, tok->word, SYM_STRUCT);
+            const struct symbol *strc = lookup_symbol_(&p->symtbl, tok->word, SYM_STRUCT);
             */
-            const struct symbol *strc = lookup_symbol(&p->symtbl, tok->text, SYM_STRUCT);
+            const struct symbol *strc = lookup_symbol_(p, tok->text, SYM_STRUCT);
             if (!strc)
                 error(p, "undefined struct");
         }

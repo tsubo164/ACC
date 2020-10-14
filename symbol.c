@@ -72,6 +72,48 @@ void free_symbol_table(struct symbol_table *table)
     }
 }
 
+#define SYM_LIST(S) \
+    S(SYM_SCOPE_BEGIN) \
+    S(SYM_SCOPE_END) \
+    S(SYM_STRUCT) \
+    S(SYM_VAR) \
+    S(SYM_GLOBAL_VAR) \
+    S(SYM_FUNC) \
+    S(SYM_PARAM)
+
+const char *symbol_to_string(const struct symbol *sym)
+{
+    if (!sym)
+        return "null";
+
+#define S(kind) case kind: return #kind;
+    switch (sym->kind) {
+SYM_LIST(S)
+    default: return "**unknown**";
+    }
+#undef S
+}
+
+void print_symbol_table(const struct symbol_table *table)
+{
+    const int N = table->symbol_count;
+    int i;
+
+    printf("%15s | ", "name");
+    printf("%20s | ", "kind");
+    printf("%5s | ", "level");
+    printf("\n");
+    printf("================================================\n");
+
+    for (i = 0; i < N; i++) {
+        const struct symbol *sym = &table->data[i];
+        printf("%15s | ", sym->name);
+        printf("%-20s | ",  symbol_to_string(sym));
+        printf("%5d | ", sym->scope_level);
+        printf("\n");
+    }
+}
+
 static struct symbol *push_symbol(struct symbol_table *table, const char *name, int kind)
 {
     struct symbol *sym = &table->data[table->symbol_count++];
@@ -169,7 +211,6 @@ struct symbol *insert_symbol(struct symbol_table *table,
 struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind)
 {
     struct symbol *sym = lookup_symbol(table, name, kind);
-    const int cur_lv = table->current_scope_level;
 
     if (!sym) {
         sym = push_symbol(table, name, kind);

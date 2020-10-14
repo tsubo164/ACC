@@ -104,7 +104,7 @@ static struct data_type *make_type(const struct ast_node *node)
     }
 }
 
-#define TEST 1
+#define TEST 0
 static void scope_begin(struct symbol_table *table)
 {
 #if TEST
@@ -131,7 +131,7 @@ static void define_sym(struct ast_node *node, struct symbol_table *table, int sy
     const char *name = node->sval;
     struct symbol *sym = define_symbol(table, name, sym_kind);
 
-    node->data.sym = sym;sym;
+    node->data.sym = sym;
 #endif
 }
 
@@ -143,7 +143,7 @@ static void use_sym(struct ast_node *node, struct symbol_table *table, int sym_k
     const char *name = node->sval;
     struct symbol *sym = use_symbol(table, name, sym_kind);
 
-    node->data.sym = sym;sym;
+    node->data.sym = sym;
 #endif
 }
 
@@ -567,7 +567,18 @@ int semantic_analysis(struct ast_node *tree,
     analize_symbol_usage(table, messages);
 
     /*
+    {
+        struct symbol_table *symtab = new_symbol_table();
+        add_symbols(tree, symtab);
+        print_symbol_table(symtab);
+        free_symbol_table(symtab);
+    }
+    */
+    /*
     add_symbols(tree, table);
+    */
+    /*
+    print_symbol_table(table);
     */
     /* XXX */
     promote_type2(tree, table);
