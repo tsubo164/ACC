@@ -131,7 +131,9 @@ static void define_sym(struct ast_node *node, struct symbol_table *table, int sy
     const char *name = node->sval;
     struct symbol *sym = define_symbol(table, name, sym_kind);
 
+    /*
     node->data.sym = sym;
+    */
 #endif
 }
 
@@ -143,7 +145,9 @@ static void use_sym(struct ast_node *node, struct symbol_table *table, int sym_k
     const char *name = node->sval;
     struct symbol *sym = use_symbol(table, name, sym_kind);
 
+    /*
     node->data.sym = sym;
+    */
 #endif
 }
 
@@ -156,8 +160,13 @@ static void add_symbols(struct ast_node *node, struct symbol_table *table)
 
     case NOD_GLOBAL_VAR:
     case NOD_VAR:
-    case NOD_PARAM:
         use_sym(node, table, SYM_VAR);
+        add_symbols(node->l, table);
+        add_symbols(node->r, table);
+        break;
+
+    case NOD_PARAM_DEF:
+        define_sym(node, table, SYM_PARAM);
         add_symbols(node->l, table);
         add_symbols(node->r, table);
         break;

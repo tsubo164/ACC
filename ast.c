@@ -78,6 +78,7 @@ void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
 }
 
 #define AST_NODE_LIST(N) \
+    N(NOD_LIST) \
     N(NOD_GLOBAL) \
     N(NOD_COMPOUND) \
     N(NOD_STMT) \
@@ -144,7 +145,7 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
             /*
             printf("|   ");
             */
-            printf("    ");
+            printf("  ");
         }
     }
 
@@ -158,7 +159,9 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
 
     printf("%s", node_to_string(tree));
     switch (tree->kind) {
+    case NOD_STRUCT_DECL:
     case NOD_FUNC_DEF:
+    case NOD_PARAM_DEF:
     case NOD_PARAM:
     case NOD_VAR_DEF:
     case NOD_VAR:

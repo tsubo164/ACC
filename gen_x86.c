@@ -451,6 +451,26 @@ static void code3__(FILE *fp, const struct ast_node *node,
 /* forward declaration */
 static void gen_code(FILE *fp, const struct ast_node *node);
 
+static int gen_one_param2(FILE *fp, const struct ast_node *node, int reg_index)
+{
+    int max_index = 0;
+
+    if (!node)
+        return reg_index;
+
+    max_index = gen_one_param2(fp, node->l, reg_index);
+    max_index = gen_one_param2(fp, node->r, max_index);
+
+    if (node->kind == NOD_PARAM_DEF) {
+        const int disp = -get_mem_offset(node);
+
+        code3__(fp, node, MOV_, arg(max_index), addr2(RBP, disp));
+        return max_index + 1;
+    } else {
+        return max_index;
+    }
+}
+
 static int gen_one_param(FILE *fp, const struct ast_node *node)
 {
     if (!node) {
@@ -470,7 +490,10 @@ static int gen_one_param(FILE *fp, const struct ast_node *node)
 
 static void gen_param_list(FILE *fp, const struct ast_node *node)
 {
+    /*
     gen_one_param(fp, node);
+    */
+    gen_one_param2(fp, node, 0);
 }
 
 static void gen_comment(FILE *fp, const char *cmt)
@@ -562,6 +585,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     switch (node->kind) {
 
+    case NOD_LIST:
     case NOD_GLOBAL:
         gen_code(fp, node->l);
         gen_code(fp, node->r);

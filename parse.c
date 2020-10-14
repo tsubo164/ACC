@@ -1047,6 +1047,7 @@ static struct ast_node *func_params(struct parser *p)
     for (i = 0; i < 6; i++) {
         struct symbol *sym = NULL;
 
+        struct ast_node *param = NULL;
         struct ast_node *type = NULL;
         const char *ident = NULL;
         tok = gettok(p);
@@ -1063,6 +1064,7 @@ static struct ast_node *func_params(struct parser *p)
         }
         ident = tok->text;
 
+#if 0
         tree = new_node(NOD_PARAM_DEF, NULL, tree);
 
         /* XXX */
@@ -1080,6 +1082,22 @@ static struct ast_node *func_params(struct parser *p)
         /* TODO change to ->l */
         tree->l = type;
         tree->sval = ident;
+#else
+        param = new_node(NOD_PARAM_DEF, NULL, NULL);
+
+        sym = define_variable(&p->symtbl, tok->text);
+        sym->kind = SYM_PARAM;
+        sym->dtype = type_int();
+
+        param->data.sym = sym;
+        param->dtype = sym->dtype;
+        nparams++;
+
+        param->l = type;
+        param->sval = ident;
+
+        tree = new_node(NOD_LIST, tree, param);
+#endif
 
         tok = gettok(p);
         if (tok->kind != ',') {

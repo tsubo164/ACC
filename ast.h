@@ -5,6 +5,7 @@
 #include "type.h"
 
 enum ast_node_kind {
+    NOD_LIST,
     NOD_GLOBAL,
     NOD_COMPOUND,
     NOD_STMT,
