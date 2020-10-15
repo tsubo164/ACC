@@ -101,14 +101,16 @@ void print_symbol_table(const struct symbol_table *table)
 
     printf("%15s | ", "name");
     printf("%20s | ", "kind");
+    printf("%10s | ", "type");
     printf("%5s | ", "level");
     printf("\n");
-    printf("================================================\n");
+    printf("=============================================================\n");
 
     for (i = 0; i < N; i++) {
         const struct symbol *sym = &table->data[i];
-        printf("%15s | ", sym->name);
+        printf("%15s | ", sym->name ? sym->name : "--");
         printf("%-20s | ",  symbol_to_string(sym));
+        printf("%10s | ", data_type_to_string(sym->dtype));
         printf("%5d | ", sym->scope_level);
         printf("\n");
     }

@@ -12,13 +12,17 @@ static struct data_type STRUCT_  = {DATA_TYPE_STRUCT, 0, 0, 1, NULL};
 
 const char *data_type_to_string(const struct data_type *dtype)
 {
+    if (!dtype)
+        return "--";
+
     switch (dtype->kind) {
-    case DATA_TYPE_VOID:  return "void";
-    case DATA_TYPE_CHAR:  return "char";
-    case DATA_TYPE_INT:   return "int";
-    case DATA_TYPE_PTR:   return "ptr";
-    case DATA_TYPE_ARRAY: return "array";
-    default:              return "unknown";
+    case DATA_TYPE_VOID:   return "void";
+    case DATA_TYPE_CHAR:   return "char";
+    case DATA_TYPE_INT:    return "int";
+    case DATA_TYPE_PTR:    return "ptr";
+    case DATA_TYPE_ARRAY:  return "array";
+    case DATA_TYPE_STRUCT: return "struct";
+    default:               return "unknown";
     }
 }
 

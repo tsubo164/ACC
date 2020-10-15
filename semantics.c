@@ -131,9 +131,11 @@ static void define_sym(struct ast_node *node, struct symbol_table *table, int sy
     const char *name = node->sval;
     struct symbol *sym = define_symbol(table, name, sym_kind);
 
+    sym->dtype = make_type(node->l);
     /*
-    node->data.sym = sym;
+    ast_node_set_symbol(node, sym);
     */
+    node->data.sym = sym;
 #endif
 }
 
@@ -146,8 +148,9 @@ static void use_sym(struct ast_node *node, struct symbol_table *table, int sym_k
     struct symbol *sym = use_symbol(table, name, sym_kind);
 
     /*
-    node->data.sym = sym;
+    ast_node_set_symbol(node, sym);
     */
+    node->data.sym = sym;
 #endif
 }
 
@@ -255,16 +258,6 @@ static int promote_type2(struct ast_node *node, struct symbol_table *table)
     case NOD_ASSIGN:
         node->dtype = node->l->dtype;
         break;
-        /*
-    case NOD_NUM:
-        break;
-        */
-
-        /*
-    case NOD_VAR:
-        node->dtype = node->data.sym->dtype;
-        break;
-        */
 
     case NOD_DEREF:
         node->dtype = promote_data_type(node->l, node->r);
@@ -298,29 +291,20 @@ static int promote_type2(struct ast_node *node, struct symbol_table *table)
         }
         break;
 
+        /* nodes with symbol */
+    case NOD_VAR:
     case NOD_VAR_DEF:
-    case NOD_PARAM:
-#if 0
-        {
-            const struct data_type *dtype = node->dtype;
-            printf("==========================\n");
-            printf("    var:       %s\n", node->sval);
-            print_data_type(dtype);
-        }
-#endif
-        {
-            const struct ast_node *type = node->l;
-            if (type) {
-                node->dtype = make_type(type);
-#if 0
-                {
-                    const struct data_type *dtype = node->dtype;
-                    printf("--------------------------\n");
-                    print_data_type(dtype);
-                }
-#endif
-            }
-        }
+    case NOD_PARAM_DEF:
+    case NOD_CALL:
+        /*
+        node->dtype = node->data.sym->dtype;
+        */
+        break;
+
+    case NOD_NUM:
+        /*
+        printf(">>> %s\n", node->sval);
+        */
         break;
 
     default:
@@ -575,13 +559,17 @@ int semantic_analysis(struct ast_node *tree,
 {
     analize_symbol_usage(table, messages);
 
-    /*
     {
         struct symbol_table *symtab = new_symbol_table();
-        add_symbols(tree, symtab);
-        print_symbol_table(symtab);
+        if (0) {
+            add_symbols(tree, symtab);
+            print_symbol_table(symtab);
+        }
         free_symbol_table(symtab);
+        /*
+        */
     }
+    /*
     */
     /*
     add_symbols(tree, table);
