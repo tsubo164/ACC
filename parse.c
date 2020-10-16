@@ -226,6 +226,7 @@ static struct ast_node *primary_expression(struct parser *p)
         base = new_node(NOD_NUM, NULL, NULL);
         base->data.ival = tok->value;
         base->dtype = type_int();
+        base->sval = tok->text;
         return base;
 
     case TOK_IDENT:

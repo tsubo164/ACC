@@ -375,6 +375,10 @@ int symbol_assign_local_storage(struct symbol_table *table)
             continue;
         }
 
+                /*
+            printf("<<< %s: %s: ", sym->name, data_type_to_string(sym->dtype));
+            printf("%p\n", (void *) sym->dtype);
+                */
         if (sym->kind == SYM_VAR || sym->kind == SYM_PARAM) {
             int size  = sym->dtype->byte_size;
             int align = sym->dtype->alignment;
@@ -409,6 +413,10 @@ int symbol_assign_local_storage(struct symbol_table *table)
             printf("        total_mem_offset: %d\n", total_mem_offset);
                 */
         }
+                /*
+            printf(">>> %s: %s: ", sym->name, data_type_to_string(sym->dtype));
+            printf("%p\n", (void *) sym->dtype);
+                */
     }
     return 0;
 }

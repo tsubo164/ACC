@@ -194,6 +194,51 @@ static void add_symbols(struct ast_node *node, struct symbol_table *table)
         scope_end(table);
         break;
 
+    case NOD_STRUCT_REF:
+        {
+            const struct symbol *sym;
+            const char *mem = node->r->sval;
+            const char *tag;
+
+            add_symbols(node->l, table);
+            /*
+            printf("   sym: %s\n", node->l->data.sym->name);
+            printf("   sym: %s\n", node->l->dtype->tag);
+            printf("   sym: %d\n", node->l->dtype->kind);
+            */
+            tag = node->l->dtype->tag;
+
+            sym = lookup_symbol(table, tag, SYM_STRUCT);
+
+            for (;;) {
+                if (sym->kind == SYM_SCOPE_END) {
+                    /* end of struct definition */
+                    break;
+                }
+
+                if (sym->name && !strcmp(sym->name, mem)) {
+                    node->r->data.sym = sym;
+                    /* will do later */
+                    /*
+                    node->dtype = node->r->dtype;
+                    */
+
+                    /* struct var data type <- member data type */
+                    /* will do later */
+                    /*
+                    node->dtype = sym->dtype;
+                    */
+                    node->r->dtype = sym->dtype;
+
+                    break;
+                }
+                sym++;
+            }
+#if 0
+#endif
+        }
+        break;
+
     case NOD_STRUCT_DECL:
         define_sym(node, table, SYM_STRUCT);
         scope_begin(table);
@@ -296,14 +341,16 @@ static int promote_type2(struct ast_node *node, struct symbol_table *table)
     case NOD_VAR_DEF:
     case NOD_PARAM_DEF:
     case NOD_CALL:
-        /*
         node->dtype = node->data.sym->dtype;
+        /*
         */
         break;
 
     case NOD_NUM:
+        node->dtype = type_int();
         /*
-        printf(">>> %s\n", node->sval);
+        node->data.ival = tok->value;
+        printf(">>> %s, %d\n", node->sval, node->data.ival);
         */
         break;
 
@@ -557,23 +604,34 @@ static int analize_symbol_usage(struct symbol_table *table, struct message_list 
 int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages)
 {
-    analize_symbol_usage(table, messages);
+    /*
+    */
 
     {
+        /*
         struct symbol_table *symtab = new_symbol_table();
         if (0) {
             add_symbols(tree, symtab);
             print_symbol_table(symtab);
         }
         free_symbol_table(symtab);
-        /*
         */
     }
     /*
+    print_symbol_table(table);
+    */
+
+    table->current_scope_level = 0;
+    table->symbol_count = 0;
+    add_symbols(tree, table);
+
+    analize_symbol_usage(table, messages);
+    /*
+    print_symbol_table(table);
     */
     /*
-    add_symbols(tree, table);
     */
+    symbol_assign_local_storage(table);
     /*
     print_symbol_table(table);
     */
