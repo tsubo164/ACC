@@ -97,7 +97,7 @@ void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
     N(NOD_DEREF) \
     N(NOD_CALL) \
     N(NOD_FUNC_DEF) \
-    N(NOD_FUNC_DECL) \
+    N(NOD_FUNC_BODY) \
     N(NOD_ARG) \
     N(NOD_PARAM) \
     N(NOD_PARAM_DEF) \

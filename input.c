@@ -27,7 +27,7 @@ int main()
 
     local = -8;
 
-    return twice(glbl + local) + add(11, 22);
+    return twice(glbl + local) + add(11, 25);
 }
 
 /*

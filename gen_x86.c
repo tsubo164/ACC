@@ -597,7 +597,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_COMPOUND:
-    case NOD_FUNC_DECL:
         gen_code(fp, node->l);
         gen_code(fp, node->r);
         break;
@@ -714,9 +713,9 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, SUB_, imme(get_mem_offset(node)), RSP);
 
         /* load params */
-        gen_param_list(fp, node->l);
+        gen_param_list(fp, node->r->l);
         /* body */
-        gen_code(fp, node->r);
+        gen_code(fp, node->r->r);
         break;
 
     case NOD_ASSIGN:

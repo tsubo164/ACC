@@ -89,7 +89,7 @@ int main(int argc, char **argv)
     fclose(file);
 
     /* ------------------------- */
-    make_output_filename(argv[1], output);
+    make_output_filename(infile, output);
     file = fopen(output, "w");
     if (!file) {
         return -1;

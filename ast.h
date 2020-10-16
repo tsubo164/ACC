@@ -24,7 +24,7 @@ enum ast_node_kind {
     NOD_DEREF,
     NOD_CALL,
     NOD_FUNC_DEF,
-    NOD_FUNC_DECL,
+    NOD_FUNC_BODY,
     NOD_ARG,
     NOD_PARAM,
     NOD_PARAM_DEF,
@@ -58,6 +58,13 @@ struct ast_node {
     } data;
     const char *sval;
 };
+
+#define IF_(n) ((n)->l)
+#define THEN_(n) ((n)->r->l)
+#define ELSE_(n) ((n)->r->r)
+#define TYPE_(n) ((n)->l)
+#define PARM_(n) ((n)->r->l)
+#define BODY_(n) ((n)->r->r)
 
 extern struct ast_node *new_ast_node(enum ast_node_kind kind,
         struct ast_node *l, struct ast_node *r);

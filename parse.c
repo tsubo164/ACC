@@ -1168,10 +1168,12 @@ static struct ast_node *global_entry(struct parser *p)
         /* XXX */
         sym = define_function(&p->symtbl, ident_);
 
-        tree = new_node(NOD_FUNC_DEF, NULL, NULL);
+        tree = new_node(NOD_FUNC_BODY, NULL, NULL);
 
+        /*
         sym->dtype = dtype;
         ast_node_set_symbol(tree, sym);
+        */
 
         scope_begin(p);
 
@@ -1184,7 +1186,10 @@ static struct ast_node *global_entry(struct parser *p)
         tree = new_node(NOD_SCOPE, tree, NULL);
         */
 
-        tree = new_node(NOD_FUNC_DECL, NULL, tree);
+        tree = new_node(NOD_FUNC_DEF, NULL, tree);
+        sym->dtype = dtype;
+        ast_node_set_symbol(tree, sym);
+
         /* TODO change to ->l */
         tree->l = type;
         tree->sval = ident;
