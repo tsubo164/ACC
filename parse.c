@@ -722,22 +722,14 @@ static struct ast_node *global_entry(struct parser *p)
 
     struct ast_node *type = NULL;
     const char *ident = NULL;
-#if 0
-    tok = gettok(p);
-    if (tok->kind != TOK_INT) {
-        error(p, "missing type before identifier");
-    }
-    dtype = type_int();
-#endif
+
     /* type */
     tok = gettok(p);
     switch (tok->kind) {
     case TOK_CHAR:
-        dtype = type_char();
         type = new_node(NOD_TYPE_CHAR, NULL, NULL);
         break;
     case TOK_INT: 
-        dtype = type_int();
         type = new_node(NOD_TYPE_INT, NULL, NULL);
         break;
     default:
@@ -760,36 +752,18 @@ static struct ast_node *global_entry(struct parser *p)
     if (tok->kind == '(') {
         ungettok(p);
 
-        /* XXX */
-        sym = define_function(&p->symtbl, ident);
-
         tree = new_node(NOD_FUNC_BODY, NULL, NULL);
-
-        /*
-        sym->dtype = dtype;
-        ast_node_set_symbol(tree, sym);
-        */
 
         scope_begin(p);
 
         tree->l = func_params(p);
         tree->r = compound_statement(p);
+        /* TODO check if this is necessary */
         tree->sval = ident;
-
-        /* TODO scope */
-        /*
-        tree = new_node(NOD_SCOPE, tree, NULL);
-        */
 
         tree = new_node(NOD_FUNC_DEF, NULL, tree);
-        sym->dtype = dtype;
-        ast_node_set_symbol(tree, sym);
-
-        /* TODO change to ->l */
         tree->l = type;
         tree->sval = ident;
-        /*
-        */
 
         scope_end(p);
 
