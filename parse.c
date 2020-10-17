@@ -293,54 +293,30 @@ static struct ast_node *postfix_expression(struct parser *p)
  */
 static struct ast_node *unary_expression(struct parser *p)
 {
-    struct ast_node *base = NULL;
+    struct ast_node *tree = NULL;
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
 
     case '+':
-        /* XXX */
-        base = postfix_expression(p);
-        /*
-        base = primary_expression(p);
-        */
-        return base;
+        return postfix_expression(p);
 
     case '-':
-        /* ??? base = new_number(-1); */
-        base = new_node(NOD_NUM, NULL, NULL);
-        base->data.ival = -1;
-        /* XXX */
-        base = new_node(NOD_MUL, base, postfix_expression(p));
-        /*
-        base = new_node(NOD_MUL, base, primary_expression(p));
-        */
-        return base;
+        /* TODO tree = new_number(-1); */
+        tree = new_node(NOD_NUM, NULL, NULL);
+        tree->data.ival = -1;
+        tree = new_node(NOD_MUL, tree, postfix_expression(p));
+        return tree;
 
     case '*':
-        /* XXX */
-        base = new_node(NOD_DEREF, postfix_expression(p), NULL);
-        /*
-        base = new_node(NOD_DEREF, unary_expression(p), NULL);
-        */
-        return base;
+        return new_node(NOD_DEREF, postfix_expression(p), NULL);
 
     case '&':
-        /* XXX */
-        base = new_node(NOD_ADDR, postfix_expression(p), NULL);
-        /*
-        base = new_node(NOD_ADDR, unary_expression(p), NULL);
-        */
-        return base;
+        return new_node(NOD_ADDR, postfix_expression(p), NULL);
 
     default:
         ungettok(p);
-        /* XXX */
-        base = postfix_expression(p);
-        /*
-        base = primary_expression(p);
-        */
-        return base;
+        return postfix_expression(p);
     }
 }
 
