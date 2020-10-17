@@ -57,6 +57,7 @@ static void ungettok(struct parser *p)
     p->curr = (p->curr - 1 + N) % N;
 }
 
+/* TODO rename to next */
 static const struct token *consume(struct parser *p, int token_kind)
 {
     const struct token *tok = gettok(p);
@@ -153,10 +154,8 @@ static struct ast_node *statement(struct parser *p);
  *     : TOK_IDENT
  *     ;
  */
-/* XXX */
 static struct ast_node *identifier(struct parser *p)
 {
-    char *ident = NULL;
     struct ast_node *tree = NULL;
     const struct token *tok = consume(p, TOK_IDENT);
 
@@ -169,33 +168,10 @@ static struct ast_node *identifier(struct parser *p)
      * try to be consistent whichever to be chosen
      */
     tree = new_node(NOD_VAR, NULL, NULL);
-
-    /*
-    ident = (char *) calloc(strlen(tok->word)+1, sizeof(char));
-    strcpy(ident, tok->word);
-    tree->sval = ident;
-    */
-    ident = (char *) calloc(strlen(tok->text)+1, sizeof(char));
-    strcpy(ident, tok->text);
-    tree->sval = ident;
+    tree->sval = tok->text;
 
     return tree;
 }
-#if a
-static Node *identifier(Parser *p)
-{
-    Node *tree = NULL;
-    const Token *tok = consume(p, TOK_IDENT);
-
-    if (!tok)
-        return NULL;
-
-    tree = new_node(NOD_VAR, NULL, NULL);
-    tree->word = tok->word;
-
-    return tree;
-}
-#endif
 
 /*
  * primary_expression
@@ -296,7 +272,7 @@ static struct ast_node *postfix_expression(struct parser *p)
         switch (tok->kind) {
 
         case '.':
-            /* XXX fix this identifier */
+            /* TODO fix this identifier */
             tree = new_node(NOD_STRUCT_REF, tree, identifier(p));
             return tree;
 
@@ -306,28 +282,6 @@ static struct ast_node *postfix_expression(struct parser *p)
         }
     }
 }
-#if a
-static Node *postfix_expr(Parser *p)
-{
-    Node *tree = primary_expr(p);
-
-    for (;;) {
-        const Token *tok = gettok(p);
-
-        switch (tok->kind) {
-
-        case '.':
-            /* XXX fix this */
-            tree = new_node(NOD_STRUCT_REF, tree, primary_expr(p));
-            return tree;
-
-        default:
-            ungettok(p);
-            return tree;
-        }
-    }
-}
-#endif
 
 /*
  * unary_expression
@@ -616,65 +570,6 @@ final:
     scope_end(p);
     return tree;
 }
-
-#if n
-static struct ast_node declarator(struct parser *p)
-{
-    switch (kind) {
-
-    case '*':
-        ungettok(p);
-        return new_node(NOD_DECL, pointer(), NULL);
-
-    default:
-        break;
-    }
-}
-
-static struct ast_node direct_declarator(struct parser *p)
-{
-    switch (kind) {
-
-    case TOK_IDENT:
-        ungettok(p);
-        return identifier(p);
-
-    default:
-        break;
-    }
-}
-
-static struct ast_node *var_decl(struct parser *p)
-{
-    struct ast_node *tree, *ptr, *ident, *arr, *init;
-
-    type  = type_specifier(p);
-    if (!type) {
-        return;
-    }
-
-    ptr = pointer(p);
-    if (!ptr) {
-    }
-
-    ident = identifier(p);
-    if (!ident) {
-        return;
-    }
-
-    arr = array(p);
-    if (!arr) {
-    }
-
-    init = initializer(p);
-    if (!init) {
-    }
-
-    expect(p, ';', "missing ';' at end of declaration");
-
-    return tree;
-}
-#endif
 
 static struct ast_node *var_def2(struct parser *p)
 {
