@@ -206,19 +206,19 @@ static Node *identifier(Parser *p)
  */
 static struct ast_node *primary_expression(struct parser *p)
 {
-    struct ast_node *base = NULL;
+    struct ast_node *tree = NULL;
     const char *ident = NULL;
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
 
     case TOK_NUM:
-        /* XXX base = new_number(tok->value); */
-        base = new_node(NOD_NUM, NULL, NULL);
+        /* TODO tree = new_number(tok->value); */
+        tree = new_node(NOD_NUM, NULL, NULL);
         /* TODO convert in semantics */
-        base->data.ival = tok->value;
-        base->sval = tok->text;
-        return base;
+        tree->data.ival = tok->value;
+        tree->sval = tok->text;
+        return tree;
 
     case TOK_IDENT:
         ident = tok->text;
@@ -232,7 +232,7 @@ static struct ast_node *primary_expression(struct parser *p)
                     break;
                 }
 
-                base = new_node(NOD_ARG, base, expr);
+                tree = new_node(NOD_ARG, tree, expr);
                 tok = gettok(p);
                 if (tok->kind != ',') {
                     ungettok(p);
@@ -241,74 +241,42 @@ static struct ast_node *primary_expression(struct parser *p)
             }
 
             expect_or_error(p, ')', "missing ')' after function call");
-            base = new_node(NOD_CALL, base, NULL);
-            base->sval = ident;
+            tree = new_node(NOD_CALL, tree, NULL);
+            tree->sval = ident;
 
-            return base;
+            return tree;
         } else {
             ungettok(p);
 
-            base = new_node(NOD_VAR, NULL, NULL);
-            base->sval = ident;
-#if 1
-            /* XXX ----------------------- */
-            {
-                /* array */
-                tok = gettok(p);
-                if (tok->kind == '[') {
-                    /*
-                    printf("    dtype: %s\n", data_type_to_string(base->dtype));
-                    */
+            tree = new_node(NOD_VAR, NULL, NULL);
+            tree->sval = ident;
 
-                    base = new_node(NOD_ADD, base, expression(p));
-            /* XXX */
-                    /*
-            if (base->l->dtype->kind == DATA_TYPE_ARRAY) {
-                struct ast_node *size, *mul;
+            /* array */
+            tok = gettok(p);
+            if (tok->kind == '[') {
 
-                size = new_node(NOD_NUM, NULL, NULL);
-                size->data.ival = base->l->dtype->ptr_to->byte_size;
-                mul = new_node(NOD_MUL, size, base->r);
-                base->r = mul;
+                tree = new_node(NOD_ADD, tree, expression(p));
+
+                expect_or_error(p, ']', "missing ']' at end of array");
+
+                tree = new_node(NOD_DEREF, tree, NULL);
+
+            } else {
+                ungettok(p);
             }
-                    */
-
-                    expect_or_error(p, ']', "missing ']' at end of array");
-
-                    base = new_node(NOD_DEREF, base, NULL);
-                    /* XXX */
-                    /*
-                    base->dtype = base->dtype->ptr_to;;
-                    */
-                    /*
-                    printf("    dtype: %s\n", data_type_to_string(base->dtype));
-                    */
-
-                } else {
-                    ungettok(p);
-                }
-            }
-            /* XXX ----------------------- */
-#endif
         }
-        return base;
+        return tree;
 
     case '(':
-        base = expression(p);
+        tree = expression(p);
         expect(p, ')');
-        return base;
+        return tree;
 
     default:
-        /* XXX
-         * when parser expects an expression, does it accept
-         * blank or treat as an error?
-         */
+        /* TODO * when parser expects an expression, does it accept
+         * null expressions * or treat them as an error?  */
         ungettok(p);
         return NULL;
-        /*
-        error(p, "unexpected token");
-        return NULL;
-        */
     }
 }
 
