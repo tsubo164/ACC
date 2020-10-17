@@ -786,12 +786,7 @@ static struct ast_node *struct_decl(struct parser *p)
 {
     struct ast_node *tree = NULL;
     struct ast_node *members = NULL;
-    struct symbol *sym = NULL;
-
-    /*
-    */
     const struct token *tok = NULL;
-    struct token ident;
 
     expect_or_error(p, TOK_STRUCT, "missing struct");
 
@@ -800,17 +795,11 @@ static struct ast_node *struct_decl(struct parser *p)
     if (tok->kind != TOK_IDENT) {
         error(p, "missing identifier");
     }
-    ident = *tok;
 
     tree = new_node(NOD_STRUCT_DECL, NULL, NULL);
 
     tree->sval = tok->text;
 
-    /* XXX */
-    /*
-    sym = define_struct(&p->symtbl, ident.word);
-    */
-    sym = define_struct(&p->symtbl, ident.text);
     scope_begin(p);
 
     expect_or_error(p, '{', "missing '{' after struct tag");
@@ -832,12 +821,6 @@ static struct ast_node *struct_decl(struct parser *p)
 
 end_member:
     scope_end(p);
-
-        /* XXX */
-    /*
-        sym->dtype = type_struct(sym->name);
-        ast_node_set_symbol(tree, sym);
-    */
 
     tree->l = members;
 
