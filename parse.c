@@ -614,24 +614,24 @@ static struct ast_node *var_def(struct parser *p)
  */
 static struct ast_node *statement(struct parser *p)
 {
-    struct ast_node *base = NULL;
+    struct ast_node *tree = NULL;
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
 
     case TOK_RETURN:
-        base = new_node(NOD_RETURN, expression(p), NULL);
+        tree = new_node(NOD_RETURN, expression(p), NULL);
         expect_or_error(p, ';', "missing ';' at end of return statement");
         break;
 
     case TOK_IF:
         expect_or_error(p, '(', "missing '(' after if");
-        base = new_node(NOD_IF, expression(p), NULL);
+        tree = new_node(NOD_IF, expression(p), NULL);
         expect_or_error(p, ')', "missing ')' after if condition");
-        base->r = new_node(NOD_EXT, statement(p), NULL);
+        tree->r = new_node(NOD_EXT, statement(p), NULL);
         tok = gettok(p);
         if (tok->kind == TOK_ELSE) {
-            base->r->r = statement(p);
+            tree->r->r = statement(p);
         } else {
             ungettok(p);
         }
@@ -639,9 +639,9 @@ static struct ast_node *statement(struct parser *p)
 
     case TOK_WHILE:
         expect_or_error(p, '(', "missing '(' after while");
-        base = new_node(NOD_WHILE, expression(p), NULL);
+        tree = new_node(NOD_WHILE, expression(p), NULL);
         expect_or_error(p, ')', "missing ')' after while condition");
-        base->r = statement(p);
+        tree->r = statement(p);
         break;
 
     case '{':
@@ -656,12 +656,12 @@ static struct ast_node *statement(struct parser *p)
 
     default:
         ungettok(p);
-        base = expression(p);
+        tree = expression(p);
         expect_or_error(p, ';', "missing ';' at end of statement");
         break;
     }
 
-    return base;
+    return tree;
 }
 
 static struct ast_node *func_params(struct parser *p)
