@@ -668,23 +668,22 @@ static struct ast_node *func_params(struct parser *p)
 {
     struct ast_node *tree = NULL;
     const struct token *tok = NULL;
-    int nparams = 0;
     int i;
 
     expect_or_error(p, '(', "missing '(' after function name");
 
-    /* XXX limit 6 params */
+    /* TODO remove limit 6 params */
     for (i = 0; i < 6; i++) {
-        struct symbol *sym = NULL;
-
         struct ast_node *param = NULL;
         struct ast_node *type = NULL;
         const char *ident = NULL;
+
         tok = gettok(p);
         if (tok->kind != TOK_INT) {
             ungettok(p);
             break;
         }
+        /* TODO support more types */
         type = new_node(NOD_TYPE_INT, NULL, NULL);
 
         tok = gettok(p);
@@ -694,40 +693,11 @@ static struct ast_node *func_params(struct parser *p)
         }
         ident = tok->text;
 
-#if 0
-        tree = new_node(NOD_PARAM_DEF, NULL, tree);
-
-        /* XXX */
-        /*
-        sym = define_variable(&p->symtbl, tok->word);
-        */
-        sym = define_variable(&p->symtbl, tok->text);
-        sym->kind = SYM_PARAM;
-        sym->dtype = type_int();
-
-        tree->data.sym = sym;
-        tree->dtype = sym->dtype;
-        nparams++;
-
-        /* TODO change to ->l */
-        tree->l = type;
-        tree->sval = ident;
-#else
         param = new_node(NOD_PARAM_DEF, NULL, NULL);
-
-        sym = define_variable(&p->symtbl, tok->text);
-        sym->kind = SYM_PARAM;
-        sym->dtype = type_int();
-
-        param->data.sym = sym;
-        param->dtype = sym->dtype;
-        nparams++;
-
         param->l = type;
         param->sval = ident;
 
         tree = new_node(NOD_LIST, tree, param);
-#endif
 
         tok = gettok(p);
         if (tok->kind != ',') {
