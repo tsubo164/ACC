@@ -1,18 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "parse.h"
-#include "type.h"
-
-/* TODO remove scope functions later */
-static int scope_begin(struct parser *p)
-{
-    return symbol_scope_begin(&p->symtbl);
-}
-
-static int scope_end(struct parser *p)
-{
-    return symbol_scope_end(&p->symtbl);
-}
 
 static struct ast_node *new_node(enum ast_node_kind kind,
         struct ast_node *l, struct ast_node *r)
@@ -134,7 +122,7 @@ void parser_init(struct parser *p)
 }
 
 /*
- * forward declaration
+ * forward declarations
  */
 static struct ast_node *expression(struct parser *p);
 static struct ast_node *statement(struct parser *p);
@@ -496,7 +484,6 @@ static struct ast_node *compound_statement(struct parser *p)
     struct ast_node *tree = NULL;
 
     expect_or_error(p, '{', "missing '{'");
-    scope_begin(p);
 
     for (;;) {
         const struct token *tok = gettok(p);
@@ -504,11 +491,11 @@ static struct ast_node *compound_statement(struct parser *p)
         switch (tok->kind) {
 
         case '}':
-            goto final;
+            return new_node(NOD_COMPOUND, tree, NULL);
 
         case TOK_EOF:
             error(p, "missing '}' at end of file");
-            goto final;
+            return tree;
 
         default:
             ungettok(p);
@@ -516,12 +503,6 @@ static struct ast_node *compound_statement(struct parser *p)
             break;
         }
     }
-
-final:
-    tree = new_node(NOD_COMPOUND, tree, NULL);
-    scope_end(p);
-
-    return tree;
 }
 
 static struct ast_node *var_def(struct parser *p)
@@ -746,8 +727,6 @@ static struct ast_node *global_entry(struct parser *p)
 
         tree = new_node(NOD_FUNC_BODY, NULL, NULL);
 
-        scope_begin(p);
-
         tree->l = func_params(p);
         tree->r = compound_statement(p);
         /* TODO check if this is necessary */
@@ -756,9 +735,6 @@ static struct ast_node *global_entry(struct parser *p)
         tree = new_node(NOD_FUNC_DEF, NULL, tree);
         tree->l = type;
         tree->sval = ident;
-
-        scope_end(p);
-
     } else {
         ungettok(p);
 
@@ -800,8 +776,6 @@ static struct ast_node *struct_decl(struct parser *p)
 
     tree->sval = tok->text;
 
-    scope_begin(p);
-
     expect_or_error(p, '{', "missing '{' after struct tag");
 
     for (;;) {
@@ -820,8 +794,6 @@ static struct ast_node *struct_decl(struct parser *p)
     }
 
 end_member:
-    scope_end(p);
-
     tree->l = members;
 
     expect_or_error(p, '}', "missing '}' after struct declaration");

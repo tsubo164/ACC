@@ -20,14 +20,10 @@ int main()
     struct point pt;
     int local;
 
-    /*
-    int i;
-    int j;
-    */
-
+    pt.x = 11;
     local = -8;
 
-    return twice(glbl + local) + add(11, 25);
+    return twice(glbl + local) + add(pt.x, 25);
 }
 
 /*
