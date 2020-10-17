@@ -151,6 +151,13 @@ static void use_sym(struct ast_node *node, struct symbol_table *table, int sym_k
     ast_node_set_symbol(node, sym);
     */
     node->data.sym = sym;
+
+    /* TODO find better way */
+    if (is_param(sym)) {
+        node->kind = NOD_PARAM;
+    } else if (is_global_var(sym)) {
+        node->kind = NOD_GLOBAL_VAR;
+    }
 #endif
 }
 

@@ -14,15 +14,6 @@ static const struct symbol *lookup_symbol_(
     return lookup_symbol(&p->symtbl, name, kind);
 }
 
-/* XXX
-static struct symbol *insert_symbol_(
-            struct parser *p,
-            const char *name, enum symbol_kind kind)
-{
-    return insert_symbol(&p->symtbl, name, kind);
-}
-*/
-
 static int scope_begin(struct parser *p)
 {
     return symbol_scope_begin(&p->symtbl);
@@ -211,17 +202,16 @@ static Node *identifier(Parser *p)
 static struct ast_node *primary_expression(struct parser *p)
 {
     struct ast_node *base = NULL;
-    const struct token *tok = gettok(p);
-
     const char *ident = NULL;
+    const struct token *tok = gettok(p);
 
     switch (tok->kind) {
 
     case TOK_NUM:
         /* XXX base = new_number(tok->value); */
         base = new_node(NOD_NUM, NULL, NULL);
+        /* TODO convert in semantics */
         base->data.ival = tok->value;
-        base->dtype = type_int();
         base->sval = tok->text;
         return base;
 
@@ -230,14 +220,7 @@ static struct ast_node *primary_expression(struct parser *p)
 
         tok = gettok(p);
         if (tok->kind == '(') {
-            const struct symbol *sym;
-
-            sym = lookup_symbol_(p, ident, SYM_FUNC);
-            if (sym == NULL) {
-                error(p, "calling undefined function");
-                return NULL;
-            }
-
+            /* parameters for function call */
             for (;;) {
                 struct ast_node *expr = expression(p);
                 if (expr == NULL) {
@@ -254,12 +237,6 @@ static struct ast_node *primary_expression(struct parser *p)
 
             expect_or_error(p, ')', "missing ')' after function call");
             base = new_node(NOD_CALL, base, NULL);
-            /*
-            base->data.sym = sym;
-            base->dtype = sym->dtype;
-            */
-            ast_node_set_symbol(base, sym);
-
             base->sval = ident;
 
             return base;
