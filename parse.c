@@ -7,9 +7,6 @@
 #define MEM_ALLOC(type) (MEM_ALLOC_ARRAY(type,1))
 #define MEM_FREE(ptr) free(ptr)
 
-/* TODO remove this later */
-#define TOKEN_WORD_SIZE 128
-
 static const struct symbol *lookup_symbol_(
             struct parser *p,
             const char *name, enum symbol_kind kind)
@@ -214,7 +211,6 @@ static Node *identifier(Parser *p)
 static struct ast_node *primary_expression(struct parser *p)
 {
     struct ast_node *base = NULL;
-    static char ident_[TOKEN_WORD_SIZE] = {'\0'};
     const struct token *tok = gettok(p);
 
     const char *ident = NULL;
@@ -230,17 +226,13 @@ static struct ast_node *primary_expression(struct parser *p)
         return base;
 
     case TOK_IDENT:
-        /*
-        strcpy(ident, tok->word);
-        */
-        strcpy(ident_, tok->text);
         ident = tok->text;
 
         tok = gettok(p);
         if (tok->kind == '(') {
             const struct symbol *sym;
 
-            sym = lookup_symbol_(p, ident_, SYM_FUNC);
+            sym = lookup_symbol_(p, ident, SYM_FUNC);
             if (sym == NULL) {
                 error(p, "calling undefined function");
                 return NULL;
@@ -275,7 +267,7 @@ static struct ast_node *primary_expression(struct parser *p)
             const struct symbol *sym;
             ungettok(p);
 
-            sym = lookup_symbol_(p, ident_, SYM_VAR);
+            sym = lookup_symbol_(p, ident, SYM_VAR);
             if (sym == NULL) {
                 error(p, "using undeclared identifier");
                 return NULL;
@@ -1118,7 +1110,6 @@ static struct ast_node *global_entry(struct parser *p)
     struct symbol *sym = NULL;
     const struct token *tok = NULL;
     const struct data_type *dtype = NULL;
-    static char ident_[TOKEN_WORD_SIZE] = {'\0'};
     /* XXX */
     long fpos;
 
@@ -1152,10 +1143,6 @@ static struct ast_node *global_entry(struct parser *p)
     if (tok->kind != TOK_IDENT) {
         error(p, "missing identifier");
     }
-    /*
-    strcpy(ident, tok->word);
-    */
-    strcpy(ident_, tok->text);
     /* XXX */
     fpos = tok->file_pos;
 
@@ -1167,7 +1154,7 @@ static struct ast_node *global_entry(struct parser *p)
         ungettok(p);
 
         /* XXX */
-        sym = define_function(&p->symtbl, ident_);
+        sym = define_function(&p->symtbl, ident);
 
         tree = new_node(NOD_FUNC_BODY, NULL, NULL);
 
@@ -1203,7 +1190,7 @@ static struct ast_node *global_entry(struct parser *p)
         ungettok(p);
 
         /* XXX */
-        sym = define_variable(&p->symtbl, ident_);
+        sym = define_variable(&p->symtbl, ident);
 
         tree = new_node(NOD_VAR_DEF, NULL, NULL);
         sym->dtype = dtype;
