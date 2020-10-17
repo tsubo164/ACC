@@ -329,7 +329,7 @@ static struct ast_node *unary_expression(struct parser *p)
  */
 static struct ast_node *multiplicative_expression(struct parser *p)
 {
-    struct ast_node *base = unary_expression(p);
+    struct ast_node *tree = unary_expression(p);
 
     for (;;) {
         const struct token *tok = gettok(p);
@@ -337,16 +337,16 @@ static struct ast_node *multiplicative_expression(struct parser *p)
         switch (tok->kind) {
 
         case '*':
-            base = new_node(NOD_MUL, base, unary_expression(p));
+            tree = new_node(NOD_MUL, tree, unary_expression(p));
             break;
 
         case '/':
-            base = new_node(NOD_DIV, base, unary_expression(p));
+            tree = new_node(NOD_DIV, tree, unary_expression(p));
             break;
 
         default:
             ungettok(p);
-            return base;
+            return tree;
         }
     }
 }
@@ -360,7 +360,7 @@ static struct ast_node *multiplicative_expression(struct parser *p)
  */
 static struct ast_node *additive_expression(struct parser *p)
 {
-    struct ast_node *base = multiplicative_expression(p);
+    struct ast_node *tree = multiplicative_expression(p);
 
     for (;;) {
         const struct token *tok = gettok(p);
@@ -368,27 +368,16 @@ static struct ast_node *additive_expression(struct parser *p)
         switch (tok->kind) {
 
         case '+':
-            base = new_node(NOD_ADD, base, multiplicative_expression(p));
-            /* XXX */
-            /*
-            if (base->l->dtype->kind == DATA_TYPE_ARRAY) {
-                struct ast_node *size, *mul;
-
-                size = new_node(NOD_NUM, NULL, NULL);
-                size->data.ival = base->l->dtype->ptr_to->byte_size;
-                mul = new_node(NOD_MUL, size, base->r);
-                base->r = mul;
-            }
-            */
+            tree = new_node(NOD_ADD, tree, multiplicative_expression(p));
             break;
 
         case '-':
-            base = new_node(NOD_SUB, base, multiplicative_expression(p));
+            tree = new_node(NOD_SUB, tree, multiplicative_expression(p));
             break;
 
         default:
             ungettok(p);
-            return base;
+            return tree;
         }
     }
 }
@@ -404,7 +393,7 @@ static struct ast_node *additive_expression(struct parser *p)
  */
 static struct ast_node *relational_expression(struct parser *p)
 {
-    struct ast_node *base = additive_expression(p);
+    struct ast_node *tree = additive_expression(p);
 
     for (;;) {
         const struct token *tok = gettok(p);
@@ -412,24 +401,24 @@ static struct ast_node *relational_expression(struct parser *p)
         switch (tok->kind) {
 
         case '<':
-            base = new_node(NOD_LT, base, additive_expression(p));
+            tree = new_node(NOD_LT, tree, additive_expression(p));
             break;
 
         case '>':
-            base = new_node(NOD_GT, base, additive_expression(p));
+            tree = new_node(NOD_GT, tree, additive_expression(p));
             break;
 
         case TOK_LE:
-            base = new_node(NOD_LE, base, additive_expression(p));
+            tree = new_node(NOD_LE, tree, additive_expression(p));
             break;
 
         case TOK_GE:
-            base = new_node(NOD_GE, base, additive_expression(p));
+            tree = new_node(NOD_GE, tree, additive_expression(p));
             break;
 
         default:
             ungettok(p);
-            return base;
+            return tree;
         }
     }
 }
@@ -443,7 +432,7 @@ static struct ast_node *relational_expression(struct parser *p)
  */
 static struct ast_node *equality_expression(struct parser *p)
 {
-    struct ast_node *base = relational_expression(p);
+    struct ast_node *tree = relational_expression(p);
 
     for (;;) {
         const struct token *tok = gettok(p);
@@ -451,16 +440,16 @@ static struct ast_node *equality_expression(struct parser *p)
         switch (tok->kind) {
 
         case TOK_EQ:
-            base = new_node(NOD_EQ, base, relational_expression(p));
+            tree = new_node(NOD_EQ, tree, relational_expression(p));
             break;
 
         case TOK_NE:
-            base = new_node(NOD_NE, base, relational_expression(p));
+            tree = new_node(NOD_NE, tree, relational_expression(p));
             break;
 
         default:
             ungettok(p);
-            return base;
+            return tree;
         }
     }
 }
@@ -473,7 +462,7 @@ static struct ast_node *equality_expression(struct parser *p)
  */
 static struct ast_node *assignment_expression(struct parser *p)
 {
-    struct ast_node *base = equality_expression(p);
+    struct ast_node *tree = equality_expression(p);
 
     /*
     for (;;) {
@@ -483,17 +472,17 @@ static struct ast_node *assignment_expression(struct parser *p)
         switch (tok->kind) {
 
         case '=':
-            base = new_node(NOD_ASSIGN, base, assignment_expression(p));
+            tree = new_node(NOD_ASSIGN, tree, assignment_expression(p));
             break;
 
         default:
             ungettok(p);
-            return base;
+            return tree;
         }
     /*
     }
     */
-            return base;
+            return tree;
 }
 
 /*
