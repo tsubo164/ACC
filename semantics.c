@@ -132,6 +132,13 @@ static void define_sym(struct ast_node *node, struct symbol_table *table, int sy
     struct symbol *sym = define_symbol(table, name, sym_kind);
 
     sym->dtype = make_type(node->l);
+/*
+    printf("   NODE: %s: %s: ", node_to_string(node), sym->name);
+    printf("%s\n", data_type_to_string(sym->dtype));
+    if (sym->dtype) {
+        printf("    %s\n", sym->dtype->tag);
+    }
+*/
     /*
     ast_node_set_symbol(node, sym);
     */
@@ -158,6 +165,15 @@ static void use_sym(struct ast_node *node, struct symbol_table *table, int sym_k
     } else if (is_global_var(sym)) {
         node->kind = NOD_GLOBAL_VAR;
     }
+/*
+    printf("\n");
+    printf("   NODE: %s: %s: ", node_to_string(node), sym->name);
+    printf("%s\n", data_type_to_string(sym->dtype));
+    if (sym->dtype) {
+        printf("    %s\n", sym->dtype->tag);
+    }
+    printf("    %p\n", (void *) node->dtype);
+*/
 #endif
 }
 
@@ -168,7 +184,10 @@ static void add_symbols(struct ast_node *node, struct symbol_table *table)
 
     switch (node->kind) {
 
+        /*
     case NOD_GLOBAL_VAR:
+    case NOD_PARAM:
+        */
     case NOD_VAR:
         use_sym(node, table, SYM_VAR);
         add_symbols(node->l, table);
@@ -208,12 +227,28 @@ static void add_symbols(struct ast_node *node, struct symbol_table *table)
             const char *tag;
 
             add_symbols(node->l, table);
-            /*
+        /*
+            printf("HOGE\n");
             printf("   sym: %s\n", node->l->data.sym->name);
+            printf("   sym: %s\n", data_type_to_string(node->l->dtype));
+            printf("     %p\n", (void *) node->l->dtype);
             printf("   sym: %s\n", node->l->dtype->tag);
+            printf("   node: %s\n", node_to_string(node->l));
+        */
+        /*
             printf("   sym: %d\n", node->l->dtype->kind);
-            */
+        */
+            /* TODO we can not use node->dtype because dtype is not set yet
+             * when adding symbol
+             * should define sym_of(node) or symbol_(node)
+             * text_(node), int_(node) ...
+             * set_text(node, ...), set_int(node, ...)
+             * L_(node), R_(node)
+             */
+            tag = node->l->data.sym->dtype->tag;
+            /*
             tag = node->l->dtype->tag;
+            */
 
             sym = lookup_symbol(table, tag, SYM_STRUCT);
 

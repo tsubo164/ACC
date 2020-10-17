@@ -490,9 +490,9 @@ static int gen_one_param(FILE *fp, const struct ast_node *node)
 
 static void gen_param_list(FILE *fp, const struct ast_node *node)
 {
-    /*
-    gen_one_param(fp, node);
-    */
+    if (0) {
+        gen_one_param(fp, node);
+    }
     gen_one_param2(fp, node, 0);
 }
 

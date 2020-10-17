@@ -163,6 +163,11 @@ static struct ast_node *identifier(struct parser *p)
     if (!tok)
         return NULL;
 
+    /* TODO this could use NOD_MEMBER
+     * this contains semantics of identifier but
+     * function call uses NOD_CALL as well.
+     * try to be consistent whichever to be chosen
+     */
     tree = new_node(NOD_VAR, NULL, NULL);
 
     /*
@@ -241,27 +246,9 @@ static struct ast_node *primary_expression(struct parser *p)
 
             return base;
         } else {
-            const struct symbol *sym;
             ungettok(p);
 
-            sym = lookup_symbol_(p, ident, SYM_VAR);
-            if (sym == NULL) {
-                error(p, "using undeclared identifier");
-                return NULL;
-            }
-
             base = new_node(NOD_VAR, NULL, NULL);
-            if (is_param(sym)) {
-                base->kind = NOD_PARAM;
-            } else if (is_global_var(sym)) {
-                base->kind = NOD_GLOBAL_VAR;
-            }
-#if 0
-            base->data.sym = sym;
-            base->dtype = sym->dtype;
-#endif
-            ast_node_set_symbol(base, sym);
-
             base->sval = ident;
 #if 1
             /* XXX ----------------------- */
