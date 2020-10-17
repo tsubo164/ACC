@@ -714,13 +714,8 @@ static struct ast_node *func_params(struct parser *p)
 static struct ast_node *global_entry(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    struct symbol *sym = NULL;
-    const struct token *tok = NULL;
-    const struct data_type *dtype = NULL;
-    /* XXX */
-    long fpos;
-
     struct ast_node *type = NULL;
+    const struct token *tok = NULL;
     const char *ident = NULL;
 
     /* type */
@@ -742,9 +737,6 @@ static struct ast_node *global_entry(struct parser *p)
     if (tok->kind != TOK_IDENT) {
         error(p, "missing identifier");
     }
-    /* XXX */
-    fpos = tok->file_pos;
-
     ident = tok->text;
 
     /* func or var */
@@ -770,32 +762,20 @@ static struct ast_node *global_entry(struct parser *p)
     } else {
         ungettok(p);
 
-        /* XXX */
-        sym = define_variable(&p->symtbl, ident);
-
         tree = new_node(NOD_VAR_DEF, NULL, NULL);
-        sym->dtype = dtype;
-        ast_node_set_symbol(tree, sym);
 
-        /* XXX initialization */
+        /* initialization */
         tok = gettok(p);
         if (tok->kind == '=') {
             tree->r = expression(p);
-            if (tree->r->kind == NOD_NUM) {
-                sym->mem_offset = tree->r->data.ival;
-            }
         } else {
             ungettok(p);
         }
 
-        /* TODO change to ->l */
+        /* TODO move these right after new node */
         tree->l = type;
         tree->sval = ident;
-        /*
-        */
 
-        /* XXX */
-        sym->file_pos = fpos;
         expect_or_error(p, ';', "missing ';' at end of statement");
     }
 
