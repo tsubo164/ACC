@@ -506,7 +506,6 @@ static struct ast_node *compound_statement(struct parser *p)
     struct ast_node *tree = NULL;
 
     expect_or_error(p, '{', "missing '{'");
-
     scope_begin(p);
 
     for (;;) {
@@ -529,10 +528,9 @@ static struct ast_node *compound_statement(struct parser *p)
     }
 
 final:
-        /* TODO */
-        tree = new_node(NOD_COMPOUND, tree, NULL);
-
+    tree = new_node(NOD_COMPOUND, tree, NULL);
     scope_end(p);
+
     return tree;
 }
 
