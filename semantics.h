@@ -7,4 +7,4 @@
 extern int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages);
 
-#endif /* SEMANTICS_H */
+#endif /* _H */
