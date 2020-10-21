@@ -14,7 +14,6 @@ enum symbol_flag {
 enum symbol_kind {
     SYM_SCOPE_BEGIN,
     SYM_SCOPE_END,
-    /* XXX */
     SYM_STRUCT,
     SYM_VAR,
     SYM_GLOBAL_VAR,
@@ -29,12 +28,9 @@ struct symbol {
     int mem_offset;
 
     const struct data_type *dtype;
-    /*
-    int local_var_id;
-    */
     int scope_level;
 
-    /* XXX */
+    /* TODO improve this */
     long file_pos;
 };
 
@@ -42,10 +38,6 @@ struct symbol {
 struct symbol_table {
     struct symbol data[SYMBOL_TABLE_SIZE];
     int symbol_count;
-
-    /*
-    int local_var_id;
-    */
     int current_scope_level;
 };
 
@@ -88,4 +80,4 @@ extern void print_symbol_table(const struct symbol_table *table);
 /* XXX semantics? this includes mem offset logic that depends on architure */
 extern int symbol_assign_local_storage(struct symbol_table *table);
 
-#endif /* SYMBOL_H */
+#endif /* _H */

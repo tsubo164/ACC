@@ -10,12 +10,7 @@ static void init_symbol(struct symbol *sym)
     sym->flag = 0;
     sym->mem_offset = 0;
 
-    /*
-    sym->local_var_id = 0;
-    */
     sym->scope_level = 0;
-
-    /* XXX */
     sym->file_pos = 0L;
 }
 
@@ -43,7 +38,6 @@ int symbol_flag_is_on(const struct symbol *sym, int flag)
     return sym->flag & flag;
 }
 
-/* XXX */
 struct symbol_table *new_symbol_table()
 {
     struct symbol_table *table;
@@ -56,9 +50,6 @@ struct symbol_table *new_symbol_table()
     }
 
     table->symbol_count = 0;
-    /*
-    table->local_var_id = 0;
-    */
     /* 0 means global scope */
     table->current_scope_level = 0;
 
@@ -139,10 +130,6 @@ void init_symbol_table(struct symbol_table *table)
     }
 
     table->symbol_count = 0;
-
-    /*
-    table->local_var_id = 0;
-    */
     /* 0 means global scope */
     table->current_scope_level = 0;
 }
@@ -190,21 +177,6 @@ struct symbol *insert_symbol(struct symbol_table *table,
 
     if (lookup_symbol(table, name, kind) != NULL) {
         return NULL;
-    }
-
-    if (kind == SYM_FUNC) {
-        /* reset id */
-        /*
-        table->local_var_id = 0;
-        */
-    }
-
-    sym = push_symbol(table, name, kind);
-
-    if (kind == SYM_VAR || kind == SYM_PARAM) {
-        /*
-        sym->local_var_id = table->local_var_id++;
-        */
     }
 
     return sym;
@@ -351,13 +323,13 @@ int symbol_assign_local_storage(struct symbol_table *table)
         }
 
         if (sym->kind == SYM_SCOPE_END) {
-            /* XXX */
+            /* TODO improve this */
             if (sym->scope_level == 1 && func) {
                 /* end of function. backpatching memoffset for local vars */
                 func->mem_offset = next_aligned(total_mem_offset, 16);
                 func = NULL;
             }
-            /* XXX */
+            /* TODO improve this */
             if (/* sym->scope_level == 1 && */ struct_) {
                 /* end of function. backpatching memoffset for local vars */
                 struct_->mem_offset = next_aligned(total_mem_offset, 8);
@@ -367,18 +339,12 @@ int symbol_assign_local_storage(struct symbol_table *table)
                     dtype->alignment = 8;
                     dtype->array_len = 1;
                     struct_->dtype = dtype;
-                    /*
-                    */
                 }
                 struct_ = NULL;
             }
             continue;
         }
 
-                /*
-            printf("<<< %s: %s: ", sym->name, data_type_to_string(sym->dtype));
-            printf("%p\n", (void *) sym->dtype);
-                */
         if (sym->kind == SYM_VAR || sym->kind == SYM_PARAM) {
             int size  = sym->dtype->byte_size;
             int align = sym->dtype->alignment;
@@ -390,33 +356,10 @@ int symbol_assign_local_storage(struct symbol_table *table)
                 align = strc->dtype->alignment;
                 len   = strc->dtype->array_len;
             }
-                /*
-    printf("    %s\n", sym->name);
-    printf("        %d\n", sym->kind);
-    printf("        %d\n", size);
-    printf("        %d\n", align);
-    printf("        %d\n", len);
-                */
-
-                /*
-            printf("        total_mem_offset: %d\n", total_mem_offset);
-            printf("        align           : %d\n", align);
-                */
             total_mem_offset = next_aligned(total_mem_offset, align);
-                /*
-            printf("        total_mem_offset: %d\n", total_mem_offset);
-                */
             total_mem_offset += len * size;
-
             sym->mem_offset = total_mem_offset;
-                /*
-            printf("        total_mem_offset: %d\n", total_mem_offset);
-                */
         }
-                /*
-            printf(">>> %s: %s: ", sym->name, data_type_to_string(sym->dtype));
-            printf("%p\n", (void *) sym->dtype);
-                */
     }
     return 0;
 }
