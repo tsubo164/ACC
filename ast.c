@@ -112,6 +112,9 @@ void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
     N(NOD_GE) \
     N(NOD_EQ) \
     N(NOD_NE) \
+    N(NOD_DECL) \
+    N(NOD_DECLARATOR) \
+    N(NOD_DIRECT_DECL) \
     N(NOD_TYPE_CHAR) \
     N(NOD_TYPE_INT) \
     N(NOD_TYPE_POINTER) \
@@ -192,4 +195,52 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
 void print_tree(const struct ast_node *tree)
 {
     print_tree_recursive(tree, 0);
+}
+
+static void print_decl_recursive(const struct ast_node *tree)
+{
+    if (!tree)
+        return;
+
+    switch (tree->kind) {
+
+    case NOD_DECL:
+        printf("declaration: ");
+        break;
+
+    case NOD_TYPE_ARRAY:
+        if (tree->data.ival > 0)
+            printf(" array %d of", tree->data.ival);
+        else
+            printf(" array of");
+        break;
+
+    case NOD_TYPE_POINTER:
+        printf(" pointer to");
+        break;
+
+    case NOD_TYPE_CHAR:
+        printf(" char");
+        break;
+
+    case NOD_TYPE_INT:
+        printf(" int");
+        break;
+
+    case NOD_VAR:
+        printf("%s is", tree->sval);
+        break;
+
+    default:
+        break;
+    }
+
+    print_decl_recursive(tree->l);
+    print_decl_recursive(tree->r);
+}
+
+void print_decl(const struct ast_node *tree)
+{
+    print_decl_recursive(tree);
+    printf("\n");
 }

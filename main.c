@@ -72,6 +72,9 @@ int main(int argc, char **argv)
 
     if (do_print_tree) {
         print_tree(tree);
+        printf("------------------\n");
+        print_decl(tree);
+        return 0;
     }
 
     /*

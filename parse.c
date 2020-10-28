@@ -802,8 +802,18 @@ end_member:
     return tree;
 }
 
+/* XXX */
+#define new_(kind, l, r) new_node(kind, l, r)
+typedef struct parser Parser;
+typedef struct ast_node Node;
+typedef struct token Token;
+static Node *translation_unit(Parser *p);
+
 struct ast_node *parse(struct parser *p)
 {
+    /* XXX */
+    if (1) {
+
     struct ast_node *tree = NULL;
 
     for (;;) {
@@ -830,4 +840,207 @@ struct ast_node *parse(struct parser *p)
             return tree;
         }
     }
+
+    /* XXX */
+    } else {
+        return translation_unit(p);
+    }
+}
+
+#if test
+static Node *expect_node(Parser *p, Node *node)
+{
+    if (!node) {
+        error(p, "error");
+        return NULL;
+    }
+    return node;
+}
+static Node *func_or_decl(Parser *p)
+{
+    Node *tree;
+    Node *decl;
+    Node *dclr;
+
+    decl = decl_spec(p);
+    dclr = declarator(p);
+    tree = new_(NOD_VAR_DEF, decl, dclr);
+
+    if (next(p, '(')) {
+        dclr->l = param_list(p);
+        expect(p, ')');
+        dclr->r = compound_stmt(p);
+    }
+    else {
+        expect(p, ';');
+    }
+
+    return tree;
+}
+#endif
+
+static Node *type_spec(Parser *p)
+{
+    Node *tree = NULL;
+    const Token *tok = gettok(p);
+
+    switch (tok->kind) {
+
+    case TOK_CHAR:
+        tree = new_(NOD_TYPE_CHAR, NULL, NULL);
+        break;
+
+    case TOK_INT:
+        tree = new_(NOD_TYPE_INT, NULL, NULL);
+        break;
+
+    case TOK_STRUCT:
+        /* tag */
+        tok = gettok(p);
+        tree = new_(NOD_TYPE_STRUCT, NULL, NULL);
+        tree->sval = tok->text;
+        break;
+
+    default:
+        ungettok(p);
+        break;
+    }
+
+    return tree;
+}
+
+static const char *ident(Parser *p)
+{
+    const Token *tok = consume(p, TOK_IDENT);
+
+    if (!tok)
+        return NULL;
+
+    return tok->text;
+}
+
+Node *func_or_decl(Parser *p)
+{
+    Node *vardecl;
+    Node *type;
+    const char *id;
+    const Token *tok;
+
+    /* type */
+    type = type_spec(p);
+
+    /* pointer */
+    tok = gettok(p);
+    if (tok->kind == '*') {
+        type = new_node(NOD_TYPE_POINTER, type, NULL);
+    } else {
+        ungettok(p);
+    }
+
+    /* identifier */
+    id = ident(p);
+
+    expect(p, ';');
+
+    vardecl = new_(NOD_VAR_DEF, type, NULL);
+    vardecl->sval = id;
+
+    return vardecl;
+}
+
+static Node *direct_declarator(Parser *p)
+{
+    const Token *tok = NULL;
+    Node *tree = NULL;
+
+    tree = new_(NOD_DIRECT_DECL, NULL, NULL);
+
+    tok = gettok(p);
+    if (tok->kind == TOK_IDENT) {
+        Node *ident = new_(NOD_VAR, NULL, NULL);
+        ident->sval = tok->text;
+        tree->l = ident;
+    }
+
+    tok = gettok(p);
+    if (tok->kind == '[') {
+        Node *array = new_node(NOD_TYPE_ARRAY, NULL, NULL);
+
+        /* TODO
+        if (consume(p, TOK_NUM))
+            array->l = expression(p);
+        */
+        tok = gettok(p);
+        if (tok->kind == TOK_NUM) {
+            array->data.ival = tok->value;
+        } else {
+            ungettok(p);
+        }
+
+        tree->r = array;
+        expect(p, ']');
+    } else {
+        ungettok(p);
+    }
+
+    return tree;
+}
+
+static Node *pointer(Parser *p)
+{
+    Node *tree = NULL;
+
+    while (consume(p, '*'))
+        tree = new_(NOD_TYPE_POINTER, tree, NULL);
+
+    return tree;
+}
+
+static Node *declarator(Parser *p)
+{
+    Node *tree = new_(NOD_DECLARATOR, NULL, NULL);
+
+    tree->r = pointer(p);
+    tree->l = direct_declarator(p);
+
+    return tree;
+}
+
+static Node *init_declarator(Parser *p)
+{
+    Node *tree = declarator(p);
+    return tree;
+}
+
+static Node *decl_spec(Parser *p)
+{
+    Node *tree = type_spec(p);
+    return tree;
+}
+
+static Node *declaration(Parser *p)
+{
+    Node *tree = new_(NOD_DECL, NULL, NULL);
+
+    tree->r = decl_spec(p);
+
+    if (consume(p, ';'))
+        return tree;
+
+    tree->l = init_declarator(p);
+
+    return tree;
+}
+
+static Node *extern_decl(Parser *p)
+{
+    return new_(NOD_GLOBAL, NULL, declaration(p));
+    /*
+    return new_(NOD_GLOBAL, NULL, func_or_decl(p));
+    */
+}
+
+static Node *translation_unit(Parser *p)
+{
+    return extern_decl(p);
 }

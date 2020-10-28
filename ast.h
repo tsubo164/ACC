@@ -39,6 +39,10 @@ enum ast_node_kind {
     NOD_GE,
     NOD_EQ,
     NOD_NE,
+    /* TODO TEST */
+    NOD_DECL,
+    NOD_DECLARATOR,
+    NOD_DIRECT_DECL,
     /* data types */
     NOD_TYPE_CHAR,
     NOD_TYPE_INT,
@@ -74,5 +78,6 @@ extern void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
 
 extern const char *node_to_string(const struct ast_node *node);
 extern void print_tree(const struct ast_node *tree);
+extern void print_decl(const struct ast_node *tree);
 
 #endif /* AST_H */

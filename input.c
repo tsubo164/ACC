@@ -1,3 +1,11 @@
+/*
+int x;
+char x;
+*/
+/*
+int *day[7];
+*/
+
 struct point {
     int x;
     int y;
