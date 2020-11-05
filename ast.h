@@ -43,6 +43,9 @@ enum ast_node_kind {
     NOD_DECL,
     NOD_DECLARATOR,
     NOD_DIRECT_DECL,
+    NOD_DECL_IDENT,
+    NOD_DECL_FUNC,
+    NOD_DECL_PARAM,
     /* data types */
     NOD_TYPE_CHAR,
     NOD_TYPE_INT,

@@ -1,11 +1,40 @@
+int main()
+    /*
+    ;
+    */
+{
+    return 42;
+}
+
 /*
 int x;
 char x;
+int *p;
 */
 /*
+int (*x)[3];
+int (*x)();
+int (*main)();
+int (((x)));
+struct Node *node;
+struct Node *stmt();
+char *argv[];
 int *day[7];
 */
+    /*
+int main(char argc)
+{
+    int x = 0;
 
+    return x;
+}
+struct Point {
+    int x;
+    int y;
+};
+    */
+
+/*
 struct point {
     int x;
     int y;
@@ -34,7 +63,6 @@ int main()
     return twice(glbl + local) + add(pt.x, 25);
 }
 
-/*
 int main()
 {
     int a;
