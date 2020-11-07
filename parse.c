@@ -819,7 +819,7 @@ end_member:
 typedef struct parser Parser;
 typedef struct ast_node Node;
 typedef struct token Token;
-static Node *translation_unit(Parser *p);
+static struct ast_node *translation_unit(struct parser *p);
 
 struct ast_node *parse(struct parser *p)
 {
@@ -859,13 +859,13 @@ struct ast_node *parse(struct parser *p)
     }
 }
 
-static Node *type_spec(Parser *p);
-static Node *decl_spec(Parser *p);
-static Node *declarator(Parser *p);
+static struct ast_node *type_spec(struct parser *p);
+static struct ast_node *decl_spec(struct parser *p);
+static struct ast_node *declarator(struct parser *p);
 
-static Node *ident2(Parser *p)
+static struct ast_node *ident2(struct parser *p)
 {
-    Node *tree = NULL;
+    struct ast_node *tree = NULL;
     const Token *tok = consume(p, TOK_IDENT);
 
     if (!tok)
@@ -877,10 +877,10 @@ static Node *ident2(Parser *p)
     return tree;
 }
 
-static Node *struct_decl2(struct parser *p)
+static struct ast_node *struct_decl2(struct parser *p)
 {
-    Node *tree = NULL;
-    Node *type = NULL;
+    struct ast_node *tree = NULL;
+    struct ast_node *type = NULL;
 
     type = type_spec(p);
     if (!type)
@@ -893,12 +893,12 @@ static Node *struct_decl2(struct parser *p)
     return tree;
 }
 
-static Node *struct_decl_list(struct parser *p)
+static struct ast_node *struct_decl_list(struct parser *p)
 {
-    Node *tree = NULL;
+    struct ast_node *tree = NULL;
 
     for (;;) {
-        Node *member = struct_decl2(p);
+        struct ast_node *member = struct_decl2(p);
 
         if (!member)
             return tree;
@@ -908,9 +908,9 @@ static Node *struct_decl_list(struct parser *p)
     }
 }
 
-static Node *struct_union(struct parser *p)
+static struct ast_node *struct_union(struct parser *p)
 {
-    Node *tree = NULL;
+    struct ast_node *tree = NULL;
     const Token *tok = gettok(p);
 
     switch (tok->kind) {
@@ -926,9 +926,9 @@ static Node *struct_union(struct parser *p)
     return tree;
 }
 
-static Node *struct_union_spec(struct parser *p)
+static struct ast_node *struct_union_spec(struct parser *p)
 {
-    Node *tree = NULL;
+    struct ast_node *tree = NULL;
 
     tree = struct_union(p);
     tree->l = ident2(p);
@@ -943,9 +943,9 @@ static Node *struct_union_spec(struct parser *p)
     return tree;
 }
 
-static Node *type_spec(Parser *p)
+static struct ast_node *type_spec(struct parser *p)
 {
-    Node *tree = NULL;
+    struct ast_node *tree = NULL;
     const Token *tok = gettok(p);
 
     switch (tok->kind) {
@@ -978,7 +978,7 @@ static Node *type_spec(Parser *p)
 }
 
 #if 0
-static const char *ident(Parser *p)
+static const char *ident(struct parser *p)
 {
     const Token *tok = consume(p, TOK_IDENT);
 
@@ -988,10 +988,10 @@ static const char *ident(Parser *p)
     return tok->text;
 }
 
-static Node *func_or_decl(Parser *p)
+static struct ast_node *func_or_decl(struct parser *p)
 {
-    Node *vardecl;
-    Node *type;
+    struct ast_node *vardecl;
+    struct ast_node *type;
     const char *id;
     const Token *tok;
 
@@ -1018,10 +1018,10 @@ static Node *func_or_decl(Parser *p)
 }
 #endif
 
-static Node *param_decl(Parser *p)
+static struct ast_node *param_decl(struct parser *p)
 {
-    Node *tree = NULL;
-    Node *type = NULL;
+    struct ast_node *tree = NULL;
+    struct ast_node *type = NULL;
 
     type = decl_spec(p);
     if (!type)
@@ -1034,12 +1034,12 @@ static Node *param_decl(Parser *p)
     return tree;
 }
 
-static Node *param_list(Parser *p)
+static struct ast_node *param_list(struct parser *p)
 {
-    Node *tree = NULL;
+    struct ast_node *tree = NULL;
 
     for (;;) {
-        Node *param = param_decl(p);
+        struct ast_node *param = param_decl(p);
 
         if (!param)
             return tree;
@@ -1051,9 +1051,9 @@ static Node *param_list(Parser *p)
     }
 }
 
-static Node *direct_declarator(Parser *p)
+static struct ast_node *direct_declarator(struct parser *p)
 {
-    Node *tree = NULL;
+    struct ast_node *tree = NULL;
 
     tree = NEW_(NOD_DIRECT_DECL);
 
@@ -1063,13 +1063,13 @@ static Node *direct_declarator(Parser *p)
     }
 
     if (consume(p, TOK_IDENT)) {
-        Node *ident = NEW_(NOD_DECL_IDENT);
+        struct ast_node *ident = NEW_(NOD_DECL_IDENT);
         copy_token_text(p, ident);
         tree->l = ident;
     }
 
     if (consume(p, '[')) {
-        Node *array = NEW_(NOD_TYPE_ARRAY);
+        struct ast_node *array = NEW_(NOD_TYPE_ARRAY);
 
         if (consume(p, TOK_NUM))
             copy_token_ival(p, array);
@@ -1079,7 +1079,7 @@ static Node *direct_declarator(Parser *p)
     }
 
     if (consume(p, '(')) {
-        Node *fn = new_node(NOD_DECL_FUNC, param_list(p), NULL);
+        struct ast_node *fn = new_node(NOD_DECL_FUNC, param_list(p), NULL);
         tree->r = fn;
         expect(p, ')');
     }
@@ -1087,9 +1087,9 @@ static Node *direct_declarator(Parser *p)
     return tree;
 }
 
-static Node *pointer(Parser *p)
+static struct ast_node *pointer(struct parser *p)
 {
-    Node *tree = NULL;
+    struct ast_node *tree = NULL;
 
     while (consume(p, '*'))
         tree = new_node(NOD_TYPE_POINTER, tree, NULL);
@@ -1097,9 +1097,9 @@ static Node *pointer(Parser *p)
     return tree;
 }
 
-static Node *declarator(Parser *p)
+static struct ast_node *declarator(struct parser *p)
 {
-    Node *tree = NEW_(NOD_DECLARATOR);
+    struct ast_node *tree = NEW_(NOD_DECLARATOR);
 
     tree->r = pointer(p);
     tree->l = direct_declarator(p);
@@ -1107,21 +1107,21 @@ static Node *declarator(Parser *p)
     return tree;
 }
 
-static Node *init_declarator(Parser *p)
+static struct ast_node *init_declarator(struct parser *p)
 {
-    Node *tree = declarator(p);
+    struct ast_node *tree = declarator(p);
     return tree;
 }
 
-static Node *decl_spec(Parser *p)
+static struct ast_node *decl_spec(struct parser *p)
 {
-    Node *tree = type_spec(p);
+    struct ast_node *tree = type_spec(p);
     return tree;
 }
 
-static Node *declaration(Parser *p)
+static struct ast_node *declaration(struct parser *p)
 {
-    Node *tree = NEW_(NOD_DECL);
+    struct ast_node *tree = NEW_(NOD_DECL);
 
     tree->r = decl_spec(p);
     tree->l = init_declarator(p);
@@ -1139,15 +1139,12 @@ static Node *declaration(Parser *p)
     return tree;
 }
 
-static Node *extern_decl(Parser *p)
+static struct ast_node *extern_decl(struct parser *p)
 {
     return new_node(NOD_GLOBAL, NULL, declaration(p));
-#if 0
-    return NEW_(NOD_GLOBAL, NULL, func_or_decl(p));
-#endif
 }
 
-static Node *translation_unit(Parser *p)
+static struct ast_node *translation_unit(struct parser *p)
 {
     return extern_decl(p);
 }

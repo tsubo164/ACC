@@ -293,9 +293,143 @@ static int analize_symbol_usage(struct symbol_table *table, struct message_list 
     return 0;
 }
 
+enum decl_kind {
+    DECL_VAR,
+    DECL_FUNC
+};
+struct declaration {
+    int kind;
+    const char *ident;
+    struct data_type *type;
+};
+
+static void make_decl(const struct ast_node *tree, struct declaration *decl);
+static void make_decl2(const struct ast_node *tree, struct symbol_table *table);
+static void add_symbol3(const struct ast_node *tree, struct symbol_table *table);
+
+static void add_symbol3(const struct ast_node *tree, struct symbol_table *table)
+{
+    if (!tree)
+        return;
+
+    switch (tree->kind) {
+
+    case NOD_DECL:
+        make_decl2(tree, table);
+        break;
+
+    default:
+        break;
+    }
+
+    add_symbol3(tree->l, table);
+    add_symbol3(tree->r, table);
+}
+
+static void make_decl2(const struct ast_node *tree, struct symbol_table *table)
+{
+    struct declaration decl = {0};
+    struct symbol *sym = NULL;
+    int sym_kind = SYM_VAR;
+
+    /*
+    decl.kind = DECL_VAR;
+    decl.ident = NULL;
+    decl.type = NULL;
+    */
+
+    make_decl(tree, &decl);
+#if 0
+    printf("\n");
+    printf("declaration:\n");
+    printf("    kind:  %d\n", decl.kind);
+    printf("    ident: %s\n", decl.ident);
+    printf("    type:  %s\n", data_type_to_string(decl.type));
+#endif
+
+    switch (decl.kind) {
+    case DECL_VAR:
+        sym_kind = SYM_VAR;
+        break;
+
+    case DECL_FUNC:
+        sym_kind = SYM_FUNC;
+        break;
+
+    default:
+        break;
+    }
+
+    sym = define_symbol(table, decl.ident, sym_kind);
+    sym->dtype = decl.type;
+}
+
+/* walk declaration tree in backwards */
+static void make_decl(const struct ast_node *tree, struct declaration *decl)
+{
+    if (!tree)
+        return;
+
+    switch (tree->kind) {
+
+    case NOD_DECL:
+        printf("declaration: ");
+        break;
+
+    case NOD_DECL_FUNC:
+        decl->kind = DECL_FUNC;
+        printf(" function(");
+        make_decl(tree->r, decl);
+        printf(") returning");
+        make_decl(tree->l, decl);
+        return;
+
+    case NOD_TYPE_ARRAY:
+        if (tree->data.ival > 0)
+            printf(" array %d of", tree->data.ival);
+        else
+            printf(" array of");
+        decl->type = type_array(decl->type, tree->data.ival);
+        break;
+
+    case NOD_TYPE_POINTER:
+        printf(" pointer to");
+        printf("(pointer to %s)", data_type_to_string(decl->type));
+        decl->type = type_ptr(decl->type);
+        break;
+
+    case NOD_TYPE_CHAR:
+        printf(" char");
+        decl->type = type_char();
+        break;
+
+    case NOD_TYPE_INT:
+        printf(" int");
+        decl->type = type_int();
+        break;
+
+    case NOD_TYPE_STRUCT:
+        printf(" struct %s", tree->sval);
+        break;
+
+    case NOD_DECL_IDENT:
+        printf("%s is", tree->sval);
+        decl->ident = tree->sval;
+        break;
+
+    default:
+        break;
+    }
+
+    make_decl(tree->r, decl);
+    make_decl(tree->l, decl);
+}
+
 int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages)
 {
+    if (1) {
+
     add_symbol(tree, table);
 
     analize_symbol_usage(table, messages);
@@ -304,5 +438,11 @@ int semantic_analysis(struct ast_node *tree,
 
     add_type(tree, table);
 
+    } else {
+
+    add_symbol3(tree, table);
+
+    }
+    
     return 0;
 }

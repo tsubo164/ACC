@@ -1,8 +1,13 @@
+/*
+int main();
+int *day[7];
+char str[10];
+char *c;
+int *p;
+*/
 int main()
-    /*
-    ;
-    */
 {
+    int a;
     return 42;
 }
 
