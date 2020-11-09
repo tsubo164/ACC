@@ -496,6 +496,54 @@ static void gen_param_list(FILE *fp, const struct ast_node *node)
     gen_one_param2(fp, node, 0);
 }
 
+static const struct ast_node *find_node(const struct ast_node *node, int node_kind)
+{
+    const struct ast_node *found = NULL;
+
+    if (!node)
+        return NULL;
+
+    if (node->kind == node_kind)
+        return node;
+
+    found = find_node(node->l, node_kind);
+    if (found)
+        return found;
+
+    found = find_node(node->r, node_kind);
+    if (found)
+        return found;
+
+    return NULL;
+}
+
+static void gen_func_prologue(FILE *fp, const struct ast_node *node)
+{
+    const struct ast_node *decl = NULL;
+
+    if (0)
+        decl = find_node(node, NOD_DECL);
+        /* TODO assert(decl) */
+    decl = node;
+
+    fprintf(fp, "_%s:\n", decl->data.sym->name);
+    code2__(fp, decl, PUSH_, RBP);
+    code3__(fp, decl, MOV_,  RSP, RBP);
+    code3__(fp, decl, SUB_, imme(get_mem_offset(decl)), RSP);
+}
+
+static void gen_func_body(FILE *fp, const struct ast_node *node)
+{
+    const struct ast_node *body = NULL;
+
+    if (0)
+        body = find_node(node, NOD_COMPOUND);
+        /* TODO assert(body) */
+    body = node;
+
+    gen_code(fp, body);
+}
+
 static void gen_comment(FILE *fp, const char *cmt)
 {
     fprintf(fp, "## %s\n", cmt);
@@ -706,6 +754,12 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_FUNC_DEF:
+        gen_func_prologue(fp, node->l);
+        gen_func_body(fp, node->r);
+
+        if (0)
+            gen_param_list(fp, node->r->l);
+#if 0
         /* prologue */
         fprintf(fp, "_%s:\n", node->data.sym->name);
         code2__(fp, node, PUSH_, RBP);
@@ -716,6 +770,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_param_list(fp, node->r->l);
         /* body */
         gen_code(fp, node->r->r);
+#endif
         break;
 
     case NOD_ASSIGN:
@@ -811,6 +866,25 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     default:
         break;
+    }
+}
+
+static void gen_global_func_list(FILE *fp, const struct symbol_table *table)
+{
+    const int N = get_symbol_count(table);
+    int i;
+    int nfuncs = 0;
+
+    for (i = 0; i < N; i++) {
+        const struct symbol *sym = &table->data[i];
+
+        if (sym->kind == SYM_FUNC) {
+            if (nfuncs > 0)
+                fprintf(fp, ", ");
+
+            fprintf(fp, "_%s", sym->name);
+            nfuncs++;
+        }
     }
 }
 
@@ -968,7 +1042,12 @@ void gen_x86(FILE *fp,
 
     fprintf(fp, ".text\n");
     fprintf(fp, ".global ");
-    print_global_funcs(fp, tree);
+
+    if (0)
+        print_global_funcs(fp, tree);
+    else
+        gen_global_func_list(fp, table);
+
     fprintf(fp, "\n");
 
     gen_code(fp, tree);

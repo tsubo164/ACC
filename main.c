@@ -82,10 +82,12 @@ int main(int argc, char **argv)
     */
     semantic_analysis(tree, &parser->symtbl, messages);
 
-    if (0) {
+    if (1) {
         print_tree(tree);
         print_symbol_table(&parser->symtbl);
+        /*
         return 0;
+        */
     }
 
     /* ------------------------- */
@@ -106,6 +108,9 @@ int main(int argc, char **argv)
         return -1;
     }
     gen_x86(file, tree, &parser->symtbl);
+    /*
+    gen_x86(stdout, tree, &parser->symtbl);
+    */
 
     fclose(file);
 

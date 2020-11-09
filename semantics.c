@@ -304,10 +304,10 @@ struct declaration {
 };
 
 static void make_decl(const struct ast_node *tree, struct declaration *decl);
-static void make_decl2(const struct ast_node *tree, struct symbol_table *table);
-static void add_symbol3(const struct ast_node *tree, struct symbol_table *table);
+static void make_decl2(struct ast_node *tree, struct symbol_table *table);
+static void add_symbol3(struct ast_node *tree, struct symbol_table *table);
 
-static void add_symbol3(const struct ast_node *tree, struct symbol_table *table)
+static void add_symbol3(struct ast_node *tree, struct symbol_table *table)
 {
     if (!tree)
         return;
@@ -326,7 +326,7 @@ static void add_symbol3(const struct ast_node *tree, struct symbol_table *table)
     add_symbol3(tree->r, table);
 }
 
-static void make_decl2(const struct ast_node *tree, struct symbol_table *table)
+static void make_decl2(struct ast_node *tree, struct symbol_table *table)
 {
     struct declaration decl = {0};
     struct symbol *sym = NULL;
@@ -362,6 +362,7 @@ static void make_decl2(const struct ast_node *tree, struct symbol_table *table)
 
     sym = define_symbol(table, decl.ident, sym_kind);
     sym->dtype = decl.type;
+    tree->data.sym = sym;
 }
 
 /* walk declaration tree in backwards */
@@ -428,7 +429,7 @@ static void make_decl(const struct ast_node *tree, struct declaration *decl)
 int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages)
 {
-    if (1) {
+    if (0) {
 
     add_symbol(tree, table);
 

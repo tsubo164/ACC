@@ -5,9 +5,13 @@ char str[10];
 char *c;
 int *p;
 */
+int num()
+{
+    return 42;
+}
+
 int main()
 {
-    int a;
     return 42;
 }
 

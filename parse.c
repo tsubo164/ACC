@@ -824,7 +824,7 @@ static struct ast_node *translation_unit(struct parser *p);
 struct ast_node *parse(struct parser *p)
 {
     /* XXX */
-    if (1) {
+    if (0) {
 
     struct ast_node *tree = NULL;
 
@@ -959,12 +959,6 @@ static struct ast_node *type_spec(struct parser *p)
         break;
 
     case TOK_STRUCT:
-#if 0
-        /* tag */
-        tok = gettok(p);
-        tree = NEW_(NOD_TYPE_STRUCT);
-        tree->sval = tok->text;
-#endif
         ungettok(p);
         tree = struct_union_spec(p);
         break;
@@ -976,47 +970,6 @@ static struct ast_node *type_spec(struct parser *p)
 
     return tree;
 }
-
-#if 0
-static const char *ident(struct parser *p)
-{
-    const Token *tok = consume(p, TOK_IDENT);
-
-    if (!tok)
-        return NULL;
-
-    return tok->text;
-}
-
-static struct ast_node *func_or_decl(struct parser *p)
-{
-    struct ast_node *vardecl;
-    struct ast_node *type;
-    const char *id;
-    const Token *tok;
-
-    /* type */
-    type = type_spec(p);
-
-    /* pointer */
-    tok = gettok(p);
-    if (tok->kind == '*') {
-        type = new_node(NOD_TYPE_POINTER, type, NULL);
-    } else {
-        ungettok(p);
-    }
-
-    /* identifier */
-    id = ident(p);
-
-    expect(p, ';');
-
-    vardecl = new_node(NOD_VAR_DEF, type, NULL);
-    vardecl->sval = id;
-
-    return vardecl;
-}
-#endif
 
 static struct ast_node *param_decl(struct parser *p)
 {
@@ -1141,10 +1094,23 @@ static struct ast_node *declaration(struct parser *p)
 
 static struct ast_node *extern_decl(struct parser *p)
 {
-    return new_node(NOD_GLOBAL, NULL, declaration(p));
+    return declaration(p);
 }
 
 static struct ast_node *translation_unit(struct parser *p)
 {
-    return extern_decl(p);
+    struct ast_node *tree = NULL;
+
+    while (!consume(p, TOK_EOF)) {
+        /*
+        struct ast_node *list = NEW_(NOD_LIST);
+
+        list->l = tree;
+        list->r = extern_decl(p);
+        tree = list;
+        */
+        tree = new_node(NOD_LIST, tree, extern_decl(p));
+    }
+
+    return tree;
 }
