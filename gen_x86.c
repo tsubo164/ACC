@@ -544,6 +544,18 @@ static void gen_func_body(FILE *fp, const struct ast_node *node)
     gen_code(fp, body);
 }
 
+static void gen_func_call(FILE *fp, const struct ast_node *node)
+{
+    const struct ast_node *ident = NULL;
+    ident = find_node(node->l, NOD_IDENT);
+    ident = node->l;
+
+    /* args */
+    gen_code(fp, node->r);
+    /* call */
+    code2__(fp, node, CALL_, str(ident->data.sym->name));
+}
+
 static void gen_comment(FILE *fp, const char *cmt)
 {
     fprintf(fp, "## %s\n", cmt);
@@ -743,8 +755,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_CALL:
         reg_id = 0;
+#if 0
         gen_code(fp, node->l);
         code2__(fp, node, CALL_, str(node->data.sym->name));
+#endif
+        gen_func_call(fp, node);
         break;
 
     case NOD_ARG:

@@ -304,7 +304,8 @@ struct declaration {
 };
 
 static void make_decl(const struct ast_node *tree, struct declaration *decl);
-static void make_decl2(struct ast_node *tree, struct symbol_table *table);
+static void make_sym_from_decl(struct ast_node *tree, struct symbol_table *table);
+static void make_sym_from_ident(struct ast_node *tree, struct symbol_table *table);
 static void add_symbol3(struct ast_node *tree, struct symbol_table *table);
 
 static void add_symbol3(struct ast_node *tree, struct symbol_table *table)
@@ -312,21 +313,34 @@ static void add_symbol3(struct ast_node *tree, struct symbol_table *table)
     if (!tree)
         return;
 
+    add_symbol3(tree->l, table);
+    add_symbol3(tree->r, table);
+
     switch (tree->kind) {
 
     case NOD_DECL:
-        make_decl2(tree, table);
+        make_sym_from_decl(tree, table);
+        break;
+
+    case NOD_IDENT:
+        make_sym_from_ident(tree, table);
         break;
 
     default:
         break;
     }
-
-    add_symbol3(tree->l, table);
-    add_symbol3(tree->r, table);
 }
 
-static void make_decl2(struct ast_node *tree, struct symbol_table *table)
+static void make_sym_from_ident(struct ast_node *tree, struct symbol_table *table)
+{
+    struct symbol *sym = NULL;
+    int sym_kind = SYM_VAR;
+
+    sym = use_symbol(table, tree->sval, sym_kind);
+    tree->data.sym = sym;
+}
+
+static void make_sym_from_decl(struct ast_node *tree, struct symbol_table *table)
 {
     struct declaration decl = {0};
     struct symbol *sym = NULL;
@@ -426,6 +440,40 @@ static void make_decl(const struct ast_node *tree, struct declaration *decl)
     make_decl(tree->l, decl);
 }
 
+static void add_type2(struct ast_node *node, struct symbol_table *table)
+{
+    if (!node)
+        return;
+
+    add_type2(node->l, table);
+    add_type2(node->r, table);
+
+    switch (node->kind) {
+
+    /* nodes with symbol */
+        /*
+    case NOD_VAR:
+    case NOD_VAR_DEF:
+    case NOD_PARAM_DEF:
+    case NOD_CALL:
+        node->dtype = node->l->data.sym->dtype;
+        break;
+        */
+
+    case NOD_IDENT:
+        node->dtype = node->data.sym->dtype;
+        break;
+
+    /* nodes with literal */
+    case NOD_NUM:
+        node->dtype = type_int();
+        break;
+
+    default:
+        break;
+    }
+}
+
 int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages)
 {
@@ -442,6 +490,9 @@ int semantic_analysis(struct ast_node *tree,
     } else {
 
     add_symbol3(tree, table);
+    add_type2(tree, table);
+    /*
+    */
 
     }
     

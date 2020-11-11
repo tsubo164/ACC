@@ -12,7 +12,7 @@ int num()
 
 int main()
 {
-    return 42;
+    return num();
 }
 
 /*

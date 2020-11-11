@@ -112,6 +112,7 @@ void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
     N(NOD_GE) \
     N(NOD_EQ) \
     N(NOD_NE) \
+    N(NOD_IDENT) \
     N(NOD_DECL) \
     N(NOD_DECLARATOR) \
     N(NOD_DIRECT_DECL) \

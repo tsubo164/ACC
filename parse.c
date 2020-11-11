@@ -164,6 +164,25 @@ static struct ast_node *identifier(struct parser *p)
 }
 
 /*
+ * identifier
+ *     : TOK_IDENT
+ *     ;
+ */
+static struct ast_node *identifier2(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    const struct token *tok = consume(p, TOK_IDENT);
+
+    if (!tok)
+        return NULL;
+
+    tree = new_node(NOD_IDENT, NULL, NULL);
+    tree->sval = tok->text;
+
+    return tree;
+}
+
+/*
  * primary_expression
  *     : TOK_NUM
  *     | TOK_IDENT
@@ -173,7 +192,9 @@ static struct ast_node *identifier(struct parser *p)
 static struct ast_node *primary_expression(struct parser *p)
 {
     struct ast_node *tree = NULL;
+    /*
     const char *ident = NULL;
+    */
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
@@ -187,10 +208,13 @@ static struct ast_node *primary_expression(struct parser *p)
         return tree;
 
     case TOK_IDENT:
+        ungettok(p);
+        return identifier2(p);
+#if 0
         ident = tok->text;
 
         tok = gettok(p);
-        if (tok->kind == '(') {
+        if (/*tok->kind == '('*/ 0) {
             /* parameters for function call */
             for (;;) {
                 struct ast_node *expr = expression(p);
@@ -232,6 +256,7 @@ static struct ast_node *primary_expression(struct parser *p)
             }
         }
         return tree;
+#endif
 
     case '(':
         tree = expression(p);
@@ -264,6 +289,11 @@ static struct ast_node *postfix_expression(struct parser *p)
         case '.':
             /* TODO fix this identifier */
             tree = new_node(NOD_STRUCT_REF, tree, identifier(p));
+            return tree;
+
+        case '(':
+            tree = new_node(NOD_CALL, tree, NULL);
+            expect(p, ')');
             return tree;
 
         default:

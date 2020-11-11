@@ -40,6 +40,8 @@ enum ast_node_kind {
     NOD_EQ,
     NOD_NE,
     /* TODO TEST */
+    NOD_IDENT,
+    /* TODO TEST */
     NOD_DECL,
     NOD_DECLARATOR,
     NOD_DIRECT_DECL,
