@@ -164,8 +164,17 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         return;
     }
 
-    printf("%s", node_to_string(tree));
+    if (tree->data.sym != NULL) {
+        printf(TERMINAL_COLOR_CYAN);
+        printf(TERMINAL_DECORATION_BOLD);
+            printf("%s", node_to_string(tree));
+        printf(TERMINAL_DECORATION_RESET);
+        printf(TERMINAL_COLOR_RESET);
+    } else {
+        printf("%s", node_to_string(tree));
+    }
     switch (tree->kind) {
+        /*
     case NOD_STRUCT_DECL:
     case NOD_DECL_IDENT:
     case NOD_FUNC_DEF:
@@ -173,6 +182,11 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
     case NOD_PARAM:
     case NOD_VAR_DEF:
     case NOD_VAR:
+        */
+
+    case NOD_DECL:
+    case NOD_DECL_PARAM:
+    case NOD_IDENT:
         /*
         printf(" (%s)", tree->data.sym->name);
         printf(" => ");
@@ -193,6 +207,14 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         printf(TERMINAL_COLOR_BLUE);
         printf(TERMINAL_DECORATION_BOLD);
             printf(" %s", tree->sval);
+        printf(TERMINAL_DECORATION_RESET);
+        printf(TERMINAL_COLOR_RESET);
+        break;
+
+    case NOD_NUM:
+        printf(TERMINAL_COLOR_MAGENTA);
+        printf(TERMINAL_DECORATION_BOLD);
+            printf(" %d", tree->data.ival);
         printf(TERMINAL_DECORATION_RESET);
         printf(TERMINAL_COLOR_RESET);
         break;

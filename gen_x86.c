@@ -471,6 +471,26 @@ static int gen_one_param2(FILE *fp, const struct ast_node *node, int reg_index)
     }
 }
 
+static int gen_one_param3(FILE *fp, const struct ast_node *node, int reg_index)
+{
+    int max_index = 0;
+
+    if (!node)
+        return reg_index;
+
+    max_index = gen_one_param3(fp, node->l, reg_index);
+    max_index = gen_one_param3(fp, node->r, max_index);
+
+    if (node->kind == NOD_DECL_PARAM) {
+        const int disp = -get_mem_offset(node);
+
+        code3__(fp, node, MOV_, arg(max_index), addr2(RBP, disp));
+        return max_index + 1;
+    } else {
+        return max_index;
+    }
+}
+
 static int gen_one_param(FILE *fp, const struct ast_node *node)
 {
     if (!node) {
@@ -488,12 +508,13 @@ static int gen_one_param(FILE *fp, const struct ast_node *node)
     }
 }
 
-static void gen_param_list(FILE *fp, const struct ast_node *node)
+static void gen_func_param_list(FILE *fp, const struct ast_node *node)
 {
     if (0) {
         gen_one_param(fp, node);
+        gen_one_param2(fp, node, 0);
     }
-    gen_one_param2(fp, node, 0);
+    gen_one_param3(fp, node, 0);
 }
 
 static const struct ast_node *find_node(const struct ast_node *node, int node_kind)
@@ -732,6 +753,19 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         }
         break;
 
+    case NOD_IDENT:
+        {
+            /* XXX */
+            const int disp = -get_mem_offset(node);
+
+            if (node->dtype->kind == DATA_TYPE_ARRAY) {
+                code3__(fp, node, LEA_, addr2(RBP, disp), A_);
+            } else {
+                code3__(fp, node, MOV_, addr2(RBP, disp), A_);
+            }
+        }
+        break;
+
     case NOD_STRUCT_REF:
         gen_lvalue(fp, node);
         code3__(fp, node, MOV_, addr1(RAX), A_);
@@ -770,10 +804,9 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_FUNC_DEF:
         gen_func_prologue(fp, node->l);
+        gen_func_param_list(fp, node->l);
         gen_func_body(fp, node->r);
 
-        if (0)
-            gen_param_list(fp, node->r->l);
 #if 0
         /* prologue */
         fprintf(fp, "_%s:\n", node->data.sym->name);
@@ -782,7 +815,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, SUB_, imme(get_mem_offset(node)), RSP);
 
         /* load params */
-        gen_param_list(fp, node->r->l);
+        gen_func_param_list(fp, node->r->l);
         /* body */
         gen_code(fp, node->r->r);
 #endif

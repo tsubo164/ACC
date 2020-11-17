@@ -187,6 +187,7 @@ struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind
     struct symbol *sym = lookup_symbol(table, name, kind);
 
     if (!sym) {
+        /* TODO kind won't matter. handle this better */
         sym = push_symbol(table, name, kind);
         symbol_flag_on(sym, IS_USED);
     }

@@ -138,6 +138,7 @@ void parser_init(struct parser *p)
  */
 static struct ast_node *expression(struct parser *p);
 static struct ast_node *statement(struct parser *p);
+static struct ast_node *assignment_expression(struct parser *p);
 
 /*
  * identifier
@@ -272,6 +273,44 @@ static struct ast_node *primary_expression(struct parser *p)
 }
 
 /*
+ * argument_expression
+ *     | assignment_expression
+ *     ;
+ */
+static struct ast_node *argument_expression(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+
+    tree = new_node(NOD_ARG, NULL, NULL);
+    tree->l = assignment_expression(p);
+
+    return tree;
+}
+
+/*
+ * argument_expression_list
+ *     : argument_expression_list
+ *     | argument_expression_list ',' argument_expression
+ *     ;
+ */
+static struct ast_node *argument_expression_list(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+
+    for (;;) {
+        struct ast_node *expr = argument_expression(p);
+
+        if (!expr)
+            return tree;
+
+        tree = new_node(NOD_LIST, tree, expr);
+
+        if (!consume(p, ','))
+            return tree;
+    }
+}
+
+/*
  * postfix_expression
  *     : primary_expression
  *     | postfix_expression '.' TOK_IDENT
@@ -293,6 +332,7 @@ static struct ast_node *postfix_expression(struct parser *p)
 
         case '(':
             tree = new_node(NOD_CALL, tree, NULL);
+            tree->r = argument_expression_list(p);
             expect(p, ')');
             return tree;
 
@@ -910,14 +950,14 @@ static struct ast_node *ident2(struct parser *p)
 static struct ast_node *struct_decl2(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    struct ast_node *type = NULL;
+    struct ast_node *spec = NULL;
 
-    type = type_spec(p);
-    if (!type)
+    spec = type_spec(p);
+    if (!spec)
         return NULL;
 
     tree = NEW_(NOD_MEMBER_DECL);
-    tree->r = type;
+    tree->r = spec;
     tree->l = declarator(p);
 
     return tree;
@@ -1004,14 +1044,14 @@ static struct ast_node *type_spec(struct parser *p)
 static struct ast_node *param_decl(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    struct ast_node *type = NULL;
+    struct ast_node *spec = NULL;
 
-    type = decl_spec(p);
-    if (!type)
-        return tree;
+    spec = decl_spec(p);
+    if (!spec)
+        return NULL;
 
     tree = NEW_(NOD_DECL_PARAM);
-    tree->r = type;
+    tree->r = spec;
     tree->l = declarator(p);
 
     return tree;

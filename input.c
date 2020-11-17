@@ -4,15 +4,20 @@ int *day[7];
 char str[10];
 char *c;
 int *p;
-*/
 int num()
 {
     return 42;
 }
+*/
+
+int add(int x, int y)
+{
+    return x + y;
+}
 
 int main()
 {
-    return num();
+    return add(39, 3);
 }
 
 /*

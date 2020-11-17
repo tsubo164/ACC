@@ -82,12 +82,9 @@ int main(int argc, char **argv)
     */
     semantic_analysis(tree, &parser->symtbl, messages);
 
-    if (1) {
+    if (0) {
         print_tree(tree);
         print_symbol_table(&parser->symtbl);
-        /*
-        return 0;
-        */
     }
 
     /* ------------------------- */
