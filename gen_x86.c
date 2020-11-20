@@ -587,6 +587,45 @@ static void gen_label(FILE *fp, int block_id, int label_id)
     fprintf(fp, ".LBB%d_%d:\n", block_id, label_id);
 }
 
+static void gen_ident(FILE *fp, const struct ast_node *node)
+{
+    const struct symbol *sym;
+
+    if (!node || !node->data.sym)
+        return;
+
+    sym = node->data.sym;
+
+    if (is_global_var(sym)) {
+        code3__(fp, node, MOV_, addr2_pc_rel(RIP, node->data.sym->name), RAX);
+    } else {
+        const int disp = -get_mem_offset(node);
+
+        if (node->dtype->kind == DATA_TYPE_ARRAY) {
+            code3__(fp, node, LEA_, addr2(RBP, disp), A_);
+        } else {
+            code3__(fp, node, MOV_, addr2(RBP, disp), A_);
+        }
+    }
+}
+
+static void gen_ident_lvalue(FILE *fp, const struct ast_node *node)
+{
+    const struct symbol *sym;
+
+    if (!node || !node->data.sym)
+        return;
+
+    sym = node->data.sym;
+
+    if (is_global_var(sym)) {
+        code3__(fp, node, LEA_, addr2_pc_rel(RIP, node->data.sym->name), RAX);
+    } else {
+        code3__(fp, node, MOV_, BP_, RAX);
+        code3__(fp, node, SUB_, imme(get_mem_offset(node)), RAX);
+    }
+}
+
 static void gen_lvalue(FILE *fp, const struct ast_node *node)
 {
     if (node == NULL) {
@@ -594,6 +633,10 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
     }
 
     switch (node->kind) {
+
+    case NOD_IDENT:
+        gen_ident_lvalue(fp, node);
+        break;
 
         /* XXX */
     case NOD_VAR_DEF:
@@ -754,8 +797,9 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_IDENT:
+        gen_ident(fp, node);
+        /*
         {
-            /* XXX */
             const int disp = -get_mem_offset(node);
 
             if (node->dtype->kind == DATA_TYPE_ARRAY) {
@@ -764,6 +808,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
                 code3__(fp, node, MOV_, addr2(RBP, disp), A_);
             }
         }
+        */
         break;
 
     case NOD_STRUCT_REF:
@@ -938,42 +983,38 @@ static void gen_global_func_list(FILE *fp, const struct symbol_table *table)
 
 static void gen_global_var_list(FILE *fp, const struct symbol_table *table)
 {
-    const int N = table->symbol_count;
+    const int N = get_symbol_count(table);
     int nvars = 0;
     int i;
 
-    /* XXX */
     for (i = 0; i < N; i++) {
         const struct symbol *sym = &table->data[i];
 
-        if (sym->kind == SYM_VAR && sym->scope_level == 0) {
+        if (is_global_var(sym)) {
             if (nvars == 0) {
                 fprintf(fp, ".data\n");
                 fprintf(fp, ".global ");
+
+                fprintf(fp, "_%s", sym->name);
+            } else {
+                fprintf(fp, ", _%s", sym->name);
             }
 
-            if (nvars > 0) {
-                fprintf(fp, ", _%s", sym->name);
-            } else {
-                fprintf(fp, "_%s", sym->name);
-            }
             nvars++;
         }
     }
 
-    if (nvars > 0) {
+    if (nvars > 0)
         fprintf(fp, "\n");
-    }
 }
 
 static void gen_global_var_labels(FILE *fp, const struct symbol_table *table)
 {
-    const int N = table->symbol_count;
-    int nvars = 0;
+    const int N = get_symbol_count(table);
     int i;
 
-    /* XXX */
     for (i = 0; i < N; i++) {
+        /* TODO may need get_const_symbol() */
         const struct symbol *sym = &table->data[i];
 
         if (sym->kind == SYM_VAR && sym->scope_level == 0) {
@@ -994,18 +1035,8 @@ static void gen_global_var_labels(FILE *fp, const struct symbol_table *table)
                 break;
             }
             fprintf(fp, "_%s:\n", sym->name);
-            /* XXX */
-            /*
-            fprintf(fp, "    .%s %d\n", datasize, sym->mem_offset);
-            */
             fprintf(fp, "    .%s 0\n", datasize);
-
-            nvars++;
         }
-    }
-
-    if (nvars > 0) {
-        fprintf(fp, "\n");
     }
 }
 
@@ -1080,7 +1111,8 @@ void gen_x86(FILE *fp,
 
     gen_global_var_list(fp, table);
     /* XXX */
-    if (0) {
+    if (1) {
+        /* we can't get inital values by looking up symbol table */
         gen_global_var_labels(fp, table);
     }
     else

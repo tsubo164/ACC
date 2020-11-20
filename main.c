@@ -77,9 +77,6 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    /*
-    symbol_assign_local_storage(&parser->symtbl);
-    */
     semantic_analysis(tree, &parser->symtbl, messages);
 
     if (0) {

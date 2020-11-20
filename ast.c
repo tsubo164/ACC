@@ -116,6 +116,7 @@ void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
     N(NOD_DECL) \
     N(NOD_DECLARATOR) \
     N(NOD_DIRECT_DECL) \
+    N(NOD_DECL_INIT) \
     N(NOD_DECL_IDENT) \
     N(NOD_DECL_FUNC) \
     N(NOD_DECL_PARAM) \
@@ -176,7 +177,6 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
     switch (tree->kind) {
         /*
     case NOD_STRUCT_DECL:
-    case NOD_DECL_IDENT:
     case NOD_FUNC_DEF:
     case NOD_PARAM_DEF:
     case NOD_PARAM:
@@ -186,6 +186,7 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
 
     case NOD_DECL:
     case NOD_DECL_PARAM:
+    case NOD_DECL_IDENT:
     case NOD_IDENT:
         /*
         printf(" (%s)", tree->data.sym->name);

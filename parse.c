@@ -1130,10 +1130,44 @@ static struct ast_node *declarator(struct parser *p)
     return tree;
 }
 
+static struct ast_node *initializer(struct parser *p)
+{
+    struct ast_node *tree = assignment_expression(p);
+    return tree;
+}
+
 static struct ast_node *init_declarator(struct parser *p)
 {
-    struct ast_node *tree = declarator(p);
+    struct ast_node *tree = NEW_(NOD_DECL_INIT);
+
+    tree->l = declarator(p);
+
+    if (consume(p, '='))
+        tree->r = initializer(p);
+
     return tree;
+}
+
+/*
+ * init_declarator_list
+ *     init_declarator_list
+ *     init_declarator_list ',' init_declarator
+ */
+static struct ast_node *init_declarator_list(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+
+    for (;;) {
+        struct ast_node *init = init_declarator(p);
+
+        if (!init)
+            return tree;
+
+        tree = new_node(NOD_LIST, tree, init);
+
+        if (!consume(p, ','))
+            return tree;
+    }
 }
 
 static struct ast_node *decl_spec(struct parser *p)
@@ -1147,7 +1181,7 @@ static struct ast_node *declaration(struct parser *p)
     struct ast_node *tree = NEW_(NOD_DECL);
 
     tree->r = decl_spec(p);
-    tree->l = init_declarator(p);
+    tree->l = init_declarator_list(p);
 
     if (consume(p, '{')) {
         /* TODO remove this by making peek() */

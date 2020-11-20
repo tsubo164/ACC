@@ -10,6 +10,8 @@ int num()
 }
 */
 
+int count;
+
 int add(int x, int y)
 {
     return x + y;
@@ -17,8 +19,11 @@ int add(int x, int y)
 
 int main()
 {
-    return add(39, 3);
+    count = 9;
+    return add(30, 3 + count);
 }
+/*
+*/
 
 /*
 int x;
