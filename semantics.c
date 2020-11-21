@@ -289,7 +289,7 @@ static void compute_func_stack_size(struct symbol_table *table, struct symbol *f
     int total_offset = 0;
 
     for (;;) {
-        if (sym->kind == SYM_PARAM) {
+        if (is_param(sym) || is_local_var(sym)) {
             const int size   = sym->dtype->byte_size;
             const int align  = sym->dtype->alignment;
 

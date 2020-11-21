@@ -23,6 +23,15 @@ int is_global_var(const struct symbol *sym)
         return 0;
 }
 
+int is_local_var(const struct symbol *sym)
+{
+    if (sym->kind == SYM_VAR &&
+        sym->scope_level > 0)
+        return 1;
+    else
+        return 0;
+}
+
 int is_param(const struct symbol *sym)
 {
     return sym->kind == SYM_PARAM;

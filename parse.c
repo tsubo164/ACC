@@ -139,6 +139,8 @@ void parser_init(struct parser *p)
 static struct ast_node *expression(struct parser *p);
 static struct ast_node *statement(struct parser *p);
 static struct ast_node *assignment_expression(struct parser *p);
+static struct ast_node *declaration_list(struct parser *p);
+static struct ast_node *statement_list(struct parser *p);
 
 /*
  * identifier
@@ -563,6 +565,7 @@ static struct ast_node *expression(struct parser *p)
  */
 static struct ast_node *compound_statement(struct parser *p)
 {
+#if 0
     struct ast_node *tree = NULL;
 
     expect_or_error(p, '{', "missing '{'");
@@ -585,6 +588,18 @@ static struct ast_node *compound_statement(struct parser *p)
             break;
         }
     }
+#endif
+    struct ast_node *tree = NULL;
+
+    expect(p, '{');
+
+    tree = new_node(NOD_COMPOUND, NULL, NULL);
+    tree->l = declaration_list(p);
+    tree->r = statement_list(p);
+
+    expect(p, '}');
+
+    return tree;
 }
 
 static struct ast_node *var_def(struct parser *p)
@@ -710,6 +725,10 @@ static struct ast_node *statement(struct parser *p)
     case '{':
         ungettok(p);
         return compound_statement(p);
+
+    case '}':
+        ungettok(p);
+        return NULL;
 
     case TOK_CHAR:
     case TOK_INT:
@@ -1150,7 +1169,7 @@ static struct ast_node *init_declarator(struct parser *p)
 
 /*
  * init_declarator_list
- *     init_declarator_list
+ *     init_declarator
  *     init_declarator_list ',' init_declarator
  */
 static struct ast_node *init_declarator_list(struct parser *p)
@@ -1178,9 +1197,15 @@ static struct ast_node *decl_spec(struct parser *p)
 
 static struct ast_node *declaration(struct parser *p)
 {
-    struct ast_node *tree = NEW_(NOD_DECL);
+    struct ast_node *tree = NULL;
+    struct ast_node *spec = NULL;
 
-    tree->r = decl_spec(p);
+    spec = decl_spec(p);
+    if (!spec)
+        return NULL;
+
+    tree = NEW_(NOD_DECL);
+    tree->r = spec;
     tree->l = init_declarator_list(p);
 
     if (consume(p, '{')) {
@@ -1194,6 +1219,44 @@ static struct ast_node *declaration(struct parser *p)
         return tree;
 
     return tree;
+}
+
+/*
+ * declaration_list
+ *     declaration
+ *     declaration_list declaration
+ */
+static struct ast_node *declaration_list(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+
+    for (;;) {
+        struct ast_node *decl = declaration(p);
+
+        if (!decl)
+            return tree;
+
+        tree = new_node(NOD_LIST, tree, decl);
+    }
+}
+
+/*
+ * statement_list
+ *     statement
+ *     statement_list statement
+ */
+static struct ast_node *statement_list(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+
+    for (;;) {
+        struct ast_node *stmt = statement(p);
+
+        if (!stmt)
+            return tree;
+
+        tree = new_node(NOD_LIST, tree, stmt);
+    }
 }
 
 static struct ast_node *extern_decl(struct parser *p)

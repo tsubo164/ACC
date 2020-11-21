@@ -43,6 +43,7 @@ struct symbol_table {
 
 /* symbol */
 extern int is_global_var(const struct symbol *sym);
+extern int is_local_var(const struct symbol *sym);
 extern int is_param(const struct symbol *sym);
 extern void symbol_flag_on(struct symbol *sym, int flag);
 extern int symbol_flag_is_on(const struct symbol *sym, int flag);
