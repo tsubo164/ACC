@@ -16,16 +16,21 @@ int add(int x, int y)
 {
     return x + y;
 }
-/*
-*/
 
 int main()
 {
+    int a[3];
+
+    a[2] = 13;
+
+    return a[2];
+    /*
     int a;
 
     a = 7;
     count = 9;
     return add(30, 3 + count + a);
+    */
 }
 
 /*

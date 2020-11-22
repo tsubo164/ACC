@@ -597,7 +597,7 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
     sym = node->data.sym;
 
     if (is_global_var(sym)) {
-        code3__(fp, node, MOV_, addr2_pc_rel(RIP, node->data.sym->name), RAX);
+        code3__(fp, node, MOV_, addr2_pc_rel(RIP, sym->name), RAX);
     } else {
         const int disp = -get_mem_offset(node);
 
@@ -619,7 +619,7 @@ static void gen_ident_lvalue(FILE *fp, const struct ast_node *node)
     sym = node->data.sym;
 
     if (is_global_var(sym)) {
-        code3__(fp, node, LEA_, addr2_pc_rel(RIP, node->data.sym->name), RAX);
+        code3__(fp, node, LEA_, addr2_pc_rel(RIP, sym->name), RAX);
     } else {
         code3__(fp, node, MOV_, BP_, RAX);
         code3__(fp, node, SUB_, imme(get_mem_offset(node)), RAX);
@@ -899,10 +899,27 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_ADD:
+#if 0
         gen_code(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
         code2__(fp, node, POP_, RDX);
+        code3__(fp, node, ADD_, D_, A_);
+#endif
+        /* TODO find the best place to handle array subscript */
+        gen_code(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code2__(fp, node, POP_, RDX);
+
+        if (node->l->dtype->kind == DATA_TYPE_ARRAY) {
+            const int sz = node->l->dtype->ptr_to->byte_size;
+            /*
+            const int sh = sz == 8 ? 3 : sz == 4 ? 2 : 1;
+            */
+            code3__(fp, node, IMUL_, imme(sz), RAX);
+        }
+
         code3__(fp, node, ADD_, D_, A_);
         break;
 

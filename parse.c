@@ -314,9 +314,9 @@ static struct ast_node *argument_expression_list(struct parser *p)
 
 /*
  * postfix_expression
- *     : primary_expression
- *     | postfix_expression '.' TOK_IDENT
- *     ;
+ *     primary_expression
+ *     postfix_expression '.' TOK_IDENT
+ *     postfix_expression '(' argument_expression_list ')'
  */
 static struct ast_node *postfix_expression(struct parser *p)
 {
@@ -336,6 +336,12 @@ static struct ast_node *postfix_expression(struct parser *p)
             tree = new_node(NOD_CALL, tree, NULL);
             tree->r = argument_expression_list(p);
             expect(p, ')');
+            return tree;
+
+        case '[':
+            tree = new_node(NOD_ADD, tree, expression(p));
+            expect(p, ']');
+            tree = new_node(NOD_DEREF, tree, NULL);
             return tree;
 
         default:

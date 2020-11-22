@@ -290,11 +290,12 @@ static void compute_func_stack_size(struct symbol_table *table, struct symbol *f
 
     for (;;) {
         if (is_param(sym) || is_local_var(sym)) {
-            const int size   = sym->dtype->byte_size;
-            const int align  = sym->dtype->alignment;
+            const int size  = sym->dtype->byte_size;
+            const int align = sym->dtype->alignment;
+            const int len   = sym->dtype->array_len;
 
             total_offset = align_to(total_offset, align);
-            total_offset += size;
+            total_offset += len * size;
             sym->mem_offset = total_offset;
         }
 
@@ -517,6 +518,31 @@ static void add_type2(struct ast_node *node, struct symbol_table *table)
     add_type2(node->r, table);
 
     switch (node->kind) {
+
+        /* TODO find the best place to handle array subscript */
+#if 0
+    case NOD_ADD:
+        node->dtype = promote_data_type(node->l, node->r);
+
+        if (node->l->dtype->kind == DATA_TYPE_ARRAY) {
+            struct ast_node *size, *mul;
+
+            size = new_ast_node(NOD_NUM, NULL, NULL);
+            size->data.ival = node->l->dtype->ptr_to->byte_size;
+            mul = new_ast_node(NOD_MUL, size, node->r);
+            node->r = mul;
+        }
+        break;
+#endif
+
+    case NOD_ASSIGN:
+        node->dtype = node->l->dtype;
+        break;
+
+    case NOD_DEREF:
+        node->dtype = promote_data_type(node->l, node->r);
+        node->dtype = node->dtype->ptr_to;;
+        break;
 
     case NOD_CALL:
         node->dtype = node->l->dtype;
