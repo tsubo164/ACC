@@ -358,7 +358,21 @@ static int sym_kind_of(const struct declaration *decl)
     }
 }
 
-static void make_decl(const struct ast_node *tree, struct declaration *decl);
+static void duplicate_decl(struct declaration *dest, const struct declaration *src)
+{
+
+    /* TODO make this in data_type.c */
+    /*
+    struct data_type *dtype = NULL;
+    dest->type = duplicate_type(src->type);
+    */
+    /* XXX temp copy pointer */
+    dest->kind = src->kind;
+    dest->ident = src->ident;
+    dest->type = src->type;
+}
+
+static void make_decl(struct ast_node *tree, struct symbol_table *table, struct declaration *decl);
 static void make_sym_from_decl(struct ast_node *tree, struct symbol_table *table);
 static void make_sym_from_ident(struct ast_node *tree, struct symbol_table *table);
 static void add_symbol3(struct ast_node *tree, struct symbol_table *table);
@@ -407,24 +421,30 @@ static void make_sym_from_ident(struct ast_node *tree, struct symbol_table *tabl
     struct symbol *sym = NULL;
     int sym_kind = SYM_VAR;
 
+    /* TODO The parameter 'sim_kind' may not be needed.
+     * The symbol knows what kind of symbol it is.  */
     sym = use_symbol(table, tree->sval, sym_kind);
     tree->data.sym = sym;
 }
 
 static void make_sym_from_decl(struct ast_node *tree, struct symbol_table *table)
 {
+    /*
     struct symbol *sym = NULL;
+    */
     struct declaration decl = {0};
 
-    make_decl(tree, &decl);
+    make_decl(tree, table, &decl);
 
+    /*
     sym = define_symbol(table, decl.ident, sym_kind_of(&decl));
     sym->dtype = decl.type;
     tree->data.sym = sym;
+    */
 }
 
 /* walk declaration tree in backwards */
-static void make_decl(const struct ast_node *tree, struct declaration *decl)
+static void make_decl(struct ast_node *tree, struct symbol_table *table, struct declaration *decl)
 {
     if (!tree)
         return;
@@ -436,6 +456,37 @@ static void make_decl(const struct ast_node *tree, struct declaration *decl)
         printf("declaration: ");
         */
         break;
+
+    case NOD_DECL_INIT:
+        /*
+            make_decl(tree->r, table, decl);
+            make_decl(tree->l, table, decl);
+        */
+        {
+            struct declaration decll = {0};
+            struct declaration declr = {0};
+            duplicate_decl(&decll, decl);
+            duplicate_decl(&declr, decl);
+            make_decl(tree->r, table, &declr);
+            make_decl(tree->l, table, &decll);
+            return;
+        }
+
+    case NOD_DECL_IDENT:
+        /*
+        printf("%s is", tree->sval);
+        */
+        decl->ident = tree->sval;
+        /*
+        break;
+        */
+        {
+            struct symbol *sym = NULL;
+            sym = define_symbol(table, decl->ident, sym_kind_of(decl));
+            sym->dtype = decl->type;
+            tree->data.sym = sym;
+            return;
+        }
 
     case NOD_DECL_FUNC:
         /*
@@ -487,13 +538,6 @@ static void make_decl(const struct ast_node *tree, struct declaration *decl)
         */
         break;
 
-    case NOD_DECL_IDENT:
-        /*
-        printf("%s is", tree->sval);
-        */
-        decl->ident = tree->sval;
-        break;
-
     case NOD_DECL_PARAM:
         /*
         printf("param %s", tree->sval);
@@ -505,8 +549,8 @@ static void make_decl(const struct ast_node *tree, struct declaration *decl)
         break;
     }
 
-    make_decl(tree->r, decl);
-    make_decl(tree->l, decl);
+    make_decl(tree->r, table, decl);
+    make_decl(tree->l, table, decl);
 }
 
 static void add_type2(struct ast_node *node, struct symbol_table *table)
@@ -554,7 +598,10 @@ static void add_type2(struct ast_node *node, struct symbol_table *table)
     case NOD_VAR_DEF:
     case NOD_PARAM_DEF:
         */
+        /*
     case NOD_DECL_PARAM:
+        */
+    case NOD_DECL_IDENT:
     case NOD_IDENT:
         node->dtype = node->data.sym->dtype;
         break;

@@ -165,17 +165,24 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         return;
     }
 
-#if 0
     if (tree->data.sym != NULL) {
         printf(TERMINAL_COLOR_CYAN);
         printf(TERMINAL_DECORATION_BOLD);
             printf("%s", node_to_string(tree));
         printf(TERMINAL_DECORATION_RESET);
         printf(TERMINAL_COLOR_RESET);
-    } else {
+    }
+    else if (tree->kind >= NOD_TYPE_CHAR) {
+        printf(TERMINAL_COLOR_RED);
+        printf(TERMINAL_DECORATION_BOLD);
+            printf("%s", node_to_string(tree));
+        printf(TERMINAL_DECORATION_RESET);
+        printf(TERMINAL_COLOR_RESET);
+    }
+    else {
         printf("%s", node_to_string(tree));
     }
-#endif
+#if 0
     switch (tree->kind) {
     case NOD_DECL:
     case NOD_DECL_PARAM:
@@ -205,6 +212,7 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         printf("%s", node_to_string(tree));
         break;
     }
+#endif
 
     switch (tree->kind) {
         /*

@@ -10,12 +10,14 @@ int num()
 }
 */
 
-int count;
-
+/*
 int add(int x, int y)
 {
     return x + y;
 }
+*/
+
+int count, *foo;
 
 int main()
 {

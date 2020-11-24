@@ -99,6 +99,7 @@ void print_symbol_table(const struct symbol_table *table)
     const int N = table->symbol_count;
     int i;
 
+    printf("-------------------------------------------------------------\n");
     printf("%15s | ", "name");
     printf("%20s | ", "kind");
     printf("%10s | ", "type");
@@ -114,6 +115,7 @@ void print_symbol_table(const struct symbol_table *table)
         printf("%5d | ", sym->scope_level);
         printf("\n");
     }
+    printf("-------------------------------------------------------------\n");
 }
 
 static struct symbol *push_symbol(struct symbol_table *table, const char *name, int kind)

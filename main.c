@@ -70,18 +70,16 @@ int main(int argc, char **argv)
 
     tree = parse(parser);
 
-    if (do_print_tree) {
-        print_tree(tree);
-        printf("------------------\n");
-        print_decl(tree);
-        return 0;
-    }
-
     semantic_analysis(tree, &parser->symtbl, messages);
 
-    if (0) {
+    if (do_print_tree) {
         print_tree(tree);
+        printf("\n");
         print_symbol_table(&parser->symtbl);
+        /*
+        print_decl(tree);
+        */
+        return 0;
     }
 
     /* ------------------------- */

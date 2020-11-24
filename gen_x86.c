@@ -481,7 +481,7 @@ static int gen_one_param3(FILE *fp, const struct ast_node *node, int reg_index)
     max_index = gen_one_param3(fp, node->l, reg_index);
     max_index = gen_one_param3(fp, node->r, max_index);
 
-    if (node->kind == NOD_DECL_PARAM) {
+    if (node->kind == NOD_DECL_IDENT) {
         const int disp = -get_mem_offset(node);
 
         code3__(fp, node, MOV_, arg(max_index), addr2(RBP, disp));
@@ -508,15 +508,6 @@ static int gen_one_param(FILE *fp, const struct ast_node *node)
     }
 }
 
-static void gen_func_param_list(FILE *fp, const struct ast_node *node)
-{
-    if (0) {
-        gen_one_param(fp, node);
-        gen_one_param2(fp, node, 0);
-    }
-    gen_one_param3(fp, node, 0);
-}
-
 static const struct ast_node *find_node(const struct ast_node *node, int node_kind)
 {
     const struct ast_node *found = NULL;
@@ -538,19 +529,32 @@ static const struct ast_node *find_node(const struct ast_node *node, int node_ki
     return NULL;
 }
 
+static void gen_func_param_list(FILE *fp, const struct ast_node *node)
+{
+    if (0) {
+        gen_one_param(fp, node);
+        gen_one_param2(fp, node, 0);
+    }
+    /*
+    gen_one_param3(fp, node, 0);
+    */
+    gen_one_param3(fp, find_node(node, NOD_DECL_FUNC), 0);
+}
+
 static void gen_func_prologue(FILE *fp, const struct ast_node *node)
 {
-    const struct ast_node *decl = NULL;
+    const struct ast_node *ident = NULL;
 
-    if (0)
-        decl = find_node(node, NOD_DECL);
-        /* TODO assert(decl) */
-    decl = node;
+    ident = find_node(node, NOD_DECL_IDENT);
+        /* TODO assert(ident) */
+    /*
+    ident = node;
+    */
 
-    fprintf(fp, "_%s:\n", decl->data.sym->name);
-    code2__(fp, decl, PUSH_, RBP);
-    code3__(fp, decl, MOV_,  RSP, RBP);
-    code3__(fp, decl, SUB_, imme(get_mem_offset(decl)), RSP);
+    fprintf(fp, "_%s:\n", ident->data.sym->name);
+    code2__(fp, ident, PUSH_, RBP);
+    code3__(fp, ident, MOV_,  RSP, RBP);
+    code3__(fp, ident, SUB_, imme(get_mem_offset(ident)), RSP);
 }
 
 static void gen_func_body(FILE *fp, const struct ast_node *node)
