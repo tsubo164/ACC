@@ -19,11 +19,16 @@ int add(int x, int y)
 
 int count, *foo;
 
+int b = 131;
+
 int main()
 {
     int a[3];
+    char c = 2 * (19 + 21 + 2);
+    int x = 11, y = 9;
 
-    a[2] = 13;
+    a[2] = b;
+    a[2] = c + x + y;
 
     return a[2];
     /*

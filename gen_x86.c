@@ -638,6 +638,8 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
 
     switch (node->kind) {
 
+        /* TODO need this for initialization. may not need this for IR */
+    case NOD_DECL_IDENT:
     case NOD_IDENT:
         gen_ident_lvalue(fp, node);
         break;
@@ -729,6 +731,12 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->r);
         break;
 
+        /* TODO need to walk all nodes by default? */
+    case NOD_DECL:
+        gen_code(fp, node->l);
+        gen_code(fp, node->r);
+        break;
+
     case NOD_IF:
         /* if */
         gen_code(fp, node->l);
@@ -813,6 +821,29 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             }
         }
         */
+        break;
+
+    case NOD_DECL_INIT:
+        {
+            const struct ast_node *ident;
+            const struct symbol *sym;
+
+            ident = find_node(node->l, NOD_DECL_IDENT);
+            sym = ident->data.sym;
+
+            if (is_local_var(sym)) {
+                /* ident */
+                gen_lvalue(fp, ident);
+                code2__(fp, ident, PUSH_, RAX);
+
+                /* init expr */
+                gen_code(fp, node->r);
+
+                /* assign */
+                code2__(fp, node, POP_,  RDX);
+                code3__(fp, node, MOV_, A_, addr1(RDX));
+            }
+        }
         break;
 
     case NOD_STRUCT_REF:
@@ -1029,6 +1060,50 @@ static void gen_global_var_list(FILE *fp, const struct symbol_table *table)
         fprintf(fp, "\n");
 }
 
+static void gen_global_var_labels2(FILE *fp, const struct ast_node *node)
+{
+    if (!node)
+        return;
+
+    if (node->kind == NOD_DECL_INIT) {
+        const struct ast_node *ident;
+        const struct symbol *sym;
+
+        ident = find_node(node, NOD_DECL_IDENT);
+        sym = ident->data.sym;
+
+        if (is_global_var(sym)) {
+            /* TODO need eval instead of find NOD_NUM */
+            const struct ast_node *init = find_node(node, NOD_NUM);
+            const int val = init ? init->data.ival : 0;
+
+            const char *datasize;
+            switch (sym->dtype->kind) {
+            case DATA_TYPE_CHAR:
+                datasize = "byte";
+                break;
+            case DATA_TYPE_INT:
+                datasize = "long";
+                break;
+            case DATA_TYPE_PTR:
+            case DATA_TYPE_ARRAY:
+                datasize = "quad";
+                break;
+            default:
+                datasize = "byte";
+                break;
+            }
+            fprintf(fp, "_%s:\n", sym->name);
+            fprintf(fp, "    .%s %d\n", datasize, val);
+        }
+
+        return;
+    }
+
+    gen_global_var_labels2(fp, node->l);
+    gen_global_var_labels2(fp, node->r);
+}
+
 static void gen_global_var_labels(FILE *fp, const struct symbol_table *table)
 {
     const int N = get_symbol_count(table);
@@ -1134,7 +1209,11 @@ void gen_x86(FILE *fp,
     /* XXX */
     if (1) {
         /* we can't get inital values by looking up symbol table */
-        gen_global_var_labels(fp, table);
+        /*
+        */
+        if (0)
+            gen_global_var_labels(fp, table);
+        gen_global_var_labels2(fp, tree);
     }
     else
     {
