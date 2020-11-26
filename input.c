@@ -10,6 +10,18 @@ int num()
 }
 */
 
+int *p[3];
+
+/*
+struct point {
+    int x, y;
+};
+*/
+
+/* TODO support fnc decl
+int hoge();
+ */
+
 /*
 int add(int x, int y)
 {
@@ -17,6 +29,7 @@ int add(int x, int y)
 }
 */
 
+/*
 int count, *foo;
 
 int b = 131;
@@ -30,15 +43,14 @@ int main()
     a[2] = b;
     a[2] = c + x + y;
 
-    return a[2];
-    /*
+    return 42;
     int a;
 
     a = 7;
     count = 9;
     return add(30, 3 + count + a);
-    */
 }
+    */
 
 /*
 int x;
