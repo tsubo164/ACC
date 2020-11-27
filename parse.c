@@ -1022,8 +1022,8 @@ static struct ast_node *struct_decl2(struct parser *p)
         return NULL;
 
     tree = NEW_(NOD_MEMBER_DECL);
-    tree->r = spec;
-    tree->l = struct_declarator_list(p);
+    tree->l = spec;
+    tree->r = struct_declarator_list(p);
 
     return tree;
 }
@@ -1121,8 +1121,8 @@ static struct ast_node *param_decl(struct parser *p)
         return NULL;
 
     tree = NEW_(NOD_DECL_PARAM);
-    tree->r = spec;
-    tree->l = declarator(p);
+    tree->l = spec;
+    tree->r = declarator(p);
 
     return tree;
 }
@@ -1163,7 +1163,7 @@ static struct ast_node *direct_declarator(struct parser *p)
     if (consume(p, TOK_IDENT)) {
         struct ast_node *ident = NEW_(NOD_DECL_IDENT);
         copy_token_text(p, ident);
-        tree->l = ident;
+        tree->r = ident;
     }
 
     if (consume(p, '[')) {
@@ -1172,13 +1172,14 @@ static struct ast_node *direct_declarator(struct parser *p)
         if (consume(p, TOK_NUM))
             copy_token_ival(p, array);
 
-        tree->r = array;
+        tree->l = array;
         expect(p, ']');
     }
 
     if (consume(p, '(')) {
-        struct ast_node *fn = new_node(NOD_DECL_FUNC, param_decl_list(p), NULL);
-        tree->r = fn;
+        struct ast_node *fn = NEW_(NOD_DECL_FUNC);
+        fn->l = param_decl_list(p);
+        tree->l = fn;
         expect(p, ')');
     }
 
@@ -1199,8 +1200,8 @@ static struct ast_node *declarator(struct parser *p)
 {
     struct ast_node *tree = NEW_(NOD_DECLARATOR);
 
-    tree->r = pointer(p);
-    tree->l = direct_declarator(p);
+    tree->l = pointer(p);
+    tree->r = direct_declarator(p);
 
     return tree;
 }
@@ -1261,8 +1262,8 @@ static struct ast_node *declaration(struct parser *p)
         return NULL;
 
     tree = NEW_(NOD_DECL);
-    tree->r = spec;
-    tree->l = init_declarator_list(p);
+    tree->l = spec;
+    tree->r = init_declarator_list(p);
 
     if (consume(p, '{')) {
         /* TODO remove this by making peek() */

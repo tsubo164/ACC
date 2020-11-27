@@ -543,13 +543,13 @@ static void gen_func_param_list(FILE *fp, const struct ast_node *node)
 
 static void gen_func_prologue(FILE *fp, const struct ast_node *node)
 {
+    const struct ast_node *ddecl = NULL;
     const struct ast_node *ident = NULL;
 
-    ident = find_node(node, NOD_DECL_IDENT);
-        /* TODO assert(ident) */
-    /*
-    ident = node;
-    */
+    /* TODO define find_node_last()? */
+    ddecl = find_node(node, NOD_DIRECT_DECL);
+    ident = find_node(ddecl->r, NOD_DECL_IDENT);
+    /* TODO assert(ident) */
 
     fprintf(fp, "_%s:\n", ident->data.sym->name);
     code2__(fp, ident, PUSH_, RBP);

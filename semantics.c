@@ -467,8 +467,8 @@ static void make_decl(struct ast_node *tree, struct symbol_table *table, struct 
             struct declaration declr = {0};
             duplicate_decl(&decll, decl);
             duplicate_decl(&declr, decl);
-            make_decl(tree->r, table, &declr);
             make_decl(tree->l, table, &decll);
+            make_decl(tree->r, table, &declr);
             return;
         }
 
@@ -549,8 +549,8 @@ static void make_decl(struct ast_node *tree, struct symbol_table *table, struct 
         break;
     }
 
-    make_decl(tree->r, table, decl);
     make_decl(tree->l, table, decl);
+    make_decl(tree->r, table, decl);
 }
 
 static void add_type2(struct ast_node *node, struct symbol_table *table)

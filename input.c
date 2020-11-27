@@ -10,9 +10,14 @@ int num()
 }
 */
 
-int *p[3];
+char **p = 0;
+int i = 12, j, k = 1;
 
 /*
+int num()
+{
+    return 42;
+}
 struct point {
     int x, y;
 };
@@ -22,11 +27,11 @@ struct point {
 int hoge();
  */
 
-/*
 int add(int x, int y)
 {
     return x + y;
 }
+/*
 */
 
 /*
