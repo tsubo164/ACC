@@ -44,7 +44,7 @@ void symbol_flag_on(struct symbol *sym, int flag)
 
 int symbol_flag_is_on(const struct symbol *sym, int flag)
 {
-    return sym->flag & flag;
+    return (sym->flag & flag) > 0;
 }
 
 struct symbol_table *new_symbol_table()
@@ -94,28 +94,47 @@ SYM_LIST(S)
 #undef S
 }
 
+static void print_horizonal_line(char c, int n)
+{
+    int i;
+    for (i = 0; i < n; i++)
+        printf("%c", c);
+    printf("\n");
+}
+
 void print_symbol_table(const struct symbol_table *table)
 {
+    const int ROW = 70;
     const int N = table->symbol_count;
     int i;
 
-    printf("-------------------------------------------------------------\n");
+    print_horizonal_line('-', ROW);
+
+    printf("|");
     printf("%15s | ", "name");
     printf("%20s | ", "kind");
     printf("%10s | ", "type");
     printf("%5s | ", "level");
+    printf("%5s | ", "mem");
     printf("\n");
-    printf("=============================================================\n");
+
+    print_horizonal_line('=', ROW);
 
     for (i = 0; i < N; i++) {
         const struct symbol *sym = &table->data[i];
+        printf("|");
         printf("%15s | ", sym->name ? sym->name : "--");
         printf("%-20s | ",  symbol_to_string(sym));
-        printf("%10s | ", data_type_to_string(sym->dtype));
+        printf("%-10s | ", data_type_to_string(sym->dtype));
         printf("%5d | ", sym->scope_level);
+        if (is_global_var(sym))
+            printf("%5s | ",  "*");
+        else
+            printf("%5d | ",  sym->mem_offset);
         printf("\n");
     }
-    printf("-------------------------------------------------------------\n");
+
+    print_horizonal_line('-', ROW);
 }
 
 static struct symbol *push_symbol(struct symbol_table *table, const char *name, int kind)
@@ -143,6 +162,33 @@ void init_symbol_table(struct symbol_table *table)
     table->symbol_count = 0;
     /* 0 means global scope */
     table->current_scope_level = 0;
+}
+
+static int namespace(int kind)
+{
+    switch (kind) {
+
+    case SYM_SCOPE_BEGIN:
+    case SYM_SCOPE_END:
+        return 0;
+
+    case SYM_VAR:
+    case SYM_GLOBAL_VAR:
+    case SYM_FUNC:
+    case SYM_PARAM:
+        return 1;
+
+    case SYM_STRUCT:
+        return 2;
+
+    default:
+        return 0;
+    }
+}
+
+static int is_same_namespace(int kind0, int kind1)
+{
+    return namespace(kind0) == namespace(kind1);
 }
 
 struct symbol *lookup_symbol(struct symbol_table *table,
@@ -173,7 +219,7 @@ struct symbol *lookup_symbol(struct symbol_table *table,
             continue;
         }
 
-        if (!strcmp(sym->name, name) /*&& sym->kind == kind*/) {
+        if (!strcmp(sym->name, name) && is_same_namespace(sym->kind, kind)/*&& sym->kind == kind*/) {
             return sym;
         }
     }

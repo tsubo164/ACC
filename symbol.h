@@ -27,7 +27,8 @@ struct symbol {
     int flag;
     int mem_offset;
 
-    const struct data_type *dtype;
+    /* TODO consider const */
+    struct data_type *dtype;
     int scope_level;
 
     /* TODO improve this */

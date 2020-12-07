@@ -538,7 +538,11 @@ static void gen_func_param_list(FILE *fp, const struct ast_node *node)
     /*
     gen_one_param3(fp, node, 0);
     */
-    gen_one_param3(fp, find_node(node, NOD_DECL_FUNC), 0);
+    {
+        const struct ast_node *fdecl;
+        fdecl = find_node(node, NOD_DECL_FUNC);
+        gen_one_param3(fp, fdecl->r, 0);
+    }
 }
 
 static void gen_func_prologue(FILE *fp, const struct ast_node *node)
@@ -829,6 +833,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             const struct symbol *sym;
 
             ident = find_node(node->l, NOD_DECL_IDENT);
+
+            /* TODO struct {} may not have ident. IR won't need this if statement */
+            if (!ident)
+                return;
+
             sym = ident->data.sym;
 
             if (is_local_var(sym)) {
@@ -1070,6 +1079,11 @@ static void gen_global_var_labels2(FILE *fp, const struct ast_node *node)
         const struct symbol *sym;
 
         ident = find_node(node, NOD_DECL_IDENT);
+
+        /* TODO struct {} may not have ident. IR won't need this if statement */
+        if (!ident)
+            return;
+
         sym = ident->data.sym;
 
         if (is_global_var(sym)) {

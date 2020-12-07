@@ -88,7 +88,6 @@ void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
     N(NOD_WHILE) \
     N(NOD_ASSIGN) \
     N(NOD_STRUCT_DECL) \
-    N(NOD_MEMBER_DECL) \
     N(NOD_STRUCT_REF) \
     N(NOD_VAR) \
     N(NOD_GLOBAL_VAR) \
@@ -120,11 +119,13 @@ void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
     N(NOD_DECL_IDENT) \
     N(NOD_DECL_FUNC) \
     N(NOD_DECL_PARAM) \
+    N(NOD_DECL_MEMBER) \
     N(NOD_TYPE_CHAR) \
     N(NOD_TYPE_INT) \
     N(NOD_TYPE_POINTER) \
     N(NOD_TYPE_ARRAY) \
-    N(NOD_TYPE_STRUCT)
+    N(NOD_TYPE_STRUCT) \
+    N(NOD_SPEC_STRUCT)
 
 const char *node_to_string(const struct ast_node *node)
 {

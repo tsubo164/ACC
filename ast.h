@@ -15,7 +15,6 @@ enum ast_node_kind {
     NOD_WHILE,
     NOD_ASSIGN,
     NOD_STRUCT_DECL,
-    NOD_MEMBER_DECL,
     NOD_STRUCT_REF,
     NOD_VAR,
     NOD_GLOBAL_VAR,
@@ -49,12 +48,14 @@ enum ast_node_kind {
     NOD_DECL_IDENT,
     NOD_DECL_FUNC,
     NOD_DECL_PARAM,
+    NOD_DECL_MEMBER,
     /* data types */
     NOD_TYPE_CHAR,
     NOD_TYPE_INT,
     NOD_TYPE_POINTER,
     NOD_TYPE_ARRAY,
-    NOD_TYPE_STRUCT
+    NOD_TYPE_STRUCT,
+    NOD_SPEC_STRUCT
 };
 
 struct ast_node {

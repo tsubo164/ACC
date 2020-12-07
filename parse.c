@@ -142,6 +142,7 @@ static struct ast_node *assignment_expression(struct parser *p);
 static struct ast_node *declaration_list(struct parser *p);
 static struct ast_node *statement_list(struct parser *p);
 
+#if 0
 /*
  * identifier
  *     : TOK_IDENT
@@ -165,6 +166,7 @@ static struct ast_node *identifier(struct parser *p)
 
     return tree;
 }
+#endif
 
 /*
  * identifier
@@ -282,9 +284,14 @@ static struct ast_node *primary_expression(struct parser *p)
 static struct ast_node *argument_expression(struct parser *p)
 {
     struct ast_node *tree = NULL;
+    struct ast_node *asgn = NULL;
+
+    asgn = assignment_expression(p);
+    if (!asgn)
+        return NULL;
 
     tree = new_node(NOD_ARG, NULL, NULL);
-    tree->l = assignment_expression(p);
+    tree->l = asgn;
 
     return tree;
 }
@@ -328,20 +335,20 @@ static struct ast_node *postfix_expression(struct parser *p)
 
         case '.':
             /* TODO fix this identifier */
-            tree = new_node(NOD_STRUCT_REF, tree, identifier(p));
-            return tree;
+            tree = new_node(NOD_STRUCT_REF, tree, identifier2(p));
+            break;
 
         case '(':
             tree = new_node(NOD_CALL, tree, NULL);
             tree->r = argument_expression_list(p);
             expect(p, ')');
-            return tree;
+            break;
 
         case '[':
             tree = new_node(NOD_ADD, tree, expression(p));
             expect(p, ']');
             tree = new_node(NOD_DEREF, tree, NULL);
-            return tree;
+            break;
 
         default:
             ungettok(p);
@@ -890,7 +897,7 @@ static struct ast_node *struct_decl(struct parser *p)
         case TOK_CHAR:
         case TOK_INT:
             ungettok(p);
-            members = new_node(NOD_MEMBER_DECL, members, var_def(p));
+            members = new_node(NOD_DECL_MEMBER, members, var_def(p));
             break;
 
         default:
@@ -1021,7 +1028,7 @@ static struct ast_node *struct_decl2(struct parser *p)
     if (!spec)
         return NULL;
 
-    tree = NEW_(NOD_MEMBER_DECL);
+    tree = NEW_(NOD_DECL_MEMBER);
     tree->l = spec;
     tree->r = struct_declarator_list(p);
 
@@ -1056,7 +1063,7 @@ static struct ast_node *struct_union(struct parser *p)
     switch (tok->kind) {
 
     case TOK_STRUCT:
-        tree = NEW_(NOD_STRUCT_DECL);
+        tree = NEW_(NOD_SPEC_STRUCT);
         break;
 
     default:
@@ -1177,9 +1184,17 @@ static struct ast_node *direct_declarator(struct parser *p)
     }
 
     if (consume(p, '(')) {
+        /* TODO func def tree change */
+        /*
         struct ast_node *fn = NEW_(NOD_DECL_FUNC);
         fn->l = param_decl_list(p);
         tree->l = fn;
+        expect(p, ')');
+        */
+        struct ast_node *fn = NEW_(NOD_DECL_FUNC);
+        fn->l = tree;
+        fn->r = param_decl_list(p);
+        tree = fn;
         expect(p, ')');
     }
 
