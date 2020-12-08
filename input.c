@@ -19,8 +19,9 @@ struct point Q;
 int main()
 {
     struct point pt;
-    pt.x = 14;
+    pt.x = 13;
+    pt.y = 29;
 
-    return pt.x;
+    return pt.x + pt.y;
 }
 
