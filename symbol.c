@@ -219,7 +219,7 @@ struct symbol *lookup_symbol(struct symbol_table *table,
             continue;
         }
 
-        if (!strcmp(sym->name, name) && is_same_namespace(sym->kind, kind)/*&& sym->kind == kind*/) {
+        if (!strcmp(sym->name, name) && is_same_namespace(sym->kind, kind)) {
             return sym;
         }
     }
@@ -339,85 +339,4 @@ struct symbol *get_symbol(struct symbol_table *table, int index)
         return NULL;
     }
     return &table->data[index];
-}
-
-static int next_aligned(int current_offset, int next_align)
-{
-    int next_offset = current_offset;
-
-    if (current_offset % next_align > 0) {
-        const int padding = next_align - current_offset % next_align;
-        next_offset += padding;
-    }
-
-    return next_offset;
-}
-
-int symbol_assign_local_storage(struct symbol_table *table)
-{
-    int i;
-    int N = table->symbol_count;
-    int total_mem_offset = 0;
-    struct symbol *func = NULL;
-    struct symbol *struct_ = NULL;
-
-    for (i = 0; i < N; i++) {
-        struct symbol *sym = &table->data[i];
-
-        if (sym->kind == SYM_FUNC) {
-            func = sym;
-            total_mem_offset = 0;
-            continue;
-        }
-
-        if (sym->kind == SYM_STRUCT) {
-            struct_ = sym;
-            total_mem_offset = 0;
-            continue;
-        }
-
-        if (sym->kind == SYM_SCOPE_BEGIN) {
-            continue;
-        }
-
-        if (sym->kind == SYM_SCOPE_END) {
-            /* TODO improve this */
-            if (sym->scope_level == 1 && func) {
-                /* end of function. backpatching memoffset for local vars */
-                func->mem_offset = next_aligned(total_mem_offset, 16);
-                func = NULL;
-            }
-            /* TODO improve this */
-            if (/* sym->scope_level == 1 && */ struct_) {
-                /* end of function. backpatching memoffset for local vars */
-                struct_->mem_offset = next_aligned(total_mem_offset, 8);
-                {
-                    struct data_type *dtype = type_struct(struct_->name);
-                    dtype->byte_size = struct_->mem_offset;
-                    dtype->alignment = 8;
-                    dtype->array_len = 1;
-                    struct_->dtype = dtype;
-                }
-                struct_ = NULL;
-            }
-            continue;
-        }
-
-        if (sym->kind == SYM_VAR || sym->kind == SYM_PARAM) {
-            int size  = sym->dtype->byte_size;
-            int align = sym->dtype->alignment;
-            int len   = sym->dtype->array_len;
-
-            if (sym->dtype->kind == DATA_TYPE_STRUCT) {
-                struct symbol *strc = lookup_symbol(table, sym->dtype->tag, SYM_STRUCT);
-                size  = strc->dtype->byte_size;
-                align = strc->dtype->alignment;
-                len   = strc->dtype->array_len;
-            }
-            total_mem_offset = next_aligned(total_mem_offset, align);
-            total_mem_offset += len * size;
-            sym->mem_offset = total_mem_offset;
-        }
-    }
-    return 0;
 }
