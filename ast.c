@@ -23,8 +23,10 @@ struct ast_node *new_ast_node(enum ast_node_kind kind,
     n->l = l;
     n->r = r;
 
-    n->dtype = type_void();
-    n->data.ival = 0;
+    n->type = type_void();
+
+    n->ival = 0;
+    n->sval = NULL;
 
     return n;
 }
@@ -37,16 +39,6 @@ void free_ast_node(struct ast_node *node)
 
     free_ast_node(node->l);
     free_ast_node(node->r);
-}
-
-void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
-{
-    if (!node || !sym) {
-        return;
-    }
-
-    node->data.sym = sym;
-    node->dtype = sym->dtype;
 }
 
 #define AST_NODE_LIST(N) \
@@ -116,7 +108,7 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         return;
     }
 
-    if (tree->data.sym != NULL) {
+    if (tree->sym != NULL) {
         printf(TERMINAL_COLOR_CYAN);
         printf(TERMINAL_DECORATION_BOLD);
             printf("%s", node_to_string(tree));
@@ -157,7 +149,7 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
     case NOD_NUM:
         printf(TERMINAL_COLOR_MAGENTA);
         printf(TERMINAL_DECORATION_BOLD);
-            printf(" %d", tree->data.ival);
+            printf(" %d", tree->ival);
         printf(TERMINAL_DECORATION_RESET);
         printf(TERMINAL_COLOR_RESET);
         break;
@@ -195,8 +187,8 @@ static void print_decl_recursive(const struct ast_node *tree)
         return;
 
     case NOD_SPEC_ARRAY:
-        if (tree->data.ival > 0)
-            printf(" array %d of", tree->data.ival);
+        if (tree->ival > 0)
+            printf(" array %d of", tree->ival);
         else
             printf(" array of");
         break;

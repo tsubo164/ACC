@@ -11,17 +11,17 @@ static const struct data_type *promote_data_type(
     }
 
     if (!n1) {
-        return n2->dtype;
+        return n2->type;
     }
 
     if (!n2) {
-        return n1->dtype;
+        return n1->type;
     }
 
-    if (n1->dtype->kind > n2->dtype->kind) {
-        return n1->dtype;
+    if (n1->type->kind > n2->type->kind) {
+        return n1->type;
     } else {
-        return n2->dtype;
+        return n2->type;
     }
 }
 
@@ -233,19 +233,19 @@ static void add_sym_(struct ast_node *tree,
                     sym = define_symbol(table, decl->ident, SYM_STRUCT);
                     decl->type = type_struct(decl->ident);
                     sym->dtype = decl->type;
-                    tree->data.sym = sym;
+                    tree->sym = sym;
                 }
                 else {
                     struct symbol *sym = NULL;
                     sym = use_symbol(table, decl->ident, SYM_STRUCT);
                     decl->type = sym->dtype;
-                    tree->data.sym = sym;
+                    tree->sym = sym;
                 }
             } else {
                 struct symbol *sym = NULL;
                 sym = define_symbol(table, decl->ident, sym_kind_of(decl));
                 sym->dtype = decl->type;
-                tree->data.sym = sym;
+                tree->sym = sym;
             }
             return;
         }
@@ -259,9 +259,9 @@ static void add_sym_(struct ast_node *tree,
 
             add_sym_(tree->l, table, decl);
 
-            sym_l = tree->l->data.sym;
+            sym_l = tree->l->sym;
 
-            /* TODO we can not use node->dtype because dtype is not set yet
+            /* TODO we can not use node->type because type is not set yet
              * when adding symbol
              * should define sym_of(node) or symbol_(node)
              * text_(node), int_(node) * set_text(node, ...), set_int(node, ...)
@@ -277,11 +277,11 @@ static void add_sym_(struct ast_node *tree,
                 }
 
                 if (sym->name && !strcmp(sym->name, mem)) {
-                    tree->r->data.sym = sym;
-                    /* TODO adding dtype to node? */
-                    tree->r->dtype = sym->dtype;
-                    tree->data.sym = sym;
-                    tree->dtype = sym->dtype;
+                    tree->r->sym = sym;
+                    /* TODO adding type to node? */
+                    tree->r->type = sym->dtype;
+                    tree->sym = sym;
+                    tree->type = sym->dtype;
                     break;
                 }
                 sym++;
@@ -297,7 +297,7 @@ static void add_sym_(struct ast_node *tree,
             /* TODO The parameter 'sim_kind' may not be needed.
              * The symbol knows what kind of symbol it is.  */
             sym = use_symbol(table, tree->sval, sym_kind);
-            tree->data.sym = sym;
+            tree->sym = sym;
             return;
         }
 
@@ -331,7 +331,7 @@ static void add_sym_(struct ast_node *tree,
         return;
 
     case NOD_SPEC_ARRAY:
-        decl->type = type_array(decl->type, tree->data.ival);
+        decl->type = type_array(decl->type, tree->ival);
         break;
 
     case NOD_SPEC_POINTER:
@@ -372,35 +372,35 @@ static void add_types(struct ast_node *node, struct symbol_table *table)
     switch (node->kind) {
 
     case NOD_ASSIGN:
-        node->dtype = node->l->dtype;
+        node->type = node->l->type;
         break;
 
     case NOD_DEREF:
-        node->dtype = promote_data_type(node->l, node->r);
-        node->dtype = node->dtype->ptr_to;;
+        node->type = promote_data_type(node->l, node->r);
+        node->type = node->type->ptr_to;;
         break;
 
     case NOD_CALL:
-        node->dtype = node->l->dtype;
+        node->type = node->l->type;
         break;
 
     case NOD_STRUCT_REF:
-        node->dtype = node->data.sym->dtype;
+        node->type = node->sym->dtype;
         break;
 
     /* nodes with symbol */
     case NOD_DECL_IDENT:
     case NOD_IDENT:
-        node->dtype = node->data.sym->dtype;
+        node->type = node->sym->dtype;
         break;
 
     /* nodes with literal */
     case NOD_NUM:
-        node->dtype = type_int();
+        node->type = type_int();
         break;
 
     default:
-        node->dtype = promote_data_type(node->l, node->r);
+        node->type = promote_data_type(node->l, node->r);
         break;
     }
 }

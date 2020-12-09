@@ -347,7 +347,7 @@ static int get_data_tag_from_type2(const struct ast_node *node)
         return 0;
     }
 
-    dt = node->dtype;
+    dt = node->type;
 
     switch (dt->kind) {
     case DATA_TYPE_CHAR: return BYTE;
@@ -359,7 +359,7 @@ static int get_data_tag_from_type2(const struct ast_node *node)
 
 static int get_mem_offset(const struct ast_node *node)
 {
-    return node->data.sym->mem_offset;
+    return node->sym->mem_offset;
 }
 
 static void code1__(FILE *fp, const struct ast_node *node,
@@ -470,7 +470,7 @@ static void gen_func_prologue(FILE *fp, const struct ast_node *node)
     ident = find_node(ddecl->r, NOD_DECL_IDENT);
     /* TODO assert(ident) */
 
-    fprintf(fp, "_%s:\n", ident->data.sym->name);
+    fprintf(fp, "_%s:\n", ident->sym->name);
     code2__(fp, ident, PUSH_, RBP);
     code3__(fp, ident, MOV_,  RSP, RBP);
     code3__(fp, ident, SUB_, imme(get_mem_offset(ident)), RSP);
@@ -497,7 +497,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
     /* args */
     gen_code(fp, node->r);
     /* call */
-    code2__(fp, node, CALL_, str(ident->data.sym->name));
+    code2__(fp, node, CALL_, str(ident->sym->name));
 }
 
 static void gen_comment(FILE *fp, const char *cmt)
@@ -514,17 +514,17 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
 {
     const struct symbol *sym;
 
-    if (!node || !node->data.sym)
+    if (!node || !node->sym)
         return;
 
-    sym = node->data.sym;
+    sym = node->sym;
 
     if (is_global_var(sym)) {
         code3__(fp, node, MOV_, addr2_pc_rel(RIP, sym->name), RAX);
     } else {
         const int disp = -get_mem_offset(node);
 
-        if (node->dtype->kind == DATA_TYPE_ARRAY) {
+        if (node->type->kind == DATA_TYPE_ARRAY) {
             code3__(fp, node, LEA_, addr2(RBP, disp), A_);
         } else {
             code3__(fp, node, MOV_, addr2(RBP, disp), A_);
@@ -536,10 +536,10 @@ static void gen_ident_lvalue(FILE *fp, const struct ast_node *node)
 {
     const struct symbol *sym;
 
-    if (!node || !node->data.sym)
+    if (!node || !node->sym)
         return;
 
-    sym = node->data.sym;
+    sym = node->sym;
 
     if (is_global_var(sym)) {
         code3__(fp, node, LEA_, addr2_pc_rel(RIP, sym->name), RAX);
@@ -684,7 +684,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             if (!ident)
                 return;
 
-            sym = ident->data.sym;
+            sym = ident->sym;
 
             if (is_local_var(sym)) {
                 /* ident */
@@ -741,7 +741,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_NUM:
-        code3__(fp, node, MOV_, imme(node->data.ival), A_);
+        code3__(fp, node, MOV_, imme(node->ival), A_);
         break;
 
     case NOD_ADD:
@@ -751,8 +751,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2__(fp, node, POP_, RDX);
 
         /* TODO find the best place to handle array subscript */
-        if (node->l->dtype->kind == DATA_TYPE_ARRAY) {
-            const int sz = node->l->dtype->ptr_to->byte_size;
+        if (node->l->type->kind == DATA_TYPE_ARRAY) {
+            const int sz = node->l->type->ptr_to->byte_size;
             code3__(fp, node, IMUL_, imme(sz), RAX);
         }
 
@@ -832,6 +832,8 @@ static void gen_global_func_list(FILE *fp, const struct symbol_table *table)
             nfuncs++;
         }
     }
+
+    fprintf(fp, "\n");
 }
 
 static void gen_global_var_list(FILE *fp, const struct symbol_table *table)
@@ -876,12 +878,12 @@ static void gen_global_var_labels(FILE *fp, const struct ast_node *node)
         if (!ident)
             return;
 
-        sym = ident->data.sym;
+        sym = ident->sym;
 
         if (is_global_var(sym)) {
             /* TODO need eval instead of find NOD_NUM */
             const struct ast_node *init = find_node(node, NOD_NUM);
-            const int val = init ? init->data.ival : 0;
+            const int val = init ? init->ival : 0;
 
             const char *datasize;
             switch (sym->dtype->kind) {
@@ -924,8 +926,6 @@ void gen_x86(FILE *fp,
     fprintf(fp, ".global ");
 
     gen_global_func_list(fp, table);
-
-    fprintf(fp, "\n");
 
     gen_code(fp, tree);
 }

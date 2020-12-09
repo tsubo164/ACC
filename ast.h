@@ -54,13 +54,13 @@ enum ast_node_kind {
 
 struct ast_node {
     enum ast_node_kind kind;
-    const struct data_type *dtype;
+    const struct data_type *type;
+    const struct symbol *sym;
+
     struct ast_node *l;
     struct ast_node *r;
-    union {
-        int ival;
-        const struct symbol *sym;
-    } data;
+
+    int ival;
     const char *sval;
 };
 
@@ -74,8 +74,6 @@ struct ast_node {
 extern struct ast_node *new_ast_node(enum ast_node_kind kind,
         struct ast_node *l, struct ast_node *r);
 extern void free_ast_node(struct ast_node *node);
-
-extern void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym);
 
 extern const char *node_to_string(const struct ast_node *node);
 extern void print_tree(const struct ast_node *tree);

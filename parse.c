@@ -46,7 +46,7 @@ static void copy_token_text(struct parser *p, struct ast_node *node)
 static void copy_token_ival(struct parser *p, struct ast_node *node)
 {
     const struct token *tok = current_token(p);
-    node->data.ival = tok->value;
+    node->ival = tok->value;
 }
 
 static const struct token *consume(struct parser *p, int token_kind)
@@ -179,7 +179,7 @@ static struct ast_node *primary_expression(struct parser *p)
     case TOK_NUM:
         tree = new_node(NOD_NUM, NULL, NULL);
         /* TODO convert in semantics */
-        tree->data.ival = tok->value;
+        tree->ival = tok->value;
         tree->sval = tok->text;
         return tree;
 
@@ -299,7 +299,7 @@ static struct ast_node *unary_expression(struct parser *p)
     case '-':
         /* TODO tree = new_number(-1); */
         tree = new_node(NOD_NUM, NULL, NULL);
-        tree->data.ival = -1;
+        tree->ival = -1;
         tree = new_node(NOD_MUL, tree, postfix_expression(p));
         return tree;
 
