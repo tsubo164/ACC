@@ -886,7 +886,7 @@ static void gen_global_var_labels(FILE *fp, const struct ast_node *node)
             const int val = init ? init->ival : 0;
 
             const char *datasize;
-            switch (sym->dtype->kind) {
+            switch (sym->type->kind) {
             case DATA_TYPE_CHAR:
                 datasize = "byte";
                 break;

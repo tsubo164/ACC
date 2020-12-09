@@ -10,6 +10,7 @@ static void init_symbol(struct symbol *sym)
     sym->flag = 0;
     sym->mem_offset = 0;
 
+    sym->type = NULL;
     sym->scope_level = 0;
     sym->file_pos = 0L;
 }
@@ -75,11 +76,10 @@ void free_symbol_table(struct symbol_table *table)
 #define SYM_LIST(S) \
     S(SYM_SCOPE_BEGIN) \
     S(SYM_SCOPE_END) \
-    S(SYM_STRUCT) \
     S(SYM_VAR) \
-    S(SYM_GLOBAL_VAR) \
     S(SYM_FUNC) \
-    S(SYM_PARAM)
+    S(SYM_PARAM) \
+    S(SYM_STRUCT)
 
 const char *symbol_to_string(const struct symbol *sym)
 {
@@ -125,7 +125,7 @@ void print_symbol_table(const struct symbol_table *table)
         printf("|");
         printf("%15s | ", sym->name ? sym->name : "--");
         printf("%-20s | ",  symbol_to_string(sym));
-        printf("%-10s | ", data_type_to_string(sym->dtype));
+        printf("%-10s | ", data_type_to_string(sym->type));
         printf("%5d | ", sym->scope_level);
         if (is_global_var(sym))
             printf("%5s | ",  "*");
@@ -173,7 +173,6 @@ static int namespace(int kind)
         return 0;
 
     case SYM_VAR:
-    case SYM_GLOBAL_VAR:
     case SYM_FUNC:
     case SYM_PARAM:
         return 1;

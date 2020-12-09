@@ -48,9 +48,9 @@ static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
     for (;;) {
         /* TODO may need SYM_MEMBER */
         if (sym->kind == SYM_VAR && sym->scope_level > 0) {
-            const int size  = sym->dtype->byte_size;
-            const int align = sym->dtype->alignment;
-            const int len   = sym->dtype->array_len;
+            const int size  = sym->type->byte_size;
+            const int align = sym->type->alignment;
+            const int len   = sym->type->array_len;
 
             total_offset = align_to(total_offset, align);
             sym->mem_offset = total_offset;
@@ -64,8 +64,8 @@ static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
         sym++;
     }
 
-    strc->dtype->byte_size = align_to(total_offset, strc->dtype->alignment);
-    strc->mem_offset = strc->dtype->byte_size;
+    strc->type->byte_size = align_to(total_offset, strc->type->alignment);
+    strc->mem_offset = strc->type->byte_size;
 }
 
 static void compute_func_stack_size(struct symbol_table *table, struct symbol *func)
@@ -79,15 +79,15 @@ static void compute_func_stack_size(struct symbol_table *table, struct symbol *f
             int align = 0;
             int len   = 0;
 
-            if (sym->dtype->kind == DATA_TYPE_STRUCT) {
-                struct symbol *strc = lookup_symbol(table, sym->dtype->tag, SYM_STRUCT);
-                size  = strc->dtype->byte_size;
-                align = strc->dtype->alignment;
-                len   = strc->dtype->array_len;
+            if (sym->type->kind == DATA_TYPE_STRUCT) {
+                struct symbol *strc = lookup_symbol(table, sym->type->tag, SYM_STRUCT);
+                size  = strc->type->byte_size;
+                align = strc->type->alignment;
+                len   = strc->type->array_len;
             } else {
-                size  = sym->dtype->byte_size;
-                align = sym->dtype->alignment;
-                len   = sym->dtype->array_len;
+                size  = sym->type->byte_size;
+                align = sym->type->alignment;
+                len   = sym->type->array_len;
             }
 
             total_offset = align_to(total_offset, align);
@@ -232,19 +232,19 @@ static void add_sym_(struct ast_node *tree,
                     struct symbol *sym = NULL;
                     sym = define_symbol(table, decl->ident, SYM_STRUCT);
                     decl->type = type_struct(decl->ident);
-                    sym->dtype = decl->type;
+                    sym->type = decl->type;
                     tree->sym = sym;
                 }
                 else {
                     struct symbol *sym = NULL;
                     sym = use_symbol(table, decl->ident, SYM_STRUCT);
-                    decl->type = sym->dtype;
+                    decl->type = sym->type;
                     tree->sym = sym;
                 }
             } else {
                 struct symbol *sym = NULL;
                 sym = define_symbol(table, decl->ident, sym_kind_of(decl));
-                sym->dtype = decl->type;
+                sym->type = decl->type;
                 tree->sym = sym;
             }
             return;
@@ -267,7 +267,7 @@ static void add_sym_(struct ast_node *tree,
              * text_(node), int_(node) * set_text(node, ...), set_int(node, ...)
              * L_(node), R_(node)
              */
-            tag = sym_l->dtype->tag;
+            tag = sym_l->type->tag;
             sym = lookup_symbol(table, tag, SYM_STRUCT);
 
             for (;;) {
@@ -279,9 +279,9 @@ static void add_sym_(struct ast_node *tree,
                 if (sym->name && !strcmp(sym->name, mem)) {
                     tree->r->sym = sym;
                     /* TODO adding type to node? */
-                    tree->r->type = sym->dtype;
+                    tree->r->type = sym->type;
                     tree->sym = sym;
-                    tree->type = sym->dtype;
+                    tree->type = sym->type;
                     break;
                 }
                 sym++;
@@ -385,13 +385,13 @@ static void add_types(struct ast_node *node, struct symbol_table *table)
         break;
 
     case NOD_STRUCT_REF:
-        node->type = node->sym->dtype;
+        node->type = node->sym->type;
         break;
 
     /* nodes with symbol */
     case NOD_DECL_IDENT:
     case NOD_IDENT:
-        node->type = node->sym->dtype;
+        node->type = node->sym->type;
         break;
 
     /* nodes with literal */

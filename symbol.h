@@ -14,11 +14,10 @@ enum symbol_flag {
 enum symbol_kind {
     SYM_SCOPE_BEGIN,
     SYM_SCOPE_END,
-    SYM_STRUCT,
     SYM_VAR,
-    SYM_GLOBAL_VAR,
     SYM_FUNC,
-    SYM_PARAM
+    SYM_PARAM,
+    SYM_STRUCT
 };
 
 struct symbol {
@@ -27,8 +26,7 @@ struct symbol {
     int flag;
     int mem_offset;
 
-    /* TODO consider const */
-    struct data_type *dtype;
+    struct data_type *type;
     int scope_level;
 
     /* TODO improve this */
