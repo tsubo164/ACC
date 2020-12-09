@@ -9,6 +9,10 @@ int num()
     return 42;
 }
 */
+int add(int x, int y)
+{
+    return x + y;
+}
 
 struct point {
     int x, y;

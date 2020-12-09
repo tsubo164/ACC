@@ -51,28 +51,19 @@ void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
 
 #define AST_NODE_LIST(N) \
     N(NOD_LIST) \
-    N(NOD_GLOBAL) \
     N(NOD_COMPOUND) \
     N(NOD_STMT) \
-    N(NOD_EXT) \
     N(NOD_IF) \
+    N(NOD_THEN) \
     N(NOD_RETURN) \
     N(NOD_WHILE) \
     N(NOD_ASSIGN) \
-    N(NOD_STRUCT_DECL) \
     N(NOD_STRUCT_REF) \
-    N(NOD_VAR) \
-    N(NOD_GLOBAL_VAR) \
-    N(NOD_VAR_DEF) \
     N(NOD_ADDR) \
     N(NOD_DEREF) \
-    N(NOD_CALL) \
     N(NOD_FUNC_DEF) \
-    N(NOD_FUNC_BODY) \
+    N(NOD_CALL) \
     N(NOD_ARG) \
-    N(NOD_PARAM) \
-    N(NOD_PARAM_DEF) \
-    N(NOD_NUM) \
     N(NOD_ADD) \
     N(NOD_SUB) \
     N(NOD_MUL) \
@@ -84,19 +75,19 @@ void ast_node_set_symbol(struct ast_node *node, const struct symbol *sym)
     N(NOD_EQ) \
     N(NOD_NE) \
     N(NOD_IDENT) \
+    N(NOD_NUM) \
     N(NOD_DECL) \
     N(NOD_DECLARATOR) \
-    N(NOD_DIRECT_DECL) \
+    N(NOD_DECL_DIRECT) \
     N(NOD_DECL_INIT) \
     N(NOD_DECL_IDENT) \
     N(NOD_DECL_FUNC) \
     N(NOD_DECL_PARAM) \
     N(NOD_DECL_MEMBER) \
-    N(NOD_TYPE_CHAR) \
-    N(NOD_TYPE_INT) \
-    N(NOD_TYPE_POINTER) \
-    N(NOD_TYPE_ARRAY) \
-    N(NOD_TYPE_STRUCT) \
+    N(NOD_SPEC_CHAR) \
+    N(NOD_SPEC_INT) \
+    N(NOD_SPEC_POINTER) \
+    N(NOD_SPEC_ARRAY) \
     N(NOD_SPEC_STRUCT)
 
 const char *node_to_string(const struct ast_node *node)
@@ -132,7 +123,7 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         printf(TERMINAL_DECORATION_RESET);
         printf(TERMINAL_COLOR_RESET);
     }
-    else if (tree->kind >= NOD_TYPE_CHAR) {
+    else if (tree->kind >= NOD_SPEC_CHAR) {
         printf(TERMINAL_COLOR_RED);
         printf(TERMINAL_DECORATION_BOLD);
             printf("%s", node_to_string(tree));
@@ -155,7 +146,7 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         printf(TERMINAL_COLOR_RESET);
         break;
 
-    case NOD_TYPE_STRUCT:
+    case NOD_SPEC_STRUCT:
         printf(TERMINAL_COLOR_BLUE);
         printf(TERMINAL_DECORATION_BOLD);
             printf(" %s", tree->sval);
@@ -203,26 +194,26 @@ static void print_decl_recursive(const struct ast_node *tree)
         print_decl_recursive(tree->r);
         return;
 
-    case NOD_TYPE_ARRAY:
+    case NOD_SPEC_ARRAY:
         if (tree->data.ival > 0)
             printf(" array %d of", tree->data.ival);
         else
             printf(" array of");
         break;
 
-    case NOD_TYPE_POINTER:
+    case NOD_SPEC_POINTER:
         printf(" pointer to");
         break;
 
-    case NOD_TYPE_CHAR:
+    case NOD_SPEC_CHAR:
         printf(" char");
         break;
 
-    case NOD_TYPE_INT:
+    case NOD_SPEC_INT:
         printf(" int");
         break;
 
-    case NOD_TYPE_STRUCT:
+    case NOD_SPEC_STRUCT:
         printf(" struct %s", tree->sval);
         break;
 

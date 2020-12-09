@@ -5,29 +5,23 @@
 #include "type.h"
 
 enum ast_node_kind {
+    /* list */
     NOD_LIST,
-    NOD_GLOBAL,
     NOD_COMPOUND,
+    /* statement */
     NOD_STMT,
-    NOD_EXT,  /* to extend child nodes */
     NOD_IF,
+    NOD_THEN,
     NOD_RETURN,
     NOD_WHILE,
+    /* expression */
     NOD_ASSIGN,
-    NOD_STRUCT_DECL,
     NOD_STRUCT_REF,
-    NOD_VAR,
-    NOD_GLOBAL_VAR,
-    NOD_VAR_DEF,
     NOD_ADDR,
     NOD_DEREF,
-    NOD_CALL,
     NOD_FUNC_DEF,
-    NOD_FUNC_BODY,
+    NOD_CALL,
     NOD_ARG,
-    NOD_PARAM,
-    NOD_PARAM_DEF,
-    NOD_NUM,
     NOD_ADD,
     NOD_SUB,
     NOD_MUL,
@@ -38,23 +32,23 @@ enum ast_node_kind {
     NOD_GE,
     NOD_EQ,
     NOD_NE,
-    /* TODO TEST */
+    /* primary */
     NOD_IDENT,
-    /* TODO TEST */
+    NOD_NUM,
+    /* declaration */
     NOD_DECL,
     NOD_DECLARATOR,
-    NOD_DIRECT_DECL,
+    NOD_DECL_DIRECT,
     NOD_DECL_INIT,
     NOD_DECL_IDENT,
     NOD_DECL_FUNC,
     NOD_DECL_PARAM,
     NOD_DECL_MEMBER,
-    /* data types */
-    NOD_TYPE_CHAR,
-    NOD_TYPE_INT,
-    NOD_TYPE_POINTER,
-    NOD_TYPE_ARRAY,
-    NOD_TYPE_STRUCT,
+    /* type specifier */
+    NOD_SPEC_CHAR,
+    NOD_SPEC_INT,
+    NOD_SPEC_POINTER,
+    NOD_SPEC_ARRAY,
     NOD_SPEC_STRUCT
 };
 
@@ -87,4 +81,4 @@ extern const char *node_to_string(const struct ast_node *node);
 extern void print_tree(const struct ast_node *tree);
 extern void print_decl(const struct ast_node *tree);
 
-#endif /* AST_H */
+#endif /* _H */

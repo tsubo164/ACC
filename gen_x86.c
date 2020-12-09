@@ -466,7 +466,7 @@ static void gen_func_prologue(FILE *fp, const struct ast_node *node)
     const struct ast_node *ident = NULL;
 
     /* TODO define find_node_last()? */
-    ddecl = find_node(node, NOD_DIRECT_DECL);
+    ddecl = find_node(node, NOD_DECL_DIRECT);
     ident = find_node(ddecl->r, NOD_DECL_IDENT);
     /* TODO assert(ident) */
 
@@ -563,18 +563,6 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
         gen_ident_lvalue(fp, node);
         break;
 
-        /* XXX */
-    case NOD_VAR_DEF:
-    case NOD_PARAM:
-    case NOD_VAR:
-        code3__(fp, node, MOV_, BP_, RAX);
-        code3__(fp, node, SUB_, imme(get_mem_offset(node)), RAX);
-        break;
-
-    case NOD_GLOBAL_VAR:
-        code3__(fp, node, LEA_, addr2_pc_rel(RIP, node->data.sym->name), RAX);
-        break;
-
     case NOD_DEREF:
         gen_code(fp, node->l);
         break;
@@ -628,7 +616,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     switch (node->kind) {
 
     case NOD_LIST:
-    case NOD_GLOBAL:
         gen_code(fp, node->l);
         gen_code(fp, node->r);
         break;
@@ -682,19 +669,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code1__(fp, node, RET_);
         break;
 
-    case NOD_PARAM:
-    case NOD_VAR:
-        {
-            const int disp = -get_mem_offset(node);
-
-            if (node->dtype->kind == DATA_TYPE_ARRAY) {
-                code3__(fp, node, LEA_, addr2(RBP, disp), A_);
-            } else {
-                code3__(fp, node, MOV_, addr2(RBP, disp), A_);
-            }
-        }
-        break;
-
     case NOD_IDENT:
         gen_ident(fp, node);
         break;
@@ -730,22 +704,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_STRUCT_REF:
         gen_lvalue(fp, node);
         code3__(fp, node, MOV_, addr1(RAX), A_);
-        break;
-
-    case NOD_GLOBAL_VAR:
-        code3__(fp, node, MOV_, addr2_pc_rel(RIP, node->data.sym->name), RAX);
-        break;
-
-    case NOD_VAR_DEF:
-        /* XXX */
-        if (node->r) {
-            /* if var def has init expr */
-            gen_lvalue(fp, node);
-            code2__(fp, node, PUSH_, RAX);
-            gen_code(fp, node->r); /* generates init expr */
-            code2__(fp, node, POP_,  RDX);
-            code3__(fp, node, MOV_, A_, addr1(RDX));
-        }
         break;
 
     case NOD_CALL:

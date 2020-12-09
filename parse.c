@@ -527,7 +527,7 @@ static struct ast_node *statement(struct parser *p)
         expect_or_error(p, '(', "missing '(' after if");
         tree = new_node(NOD_IF, expression(p), NULL);
         expect_or_error(p, ')', "missing ')' after if condition");
-        tree->r = new_node(NOD_EXT, statement(p), NULL);
+        tree->r = new_node(NOD_THEN, statement(p), NULL);
         tok = gettok(p);
         if (tok->kind == TOK_ELSE) {
             tree->r->r = statement(p);
@@ -695,11 +695,11 @@ static struct ast_node *type_spec(struct parser *p)
     switch (tok->kind) {
 
     case TOK_CHAR:
-        tree = NEW_(NOD_TYPE_CHAR);
+        tree = NEW_(NOD_SPEC_CHAR);
         break;
 
     case TOK_INT:
-        tree = NEW_(NOD_TYPE_INT);
+        tree = NEW_(NOD_SPEC_INT);
         break;
 
     case TOK_STRUCT:
@@ -757,7 +757,7 @@ static struct ast_node *direct_declarator(struct parser *p)
 {
     struct ast_node *tree = NULL;
 
-    tree = NEW_(NOD_DIRECT_DECL);
+    tree = NEW_(NOD_DECL_DIRECT);
 
     if (consume(p, '(')) {
         tree->l = declarator(p);
@@ -771,7 +771,7 @@ static struct ast_node *direct_declarator(struct parser *p)
     }
 
     if (consume(p, '[')) {
-        struct ast_node *array = NEW_(NOD_TYPE_ARRAY);
+        struct ast_node *array = NEW_(NOD_SPEC_ARRAY);
 
         if (consume(p, TOK_NUM))
             copy_token_ival(p, array);
@@ -796,7 +796,7 @@ static struct ast_node *pointer(struct parser *p)
     struct ast_node *tree = NULL;
 
     while (consume(p, '*'))
-        tree = new_node(NOD_TYPE_POINTER, tree, NULL);
+        tree = new_node(NOD_SPEC_POINTER, tree, NULL);
 
     return tree;
 }

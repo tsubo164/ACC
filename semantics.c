@@ -330,19 +330,19 @@ static void add_sym_(struct ast_node *tree,
         }
         return;
 
-    case NOD_TYPE_ARRAY:
+    case NOD_SPEC_ARRAY:
         decl->type = type_array(decl->type, tree->data.ival);
         break;
 
-    case NOD_TYPE_POINTER:
+    case NOD_SPEC_POINTER:
         decl->type = type_ptr(decl->type);
         break;
 
-    case NOD_TYPE_CHAR:
+    case NOD_SPEC_CHAR:
         decl->type = type_char();
         break;
 
-    case NOD_TYPE_INT:
+    case NOD_SPEC_INT:
         decl->type = type_int();
         break;
 
