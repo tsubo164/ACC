@@ -14,26 +14,16 @@ enum data_tag {
 };
 
 struct data_spec {
-    /*
-    int size;
-    */
     const char *suffix;
     const char *directive;
 };
 
 const struct data_spec data_spec_table[] = {
-    {/*1,*/ "b", "byte  ptr"},
-    {/*2,*/ "w", "word  ptr"},
-    {/*4,*/ "l", "dword ptr"},
-    {/*8,*/ "q", "qword ptr"}
+    {"b", "byte  ptr"},
+    {"w", "word  ptr"},
+    {"l", "dword ptr"},
+    {"q", "qword ptr"}
 };
-
-/* XXX
-static int get_data_size(int tag)
-{
-    return data_spec_table[tag].size;
-}
-*/
 
 static const char *get_data_suffix(int tag)
 {
@@ -372,26 +362,6 @@ static int get_mem_offset(const struct ast_node *node)
     return node->data.sym->mem_offset;
 }
 
-static void print_global_funcs(FILE *fp, const struct ast_node *node)
-{
-    static int nfuncs = 0;
-
-    if (node == NULL) {
-        return;
-    }
-
-    print_global_funcs(fp, node->l);
-    print_global_funcs(fp, node->r);
-
-    if (node->kind == NOD_FUNC_DEF) {
-        if (nfuncs > 0) {
-            fprintf(fp, ", ");
-        }
-        fprintf(fp, "_%s", node->data.sym->name);
-        nfuncs++;
-    }
-}
-
 static void code1__(FILE *fp, const struct ast_node *node,
         struct opecode op)
 {
@@ -414,20 +384,11 @@ static void code2__(FILE *fp, const struct ast_node *node,
 static void code3__(FILE *fp, const struct ast_node *node,
         struct opecode op, struct operand oper1, struct operand oper2)
 {
-#if 0
-    const struct opecode o0 = op;
-    const struct operand o1 = oper1;
-    const struct operand o2 = oper2;
-    const int tag = get_data_tag_from_type2(node);
-
-    code__(fp, tag, &o0, &o1, &o2);
-#endif
     struct opecode o0 = op;
     struct operand o1 = oper1;
     struct operand o2 = oper2;
     int tag = get_data_tag_from_type2(node);
 
-    /* XXX */
     /* this rule comes from x86-64 machine instructions.
      * it depends on the size of register when loading from memory.
      * it is independent of language data types.
@@ -451,35 +412,15 @@ static void code3__(FILE *fp, const struct ast_node *node,
 /* forward declaration */
 static void gen_code(FILE *fp, const struct ast_node *node);
 
-static int gen_one_param2(FILE *fp, const struct ast_node *node, int reg_index)
+static int gen_one_param(FILE *fp, const struct ast_node *node, int reg_index)
 {
     int max_index = 0;
 
     if (!node)
         return reg_index;
 
-    max_index = gen_one_param2(fp, node->l, reg_index);
-    max_index = gen_one_param2(fp, node->r, max_index);
-
-    if (node->kind == NOD_PARAM_DEF) {
-        const int disp = -get_mem_offset(node);
-
-        code3__(fp, node, MOV_, arg(max_index), addr2(RBP, disp));
-        return max_index + 1;
-    } else {
-        return max_index;
-    }
-}
-
-static int gen_one_param3(FILE *fp, const struct ast_node *node, int reg_index)
-{
-    int max_index = 0;
-
-    if (!node)
-        return reg_index;
-
-    max_index = gen_one_param3(fp, node->l, reg_index);
-    max_index = gen_one_param3(fp, node->r, max_index);
+    max_index = gen_one_param(fp, node->l, reg_index);
+    max_index = gen_one_param(fp, node->r, max_index);
 
     if (node->kind == NOD_DECL_IDENT) {
         const int disp = -get_mem_offset(node);
@@ -488,23 +429,6 @@ static int gen_one_param3(FILE *fp, const struct ast_node *node, int reg_index)
         return max_index + 1;
     } else {
         return max_index;
-    }
-}
-
-static int gen_one_param(FILE *fp, const struct ast_node *node)
-{
-    if (!node) {
-        return 0;
-    }
-
-    if (node->kind == NOD_PARAM_DEF) {
-        const int next_index = gen_one_param(fp, node->r);
-        const int disp = -get_mem_offset(node);
-
-        code3__(fp, node, MOV_, arg(next_index), addr2(RBP, disp));
-        return next_index + 1;
-    } else {
-        return 0;
     }
 }
 
@@ -531,18 +455,9 @@ static const struct ast_node *find_node(const struct ast_node *node, int node_ki
 
 static void gen_func_param_list(FILE *fp, const struct ast_node *node)
 {
-    if (0) {
-        gen_one_param(fp, node);
-        gen_one_param2(fp, node, 0);
-    }
-    /*
-    gen_one_param3(fp, node, 0);
-    */
-    {
-        const struct ast_node *fdecl;
-        fdecl = find_node(node, NOD_DECL_FUNC);
-        gen_one_param3(fp, fdecl->r, 0);
-    }
+    const struct ast_node *fdecl;
+    fdecl = find_node(node, NOD_DECL_FUNC);
+    gen_one_param(fp, fdecl->r, 0);
 }
 
 static void gen_func_prologue(FILE *fp, const struct ast_node *node)
@@ -665,13 +580,6 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_STRUCT_REF:
-        /*
-        printf("    node->dtype: %d\n", node->l->dtype->kind);
-        printf("    node->dtype: %d\n", node->r->dtype->kind);
-        printf("    node->dtype: %d\n", node->dtype->kind);
-        printf("    node->dtype: %d\n", node->r->data.sym->mem_offset);
-        printf("    node->dtype: %p\n", (void *)node->r->data.sym);
-        */
         {
             const int disp = get_mem_offset(node->r);
             gen_lvalue(fp, node->l);
@@ -777,13 +685,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_PARAM:
     case NOD_VAR:
         {
-#if 0
-            /* XXX */
-            const int disp = -get_mem_offset(node);
-
-            code3__(fp, node, MOV_, addr2(RBP, disp), A_);
-#endif
-            /* XXX */
             const int disp = -get_mem_offset(node);
 
             if (node->dtype->kind == DATA_TYPE_ARRAY) {
@@ -791,40 +692,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             } else {
                 code3__(fp, node, MOV_, addr2(RBP, disp), A_);
             }
-#if 0
-            /* XXX */
-            const int disp = -get_mem_offset(node);
-
-            switch (node->dtype->kind) {
-            case DATA_TYPE_CHAR:
-                gen_comment(fp, "==================");
-                code3__(fp, node, MOVSB_, addr2(RBP, disp), EAX);
-                gen_comment(fp, "==================");
-                break;
-            case DATA_TYPE_ARRAY:
-                code3__(fp, node, LEA_, addr2(RBP, disp), A_);
-                break;
-            default:
-                code3__(fp, node, MOV_, addr2(RBP, disp), A_);
-                break;
-            }
-#endif
         }
         break;
 
     case NOD_IDENT:
         gen_ident(fp, node);
-        /*
-        {
-            const int disp = -get_mem_offset(node);
-
-            if (node->dtype->kind == DATA_TYPE_ARRAY) {
-                code3__(fp, node, LEA_, addr2(RBP, disp), A_);
-            } else {
-                code3__(fp, node, MOV_, addr2(RBP, disp), A_);
-            }
-        }
-        */
         break;
 
     case NOD_DECL_INIT:
@@ -878,10 +750,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_CALL:
         reg_id = 0;
-#if 0
-        gen_code(fp, node->l);
-        code2__(fp, node, CALL_, str(node->data.sym->name));
-#endif
         gen_func_call(fp, node);
         break;
 
@@ -895,19 +763,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_func_prologue(fp, node->l);
         gen_func_param_list(fp, node->l);
         gen_func_body(fp, node->r);
-
-#if 0
-        /* prologue */
-        fprintf(fp, "_%s:\n", node->data.sym->name);
-        code2__(fp, node, PUSH_, RBP);
-        code3__(fp, node, MOV_,  RSP, RBP);
-        code3__(fp, node, SUB_, imme(get_mem_offset(node)), RSP);
-
-        /* load params */
-        gen_func_param_list(fp, node->r->l);
-        /* body */
-        gen_code(fp, node->r->r);
-#endif
         break;
 
     case NOD_ASSIGN:
@@ -925,17 +780,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_DEREF:
         gen_code(fp, node->l);
         code3__(fp, node, MOV_, addr1(RAX), A_);
-#if 0
-            /* XXX */
-            switch (node->dtype->kind) {
-            case DATA_TYPE_CHAR:
-                code3__(fp, node, MOVSB_, addr1(RAX), EAX);
-                break;
-            default:
-                code3__(fp, node, MOV_, addr1(RAX), A_);
-                break;
-            }
-#endif
         break;
 
     case NOD_NUM:
@@ -943,24 +787,14 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_ADD:
-#if 0
-        gen_code(fp, node->l);
-        code2__(fp, node, PUSH_, RAX);
-        gen_code(fp, node->r);
-        code2__(fp, node, POP_, RDX);
-        code3__(fp, node, ADD_, D_, A_);
-#endif
-        /* TODO find the best place to handle array subscript */
         gen_code(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
         code2__(fp, node, POP_, RDX);
 
+        /* TODO find the best place to handle array subscript */
         if (node->l->dtype->kind == DATA_TYPE_ARRAY) {
             const int sz = node->l->dtype->ptr_to->byte_size;
-            /*
-            const int sh = sz == 8 ? 3 : sz == 4 ? 2 : 1;
-            */
             code3__(fp, node, IMUL_, imme(sz), RAX);
         }
 
@@ -1069,7 +903,7 @@ static void gen_global_var_list(FILE *fp, const struct symbol_table *table)
         fprintf(fp, "\n");
 }
 
-static void gen_global_var_labels2(FILE *fp, const struct ast_node *node)
+static void gen_global_var_labels(FILE *fp, const struct ast_node *node)
 {
     if (!node)
         return;
@@ -1114,133 +948,24 @@ static void gen_global_var_labels2(FILE *fp, const struct ast_node *node)
         return;
     }
 
-    gen_global_var_labels2(fp, node->l);
-    gen_global_var_labels2(fp, node->r);
-}
-
-static void gen_global_var_labels(FILE *fp, const struct symbol_table *table)
-{
-    const int N = get_symbol_count(table);
-    int i;
-
-    for (i = 0; i < N; i++) {
-        /* TODO may need get_const_symbol() */
-        const struct symbol *sym = &table->data[i];
-
-        if (sym->kind == SYM_VAR && sym->scope_level == 0) {
-            const char *datasize;
-            switch (sym->dtype->kind) {
-            case DATA_TYPE_CHAR:
-                datasize = "byte";
-                break;
-            case DATA_TYPE_INT:
-                datasize = "long";
-                break;
-            case DATA_TYPE_PTR:
-            case DATA_TYPE_ARRAY:
-                datasize = "quad";
-                break;
-            default:
-                datasize = "byte";
-                break;
-            }
-            fprintf(fp, "_%s:\n", sym->name);
-            fprintf(fp, "    .%s 0\n", datasize);
-        }
-    }
-}
-
-static int gen_global_var_label(FILE *fp, const struct ast_node *node)
-{
-    int nvars_l = 0;
-    int nvars_r = 0;
-    int total_nvars = 0;
-
-    if (!node)
-        return 0;
-
-    if (node->kind == NOD_GLOBAL) {
-        nvars_l = gen_global_var_label(fp, node->l);
-        nvars_r = gen_global_var_label(fp, node->r);
-        total_nvars = nvars_l + nvars_r;
-    }
-
-    if (node->kind == NOD_VAR_DEF) {
-        const struct symbol *sym = node->data.sym;
-
-        if (sym->kind == SYM_VAR && sym->scope_level == 0) {
-            const char *datasize;
-            const struct ast_node *init = NULL;
-
-            switch (sym->dtype->kind) {
-            case DATA_TYPE_CHAR:
-                datasize = "byte";
-                break;
-            case DATA_TYPE_INT:
-                datasize = "long";
-                break;
-            case DATA_TYPE_PTR:
-            case DATA_TYPE_ARRAY:
-                datasize = "quad";
-                break;
-            default:
-                datasize = "byte";
-                break;
-            }
-            fprintf(fp, "_%s:\n", sym->name);
-            /* XXX */
-            init = node->r;
-
-            if (init && init->kind == NOD_NUM) {
-                fprintf(fp, "    .%s %d\n", datasize, init->data.ival);
-            } else {
-                fprintf(fp, "    .%s 0\n", datasize);
-            }
-
-            return total_nvars + 1;
-        }
-    }
-    return total_nvars;
-}
-
-static void gen_global_var_label_list(FILE *fp, const struct ast_node *node)
-{
-    const int nvars = gen_global_var_label(fp, node);
-    if (nvars > 0) {
-        fprintf(fp, "\n");
-    }
+    gen_global_var_labels(fp, node->l);
+    gen_global_var_labels(fp, node->r);
 }
 
 void gen_x86(FILE *fp,
         const struct ast_node *tree, const struct symbol_table *table)
 {
-    /* XXX */
     if (!att_syntax) {
         fprintf(fp, ".intel_syntax noprefix\n");
     }
 
     gen_global_var_list(fp, table);
-    /* XXX */
-    if (1) {
-        /* we can't get inital values by looking up symbol table */
-        /*
-        */
-        if (0)
-            gen_global_var_labels(fp, table);
-        gen_global_var_labels2(fp, tree);
-    }
-    else
-    {
-        gen_global_var_label_list(fp, tree);
-    }
+    gen_global_var_labels(fp, tree);
 
     fprintf(fp, ".text\n");
     fprintf(fp, ".global ");
 
-    if (0)
-        print_global_funcs(fp, tree);
-    else
-        gen_global_func_list(fp, table);
+    gen_global_func_list(fp, table);
 
     fprintf(fp, "\n");
 
