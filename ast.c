@@ -15,30 +15,6 @@
 #define TERMINAL_DECORATION_BOLD    "\x1b[1m"
 #define TERMINAL_DECORATION_RESET   "\x1b[0m"
 
-/*
-static const struct data_type *promote_data_type(
-        const struct ast_node *n1, const struct ast_node *n2)
-{
-    if (!n1 && !n2) {
-        return type_void();
-    }
-
-    if (!n1) {
-        return n2->dtype;
-    }
-
-    if (!n2) {
-        return n1->dtype;
-    }
-
-    if (n1->dtype->kind > n2->dtype->kind) {
-        return n1->dtype;
-    } else {
-        return n2->dtype;
-    }
-}
-*/
-
 struct ast_node *new_ast_node(enum ast_node_kind kind,
         struct ast_node *l, struct ast_node *r)
 {
@@ -47,11 +23,7 @@ struct ast_node *new_ast_node(enum ast_node_kind kind,
     n->l = l;
     n->r = r;
 
-    /*
-    n->dtype = promote_data_type(l, r);
-    */
     n->dtype = type_void();
-
     n->data.ival = 0;
 
     return n;
@@ -143,26 +115,13 @@ AST_NODE_LIST(N)
 
 static void print_tree_recursive(const struct ast_node *tree, int depth)
 {
-    /*
-    if (!tree)
-        return;
-    */
-
-    {
-        int i;
-        for (i = 0; i < depth; i++) {
-            /*
-            printf("|   ");
-            */
-            printf("  ");
-        }
+    int i;
+    for (i = 0; i < depth; i++) {
+        printf("  ");
     }
 
     if (!tree) {
         printf("(null)\n");
-        /*
-        printf(".\n");
-        */
         return;
     }
 
@@ -183,69 +142,15 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
     else {
         printf("%s", node_to_string(tree));
     }
-#if 0
-    switch (tree->kind) {
-    case NOD_DECL:
-    case NOD_DECL_PARAM:
-    case NOD_DECL_IDENT:
-    case NOD_IDENT:
-    case NOD_NUM:
-        printf(TERMINAL_COLOR_CYAN);
-        printf(TERMINAL_DECORATION_BOLD);
-            printf("%s", node_to_string(tree));
-        printf(TERMINAL_DECORATION_RESET);
-        printf(TERMINAL_COLOR_RESET);
-        break;
-
-    case NOD_TYPE_CHAR:
-    case NOD_TYPE_INT:
-    case NOD_TYPE_POINTER:
-    case NOD_TYPE_ARRAY:
-    case NOD_TYPE_STRUCT:
-        printf(TERMINAL_COLOR_RED);
-        printf(TERMINAL_DECORATION_BOLD);
-            printf("%s", node_to_string(tree));
-        printf(TERMINAL_DECORATION_RESET);
-        printf(TERMINAL_COLOR_RESET);
-        break;
-
-    default:
-        printf("%s", node_to_string(tree));
-        break;
-    }
-#endif
 
     switch (tree->kind) {
-        /*
-    case NOD_STRUCT_DECL:
-    case NOD_FUNC_DEF:
-    case NOD_PARAM_DEF:
-    case NOD_PARAM:
-    case NOD_VAR_DEF:
-    case NOD_VAR:
-        */
 
-        /*
-    case NOD_DECL:
-    case NOD_DECL_PARAM:
-        */
     case NOD_DECL_IDENT:
     case NOD_IDENT:
-        /*
-        printf(" (%s)", tree->data.sym->name);
-        printf(" => ");
-        */
         printf(" ");
         printf(TERMINAL_COLOR_GREEN);
         printf(TERMINAL_DECORATION_BOLD);
-        /* XXX */
-            printf("%s", tree->sval);
-        /*
-        if (tree->data.sym)
-            printf("%s", tree->data.sym->name);
-        else
-            printf("%s", tree->sval);
-        */
+        printf("%s", tree->sval);
         printf(TERMINAL_DECORATION_RESET);
         printf(TERMINAL_COLOR_RESET);
         break;
@@ -292,10 +197,6 @@ static void print_decl_recursive(const struct ast_node *tree)
         break;
 
     case NOD_DECL_FUNC:
-        /*
-        printf(" function returning");
-        break;
-        */
         printf(" function(");
         print_decl_recursive(tree->l);
         printf(") returning");
