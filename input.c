@@ -1,31 +1,12 @@
-/*
-int main();
-int *day[7];
-char str[10];
-char *c;
-int *p;
-int num()
-{
-    return 42;
-}
-*/
-int add(int x, int y)
-{
-    return x + y;
-}
+int i = 1;
 
-struct point {
-    int x, y;
-} P;
-
-struct point Q;
+char *str;
 
 int main()
 {
-    struct point pt;
-    pt.x = 13;
-    pt.y = 29;
+    char *s = "Hello, world!\n";
 
-    return pt.x + pt.y;
+    str = "abcd";
+
+    return str[0];
 }
-

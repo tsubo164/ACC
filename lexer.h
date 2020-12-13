@@ -9,6 +9,7 @@ enum token_kind {
     TOK_END_OF_ASCII = 127,
     TOK_NUM,
     TOK_IDENT,
+    TOK_STRING_LITERAL,
     /* keywords */
     TOK_ELSE,
     TOK_IF,
@@ -28,9 +29,11 @@ enum token_kind {
 
 struct token {
     int kind;
+    /* TODO rename this member */
     int value;
-    long file_pos;
     const char *text;
+
+    long file_pos;
 };
 
 struct lexer {

@@ -46,6 +46,11 @@ static const char *make_text(struct lexer *l, const char *str)
     return insert_string(l->strtab, str);
 }
 
+static int make_id(struct lexer *l, const char *str)
+{
+    return find_string_id(l->strtab, str);
+}
+
 void token_init(struct token *tok)
 {
     tok->kind = TOK_UNKNOWN;
@@ -207,6 +212,10 @@ state_initial:
         *tp++ = c;
         goto state_word;
 
+    /* string literal */
+    case '"':
+        goto state_string_literal;
+
     /* eof */
     case EOF:
         tok->kind = TOK_EOF;
@@ -266,6 +275,23 @@ state_word:
         goto state_final;
     }
 
+state_string_literal:
+    c = readc(l);
+
+    switch (c) {
+
+    case '"':
+        *tp = '\0';
+        tok->text = make_text(l, textbuf);
+        tok->value = make_id(l, textbuf);
+        tok->kind = TOK_STRING_LITERAL;
+        goto state_final;
+
+    default:
+        *tp++ = c;
+        goto state_string_literal;
+    }
+
 state_line_comment:
     c = readc(l);
 
@@ -294,7 +320,7 @@ state_block_comment:
         }
 
     case EOF:
-        /* XXX tmp */
+        /* TODO error handling */
         unreadc(l, c);
         printf("error: unterminated /* comment\n");
         goto state_initial;

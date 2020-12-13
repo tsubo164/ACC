@@ -33,9 +33,8 @@ struct ast_node *new_ast_node(enum ast_node_kind kind,
 
 void free_ast_node(struct ast_node *node)
 {
-    if (!node) {
+    if (!node)
         return;
-    }
 
     free_ast_node(node->l);
     free_ast_node(node->r);
@@ -68,6 +67,7 @@ void free_ast_node(struct ast_node *node)
     N(NOD_NE) \
     N(NOD_IDENT) \
     N(NOD_NUM) \
+    N(NOD_STRING) \
     N(NOD_DECL) \
     N(NOD_DECLARATOR) \
     N(NOD_DECL_DIRECT) \
@@ -84,9 +84,8 @@ void free_ast_node(struct ast_node *node)
 
 const char *node_to_string(const struct ast_node *node)
 {
-    if (node == NULL) {
+    if (node == NULL)
         return "null";
-    }
 
 #define N(kind) case kind: return #kind;
     switch (node->kind) {
@@ -150,6 +149,14 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         printf(TERMINAL_COLOR_MAGENTA);
         printf(TERMINAL_DECORATION_BOLD);
             printf(" %d", tree->ival);
+        printf(TERMINAL_DECORATION_RESET);
+        printf(TERMINAL_COLOR_RESET);
+        break;
+
+    case NOD_STRING:
+        printf(TERMINAL_COLOR_MAGENTA);
+        printf(TERMINAL_DECORATION_BOLD);
+            printf(" \"%s\"", tree->sval);
         printf(TERMINAL_DECORATION_RESET);
         printf(TERMINAL_COLOR_RESET);
         break;

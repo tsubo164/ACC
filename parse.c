@@ -81,8 +81,14 @@ static void expect(struct parser *p, enum token_kind query)
     if (tok->kind == query) {
         return;
     } else {
-        ungettok(p);
-        error(p, "unexpected token after this");
+        /* TODO improve error message */
+        add_error(p->msg, "expected token '***' here", 0);
+
+        for (;;) {
+            tok = gettok(p);
+            if (tok->kind == ';' || tok->kind == '}' || tok->kind == TOK_EOF)
+                break;
+        }
         return;
     }
 }
@@ -181,6 +187,12 @@ static struct ast_node *primary_expression(struct parser *p)
         /* TODO convert in semantics */
         tree->ival = tok->value;
         tree->sval = tok->text;
+        return tree;
+
+    case TOK_STRING_LITERAL:
+        tree = new_node(NOD_STRING, NULL, NULL);
+        tree->sval = tok->text;
+        tree->ival = tok->value;
         return tree;
 
     case TOK_IDENT:
@@ -877,8 +889,7 @@ static struct ast_node *declaration(struct parser *p)
         return tree;
     }
 
-    if (consume(p, ';'))
-        return tree;
+    expect(p, ';');
 
     return tree;
 }

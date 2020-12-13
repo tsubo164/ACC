@@ -399,6 +399,10 @@ static void add_types(struct ast_node *node, struct symbol_table *table)
         node->type = type_int();
         break;
 
+    case NOD_STRING:
+        node->type = type_ptr(type_char());
+        break;
+
     default:
         node->type = promote_data_type(node->l, node->r);
         break;

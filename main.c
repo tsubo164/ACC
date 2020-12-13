@@ -67,6 +67,7 @@ int main(int argc, char **argv)
     parser->lex.strtab = strtab;
 
     messages = new_message_list();
+    parser->msg = messages;
 
     tree = parse(parser);
 

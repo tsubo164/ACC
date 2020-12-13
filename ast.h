@@ -35,6 +35,7 @@ enum ast_node_kind {
     /* primary */
     NOD_IDENT,
     NOD_NUM,
+    NOD_STRING,
     /* declaration */
     NOD_DECL,
     NOD_DECLARATOR,
@@ -63,13 +64,6 @@ struct ast_node {
     int ival;
     const char *sval;
 };
-
-#define IF_(n) ((n)->l)
-#define THEN_(n) ((n)->r->l)
-#define ELSE_(n) ((n)->r->r)
-#define TYPE_(n) ((n)->l)
-#define PARM_(n) ((n)->r->l)
-#define BODY_(n) ((n)->r->r)
 
 extern struct ast_node *new_ast_node(enum ast_node_kind kind,
         struct ast_node *l, struct ast_node *r);

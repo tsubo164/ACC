@@ -5,12 +5,14 @@
 #define MULTIPLIER 31
 
 struct table_entry {
-	char *str;
-	struct table_entry *next;
+    char *str;
+    int id;
+    struct table_entry *next;
 };
 
 struct string_table {
-	struct table_entry *entries[HASH_SIZE];
+    struct table_entry *entries[HASH_SIZE];
+    int current_id;
 };
 
 extern struct string_table *new_string_table();
@@ -18,7 +20,6 @@ extern void free_string_table(struct string_table *table);
 
 extern void init_string_table(struct string_table *table);
 extern const char *insert_string(struct string_table *table, const char *src);
-
-extern int str_match(const char *a, const char *b);
+extern int find_string_id(struct string_table *table, const char *src);
 
 #endif /* _H */

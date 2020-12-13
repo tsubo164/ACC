@@ -86,6 +86,7 @@ enum operand_kind {
     OPR_ADDR,
     OPR_IMME,
     OPR_LABEL,
+    OPR_LABEL__,
     OPR_STR
 };
 
@@ -193,6 +194,17 @@ struct operand label(int block_id, int label_id)
     return o;
 }
 
+/* _LBB1_2, ... */
+struct operand label__(const char *label_str, int label_id)
+{
+    struct operand o = {0};
+    o.kind = OPR_LABEL__;
+    o.string = label_str;
+    o.label_id = label_id;
+
+    return o;
+}
+
 static const char *reg(const struct operand *oper, int tag)
 {
     if (oper->data_tag == VARI) {
@@ -287,6 +299,13 @@ static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
 
     case OPR_LABEL:
         fprintf(fp, ".LBB%d_%d", oper->block_id, oper->label_id);
+        break;
+
+    case OPR_LABEL__:
+        if (oper->label_id == 0)
+            fprintf(fp, "_%s(%%rip)", oper->string);
+        else
+            fprintf(fp, "_%s.%d(%%rip)", oper->string, oper->label_id);
         break;
 
     case OPR_STR:
@@ -744,6 +763,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, MOV_, imme(node->ival), A_);
         break;
 
+    case NOD_STRING:
+        code3__(fp, node, LEA_, label__("L.str", node->ival), A_);
+        break;
+
     case NOD_ADD:
         gen_code(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
@@ -912,6 +935,29 @@ static void gen_global_var_labels(FILE *fp, const struct ast_node *node)
     gen_global_var_labels(fp, node->r);
 }
 
+static void gen_string_literal(FILE *fp, const struct ast_node *node)
+{
+    static int n = 0;
+
+    if (!node)
+        return;
+
+    if (node->kind == NOD_STRING) {
+        if (n == 0)
+            fprintf(fp, ".data\n");
+        if (node->ival == 0)
+            fprintf(fp, "_L.str:\n");
+        else
+            fprintf(fp, "_L.str.%d:\n", node->ival);
+        fprintf(fp, "    .asciz \"%s\"\n", node->sval);
+        n++;
+        return;
+    }
+
+    gen_string_literal(fp, node->l);
+    gen_string_literal(fp, node->r);
+}
+
 void gen_x86(FILE *fp,
         const struct ast_node *tree, const struct symbol_table *table)
 {
@@ -919,6 +965,7 @@ void gen_x86(FILE *fp,
         fprintf(fp, ".intel_syntax noprefix\n");
     }
 
+    gen_string_literal(fp, tree);
     gen_global_var_list(fp, table);
     gen_global_var_labels(fp, tree);
 

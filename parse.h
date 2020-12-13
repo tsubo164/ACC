@@ -4,6 +4,7 @@
 #include "ast.h"
 #include "lexer.h"
 #include "symbol.h"
+#include "message.h"
 
 #define TOKEN_BUFFER_SIZE 2
 
@@ -13,6 +14,7 @@ struct parser {
     int head, curr;
 
     struct symbol_table symtbl;
+    struct message_list *msg;
 
     long error_pos;
     const char *error_msg;
