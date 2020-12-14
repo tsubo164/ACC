@@ -84,8 +84,10 @@ int main(int argc, char **argv)
     }
 
     /* ------------------------- */
-    if (messages->error_count > 0) {
+    if (messages->warning_count > 0)
+        print_warning_messages(file, argv[1], messages);
 
+    if (messages->error_count > 0) {
         print_error_messages(file, argv[1], messages);
 
         fclose(file);

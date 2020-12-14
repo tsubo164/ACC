@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+/* TODO remove this */
+#include <string.h>
 #include "message.h"
 
 #define MEM_ALLOC(type) ((type *) malloc(sizeof(type)))
@@ -72,6 +74,53 @@ static void print_message(FILE *fp, const char *filename,
     fprintf(stderr, TERMINAL_DECORATION_RESET);
 }
 
+static void print_message2(FILE *fp, const char *filename,
+        const struct message *msg, const char *msg_type)
+{
+    /*
+    const long target_pos = msg->file_pos;
+    int found_target_location = 0;
+    */
+    int err_col = 0, err_row = 0;
+#if 0
+    int x = 0, y = 0; /* scanning pos row and column */
+    int c = '\0';
+    char line[1024] = {'\0'};
+#endif
+
+    if (!strcmp(msg_type, "error")) {
+        fprintf(stderr, TERMINAL_DECORATION_BOLD);
+            fprintf(stderr, "%s:", filename);
+            fprintf(stderr, "%d:%d: ", err_row, err_col);
+            fprintf(stderr, TERMINAL_COLOR_RED);
+                fprintf(stderr, "%s: ", msg_type);
+            fprintf(stderr, TERMINAL_COLOR_RESET);
+            fprintf(stderr, "%s\n", msg->str);
+        fprintf(stderr, TERMINAL_DECORATION_RESET);
+    }
+    if (!strcmp(msg_type, "warning")) {
+        fprintf(stderr, TERMINAL_DECORATION_BOLD);
+            fprintf(stderr, "%s:", filename);
+            fprintf(stderr, "%d:%d: ", err_row, err_col);
+            fprintf(stderr, TERMINAL_COLOR_MAGENTA);
+                fprintf(stderr, "%s: ", msg_type);
+            fprintf(stderr, TERMINAL_COLOR_RESET);
+            fprintf(stderr, "%s\n", msg->str);
+        fprintf(stderr, TERMINAL_DECORATION_RESET);
+    }
+
+#if 0
+    fprintf(stderr, "%s\n", line);
+    fprintf(stderr, "%*s", err_col - 1, ""); /* nspaces = col - 1 */
+
+    fprintf(stderr, TERMINAL_DECORATION_BOLD);
+    fprintf(stderr, TERMINAL_COLOR_GREEN);
+        fprintf(stderr, "%c\n", '^');
+    fprintf(stderr, TERMINAL_COLOR_RESET);
+    fprintf(stderr, TERMINAL_DECORATION_RESET);
+#endif
+}
+
 static void print_message_array(FILE *fp, const char *filename,
         const struct message *msg_array, const char *msg_type)
 {
@@ -81,7 +130,9 @@ static void print_message_array(FILE *fp, const char *filename,
         const struct message *msg = &msg_array[i];
 
         if (msg->str) {
-            print_message(fp, filename, msg, msg_type);
+            if (0)
+                print_message(fp, filename, msg, msg_type);
+            print_message2(fp, filename, msg, msg_type);
         }
     }
 }

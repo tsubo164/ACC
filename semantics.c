@@ -46,8 +46,8 @@ static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
     int total_offset = 0;
 
     for (;;) {
-        /* TODO may need SYM_MEMBER */
-        if (sym->kind == SYM_VAR && sym->scope_level > 0) {
+        /* TODO support nested struct by checking scope level */
+        if (sym->kind == SYM_MEMBER) {
             const int size  = sym->type->byte_size;
             const int align = sym->type->alignment;
             const int len   = sym->type->array_len;
@@ -134,8 +134,21 @@ static int analyze_symbol_usage(struct symbol_table *table, struct message_list 
     for (i = 0; i < N; i++) {
         const struct symbol *sym = get_symbol(table, i);
 
-        if (symbol_flag_is_on(sym, IS_REDEFINED)) {
-            add_error(messages, "redefinition of variable", sym->file_pos);
+        if (is_local_var(sym)) {
+            if (sym->is_redefined)
+                add_error(messages, "redefinition of variable", sym->file_pos);
+
+            if (!sym->is_defined && sym->is_used)
+                add_error(messages, "use of undefined symbol", sym->file_pos);
+
+            if (sym->is_defined && !sym->is_used)
+                add_warning(messages, "unused variable", sym->file_pos);
+
+            /* TODO detect assignment at first use */
+            /*
+            if (sym->is_defined && sym->is_used && !sym->is_initialized)
+                add_warning(messages, "uninitialized variable used", sym->file_pos);
+            */
         }
     }
     return 0;
@@ -145,7 +158,8 @@ enum decl_kind {
     DECL_VAR,
     DECL_FUNC,
     DECL_PARAM,
-    DECL_STRUCT
+    DECL_STRUCT,
+    DECL_MEMBER
 };
 
 struct declaration {
@@ -154,6 +168,7 @@ struct declaration {
     struct data_type *type;
     int has_func_def;
     int has_member_decl;
+    int has_init;
 };
 
 static int sym_kind_of(const struct declaration *decl)
@@ -163,7 +178,8 @@ static int sym_kind_of(const struct declaration *decl)
     case DECL_FUNC:   return SYM_FUNC;
     case DECL_PARAM:  return SYM_PARAM;
     case DECL_STRUCT: return SYM_STRUCT;
-    default:         return SYM_VAR;
+    case DECL_MEMBER: return SYM_MEMBER;
+    default:          return SYM_VAR;
     }
 }
 
@@ -208,8 +224,7 @@ static void add_sym_(struct ast_node *tree,
     case NOD_DECL_MEMBER:
         {
             struct declaration new_decl = {0};
-            /* TODO may need DECL_MEMBER */
-            new_decl.kind = DECL_VAR;
+            new_decl.kind = DECL_MEMBER;
             add_sym_(tree->l, table, &new_decl);
             add_sym_(tree->r, table, &new_decl);
             return;
@@ -219,6 +234,7 @@ static void add_sym_(struct ast_node *tree,
         {
             struct declaration new_decl = {0};
             duplicate_decl(&new_decl, decl);
+            new_decl.has_init = tree->r ? 1 : 0;
             add_sym_(tree->l, table, &new_decl);
             add_sym_(tree->r, table, &new_decl);
             return;
@@ -232,6 +248,7 @@ static void add_sym_(struct ast_node *tree,
                     struct symbol *sym = NULL;
                     sym = define_symbol(table, decl->ident, SYM_STRUCT);
                     decl->type = type_struct(decl->ident);
+                    /* TODO need to pass type to define_symbol */
                     sym->type = decl->type;
                     tree->sym = sym;
                 }
@@ -244,6 +261,9 @@ static void add_sym_(struct ast_node *tree,
             } else {
                 struct symbol *sym = NULL;
                 sym = define_symbol(table, decl->ident, sym_kind_of(decl));
+                /* TODO need to pass this info to define_symbol */
+                sym->is_initialized = decl->has_init;
+                /* TODO need to pass type to define_symbol */
                 sym->type = decl->type;
                 tree->sym = sym;
             }
@@ -312,6 +332,13 @@ static void add_sym_(struct ast_node *tree,
 
     case NOD_FUNC_DEF:
         decl->has_func_def = 1;
+        add_sym_(tree->l, table, decl);
+        add_sym_(tree->r, table, decl);
+        scope_end(table);
+        return;
+
+    case NOD_COMPOUND:
+        scope_begin(table);
         add_sym_(tree->l, table, decl);
         add_sym_(tree->r, table, decl);
         scope_end(table);
@@ -414,8 +441,7 @@ int semantic_analysis(struct ast_node *tree,
 {
     add_symbols(tree, table);
 
-    if (0)
-        analyze_symbol_usage(table, messages);
+    analyze_symbol_usage(table, messages);
 
     add_types(tree, table);
     allocate_local_storage(table);

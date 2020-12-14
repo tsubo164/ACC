@@ -5,14 +5,9 @@
 
 static void init_symbol(struct symbol *sym)
 {
-    sym->name = NULL;
-    sym->kind = SYM_SCOPE_BEGIN;
-    sym->flag = 0;
-    sym->mem_offset = 0;
+    struct symbol ini = {0};
 
-    sym->type = NULL;
-    sym->scope_level = 0;
-    sym->file_pos = 0L;
+    *sym = ini;
 }
 
 int is_global_var(const struct symbol *sym)
@@ -36,16 +31,6 @@ int is_local_var(const struct symbol *sym)
 int is_param(const struct symbol *sym)
 {
     return sym->kind == SYM_PARAM;
-}
-
-void symbol_flag_on(struct symbol *sym, int flag)
-{
-    sym->flag |= flag;
-}
-
-int symbol_flag_is_on(const struct symbol *sym, int flag)
-{
-    return (sym->flag & flag) > 0;
 }
 
 struct symbol_table *new_symbol_table()
@@ -79,7 +64,8 @@ void free_symbol_table(struct symbol_table *table)
     S(SYM_VAR) \
     S(SYM_FUNC) \
     S(SYM_PARAM) \
-    S(SYM_STRUCT)
+    S(SYM_STRUCT) \
+    S(SYM_MEMBER)
 
 const char *symbol_to_string(const struct symbol *sym)
 {
@@ -104,7 +90,7 @@ static void print_horizonal_line(char c, int n)
 
 void print_symbol_table(const struct symbol_table *table)
 {
-    const int ROW = 70;
+    const int ROW = 78;
     const int N = table->symbol_count;
     int i;
 
@@ -116,6 +102,7 @@ void print_symbol_table(const struct symbol_table *table)
     printf("%10s | ", "type");
     printf("%5s | ", "level");
     printf("%5s | ", "mem");
+    printf("%5s | ", "DDRIU");
     printf("\n");
 
     print_horizonal_line('=', ROW);
@@ -131,6 +118,14 @@ void print_symbol_table(const struct symbol_table *table)
             printf("%5s | ",  "*");
         else
             printf("%5d | ",  sym->mem_offset);
+
+        printf("%c", sym->is_declared    ? '*' : '.');
+        printf("%c", sym->is_defined     ? '*' : '.');
+        printf("%c", sym->is_redefined   ? '*' : '.');
+        printf("%c", sym->is_initialized ? '*' : '.');
+        printf("%c", sym->is_used        ? '*' : '.');
+        printf(" |");
+
         printf("\n");
     }
 
@@ -179,6 +174,9 @@ static int namespace(int kind)
 
     case SYM_STRUCT:
         return 2;
+
+    case SYM_MEMBER:
+        return 3;
 
     default:
         return 0;
@@ -245,9 +243,10 @@ struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind
     if (!sym) {
         /* TODO kind won't matter. handle this better */
         sym = push_symbol(table, name, kind);
-        symbol_flag_on(sym, IS_USED);
+        sym->type = type_int();
     }
 
+    sym->is_used = 1;
     return sym;
 }
 
@@ -257,56 +256,12 @@ struct symbol *define_symbol(struct symbol_table *table, const char *name, int k
     const int cur_lv = table->current_scope_level;
 
     if (sym && sym->scope_level == cur_lv) {
-        symbol_flag_on(sym, IS_REDEFINED);
+        sym->is_redefined = 1;
         return sym;
     }
 
     sym = push_symbol(table, name, kind);
-
-    return sym;
-}
-
-struct symbol *define_variable(struct symbol_table *table, const char *name)
-{
-    struct symbol *sym = lookup_symbol(table, name, SYM_VAR);
-    const int cur_lv = table->current_scope_level;
-
-    if (sym && sym->scope_level == cur_lv) {
-        symbol_flag_on(sym, IS_REDEFINED);
-        return sym;
-    }
-
-    sym = push_symbol(table, name, SYM_VAR);
-
-    return sym;
-}
-
-struct symbol *define_function(struct symbol_table *table, const char *name)
-{
-    struct symbol *sym = lookup_symbol(table, name, SYM_FUNC);
-    const int cur_lv = table->current_scope_level;
-
-    if (sym && sym->scope_level == cur_lv) {
-        symbol_flag_on(sym, IS_REDEFINED);
-        return sym;
-    }
-
-    sym = push_symbol(table, name, SYM_FUNC);
-
-    return sym;
-}
-
-struct symbol *define_struct(struct symbol_table *table, const char *name)
-{
-    struct symbol *sym = lookup_symbol(table, name, SYM_STRUCT);
-    const int cur_lv = table->current_scope_level;
-
-    if (sym && sym->scope_level == cur_lv) {
-        symbol_flag_on(sym, IS_REDEFINED);
-        return sym;
-    }
-
-    sym = push_symbol(table, name, SYM_STRUCT);
+    sym->is_defined = 1;
 
     return sym;
 }

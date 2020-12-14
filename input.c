@@ -1,12 +1,38 @@
-int i = 1;
-
-char *str;
+struct location {
+    int row, col;
+};
 
 int main()
 {
-    char *s = "Hello, world!\n";
+    int a = 9;
+    /*
+    int b;
 
-    str = "abcd";
+    int i;
+    i = a;
+    int x;
+    */
+    {
+        /*
+        int a;
+        a = 11;
+        x = x + a;
+        */
+    }
+        /*
+    {
+        int b;
+        b = 3;
+    }
+        */
+    {
+        /* this is different 'a' than one above */
+        /*
+        int a;
+        a = 2;
+        x = x + a;
+        */
+    }
 
-    return str[0];
+    return a;
 }

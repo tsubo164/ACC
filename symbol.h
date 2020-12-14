@@ -3,27 +3,19 @@
 
 #include "type.h"
 
-enum symbol_flag {
-    IS_DECLARED    = 1 << 0,
-    IS_DEFINED     = 1 << 1,
-    IS_REDEFINED   = 1 << 2,
-    IS_INITIALIZED = 1 << 3,
-    IS_USED        = 1 << 4
-};
-
 enum symbol_kind {
     SYM_SCOPE_BEGIN,
     SYM_SCOPE_END,
     SYM_VAR,
     SYM_FUNC,
     SYM_PARAM,
-    SYM_STRUCT
+    SYM_STRUCT,
+    SYM_MEMBER
 };
 
 struct symbol {
     char *name;
     int kind;
-    int flag;
     int mem_offset;
 
     struct data_type *type;
@@ -31,6 +23,13 @@ struct symbol {
 
     /* TODO improve this */
     long file_pos;
+
+    /* flags */
+    char is_declared;
+    char is_defined;
+    char is_redefined;
+    char is_initialized;
+    char is_used;
 };
 
 #define SYMBOL_TABLE_SIZE 128
@@ -44,8 +43,6 @@ struct symbol_table {
 extern int is_global_var(const struct symbol *sym);
 extern int is_local_var(const struct symbol *sym);
 extern int is_param(const struct symbol *sym);
-extern void symbol_flag_on(struct symbol *sym, int flag);
-extern int symbol_flag_is_on(const struct symbol *sym, int flag);
 
 /* symbol table */
 extern struct symbol_table *new_symbol_table();

@@ -27,7 +27,6 @@ int main()
     int a;
     int b;
     int c;
-    int d;
 
     a = add(21, 7) +  2 * num(); /* 42 */
 
