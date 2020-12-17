@@ -144,11 +144,12 @@ static int analyze_symbol_usage(struct symbol_table *table, struct message_list 
             if (sym->is_defined && !sym->is_used)
                 add_warning(messages, "unused variable", sym->file_pos);
 
-            /* TODO detect assignment at first use */
-            /*
             if (sym->is_defined && sym->is_used && !sym->is_initialized)
                 add_warning(messages, "uninitialized variable used", sym->file_pos);
-            */
+        }
+        else if (is_func(sym)) {
+            if (!sym->is_defined && sym->is_used)
+                add_warning(messages, "implicit declaration of function", sym->file_pos);
         }
     }
     return 0;
@@ -169,6 +170,8 @@ struct declaration {
     int has_func_def;
     int has_member_decl;
     int has_init;
+    int is_func_call;
+    int is_lvalue;
 };
 
 static int sym_kind_of(const struct declaration *decl)
@@ -312,12 +315,34 @@ static void add_sym_(struct ast_node *tree,
     case NOD_IDENT:
         {
             struct symbol *sym = NULL;
-            int sym_kind = SYM_VAR;
+            const int sym_kind = decl->is_func_call ? SYM_FUNC : SYM_VAR;
 
-            /* TODO The parameter 'sim_kind' may not be needed.
-             * The symbol knows what kind of symbol it is.  */
-            sym = use_symbol(table, tree->sval, sym_kind);
+            if (decl->is_lvalue) {
+                sym = assign_to_symbol(table, tree->sval, sym_kind);
+                decl->is_lvalue = 0;
+            } else {
+                sym = use_symbol(table, tree->sval, sym_kind);
+            }
+
             tree->sym = sym;
+            return;
+        }
+
+    case NOD_CALL:
+        {
+            struct declaration new_decl = {0};
+            new_decl.is_func_call = 1;
+            add_sym_(tree->l, table, &new_decl);
+            add_sym_(tree->r, table, decl);
+            return;
+        }
+
+    case NOD_ASSIGN:
+        {
+            struct declaration new_decl = {0};
+            new_decl.is_lvalue = 1;
+            add_sym_(tree->l, table, &new_decl);
+            add_sym_(tree->r, table, decl);
             return;
         }
 

@@ -33,6 +33,11 @@ int is_param(const struct symbol *sym)
     return sym->kind == SYM_PARAM;
 }
 
+int is_func(const struct symbol *sym)
+{
+    return sym->kind == SYM_FUNC;
+}
+
 struct symbol_table *new_symbol_table()
 {
     struct symbol_table *table;
@@ -241,7 +246,6 @@ struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind
     struct symbol *sym = lookup_symbol(table, name, kind);
 
     if (!sym) {
-        /* TODO kind won't matter. handle this better */
         sym = push_symbol(table, name, kind);
         sym->type = type_int();
     }
@@ -263,6 +267,22 @@ struct symbol *define_symbol(struct symbol_table *table, const char *name, int k
     sym = push_symbol(table, name, kind);
     sym->is_defined = 1;
 
+    return sym;
+}
+
+struct symbol *assign_to_symbol(struct symbol_table *table, const char *name, int kind)
+{
+    struct symbol *sym = lookup_symbol(table, name, kind);
+
+    if (!sym) {
+        sym = push_symbol(table, name, kind);
+        sym->type = type_int();
+    }
+
+    if (!sym->is_used)
+        sym->is_initialized = 1;
+
+    sym->is_used = 1;
     return sym;
 }
 

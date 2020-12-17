@@ -1,38 +1,21 @@
-struct location {
-    int row, col;
-};
+int printf(char *s);
+/*
+*/
 
 int main()
 {
-    int a = 9;
+    char *s = "aHello, world\n";
     /*
-    int b;
+    int a;
+    int b = a;
 
-    int i;
-    i = a;
-    int x;
+    {
+        int a;
+        a = b;
+    }
     */
-    {
-        /*
-        int a;
-        a = 11;
-        x = x + a;
-        */
-    }
-        /*
-    {
-        int b;
-        b = 3;
-    }
-        */
-    {
-        /* this is different 'a' than one above */
-        /*
-        int a;
-        a = 2;
-        x = x + a;
-        */
-    }
 
-    return a;
+    printf("    ----> %d\n", 42);
+
+    return s[0];
 }

@@ -43,6 +43,8 @@ struct symbol_table {
 extern int is_global_var(const struct symbol *sym);
 extern int is_local_var(const struct symbol *sym);
 extern int is_param(const struct symbol *sym);
+extern int is_func(const struct symbol *sym);
+extern const char *symbol_to_string(const struct symbol *sym);
 
 /* symbol table */
 extern struct symbol_table *new_symbol_table();
@@ -55,6 +57,7 @@ extern struct symbol *insert_symbol(struct symbol_table *table,
         const char *name, enum symbol_kind kind);
 extern struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind);
 extern struct symbol *define_symbol(struct symbol_table *table, const char *name, int kind);
+extern struct symbol *assign_to_symbol(struct symbol_table *table, const char *name, int kind);
 extern int symbol_scope_begin(struct symbol_table *table);
 extern int symbol_scope_end(struct symbol_table *table);
 
