@@ -138,6 +138,44 @@ void parser_init(struct parser *p)
     p->error_msg = "";
 
     init_symbol_table(&p->symtbl);
+
+    /* ADDSYM */
+    p->decl_kind = 0;
+    p->decl_ident = NULL;
+    p->decl_type = NULL;
+}
+
+/* ADDSYM */
+static void define_sym(struct parser *p, struct ast_node *node, int sym_kind)
+{
+    struct symbol *sym;
+
+    switch (sym_kind) {
+    case SYM_FUNC:
+        p->decl_kind = SYM_FUNC;
+        sym = define_symbol(&p->symtbl, p->decl_ident, SYM_FUNC);
+        /* TODO need to pass this info to define_symbol */
+        /*
+        sym->is_initialized = decl->has_init;
+        */
+        /* TODO need to pass type to define_symbol */
+        sym->type = p->decl_type;
+        node->sym = sym;
+        break;
+
+    default:
+        break;
+    }
+}
+
+static void scope_begin(struct parser *p)
+{
+    symbol_scope_begin(&p->symtbl);
+}
+
+static void scope_end(struct parser *p)
+{
+    symbol_scope_end(&p->symtbl);
 }
 
 /*
@@ -509,9 +547,11 @@ static struct ast_node *compound_statement(struct parser *p)
 
     expect(p, '{');
 
+    scope_begin(p);
     tree = new_node(NOD_COMPOUND, NULL, NULL);
     tree->l = declaration_list(p);
     tree->r = statement_list(p);
+    scope_end(p);
 
     expect(p, '}');
 
@@ -712,6 +752,8 @@ static struct ast_node *type_spec(struct parser *p)
 
     case TOK_INT:
         tree = NEW_(NOD_SPEC_INT);
+        /* ADDSYM */
+        p->decl_type = type_int();
         break;
 
     case TOK_STRUCT:
@@ -780,6 +822,8 @@ static struct ast_node *direct_declarator(struct parser *p)
         struct ast_node *ident = NEW_(NOD_DECL_IDENT);
         copy_token_text(p, ident);
         tree->r = ident;
+        /* ADDSYM */
+        p->decl_ident = ident->sval;
     }
 
     if (consume(p, '[')) {
@@ -794,6 +838,11 @@ static struct ast_node *direct_declarator(struct parser *p)
 
     if (consume(p, '(')) {
         struct ast_node *fn = NEW_(NOD_DECL_FUNC);
+
+        /* ADDSYM */
+        define_sym(p, tree->r, SYM_FUNC);
+        scope_begin(p);
+
         fn->l = tree;
         fn->r = param_decl_list(p);
         tree = fn;
@@ -883,9 +932,9 @@ static struct ast_node *declaration(struct parser *p)
     tree->r = init_declarator_list(p);
 
     if (consume(p, '{')) {
-        /* TODO remove this by making peek() */
         ungettok(p);
         tree = new_node(NOD_FUNC_DEF, tree, compound_statement(p));
+        scope_end(p);
         return tree;
     }
 

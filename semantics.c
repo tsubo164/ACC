@@ -464,12 +464,14 @@ static void add_types(struct ast_node *node, struct symbol_table *table)
 int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages)
 {
+    if (0) {
     add_symbols(tree, table);
 
     analyze_symbol_usage(table, messages);
 
     add_types(tree, table);
     allocate_local_storage(table);
+    }
 
     return 0;
 }

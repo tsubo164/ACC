@@ -5,6 +5,7 @@
 #include "lexer.h"
 #include "symbol.h"
 #include "message.h"
+#include "type.h"
 
 #define TOKEN_BUFFER_SIZE 2
 
@@ -18,6 +19,11 @@ struct parser {
 
     long error_pos;
     const char *error_msg;
+
+    /* ADDSYM */
+    int decl_kind;
+    const char * decl_ident;
+    struct data_type *decl_type;
 };
 
 extern struct parser *new_parser();
