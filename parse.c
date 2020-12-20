@@ -172,6 +172,15 @@ static void define_sym(struct parser *p, struct ast_node *node, int sym_kind)
         node->sym = sym;
         break;
 
+    case SYM_STRUCT:
+        p->decl_kind = SYM_STRUCT;
+        sym = define_symbol(&p->symtbl, p->decl_ident, SYM_STRUCT);
+        /* TODO need to pass this info to define_symbol */
+        /* TODO need to pass type to define_symbol */
+        sym->type = p->decl_type;
+        node->sym = sym;
+        break;
+
     default:
         break;
     }
@@ -738,6 +747,9 @@ static struct ast_node *struct_union(struct parser *p)
 
     case TOK_STRUCT:
         tree = NEW_(NOD_SPEC_STRUCT);
+
+        /* ADDSYM */
+        p->decl_kind = SYM_STRUCT;
         break;
 
     default:
@@ -754,12 +766,22 @@ static struct ast_node *struct_union_spec(struct parser *p)
     tree = struct_union(p);
     tree->l = decl_ident(p);
 
+    /* ADDSYM */
+    p->decl_ident = tree->l->sval;
+    define_sym(p, tree->l, p->decl_kind);
+
     if (!consume(p, '{')) {
         return tree;
     }
 
+    /* ADDSYM */
+    scope_begin(p);
+
     tree->r = struct_decl_list(p);
     expect(p, '}');
+
+    /* ADDSYM */
+    scope_end(p);
 
     return tree;
 }
@@ -773,6 +795,8 @@ static struct ast_node *type_spec(struct parser *p)
 
     case TOK_CHAR:
         tree = NEW_(NOD_SPEC_CHAR);
+        /* ADDSYM */
+        p->decl_type = type_char();
         break;
 
     case TOK_INT:
@@ -838,6 +862,9 @@ static struct ast_node *direct_declarator(struct parser *p)
 
     tree = NEW_(NOD_DECL_DIRECT);
 
+    /* ADDSYM */
+    p->decl_kind = SYM_VAR;
+
     if (consume(p, '(')) {
         tree->l = declarator(p);
         expect(p, ')');
@@ -851,6 +878,9 @@ static struct ast_node *direct_declarator(struct parser *p)
         /* ADDSYM */
         p->decl_ident = ident->sval;
     }
+    else {
+        return tree;
+    }
 
     if (consume(p, '[')) {
         struct ast_node *array = NEW_(NOD_SPEC_ARRAY);
@@ -860,22 +890,32 @@ static struct ast_node *direct_declarator(struct parser *p)
 
         tree->l = array;
         expect(p, ']');
+
+        /* ADDSYM */
+        p->decl_type = type_array(p->decl_type, array->ival);
     }
 
     if (consume(p, '(')) {
         struct ast_node *fn = NEW_(NOD_DECL_FUNC);
 
         /* ADDSYM */
-        define_sym(p, tree->r, SYM_FUNC);
+        p->decl_kind = SYM_FUNC;
+        define_sym(p, tree->r, p->decl_kind);
         scope_begin(p);
 
         fn->l = tree;
         fn->r = param_decl_list(p);
         tree = fn;
         expect(p, ')');
-    } else {
+    }
+
+    else {
+        /*
+        print_symbol_table(&p->symtbl);
+        printf("HOGE----------- %s, %d\n", p->decl_ident, p->decl_kind);
+        */
         /* ADDSYM */
-        define_sym(p, tree->r, SYM_VAR);
+        define_sym(p, tree->r, p->decl_kind);
     }
 
     return tree;
