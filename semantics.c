@@ -144,8 +144,10 @@ static int analyze_symbol_usage(struct symbol_table *table, struct message_list 
             if (sym->is_defined && !sym->is_used)
                 add_warning(messages, "unused variable", sym->file_pos);
 
+            /*
             if (sym->is_defined && sym->is_used && !sym->is_initialized)
                 add_warning(messages, "uninitialized variable used", sym->file_pos);
+            */
         }
         else if (is_func(sym)) {
             if (!sym->is_defined && sym->is_used)
@@ -466,12 +468,12 @@ int semantic_analysis(struct ast_node *tree,
 {
     if (0) {
     add_symbols(tree, table);
+    }
 
     analyze_symbol_usage(table, messages);
 
     add_types(tree, table);
     allocate_local_storage(table);
-    }
 
     return 0;
 }

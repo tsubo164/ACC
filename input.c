@@ -1,4 +1,11 @@
+int x = 29;
+
 int main()
 {
-    return 42;
+    int a = 0;
+    /*
+    a = 13;
+    */
+
+    return a + x;
 }
