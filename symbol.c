@@ -69,8 +69,8 @@ void free_symbol_table(struct symbol_table *table)
     S(SYM_VAR) \
     S(SYM_FUNC) \
     S(SYM_PARAM) \
-    S(SYM_STRUCT) \
-    S(SYM_MEMBER)
+    S(SYM_MEMBER) \
+    S(SYM_TAG_STRUCT)
 
 const char *symbol_to_string(const struct symbol *sym)
 {
@@ -177,7 +177,7 @@ static int namespace(int kind)
     case SYM_PARAM:
         return 1;
 
-    case SYM_STRUCT:
+    case SYM_TAG_STRUCT:
         return 2;
 
     case SYM_MEMBER:

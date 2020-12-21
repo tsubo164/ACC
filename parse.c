@@ -139,77 +139,25 @@ void parser_init(struct parser *p)
 
     init_symbol_table(&p->symtbl);
 
-    /* ADDSYM */
     p->decl_kind = 0;
     p->decl_ident = NULL;
     p->decl_type = NULL;
 }
 
-/* ADDSYM */
+/* decl context */
 static void define_sym(struct parser *p, struct ast_node *node, int sym_kind)
 {
     struct symbol *sym;
 
-    switch (sym_kind) {
-    case SYM_VAR:
-        p->decl_kind = SYM_VAR;
-        sym = define_symbol(&p->symtbl, p->decl_ident, SYM_VAR);
-        /* TODO need to pass this info to define_symbol */
-        /*
-        sym->is_initialized = decl->has_init;
-        */
-        /* TODO need to pass type to define_symbol */
-        sym->type = p->decl_type;
-        node->sym = sym;
-        break;
-
-    case SYM_FUNC:
-        p->decl_kind = SYM_FUNC;
-        sym = define_symbol(&p->symtbl, p->decl_ident, SYM_FUNC);
-        /* TODO need to pass this info to define_symbol */
-        /* TODO need to pass type to define_symbol */
-        sym->type = p->decl_type;
-        node->sym = sym;
-        break;
-
-    case SYM_PARAM:
-        p->decl_kind = SYM_PARAM;
-        sym = define_symbol(&p->symtbl, p->decl_ident, SYM_PARAM);
-        /* TODO need to pass this info to define_symbol */
-        /* TODO need to pass type to define_symbol */
-        sym->type = p->decl_type;
-        node->sym = sym;
-        break;
-
-    case SYM_STRUCT:
-        p->decl_kind = SYM_STRUCT;
-        sym = define_symbol(&p->symtbl, p->decl_ident, SYM_STRUCT);
-        /* TODO need to pass this info to define_symbol */
-        /* TODO need to pass type to define_symbol */
-        sym->type = p->decl_type;
-        node->sym = sym;
-        break;
-
-    case SYM_MEMBER:
-        p->decl_kind = SYM_MEMBER;
-        sym = define_symbol(&p->symtbl, p->decl_ident, SYM_MEMBER);
-        /* TODO need to pass this info to define_symbol */
-        /* TODO need to pass type to define_symbol */
-        sym->type = p->decl_type;
-        node->sym = sym;
-        break;
-
-    default:
-        break;
-    }
+    sym = define_symbol(&p->symtbl, p->decl_ident, p->decl_kind);
+    /* TODO need to pass type to define_symbol */
+    sym->type = p->decl_type;
+    node->sym = sym;
 }
 
 static void use_sym(struct parser *p, struct ast_node *node)
 {
     struct symbol *sym;
-    /*
-    sym = use_symbol(&p->symtbl, p->decl_ident, SYM_VAR);
-    */
     sym = use_symbol(&p->symtbl, p->decl_ident, p->decl_kind);
     node->sym = sym;
 }
@@ -222,6 +170,26 @@ static void scope_begin(struct parser *p)
 static void scope_end(struct parser *p)
 {
     symbol_scope_end(&p->symtbl);
+}
+
+static void decl_begin(struct parser *p, int decl_kind)
+{
+    p->decl_kind = decl_kind;
+}
+
+static void decl_set_ident(struct parser *p, const char *decl_ident)
+{
+    p->decl_ident = decl_ident;
+}
+
+static void decl_set_type(struct parser *p, struct data_type *decl_type)
+{
+    p->decl_type = decl_type;
+}
+
+static int decl_is_func(struct parser *p)
+{
+    return p->decl_kind == SYM_FUNC || p->decl_kind == SYM_PARAM;
 }
 
 /*
@@ -242,16 +210,13 @@ static struct ast_node *statement_list(struct parser *p);
 static struct ast_node *identifier(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    const struct token *tok = consume(p, TOK_IDENT);
 
-    if (!tok)
+    if (!consume(p, TOK_IDENT))
         return NULL;
 
     tree = new_node(NOD_IDENT, NULL, NULL);
-    tree->sval = tok->text;
-
-    /* ADDSYM */
-    p->decl_ident = tok->text;
+    copy_token_text(p, tree);
+    decl_set_ident(p, tree->sval);
 
     return tree;
 }
@@ -272,22 +237,20 @@ static struct ast_node *primary_expression(struct parser *p)
     case TOK_NUM:
         tree = new_node(NOD_NUM, NULL, NULL);
         /* TODO convert in semantics */
+        /* TODO use functions copy_token_text() */
         tree->ival = tok->value;
         tree->sval = tok->text;
         return tree;
 
     case TOK_STRING_LITERAL:
         tree = new_node(NOD_STRING, NULL, NULL);
+        /* TODO use functions copy_token_text() */
         tree->sval = tok->text;
         tree->ival = tok->value;
         return tree;
 
     case TOK_IDENT:
         ungettok(p);
-        /*
-        return identifier(p);
-        */
-        /* ADDSYM */
         tree = identifier(p);
         use_sym(p, tree);
         return tree;
@@ -369,20 +332,11 @@ static struct ast_node *postfix_expression(struct parser *p)
                 const struct symbol *sym_l = tree->l->sym;
                 const char *mem = tree->r->sval;
                 const char *tag;
-                /*
-                printf("mem %s\n", mem);
-                printf("sym_l->name %s\n", sym_l->name);
-                */
+
                 tag = sym_l->type->tag;
-                sym = lookup_symbol(&p->symtbl, tag, SYM_STRUCT);
-                /*
-                printf("sym->name %s\n", sym->name);
-                */
+                sym = lookup_symbol(&p->symtbl, tag, SYM_TAG_STRUCT);
                 for (;;) {
                     /* TODO stop searching when struct is incomplete */
-                /*
-            printf("HOGE sym->name %s\n", sym->name);
-                */
                     if (sym->kind == SYM_SCOPE_END) {
                         /* end of struct definition */
                         break;
@@ -707,13 +661,12 @@ static struct ast_node *statement(struct parser *p)
 static struct ast_node *decl_ident(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    const struct token *tok = consume(p, TOK_IDENT);
 
-    if (!tok)
+    if (!consume(p, TOK_IDENT))
         return tree;
 
     tree = NEW_(NOD_DECL_IDENT);
-    tree->sval = tok->text;
+    copy_token_text(p, tree);
 
     return tree;
 }
@@ -768,8 +721,7 @@ static struct ast_node *struct_decl(struct parser *p)
     if (!spec)
         return NULL;
 
-    /* ADDSYM */
-    p->decl_kind = SYM_MEMBER;
+    decl_begin(p, SYM_MEMBER);
 
     tree = NEW_(NOD_DECL_MEMBER);
     tree->l = spec;
@@ -807,9 +759,7 @@ static struct ast_node *struct_union(struct parser *p)
 
     case TOK_STRUCT:
         tree = NEW_(NOD_SPEC_STRUCT);
-
-        /* ADDSYM */
-        p->decl_kind = SYM_STRUCT;
+        decl_begin(p, SYM_TAG_STRUCT);
         break;
 
     default:
@@ -826,34 +776,21 @@ static struct ast_node *struct_union_spec(struct parser *p)
     tree = struct_union(p);
     tree->l = decl_ident(p);
 
-    /* ADDSYM */
-    p->decl_ident = tree->l->sval;
-    p->decl_type = type_struct(p->decl_ident);
-    /*
-    define_sym(p, tree->l, p->decl_kind);
-    */
+    decl_set_ident(p, tree->l->sval);
+    decl_set_type(p, type_struct(tree->l->sval));
 
     if (!consume(p, '{')) {
-        /* ADDSYM */
         use_sym(p, tree->l);
-    /*
-    */
         return tree;
+    } else {
+        define_sym(p, tree->l, p->decl_kind);
     }
 
-    /* ADDSYM */
-    define_sym(p, tree->l, p->decl_kind);
-    /*
-    */
-
-    /* ADDSYM */
     scope_begin(p);
-
     tree->r = struct_decl_list(p);
-    expect(p, '}');
-
-    /* ADDSYM */
     scope_end(p);
+
+    expect(p, '}');
 
     return tree;
 }
@@ -867,14 +804,12 @@ static struct ast_node *type_spec(struct parser *p)
 
     case TOK_CHAR:
         tree = NEW_(NOD_SPEC_CHAR);
-        /* ADDSYM */
-        p->decl_type = type_char();
+        decl_set_type(p, type_char());
         break;
 
     case TOK_INT:
         tree = NEW_(NOD_SPEC_INT);
-        /* ADDSYM */
-        p->decl_type = type_int();
+        decl_set_type(p, type_int());
         break;
 
     case TOK_STRUCT:
@@ -899,8 +834,7 @@ static struct ast_node *param_decl(struct parser *p)
     if (!spec)
         return NULL;
 
-    /* ADDSYM */
-    p->decl_kind = SYM_PARAM;
+    decl_begin(p, SYM_PARAM);
 
     tree = NEW_(NOD_DECL_PARAM);
     tree->l = spec;
@@ -947,8 +881,8 @@ static struct ast_node *direct_declarator(struct parser *p)
         struct ast_node *ident = NEW_(NOD_DECL_IDENT);
         copy_token_text(p, ident);
         tree->r = ident;
-        /* ADDSYM */
-        p->decl_ident = ident->sval;
+
+        decl_set_ident(p, ident->sval);
     }
     else {
         /* no identifier declared */
@@ -964,15 +898,13 @@ static struct ast_node *direct_declarator(struct parser *p)
         tree->l = array;
         expect(p, ']');
 
-        /* ADDSYM */
-        p->decl_type = type_array(p->decl_type, array->ival);
+        decl_set_type(p, type_array(p->decl_type, array->ival));
     }
 
     if (consume(p, '(')) {
         struct ast_node *fn = NEW_(NOD_DECL_FUNC);
 
-        /* ADDSYM */
-        p->decl_kind = SYM_FUNC;
+        decl_begin(p, SYM_FUNC);
         define_sym(p, tree->r, p->decl_kind);
         scope_begin(p);
 
@@ -981,16 +913,12 @@ static struct ast_node *direct_declarator(struct parser *p)
         tree = fn;
         expect(p, ')');
 
-        /* ADDSYM */
-        p->decl_kind = SYM_FUNC;
-    }
-
-    else {
+        /* TODO make another flag to end function scope later */
         /*
-        print_symbol_table(&p->symtbl);
-        printf("HOGE----------- %s, %d\n", p->decl_ident, p->decl_kind);
+        decl_begin(p, SYM_FUNC);
         */
-        /* ADDSYM */
+    } else {
+        /* non-function */
         define_sym(p, tree->r, p->decl_kind);
     }
 
@@ -1003,8 +931,7 @@ static struct ast_node *pointer(struct parser *p)
 
     while (consume(p, '*')) {
         tree = new_node(NOD_SPEC_POINTER, tree, NULL);
-        /* ADDSYM */
-        p->decl_type = type_ptr(p->decl_type);
+        decl_set_type(p, type_ptr(p->decl_type));
     }
 
     return tree;
@@ -1066,6 +993,11 @@ static struct ast_node *decl_spec(struct parser *p)
     return tree;
 }
 
+/*
+ * declaration
+ *     declaration_specifier ';'
+ *     declaration_specifier init_declarator_list ';'
+ */
 static struct ast_node *declaration(struct parser *p)
 {
     struct ast_node *tree = NULL;
@@ -1075,23 +1007,21 @@ static struct ast_node *declaration(struct parser *p)
     if (!spec)
         return NULL;
 
-    /* ADDSYM */
-    p->decl_kind = SYM_VAR;
+    decl_begin(p, SYM_VAR);
 
     tree = NEW_(NOD_DECL);
     tree->l = spec;
     tree->r = init_declarator_list(p);
 
     if (consume(p, '{')) {
+        /* is func definition */
         ungettok(p);
         tree = new_node(NOD_FUNC_DEF, tree, compound_statement(p));
         scope_end(p);
         return tree;
-    }
-    else {
-        if (p->decl_kind == SYM_FUNC) {
-            scope_end(p);
-        }
+    } else if (decl_is_func(p)) {
+        /* is func prototype */
+        scope_end(p);
     }
 
     expect(p, ';');

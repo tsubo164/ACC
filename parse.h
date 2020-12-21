@@ -20,7 +20,7 @@ struct parser {
     long error_pos;
     const char *error_msg;
 
-    /* ADDSYM */
+    /* TODO may need struct declaration */
     int decl_kind;
     const char * decl_ident;
     struct data_type *decl_type;

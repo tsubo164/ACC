@@ -9,8 +9,8 @@ enum symbol_kind {
     SYM_VAR,
     SYM_FUNC,
     SYM_PARAM,
-    SYM_STRUCT,
-    SYM_MEMBER
+    SYM_MEMBER,
+    SYM_TAG_STRUCT
 };
 
 struct symbol {

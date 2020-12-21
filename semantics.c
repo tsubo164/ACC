@@ -80,7 +80,7 @@ static void compute_func_stack_size(struct symbol_table *table, struct symbol *f
             int len   = 0;
 
             if (sym->type->kind == DATA_TYPE_STRUCT) {
-                struct symbol *strc = lookup_symbol(table, sym->type->tag, SYM_STRUCT);
+                struct symbol *strc = lookup_symbol(table, sym->type->tag, SYM_TAG_STRUCT);
                 size  = strc->type->byte_size;
                 align = strc->type->alignment;
                 len   = strc->type->array_len;
@@ -95,7 +95,7 @@ static void compute_func_stack_size(struct symbol_table *table, struct symbol *f
             sym->mem_offset = total_offset;
         }
 
-        if (sym->kind == SYM_STRUCT) {
+        if (sym->kind == SYM_TAG_STRUCT) {
             compute_struct_size(table, sym);
         }
 
@@ -120,7 +120,7 @@ static void allocate_local_storage(struct symbol_table *table)
             compute_func_stack_size(table, sym);
         }
 
-        if (sym->kind == SYM_STRUCT) {
+        if (sym->kind == SYM_TAG_STRUCT) {
             compute_struct_size(table, sym);
         }
     }
@@ -182,8 +182,8 @@ static int sym_kind_of(const struct declaration *decl)
     case DECL_VAR:    return SYM_VAR;
     case DECL_FUNC:   return SYM_FUNC;
     case DECL_PARAM:  return SYM_PARAM;
-    case DECL_STRUCT: return SYM_STRUCT;
     case DECL_MEMBER: return SYM_MEMBER;
+    case DECL_STRUCT: return SYM_TAG_STRUCT;
     default:          return SYM_VAR;
     }
 }
@@ -251,7 +251,7 @@ static void add_sym_(struct ast_node *tree,
             if (decl->kind == DECL_STRUCT) {
                 if (decl->has_member_decl) {
                     struct symbol *sym = NULL;
-                    sym = define_symbol(table, decl->ident, SYM_STRUCT);
+                    sym = define_symbol(table, decl->ident, SYM_TAG_STRUCT);
                     decl->type = type_struct(decl->ident);
                     /* TODO need to pass type to define_symbol */
                     sym->type = decl->type;
@@ -259,7 +259,7 @@ static void add_sym_(struct ast_node *tree,
                 }
                 else {
                     struct symbol *sym = NULL;
-                    sym = use_symbol(table, decl->ident, SYM_STRUCT);
+                    sym = use_symbol(table, decl->ident, SYM_TAG_STRUCT);
                     decl->type = sym->type;
                     tree->sym = sym;
                 }
@@ -293,7 +293,7 @@ static void add_sym_(struct ast_node *tree,
              * L_(node), R_(node)
              */
             tag = sym_l->type->tag;
-            sym = lookup_symbol(table, tag, SYM_STRUCT);
+            sym = lookup_symbol(table, tag, SYM_TAG_STRUCT);
 
             for (;;) {
                 if (sym->kind == SYM_SCOPE_END) {
