@@ -57,7 +57,6 @@ extern struct symbol *insert_symbol(struct symbol_table *table,
         const char *name, enum symbol_kind kind);
 extern struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind);
 extern struct symbol *define_symbol(struct symbol_table *table, const char *name, int kind);
-extern struct symbol *assign_to_symbol(struct symbol_table *table, const char *name, int kind);
 extern int symbol_scope_begin(struct symbol_table *table);
 extern int symbol_scope_end(struct symbol_table *table);
 

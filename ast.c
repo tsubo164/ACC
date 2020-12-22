@@ -107,7 +107,7 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         return;
     }
 
-    if (tree->sym != NULL) {
+    if (tree->sym != NULL || tree->kind == NOD_NUM) {
         printf(TERMINAL_COLOR_CYAN);
         printf(TERMINAL_DECORATION_BOLD);
             printf("%s", node_to_string(tree));
@@ -133,14 +133,6 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         printf(TERMINAL_COLOR_GREEN);
         printf(TERMINAL_DECORATION_BOLD);
         printf("%s", tree->sval);
-        printf(TERMINAL_DECORATION_RESET);
-        printf(TERMINAL_COLOR_RESET);
-        break;
-
-    case NOD_SPEC_STRUCT:
-        printf(TERMINAL_COLOR_BLUE);
-        printf(TERMINAL_DECORATION_BOLD);
-            printf(" %s", tree->sval);
         printf(TERMINAL_DECORATION_RESET);
         printf(TERMINAL_COLOR_RESET);
         break;

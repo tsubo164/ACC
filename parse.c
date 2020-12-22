@@ -145,7 +145,7 @@ void parser_init(struct parser *p)
 }
 
 /* decl context */
-static void define_sym(struct parser *p, struct ast_node *node, int sym_kind)
+static void define_sym(struct parser *p, struct ast_node *node)
 {
     struct symbol *sym;
 
@@ -158,6 +158,7 @@ static void define_sym(struct parser *p, struct ast_node *node, int sym_kind)
 static void use_sym(struct parser *p, struct ast_node *node)
 {
     struct symbol *sym;
+
     sym = use_symbol(&p->symtbl, p->decl_ident, p->decl_kind);
     node->sym = sym;
 }
@@ -236,17 +237,14 @@ static struct ast_node *primary_expression(struct parser *p)
 
     case TOK_NUM:
         tree = new_node(NOD_NUM, NULL, NULL);
-        /* TODO convert in semantics */
-        /* TODO use functions copy_token_text() */
-        tree->ival = tok->value;
-        tree->sval = tok->text;
+        copy_token_text(p, tree);
+        copy_token_ival(p, tree);
         return tree;
 
     case TOK_STRING_LITERAL:
         tree = new_node(NOD_STRING, NULL, NULL);
-        /* TODO use functions copy_token_text() */
-        tree->sval = tok->text;
-        tree->ival = tok->value;
+        copy_token_text(p, tree);
+        copy_token_ival(p, tree);
         return tree;
 
     case TOK_IDENT:
@@ -326,7 +324,7 @@ static struct ast_node *postfix_expression(struct parser *p)
 
         case '.':
             tree = new_node(NOD_STRUCT_REF, tree, identifier(p));
-            /* ADDSYM */
+            /* TODO ADDSYM */
             {
                 const struct symbol *sym;
                 const struct symbol *sym_l = tree->l->sym;
@@ -658,7 +656,7 @@ static struct ast_node *statement(struct parser *p)
     return tree;
 }
 
-static struct ast_node *decl_ident(struct parser *p)
+static struct ast_node *decl_identifier(struct parser *p)
 {
     struct ast_node *tree = NULL;
 
@@ -667,6 +665,8 @@ static struct ast_node *decl_ident(struct parser *p)
 
     tree = NEW_(NOD_DECL_IDENT);
     copy_token_text(p, tree);
+
+    decl_set_ident(p, tree->sval);
 
     return tree;
 }
@@ -774,16 +774,15 @@ static struct ast_node *struct_union_spec(struct parser *p)
     struct ast_node *tree = NULL;
 
     tree = struct_union(p);
-    tree->l = decl_ident(p);
+    tree->l = decl_identifier(p);
 
-    decl_set_ident(p, tree->l->sval);
     decl_set_type(p, type_struct(tree->l->sval));
 
     if (!consume(p, '{')) {
         use_sym(p, tree->l);
         return tree;
     } else {
-        define_sym(p, tree->l, p->decl_kind);
+        define_sym(p, tree->l);
     }
 
     scope_begin(p);
@@ -877,14 +876,9 @@ static struct ast_node *direct_declarator(struct parser *p)
     }
 
     if (consume(p, TOK_IDENT)) {
-        /* TODO merge with identifier() */
-        struct ast_node *ident = NEW_(NOD_DECL_IDENT);
-        copy_token_text(p, ident);
-        tree->r = ident;
-
-        decl_set_ident(p, ident->sval);
-    }
-    else {
+        ungettok(p);
+        tree->r = decl_identifier(p);
+    } else {
         /* no identifier declared */
         return tree;
     }
@@ -905,21 +899,16 @@ static struct ast_node *direct_declarator(struct parser *p)
         struct ast_node *fn = NEW_(NOD_DECL_FUNC);
 
         decl_begin(p, SYM_FUNC);
-        define_sym(p, tree->r, p->decl_kind);
+        define_sym(p, tree->r);
         scope_begin(p);
 
         fn->l = tree;
         fn->r = param_decl_list(p);
         tree = fn;
         expect(p, ')');
-
-        /* TODO make another flag to end function scope later */
-        /*
-        decl_begin(p, SYM_FUNC);
-        */
     } else {
         /* non-function */
-        define_sym(p, tree->r, p->decl_kind);
+        define_sym(p, tree->r);
     }
 
     return tree;

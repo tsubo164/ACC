@@ -25,16 +25,6 @@ static const struct data_type *promote_data_type(
     }
 }
 
-static void scope_begin(struct symbol_table *table)
-{
-    symbol_scope_begin(table);
-}
-
-static void scope_end(struct symbol_table *table)
-{
-    symbol_scope_end(table);
-}
-
 static int align_to(int pos, int align)
 {
     return ((pos + align - 1) / align) * align;
@@ -144,10 +134,8 @@ static int analyze_symbol_usage(struct symbol_table *table, struct message_list 
             if (sym->is_defined && !sym->is_used)
                 add_warning(messages, "unused variable", sym->file_pos);
 
-            /*
             if (sym->is_defined && sym->is_used && !sym->is_initialized)
                 add_warning(messages, "uninitialized variable used", sym->file_pos);
-            */
         }
         else if (is_func(sym)) {
             if (!sym->is_defined && sym->is_used)
@@ -169,24 +157,9 @@ struct declaration {
     int kind;
     const char *ident;
     struct data_type *type;
-    int has_func_def;
-    int has_member_decl;
     int has_init;
-    int is_func_call;
     int is_lvalue;
 };
-
-static int sym_kind_of(const struct declaration *decl)
-{
-    switch (decl->kind) {
-    case DECL_VAR:    return SYM_VAR;
-    case DECL_FUNC:   return SYM_FUNC;
-    case DECL_PARAM:  return SYM_PARAM;
-    case DECL_MEMBER: return SYM_MEMBER;
-    case DECL_STRUCT: return SYM_TAG_STRUCT;
-    default:          return SYM_VAR;
-    }
-}
 
 static void duplicate_decl(struct declaration *dest, const struct declaration *src)
 {
@@ -195,7 +168,7 @@ static void duplicate_decl(struct declaration *dest, const struct declaration *s
     *dest = *src;
 }
 
-static void add_sym_(struct ast_node *tree,
+static void check_init_(struct ast_node *tree,
         struct symbol_table *table, struct declaration *decl)
 {
     if (!tree)
@@ -203,215 +176,61 @@ static void add_sym_(struct ast_node *tree,
 
     switch (tree->kind) {
 
-    case NOD_DECL:
-        {
-            struct declaration new_decl = {0};
-            if (decl->has_func_def)
-                new_decl.has_func_def = 1;
-            add_sym_(tree->l, table, &new_decl);
-            /* TODO DECL_* may have nothing to with SYM_*.
-             * e.g. type spec declared as struct(SYM_STRUCT) and
-             * identifier declared as a variable (SYM_VAR) */
-            new_decl.kind = DECL_VAR;
-            add_sym_(tree->r, table, &new_decl);
-            return;
-        }
-
-    case NOD_DECL_PARAM:
-        {
-            struct declaration new_decl = {0};
-            new_decl.kind = DECL_PARAM;
-            add_sym_(tree->l, table, &new_decl);
-            add_sym_(tree->r, table, &new_decl);
-            return;
-        }
-
-    case NOD_DECL_MEMBER:
-        {
-            struct declaration new_decl = {0};
-            new_decl.kind = DECL_MEMBER;
-            add_sym_(tree->l, table, &new_decl);
-            add_sym_(tree->r, table, &new_decl);
-            return;
-        }
-
     case NOD_DECL_INIT:
         {
             struct declaration new_decl = {0};
             duplicate_decl(&new_decl, decl);
             new_decl.has_init = tree->r ? 1 : 0;
-            add_sym_(tree->l, table, &new_decl);
-            add_sym_(tree->r, table, &new_decl);
+            if (new_decl.has_init) {
+                check_init_(tree->l, table, &new_decl);
+                check_init_(tree->r, table, decl);
+            }
             return;
         }
 
     case NOD_DECL_IDENT:
-        decl->ident = tree->sval;
-        {
-            if (decl->kind == DECL_STRUCT) {
-                if (decl->has_member_decl) {
-                    struct symbol *sym = NULL;
-                    sym = define_symbol(table, decl->ident, SYM_TAG_STRUCT);
-                    decl->type = type_struct(decl->ident);
-                    /* TODO need to pass type to define_symbol */
-                    sym->type = decl->type;
-                    tree->sym = sym;
-                }
-                else {
-                    struct symbol *sym = NULL;
-                    sym = use_symbol(table, decl->ident, SYM_TAG_STRUCT);
-                    decl->type = sym->type;
-                    tree->sym = sym;
-                }
-            } else {
-                struct symbol *sym = NULL;
-                sym = define_symbol(table, decl->ident, sym_kind_of(decl));
-                /* TODO need to pass this info to define_symbol */
-                sym->is_initialized = decl->has_init;
-                /* TODO need to pass type to define_symbol */
-                sym->type = decl->type;
-                tree->sym = sym;
-            }
-            return;
-        }
-
-    case NOD_STRUCT_REF:
-        {
-            const struct symbol *sym_l;
-            const struct symbol *sym;
-            const char *mem = tree->r->sval;
-            const char *tag;
-
-            add_sym_(tree->l, table, decl);
-
-            sym_l = tree->l->sym;
-
-            /* TODO we can not use node->type because type is not set yet
-             * when adding symbol
-             * should define sym_of(node) or symbol_(node)
-             * text_(node), int_(node) * set_text(node, ...), set_int(node, ...)
-             * L_(node), R_(node)
-             */
-            tag = sym_l->type->tag;
-            sym = lookup_symbol(table, tag, SYM_TAG_STRUCT);
-
-            for (;;) {
-                if (sym->kind == SYM_SCOPE_END) {
-                    /* end of struct definition */
-                    break;
-                }
-
-                if (sym->name && !strcmp(sym->name, mem)) {
-                    tree->r->sym = sym;
-                    /* TODO adding type to node? */
-                    tree->r->type = sym->type;
-                    tree->sym = sym;
-                    tree->type = sym->type;
-                    break;
-                }
-                sym++;
-            }
+        if (decl->has_init) {
+            /* TODO remove const cast */
+            struct symbol *sym = (struct symbol *) tree->sym;
+            sym->is_initialized = 1;
         }
         return;
-
-    case NOD_IDENT:
-        {
-            struct symbol *sym = NULL;
-            const int sym_kind = decl->is_func_call ? SYM_FUNC : SYM_VAR;
-
-            if (decl->is_lvalue) {
-                sym = assign_to_symbol(table, tree->sval, sym_kind);
-                decl->is_lvalue = 0;
-            } else {
-                sym = use_symbol(table, tree->sval, sym_kind);
-            }
-
-            tree->sym = sym;
-            return;
-        }
-
-    case NOD_CALL:
-        {
-            struct declaration new_decl = {0};
-            new_decl.is_func_call = 1;
-            add_sym_(tree->l, table, &new_decl);
-            add_sym_(tree->r, table, decl);
-            return;
-        }
 
     case NOD_ASSIGN:
         {
             struct declaration new_decl = {0};
+            /* evaluate rvalue first to check a = a + 1; */
+            check_init_(tree->r, table, decl);
             new_decl.is_lvalue = 1;
-            add_sym_(tree->l, table, &new_decl);
-            add_sym_(tree->r, table, decl);
+            check_init_(tree->l, table, &new_decl);
             return;
         }
 
-    case NOD_DECL_FUNC:
-        decl->kind = DECL_FUNC;
-        add_sym_(tree->l, table, decl);
-        scope_begin(table);
-        add_sym_(tree->r, table, decl);
-        if (!decl->has_func_def)
-            scope_end(table);
-        return;
-
-    case NOD_FUNC_DEF:
-        decl->has_func_def = 1;
-        add_sym_(tree->l, table, decl);
-        add_sym_(tree->r, table, decl);
-        scope_end(table);
-        return;
-
-    case NOD_COMPOUND:
-        scope_begin(table);
-        add_sym_(tree->l, table, decl);
-        add_sym_(tree->r, table, decl);
-        scope_end(table);
-        return;
-
-    case NOD_SPEC_STRUCT:
-        decl->kind = DECL_STRUCT;
-        if (tree->r)
-            decl->has_member_decl = 1;
-        add_sym_(tree->l, table, decl);
-
-        if (tree->r) {
-            scope_begin(table);
-            add_sym_(tree->r, table, decl);
-            scope_end(table);
+    case NOD_IDENT:
+        if (decl->is_lvalue && !tree->sym->is_used) {
+            /* TODO remove const cast */
+            struct symbol *sym = (struct symbol *) tree->sym;
+            sym->is_initialized = 1;
+        }
+        {
+            /* TODO remove const cast */
+            struct symbol *sym = (struct symbol *) tree->sym;
+            sym->is_used = 1;
         }
         return;
-
-    case NOD_SPEC_ARRAY:
-        decl->type = type_array(decl->type, tree->ival);
-        break;
-
-    case NOD_SPEC_POINTER:
-        decl->type = type_ptr(decl->type);
-        break;
-
-    case NOD_SPEC_CHAR:
-        decl->type = type_char();
-        break;
-
-    case NOD_SPEC_INT:
-        decl->type = type_int();
-        break;
 
     default:
         break;
     }
 
-    add_sym_(tree->l, table, decl);
-    add_sym_(tree->r, table, decl);
+    check_init_(tree->l, table, decl);
+    check_init_(tree->r, table, decl);
 }
 
-static void add_symbols(struct ast_node *tree, struct symbol_table *table)
+static void check_initialization(struct ast_node *tree, struct symbol_table *table)
 {
     struct declaration decl = {0};
-    add_sym_(tree, table, &decl);
+    check_init_(tree, table, &decl);
     return;
 }
 
@@ -466,9 +285,7 @@ static void add_types(struct ast_node *node, struct symbol_table *table)
 int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages)
 {
-    if (0) {
-    add_symbols(tree, table);
-    }
+    check_initialization(tree, table);
 
     analyze_symbol_usage(table, messages);
 
