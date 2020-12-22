@@ -61,17 +61,15 @@ static const struct token *consume(struct parser *p, int token_kind)
     return tok;
 }
 
-/*
- * XXX
- * error_at(struct parser *p, long file_pos, const char *msg)
- */
-static void error(struct parser *p, const char *msg)
+static void syntax_error(struct parser *p, const char *msg)
 {
-    const struct token *tok = current_token(p);
-    p->error_pos = token_file_pos(tok);
-    p->error_msg = msg;
+    add_error(p->msg, msg, 0);
 
-    printf("!!error %ld: %s\n", p->error_pos, msg);
+    for (;;) {
+        const struct token *tok = gettok(p);
+        if (tok->kind == ';' || tok->kind == '}' || tok->kind == TOK_EOF)
+            break;
+    }
 }
 
 static void expect(struct parser *p, enum token_kind query)
@@ -82,13 +80,7 @@ static void expect(struct parser *p, enum token_kind query)
         return;
     } else {
         /* TODO improve error message */
-        add_error(p->msg, "expected token '***' here", 0);
-
-        for (;;) {
-            tok = gettok(p);
-            if (tok->kind == ';' || tok->kind == '}' || tok->kind == TOK_EOF)
-                break;
-        }
+        syntax_error(p, "expected token '***' here");
         return;
     }
 }
@@ -100,7 +92,7 @@ static void expect_or_error(struct parser *p, enum token_kind query, const char 
     if (tok->kind == query) {
         return;
     } else {
-        error(p, error_msg);
+        syntax_error(p, error_msg);
         return;
     }
 }
@@ -992,6 +984,8 @@ static struct ast_node *declaration(struct parser *p)
     struct ast_node *tree = NULL;
     struct ast_node *spec = NULL;
 
+    /* Returning NULL doesn't mean syntax error in function scopes
+     * We can try to parse a statement instead */
     spec = decl_spec(p);
     if (!spec)
         return NULL;
@@ -1061,12 +1055,25 @@ static struct ast_node *extern_decl(struct parser *p)
     return declaration(p);
 }
 
+/*
+ * translation_unit
+ *     extern_declaration
+ *     translation_unit extern_declaration
+ */
 static struct ast_node *translation_unit(struct parser *p)
 {
     struct ast_node *tree = NULL;
+    struct ast_node *decl = NULL;
 
     while (!consume(p, TOK_EOF)) {
-        tree = new_node(NOD_LIST, tree, extern_decl(p));
+        decl = extern_decl(p);
+
+        if (!decl) {
+            syntax_error(p, "unexpected token at external declaration");
+            continue;
+        }
+
+        tree = new_node(NOD_LIST, tree, decl);
     }
 
     return tree;

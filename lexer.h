@@ -52,4 +52,6 @@ extern void free_lexer(struct lexer *lex);
 
 extern enum token_kind lex_get_token(struct lexer *l, struct token *tok);
 
+extern void print_token(const struct token *tok);
+
 #endif /* _H */

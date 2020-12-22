@@ -333,3 +333,59 @@ state_final:
     tok->file_pos = tok_pos;
     return tok->kind;
 }
+
+void print_token(const struct token *tok)
+{
+    if (tok->kind < TOK_END_OF_ASCII) {
+        printf("\"%c\"\n", tok->kind);
+        return;
+    }
+
+    switch (tok->kind) {
+    case TOK_NUM:
+    case TOK_IDENT:
+    case TOK_STRING_LITERAL:
+         /* keywords */
+    case TOK_ELSE:
+    case TOK_IF:
+    case TOK_RETURN:
+    case TOK_STRUCT:
+    case TOK_WHILE:
+         /* types */
+    case TOK_CHAR:
+    case TOK_INT:
+        printf("\"%s\"\n", tok->text);
+        return;
+
+    default:
+        break;
+    }
+
+    {
+        const char *s;
+
+        switch (tok->kind) {
+
+             /* bin op */
+        case TOK_LE:
+            s = "<=";
+            break;
+        case TOK_GE:
+            s = ">=";
+            break;
+        case TOK_EQ:
+            s = "==";
+            break;
+        case TOK_NE:
+            s = "!=";
+            break;
+        case TOK_EOF:
+            s = "EOR";
+            break;
+
+        default:
+            break;
+        }
+        printf("\"%s\"\n", s);
+    }
+}
