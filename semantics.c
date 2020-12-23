@@ -140,6 +140,9 @@ static int analyze_symbol_usage(struct symbol_table *table, struct message_list 
         else if (is_enumerator(sym)) {
             if (!sym->is_defined && sym->is_used)
                 add_error(messages, "use of undefined symbol", sym->file_pos);
+
+            if (sym->is_assigned)
+                add_error(messages, "expression is not assignable", sym->file_pos);
         }
         else if (is_func(sym)) {
             if (!sym->is_defined && sym->is_used)
@@ -253,6 +256,11 @@ static void check_init_(struct ast_node *tree,
             /* TODO remove const cast */
             struct symbol *sym = (struct symbol *) tree->sym;
             sym->is_initialized = 1;
+        }
+        if (decl->is_lvalue) {
+            /* TODO remove const cast */
+            struct symbol *sym = (struct symbol *) tree->sym;
+            sym->is_assigned = 1;
         }
         {
             /* TODO remove const cast */

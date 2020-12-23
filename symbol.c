@@ -102,7 +102,7 @@ static void print_horizonal_line(char c, int n)
 
 void print_symbol_table(const struct symbol_table *table)
 {
-    const int ROW = 78;
+    const int ROW = 79;
     const int N = table->symbol_count;
     int i;
 
@@ -114,7 +114,7 @@ void print_symbol_table(const struct symbol_table *table)
     printf("%10s | ", "type");
     printf("%5s | ", "level");
     printf("%5s | ", "mem");
-    printf("%5s | ", "DDRIU");
+    printf("%6s | ", "DDRIAU");
     printf("\n");
 
     print_horizonal_line('=', ROW);
@@ -135,6 +135,7 @@ void print_symbol_table(const struct symbol_table *table)
         printf("%c", sym->is_defined     ? '*' : '.');
         printf("%c", sym->is_redefined   ? '*' : '.');
         printf("%c", sym->is_initialized ? '*' : '.');
+        printf("%c", sym->is_assigned    ? '*' : '.');
         printf("%c", sym->is_used        ? '*' : '.');
         printf(" |");
 

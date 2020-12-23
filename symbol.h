@@ -31,6 +31,7 @@ struct symbol {
     char is_defined;
     char is_redefined;
     char is_initialized;
+    char is_assigned;
     char is_used;
 };
 
