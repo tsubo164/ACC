@@ -10,6 +10,7 @@ struct point {
 
 /*
 enum color;
+int i = 0;
 */
 
 enum color {
