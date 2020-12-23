@@ -3,6 +3,52 @@
 #include "semantics.h"
 #include "message.h"
 
+static int eval_(const struct ast_node *node, struct message_list *messages)
+{
+    int l, r;
+
+    if (!node)
+        return 0;
+
+    switch (node->kind) {
+
+    case NOD_ADD:
+        l = eval_(node->l, messages);
+        r = eval_(node->r, messages);
+        return l + r;
+
+    case NOD_SUB:
+        l = eval_(node->l, messages);
+        r = eval_(node->r, messages);
+        return l - r;
+
+    case NOD_MUL:
+        l = eval_(node->l, messages);
+        r = eval_(node->r, messages);
+        return l * r;
+
+    case NOD_DIV:
+        l = eval_(node->l, messages);
+        r = eval_(node->r, messages);
+        return l / r;
+
+    case NOD_NUM:
+        return node->ival;
+
+    case NOD_DECL_IDENT:
+    case NOD_IDENT:
+        if (node->sym->kind != SYM_ENUMERATOR) {
+            add_error(messages, "expression is not a constant expression", 0);
+            return 0;
+        }
+        return node->sym->mem_offset;
+
+    default:
+        add_error(messages, "expression is not a constant expression", 0);
+        return 0;
+    }
+}
+
 static const struct data_type *promote_data_type(
         const struct ast_node *n1, const struct ast_node *n2)
 {
@@ -175,7 +221,7 @@ static void duplicate_decl(struct declaration *dest, const struct declaration *s
     *dest = *src;
 }
 
-static void enum_val_(struct ast_node *tree, int *pval)
+static void enum_val_(struct ast_node *tree, int *pval, struct message_list *messages)
 {
     if (!tree)
         return;
@@ -184,7 +230,7 @@ static void enum_val_(struct ast_node *tree, int *pval)
 
     case NOD_SPEC_ENUM:
         *pval = 0;
-        enum_val_(tree->r, pval);
+        enum_val_(tree->r, pval, messages);
         return;
 
     case NOD_DECL_ENUMERATOR:
@@ -193,7 +239,7 @@ static void enum_val_(struct ast_node *tree, int *pval)
             struct symbol *sym = (struct symbol *) tree->l->sym;
 
             if (tree->r)
-                *pval = tree->r->ival;
+                *pval = eval_(tree->r, messages);
 
             sym->mem_offset = *pval;
             *pval = *pval + 1;
@@ -201,16 +247,16 @@ static void enum_val_(struct ast_node *tree, int *pval)
         return;
 
     default:
-        enum_val_(tree->l, pval);
-        enum_val_(tree->r, pval);
+        enum_val_(tree->l, pval, messages);
+        enum_val_(tree->r, pval, messages);
         return;
     }
 }
 
-static void compute_enum_values(struct ast_node *tree)
+static void compute_enum_values(struct ast_node *tree, struct message_list *messages)
 {
     int val = 0;
-    enum_val_(tree, &val);
+    enum_val_(tree, &val, messages);
 }
 
 static void check_init_(struct ast_node *tree,
@@ -336,7 +382,7 @@ int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages)
 {
     check_initialization(tree, table);
-    compute_enum_values(tree);
+    compute_enum_values(tree, messages);
 
     analyze_symbol_usage(table, messages);
 

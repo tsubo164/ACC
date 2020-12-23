@@ -40,61 +40,56 @@ void free_ast_node(struct ast_node *node)
     free_ast_node(node->r);
 }
 
-#define AST_NODE_LIST(N) \
-    N(NOD_LIST) \
-    N(NOD_COMPOUND) \
-    N(NOD_STMT) \
-    N(NOD_IF) \
-    N(NOD_THEN) \
-    N(NOD_RETURN) \
-    N(NOD_WHILE) \
-    N(NOD_ASSIGN) \
-    N(NOD_STRUCT_REF) \
-    N(NOD_ADDR) \
-    N(NOD_DEREF) \
-    N(NOD_FUNC_DEF) \
-    N(NOD_CALL) \
-    N(NOD_ARG) \
-    N(NOD_ADD) \
-    N(NOD_SUB) \
-    N(NOD_MUL) \
-    N(NOD_DIV) \
-    N(NOD_LT) \
-    N(NOD_GT) \
-    N(NOD_LE) \
-    N(NOD_GE) \
-    N(NOD_EQ) \
-    N(NOD_NE) \
-    N(NOD_IDENT) \
-    N(NOD_NUM) \
-    N(NOD_STRING) \
-    N(NOD_DECL) \
-    N(NOD_DECLARATOR) \
-    N(NOD_DECL_DIRECT) \
-    N(NOD_DECL_INIT) \
-    N(NOD_DECL_IDENT) \
-    N(NOD_DECL_FUNC) \
-    N(NOD_DECL_PARAM) \
-    N(NOD_DECL_MEMBER) \
-    N(NOD_DECL_ENUMERATOR) \
-    N(NOD_SPEC_CHAR) \
-    N(NOD_SPEC_INT) \
-    N(NOD_SPEC_POINTER) \
-    N(NOD_SPEC_ARRAY) \
-    N(NOD_SPEC_STRUCT) \
-    N(NOD_SPEC_ENUM)
-
 const char *node_to_string(const struct ast_node *node)
 {
     if (node == NULL)
         return "null";
 
-#define N(kind) case kind: return #kind;
     switch (node->kind) {
-AST_NODE_LIST(N)
+    case NOD_LIST: return "NOD_LIST";
+    case NOD_COMPOUND: return "NOD_COMPOUND";
+    case NOD_STMT: return "NOD_STMT";
+    case NOD_IF: return "NOD_IF";
+    case NOD_THEN: return "NOD_THEN";
+    case NOD_RETURN: return "NOD_RETURN";
+    case NOD_WHILE: return "NOD_WHILE";
+    case NOD_ASSIGN: return "NOD_ASSIGN";
+    case NOD_STRUCT_REF: return "NOD_STRUCT_REF";
+    case NOD_ADDR: return "NOD_ADDR";
+    case NOD_DEREF: return "NOD_DEREF";
+    case NOD_FUNC_DEF: return "NOD_FUNC_DEF";
+    case NOD_CALL: return "NOD_CALL";
+    case NOD_ARG: return "NOD_ARG";
+    case NOD_ADD: return "NOD_ADD";
+    case NOD_SUB: return "NOD_SUB";
+    case NOD_MUL: return "NOD_MUL";
+    case NOD_DIV: return "NOD_DIV";
+    case NOD_LT: return "NOD_LT";
+    case NOD_GT: return "NOD_GT";
+    case NOD_LE: return "NOD_LE";
+    case NOD_GE: return "NOD_GE";
+    case NOD_EQ: return "NOD_EQ";
+    case NOD_NE: return "NOD_NE";
+    case NOD_IDENT: return "NOD_IDENT";
+    case NOD_NUM: return "NOD_NUM";
+    case NOD_STRING: return "NOD_STRING";
+    case NOD_DECL: return "NOD_DECL";
+    case NOD_DECLARATOR: return "NOD_DECLARATOR";
+    case NOD_DECL_DIRECT: return "NOD_DECL_DIRECT";
+    case NOD_DECL_INIT: return "NOD_DECL_INIT";
+    case NOD_DECL_IDENT: return "NOD_DECL_IDENT";
+    case NOD_DECL_FUNC: return "NOD_DECL_FUNC";
+    case NOD_DECL_PARAM: return "NOD_DECL_PARAM";
+    case NOD_DECL_MEMBER: return "NOD_DECL_MEMBER";
+    case NOD_DECL_ENUMERATOR: return "NOD_DECL_ENUMERATOR";
+    case NOD_SPEC_CHAR: return "NOD_SPEC_CHAR";
+    case NOD_SPEC_INT: return "NOD_SPEC_INT";
+    case NOD_SPEC_POINTER: return "NOD_SPEC_POINTER";
+    case NOD_SPEC_ARRAY: return "NOD_SPEC_ARRAY";
+    case NOD_SPEC_STRUCT: return "NOD_SPEC_STRUCT";
+    case NOD_SPEC_ENUM: return "NOD_SPEC_ENUM";
     default: return "**unknown**";
     }
-#undef N
 }
 
 static void print_tree_recursive(const struct ast_node *tree, int depth)

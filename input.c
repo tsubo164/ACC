@@ -11,9 +11,10 @@ struct point {
 /*
 enum color;
 */
+
 enum color {
-    R = 11,
-    G/* = R + 23*/,
+    R = 10 + 1 + 12,
+    G = R + 100 - 50 / 2,
     B
 };
 

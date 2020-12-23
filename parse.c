@@ -835,21 +835,8 @@ static struct ast_node *enumerator(struct parser *p)
     decl_set_type(p, type_int());
     define_sym(p, tree->l);
 
-    if (consume(p, '=')) {
-        /* TODO constant_expression */
+    if (consume(p, '='))
         tree->r = constant_expression(p);
-#if 0
-        p->decl_enum = tree->r->ival;
-        p->decl_enum++;
-#endif
-    } else {
-#if 0
-        /* TODO tree = new_number(-1); */
-        tree->r = NEW_(NOD_NUM);
-        tree->r->ival = p->decl_enum;
-        p->decl_enum++;
-#endif
-    }
 
     return tree;
 }
@@ -902,10 +889,8 @@ static struct ast_node *enum_specifier(struct parser *p)
         define_sym(p, tree->l);
     }
 
-    /* scope_begin(p); */
     decl_set_enum(p, 0);
     tree->r = enumerator_list(p);
-    /* scope_end(p); */
 
     expect(p, '}');
 
