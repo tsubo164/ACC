@@ -137,6 +137,10 @@ static int analyze_symbol_usage(struct symbol_table *table, struct message_list 
             if (sym->is_defined && sym->is_used && !sym->is_initialized)
                 add_warning(messages, "uninitialized variable used", sym->file_pos);
         }
+        else if (is_enumerator(sym)) {
+            if (!sym->is_defined && sym->is_used)
+                add_error(messages, "use of undefined symbol", sym->file_pos);
+        }
         else if (is_func(sym)) {
             if (!sym->is_defined && sym->is_used)
                 add_warning(messages, "implicit declaration of function", sym->file_pos);
@@ -166,6 +170,44 @@ static void duplicate_decl(struct declaration *dest, const struct declaration *s
 
     /* TODO make duplicate_type in data_type.c */
     *dest = *src;
+}
+
+static void enum_val_(struct ast_node *tree, int *pval)
+{
+    if (!tree)
+        return;
+
+    switch (tree->kind) {
+
+    case NOD_SPEC_ENUM:
+        *pval = 0;
+        enum_val_(tree->r, pval);
+        return;
+
+    case NOD_DECL_ENUMERATOR:
+        {
+            /* TODO remove const cast */
+            struct symbol *sym = (struct symbol *) tree->l->sym;
+
+            if (tree->r)
+                *pval = tree->r->ival;
+
+            sym->mem_offset = *pval;
+            *pval = *pval + 1;
+        }
+        return;
+
+    default:
+        enum_val_(tree->l, pval);
+        enum_val_(tree->r, pval);
+        return;
+    }
+}
+
+static void compute_enum_values(struct ast_node *tree)
+{
+    int val = 0;
+    enum_val_(tree, &val);
 }
 
 static void check_init_(struct ast_node *tree,
@@ -286,6 +328,7 @@ int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages)
 {
     check_initialization(tree, table);
+    compute_enum_values(tree);
 
     analyze_symbol_usage(table, messages);
 

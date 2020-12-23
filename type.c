@@ -9,6 +9,7 @@ static struct data_type INT_     = {DATA_TYPE_INT,    4, 4, 1, NULL};
 static struct data_type PTR_     = {DATA_TYPE_PTR,    8, 8, 1, NULL};
 static struct data_type ARRAY_   = {DATA_TYPE_ARRAY,  0, 0, 0, NULL};
 static struct data_type STRUCT_  = {DATA_TYPE_STRUCT, 0, 4, 1, NULL};
+static struct data_type ENUM_    = {DATA_TYPE_ENUM,   4, 4, 1, NULL};
 
 const char *data_type_to_string(const struct data_type *dtype)
 {
@@ -22,6 +23,7 @@ const char *data_type_to_string(const struct data_type *dtype)
     case DATA_TYPE_PTR:    return "ptr";
     case DATA_TYPE_ARRAY:  return "array";
     case DATA_TYPE_STRUCT: return "struct";
+    case DATA_TYPE_ENUM:   return "enum";
     default:               return "unknown";
     }
 }
@@ -98,3 +100,19 @@ struct data_type *type_struct(const char *tag)
     return dtype;
 }
 
+struct data_type *type_enum(const char *tag)
+{
+    struct data_type *dtype;
+
+    dtype = malloc(sizeof(struct data_type));
+    *dtype = ENUM_;
+
+    {
+        /* TODO remove malloc */
+        char *t = (char *) malloc(sizeof(char) * (strlen(tag)+1));
+        strcpy(t, tag);
+        dtype->tag = t;
+    }
+
+    return dtype;
+}

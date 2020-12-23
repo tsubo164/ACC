@@ -7,7 +7,8 @@ enum data_type_kind {
     DATA_TYPE_INT,
     DATA_TYPE_PTR,
     DATA_TYPE_ARRAY,
-    DATA_TYPE_STRUCT
+    DATA_TYPE_STRUCT,
+    DATA_TYPE_ENUM
 };
 
 struct data_type {
@@ -29,5 +30,6 @@ extern struct data_type *type_int();
 extern struct data_type *type_ptr(struct data_type *base_type);
 extern struct data_type *type_array(struct data_type *base_type, int length);
 extern struct data_type *type_struct(const char *tag);
+extern struct data_type *type_enum(const char *tag);
 
 #endif /* _H */

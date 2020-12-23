@@ -24,6 +24,7 @@ struct parser {
     int decl_kind;
     const char * decl_ident;
     struct data_type *decl_type;
+    int decl_enum;
 };
 
 extern struct parser *new_parser();

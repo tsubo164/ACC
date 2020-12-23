@@ -22,23 +22,24 @@ static void keyword_or_identifier(struct token *tok)
 {
     const char *text = tok->text;
 
-    if (!strcmp(text, "char")) {
+    if (!strcmp(text, "char"))
         tok->kind = TOK_CHAR;
-    } else if (!strcmp(text, "else")) {
+    else if (!strcmp(text, "else"))
         tok->kind = TOK_ELSE;
-    } else if (!strcmp(text, "if")) {
+    else if (!strcmp(text, "enum"))
+        tok->kind = TOK_ENUM;
+    else if (!strcmp(text, "if"))
         tok->kind = TOK_IF;
-    } else if (!strcmp(text, "int")) {
+    else if (!strcmp(text, "int"))
         tok->kind = TOK_INT;
-    } else if (!strcmp(text, "return")) {
+    else if (!strcmp(text, "return"))
         tok->kind = TOK_RETURN;
-    } else if (!strcmp(text, "struct")) {
+    else if (!strcmp(text, "struct"))
         tok->kind = TOK_STRUCT;
-    } else if (!strcmp(text, "while")) {
+    else if (!strcmp(text, "while"))
         tok->kind = TOK_WHILE;
-    } else {
+    else
         tok->kind = TOK_IDENT;
-    }
 }
 
 static const char *make_text(struct lexer *l, const char *str)

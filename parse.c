@@ -134,6 +134,7 @@ void parser_init(struct parser *p)
     p->decl_kind = 0;
     p->decl_ident = NULL;
     p->decl_type = NULL;
+    p->decl_enum = 0;
 }
 
 /* decl context */
@@ -151,6 +152,8 @@ static void use_sym(struct parser *p, struct ast_node *node)
 {
     struct symbol *sym;
 
+    /* TODO support incomplete struct/union/enum
+     * currently registered as an int type */
     sym = use_symbol(&p->symtbl, p->decl_ident, p->decl_kind);
     node->sym = sym;
 }
@@ -185,13 +188,18 @@ static int decl_is_func(struct parser *p)
     return p->decl_kind == SYM_FUNC || p->decl_kind == SYM_PARAM;
 }
 
+static void decl_set_enum(struct parser *p, int value)
+{
+    p->decl_enum = value;
+}
+
 /*
  * forward declarations
  */
 static struct ast_node *expression(struct parser *p);
 static struct ast_node *assignment_expression(struct parser *p);
-static struct ast_node *type_spec(struct parser *p);
-static struct ast_node *decl_spec(struct parser *p);
+static struct ast_node *type_specifier(struct parser *p);
+static struct ast_node *declaration_specifier(struct parser *p);
 static struct ast_node *declarator(struct parser *p);
 static struct ast_node *declaration_list(struct parser *p);
 static struct ast_node *statement_list(struct parser *p);
@@ -531,13 +539,23 @@ static struct ast_node *equality_expression(struct parser *p)
 }
 
 /*
+ * conditional_expression
+ *     logical_or_expression
+ *     logical_or_expression '?' expression ':' conditional_expression
+ */
+static struct ast_node *conditional_expression(struct parser *p)
+{
+    return equality_expression(p);
+}
+
+/*
  * assignment_expression
  *     equality_expression
  *     primary_expression '=' assignment_expression
  */
 static struct ast_node *assignment_expression(struct parser *p)
 {
-    struct ast_node *tree = equality_expression(p);
+    struct ast_node *tree = conditional_expression(p);
 
     /*
     for (;;) {
@@ -567,6 +585,15 @@ static struct ast_node *assignment_expression(struct parser *p)
 static struct ast_node *expression(struct parser *p)
 {
     return assignment_expression(p);
+}
+
+/*
+ * constant_expression
+ *     conditional_expression
+ */
+static struct ast_node *constant_expression(struct parser *p)
+{
+    return conditional_expression(p);
 }
 
 /*
@@ -709,7 +736,7 @@ static struct ast_node *struct_decl(struct parser *p)
     struct ast_node *tree = NULL;
     struct ast_node *spec = NULL;
 
-    spec = type_spec(p);
+    spec = type_specifier(p);
     if (!spec)
         return NULL;
 
@@ -723,11 +750,11 @@ static struct ast_node *struct_decl(struct parser *p)
 }
 
 /*
- * struct_decl_list
+ * struct_declaration_list
  *     struct_decl
- *     struct_decl_list ',' struct_decl
+ *     struct_declaration_list ',' struct_decl
  */
-static struct ast_node *struct_decl_list(struct parser *p)
+static struct ast_node *struct_declaration_list(struct parser *p)
 {
     struct ast_node *tree = NULL;
 
@@ -742,7 +769,7 @@ static struct ast_node *struct_decl_list(struct parser *p)
     }
 }
 
-static struct ast_node *struct_union(struct parser *p)
+static struct ast_node *struct_or_union(struct parser *p)
 {
     struct ast_node *tree = NULL;
     const struct token *tok = gettok(p);
@@ -750,8 +777,8 @@ static struct ast_node *struct_union(struct parser *p)
     switch (tok->kind) {
 
     case TOK_STRUCT:
-        tree = NEW_(NOD_SPEC_STRUCT);
         decl_begin(p, SYM_TAG_STRUCT);
+        tree = NEW_(NOD_SPEC_STRUCT);
         break;
 
     default:
@@ -761,11 +788,11 @@ static struct ast_node *struct_union(struct parser *p)
     return tree;
 }
 
-static struct ast_node *struct_union_spec(struct parser *p)
+static struct ast_node *struct_or_union_specifier(struct parser *p)
 {
     struct ast_node *tree = NULL;
 
-    tree = struct_union(p);
+    tree = struct_or_union(p);
     tree->l = decl_identifier(p);
 
     decl_set_type(p, type_struct(tree->l->sval));
@@ -778,7 +805,7 @@ static struct ast_node *struct_union_spec(struct parser *p)
     }
 
     scope_begin(p);
-    tree->r = struct_decl_list(p);
+    tree->r = struct_declaration_list(p);
     scope_end(p);
 
     expect(p, '}');
@@ -786,7 +813,106 @@ static struct ast_node *struct_union_spec(struct parser *p)
     return tree;
 }
 
-static struct ast_node *type_spec(struct parser *p)
+/*
+ * enumerator
+ *     TOK_IDENT
+ *     TOK_IDENT '=' constant_expression
+ */
+static struct ast_node *enumerator(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct ast_node *ident = NULL;
+
+    ident = decl_identifier(p);
+    if (!ident)
+        return NULL;
+
+    decl_begin(p, SYM_ENUMERATOR);
+
+    tree = NEW_(NOD_DECL_ENUMERATOR);
+    tree->l = ident;
+
+    decl_set_type(p, type_int());
+    define_sym(p, tree->l);
+
+    if (consume(p, '=')) {
+        /* TODO constant_expression */
+        tree->r = constant_expression(p);
+#if 0
+        p->decl_enum = tree->r->ival;
+        p->decl_enum++;
+#endif
+    } else {
+#if 0
+        /* TODO tree = new_number(-1); */
+        tree->r = NEW_(NOD_NUM);
+        tree->r->ival = p->decl_enum;
+        p->decl_enum++;
+#endif
+    }
+
+    return tree;
+}
+
+/*
+ * enumerator_list
+ *     enumerator
+ *     enumerator_list ',' enumerator
+ */
+static struct ast_node *enumerator_list(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+
+    for (;;) {
+        struct ast_node *enu = enumerator(p);
+
+        if (!enu)
+            return tree;
+
+        tree = new_node(NOD_LIST, tree, enu);
+
+        if (!consume(p, ','))
+            return tree;
+    }
+}
+
+/*
+ * enum_specifier
+ *     TOK_ENUM '{' enumerator_list '}'
+ *     TOK_ENUM TOK_IDENT '{' enumerator_list '}'
+ *     TOK_ENUM TOK_IDENT
+ */
+static struct ast_node *enum_specifier(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+
+    expect(p, TOK_ENUM);
+
+    decl_begin(p, SYM_TAG_ENUM);
+
+    tree = NEW_(NOD_SPEC_ENUM);
+    tree->l = decl_identifier(p);
+
+    decl_set_type(p, type_enum(tree->l->sval));
+
+    if (!consume(p, '{')) {
+        use_sym(p, tree->l);
+        return tree;
+    } else {
+        define_sym(p, tree->l);
+    }
+
+    /* scope_begin(p); */
+    decl_set_enum(p, 0);
+    tree->r = enumerator_list(p);
+    /* scope_end(p); */
+
+    expect(p, '}');
+
+    return tree;
+}
+
+static struct ast_node *type_specifier(struct parser *p)
 {
     struct ast_node *tree = NULL;
     const struct token *tok = gettok(p);
@@ -805,7 +931,12 @@ static struct ast_node *type_spec(struct parser *p)
 
     case TOK_STRUCT:
         ungettok(p);
-        tree = struct_union_spec(p);
+        tree = struct_or_union_specifier(p);
+        break;
+
+    case TOK_ENUM:
+        ungettok(p);
+        tree = enum_specifier(p);
         break;
 
     default:
@@ -821,7 +952,7 @@ static struct ast_node *param_decl(struct parser *p)
     struct ast_node *tree = NULL;
     struct ast_node *spec = NULL;
 
-    spec = decl_spec(p);
+    spec = declaration_specifier(p);
     if (!spec)
         return NULL;
 
@@ -968,9 +1099,9 @@ static struct ast_node *init_declarator_list(struct parser *p)
     }
 }
 
-static struct ast_node *decl_spec(struct parser *p)
+static struct ast_node *declaration_specifier(struct parser *p)
 {
-    struct ast_node *tree = type_spec(p);
+    struct ast_node *tree = type_specifier(p);
     return tree;
 }
 
@@ -986,7 +1117,7 @@ static struct ast_node *declaration(struct parser *p)
 
     /* Returning NULL doesn't mean syntax error in function scopes
      * We can try to parse a statement instead */
-    spec = decl_spec(p);
+    spec = declaration_specifier(p);
     if (!spec)
         return NULL;
 

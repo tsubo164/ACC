@@ -45,12 +45,14 @@ enum ast_node_kind {
     NOD_DECL_FUNC,
     NOD_DECL_PARAM,
     NOD_DECL_MEMBER,
+    NOD_DECL_ENUMERATOR,
     /* type specifier */
     NOD_SPEC_CHAR,
     NOD_SPEC_INT,
     NOD_SPEC_POINTER,
     NOD_SPEC_ARRAY,
-    NOD_SPEC_STRUCT
+    NOD_SPEC_STRUCT,
+    NOD_SPEC_ENUM
 };
 
 struct ast_node {

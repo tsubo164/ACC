@@ -9,12 +9,17 @@ struct point {
 */
 
 /*
-enum color {
-    R
-};
+enum color;
 */
+enum color {
+    R = 11,
+    G/* = R + 23*/,
+    B
+};
 
 int main()
 {
-    return 42;
+    int a = 99;
+
+    return a + R;
 }

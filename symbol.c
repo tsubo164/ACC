@@ -38,6 +38,11 @@ int is_func(const struct symbol *sym)
     return sym->kind == SYM_FUNC;
 }
 
+int is_enumerator(const struct symbol *sym)
+{
+    return sym->kind == SYM_ENUMERATOR;
+}
+
 struct symbol_table *new_symbol_table()
 {
     struct symbol_table *table;
@@ -70,7 +75,9 @@ void free_symbol_table(struct symbol_table *table)
     S(SYM_FUNC) \
     S(SYM_PARAM) \
     S(SYM_MEMBER) \
-    S(SYM_TAG_STRUCT)
+    S(SYM_ENUMERATOR) \
+    S(SYM_TAG_STRUCT) \
+    S(SYM_TAG_ENUM)
 
 const char *symbol_to_string(const struct symbol *sym)
 {
@@ -175,9 +182,11 @@ static int namespace(int kind)
     case SYM_VAR:
     case SYM_FUNC:
     case SYM_PARAM:
+    case SYM_ENUMERATOR:
         return 1;
 
     case SYM_TAG_STRUCT:
+    case SYM_TAG_ENUM:
         return 2;
 
     case SYM_MEMBER:

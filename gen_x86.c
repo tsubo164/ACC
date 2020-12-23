@@ -540,7 +540,11 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
 
     if (is_global_var(sym)) {
         code3__(fp, node, MOV_, addr2_pc_rel(RIP, sym->name), RAX);
-    } else {
+    }
+    else if (is_enumerator(sym)) {
+        code3__(fp, node, MOV_, imme(get_mem_offset(node)), A_);
+    }
+    else {
         const int disp = -get_mem_offset(node);
 
         if (node->type->kind == DATA_TYPE_ARRAY) {

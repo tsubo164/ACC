@@ -10,7 +10,9 @@ enum symbol_kind {
     SYM_FUNC,
     SYM_PARAM,
     SYM_MEMBER,
-    SYM_TAG_STRUCT
+    SYM_ENUMERATOR,
+    SYM_TAG_STRUCT,
+    SYM_TAG_ENUM
 };
 
 struct symbol {
@@ -44,6 +46,7 @@ extern int is_global_var(const struct symbol *sym);
 extern int is_local_var(const struct symbol *sym);
 extern int is_param(const struct symbol *sym);
 extern int is_func(const struct symbol *sym);
+extern int is_enumerator(const struct symbol *sym);
 extern const char *symbol_to_string(const struct symbol *sym);
 
 /* symbol table */

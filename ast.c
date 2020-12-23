@@ -76,11 +76,13 @@ void free_ast_node(struct ast_node *node)
     N(NOD_DECL_FUNC) \
     N(NOD_DECL_PARAM) \
     N(NOD_DECL_MEMBER) \
+    N(NOD_DECL_ENUMERATOR) \
     N(NOD_SPEC_CHAR) \
     N(NOD_SPEC_INT) \
     N(NOD_SPEC_POINTER) \
     N(NOD_SPEC_ARRAY) \
-    N(NOD_SPEC_STRUCT)
+    N(NOD_SPEC_STRUCT) \
+    N(NOD_SPEC_ENUM)
 
 const char *node_to_string(const struct ast_node *node)
 {
@@ -206,6 +208,10 @@ static void print_decl_recursive(const struct ast_node *tree)
 
     case NOD_SPEC_STRUCT:
         printf(" struct %s", tree->sval);
+        break;
+
+    case NOD_SPEC_ENUM:
+        printf(" enum %s", tree->sval);
         break;
 
     case NOD_DECL_IDENT:
