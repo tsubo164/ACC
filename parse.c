@@ -53,35 +53,27 @@ static const struct token *consume(struct parser *p, int token_kind)
 {
     const struct token *tok = gettok(p);
 
-    if (tok->kind != token_kind) {
-        ungettok(p);
-        return NULL;
-    }
+    if (tok->kind == token_kind)
+        return tok;
 
-    return tok;
+    ungettok(p);
+    return NULL;
+}
+
+static int peektok(struct parser *p, int token_kind)
+{
+    const struct token *tok = gettok(p);
+    const int kind = tok->kind;
+
+    ungettok(p);
+    return kind == token_kind;
 }
 
 static void syntax_error(struct parser *p, const char *msg)
 {
-    add_error(p->msg, msg, 0);
-
-    for (;;) {
-        const struct token *tok = gettok(p);
-        if (tok->kind == ';' || tok->kind == '}' || tok->kind == TOK_EOF)
-            break;
-    }
-}
-
-static void expect(struct parser *p, enum token_kind query)
-{
-    const struct token *tok = gettok(p);
-
-    if (tok->kind == query) {
-        return;
-    } else {
-        /* TODO improve error message */
-        syntax_error(p, "expected token '***' here");
-        return;
+    if (!p->is_panic_mode) {
+        add_error(p->msg, msg, 0);
+        p->is_panic_mode = 1;
     }
 }
 
@@ -89,11 +81,32 @@ static void expect_or_error(struct parser *p, enum token_kind query, const char 
 {
     const struct token *tok = gettok(p);
 
-    if (tok->kind == query) {
+    if (tok->kind == query)
         return;
+
+    if (p->is_panic_mode) {
+        if (tok->kind == query || tok->kind == TOK_EOF) {
+            p->is_panic_mode = 0;
+        }
     } else {
         syntax_error(p, error_msg);
+    }
+}
+
+static void expect(struct parser *p, enum token_kind query)
+{
+    const struct token *tok = gettok(p);
+
+    if (tok->kind == query)
         return;
+
+    if (p->is_panic_mode) {
+        if (tok->kind == query || tok->kind == TOK_EOF) {
+            p->is_panic_mode = 0;
+        }
+    } else {
+        /* TODO improve error message */
+        syntax_error(p, "expected token '***' here");
     }
 }
 
@@ -134,6 +147,7 @@ void parser_init(struct parser *p)
     p->decl_kind = 0;
     p->decl_ident = NULL;
     p->decl_type = NULL;
+    p->is_panic_mode = 0;
 }
 
 /* decl context */
@@ -253,9 +267,7 @@ static struct ast_node *primary_expression(struct parser *p)
         return tree;
 
     default:
-        /* TODO * when parser expects an expression, does it accept
-         * null expressions * or treat them as an error?  */
-        ungettok(p);
+        syntax_error(p, "not an expression");
         return NULL;
     }
 }
@@ -349,7 +361,8 @@ static struct ast_node *postfix_expression(struct parser *p)
 
         case '(':
             tree = new_node(NOD_CALL, tree, NULL);
-            tree->r = argument_expression_list(p);
+            if (!peektok(p, ')'))
+                tree->r = argument_expression_list(p);
             expect(p, ')');
             break;
 
@@ -1105,9 +1118,8 @@ static struct ast_node *declaration(struct parser *p)
     tree->l = spec;
     tree->r = init_declarator_list(p);
 
-    if (consume(p, '{')) {
+    if (peektok(p, '{')) {
         /* is func definition */
-        ungettok(p);
         tree = new_node(NOD_FUNC_DEF, tree, compound_statement(p));
         scope_end(p);
         return tree;
