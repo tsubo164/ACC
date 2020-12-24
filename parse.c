@@ -134,7 +134,6 @@ void parser_init(struct parser *p)
     p->decl_kind = 0;
     p->decl_ident = NULL;
     p->decl_type = NULL;
-    p->decl_enum = 0;
 }
 
 /* decl context */
@@ -186,11 +185,6 @@ static void decl_set_type(struct parser *p, struct data_type *decl_type)
 static int decl_is_func(struct parser *p)
 {
     return p->decl_kind == SYM_FUNC || p->decl_kind == SYM_PARAM;
-}
-
-static void decl_set_enum(struct parser *p, int value)
-{
-    p->decl_enum = value;
 }
 
 /*
@@ -889,7 +883,6 @@ static struct ast_node *enum_specifier(struct parser *p)
         define_sym(p, tree->l);
     }
 
-    decl_set_enum(p, 0);
     tree->r = enumerator_list(p);
 
     expect(p, '}');

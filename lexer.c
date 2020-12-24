@@ -337,6 +337,8 @@ state_final:
 
 void print_token(const struct token *tok)
 {
+    const char *s;
+
     if (tok->kind < TOK_END_OF_ASCII) {
         printf("\"%c\"\n", tok->kind);
         return;
@@ -362,31 +364,27 @@ void print_token(const struct token *tok)
         break;
     }
 
-    {
-        const char *s;
+    switch (tok->kind) {
 
-        switch (tok->kind) {
+         /* bin op */
+    case TOK_LE:
+        s = "<=";
+        break;
+    case TOK_GE:
+        s = ">=";
+        break;
+    case TOK_EQ:
+        s = "==";
+        break;
+    case TOK_NE:
+        s = "!=";
+        break;
+    case TOK_EOF:
+        s = "EOF";
+        break;
 
-             /* bin op */
-        case TOK_LE:
-            s = "<=";
-            break;
-        case TOK_GE:
-            s = ">=";
-            break;
-        case TOK_EQ:
-            s = "==";
-            break;
-        case TOK_NE:
-            s = "!=";
-            break;
-        case TOK_EOF:
-            s = "EOR";
-            break;
-
-        default:
-            break;
-        }
-        printf("\"%s\"\n", s);
+    default:
+        break;
     }
+    printf("\"%s\"\n", s);
 }

@@ -1,0 +1,31 @@
+* TODO
+  - typedef
+  - include
+  - define
+  - struct arg
+  - struct assign
+  - switch case
+  - goto
+  - for
+  - break, continue
+  - char literal
+  - static, extern
+  - const
+  - void
+  - logical op &&, ||
+  - ++, --
+  - += ...
+  - -> op
+  - return check
+  - short, long
+  - unsigned
+  - array initializer
+  - std stuff FILE, stderro, NULL ...
+  - error with pos
+  - check args
+
+* OPTIONAL
+  - bit shift <<, >>
+  - bitwise op |, &, ~, ^
+  - anonymous enum, struct, union
+  - union
