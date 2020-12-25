@@ -4,6 +4,11 @@
 #include <stdio.h>
 #include "string_table.h"
 
+struct position {
+    int x, y;
+    const char *filename;
+};
+
 enum token_kind {
     TOK_UNKNOWN = -1,
     TOK_END_OF_ASCII = 127,
@@ -34,6 +39,8 @@ struct token {
     int value;
     const char *text;
 
+    struct position pos;
+
     long file_pos;
 };
 
@@ -41,6 +48,11 @@ struct lexer {
     FILE *file;
     long file_pos;
     struct string_table *strtab;
+
+    struct position pos;
+    int currc;
+    int prevc;
+    int prevx;
 };
 
 extern void token_init(struct token *tok);

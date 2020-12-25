@@ -5,11 +5,34 @@
 
 static int readc(struct lexer *l)
 {
-    return fgetc(l->file);
+    const int c = fgetc(l->file);
+
+    if (c == EOF)
+        return c;
+
+    if (l->currc == '\n') {
+        l->pos.y++;
+        l->pos.x = 1;
+    } else {
+        l->pos.x++;
+        l->prevx = l->pos.x;
+    }
+    l->prevc = l->currc;
+    l->currc = c;
+
+    return c;
 }
 
 static void unreadc(struct lexer *l, int c)
 {
+    if (l->pos.x == 1) {
+        l->pos.y = l->pos.y == 1 ? l->pos.y == 1 : l->pos.y--;
+        l->pos.x = l->prevx;
+    } else {
+        l->pos.x--;
+    }
+    l->currc = l->prevc;
+
     ungetc(c, l->file);
 }
 
@@ -52,12 +75,21 @@ static int make_id(struct lexer *l, const char *str)
     return find_string_id(l->strtab, str);
 }
 
+static void init_position(struct position *pos)
+{
+    pos->x = 0;
+    pos->y = 1;
+    pos->filename = NULL;
+}
+
 void token_init(struct token *tok)
 {
     tok->kind = TOK_UNKNOWN;
     tok->value = 0;
     tok->file_pos = 0L;
     tok->text = NULL;
+
+    init_position(&tok->pos);
 }
 
 long token_file_pos(const struct token *tok)
@@ -69,6 +101,11 @@ void lexer_init(struct lexer *lex)
 {
     lex->file = NULL;
     lex->file_pos = 0L;
+
+    init_position(&lex->pos);
+    lex->currc = '\0';
+    lex->prevc = '\0';
+    lex->prevx = 0;
 }
 
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
@@ -86,6 +123,9 @@ enum token_kind lex_get_token(struct lexer *l, struct token *tok)
 state_initial:
     c = readc(l);
     tok_pos = get_file_pos(l);
+
+    /* POS */
+    tok->pos = l->pos;
 
     switch (c) {
 
@@ -338,6 +378,13 @@ state_final:
 void print_token(const struct token *tok)
 {
     const char *s;
+
+    printf("(%d, %d) => ", tok->pos.y, tok->pos.x);
+
+    if (tok->kind == '\n') {
+        printf("\"\\n\"\n");
+        return;
+    }
 
     if (tok->kind < TOK_END_OF_ASCII) {
         printf("\"%c\"\n", tok->kind);

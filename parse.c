@@ -60,7 +60,7 @@ static const struct token *consume(struct parser *p, int token_kind)
     return NULL;
 }
 
-static int peektok(struct parser *p, int token_kind)
+static int nexttok(struct parser *p, int token_kind)
 {
     const struct token *tok = gettok(p);
     const int kind = tok->kind;
@@ -72,8 +72,14 @@ static int peektok(struct parser *p, int token_kind)
 static void syntax_error(struct parser *p, const char *msg)
 {
     if (!p->is_panic_mode) {
-        add_error(p->msg, msg, 0);
+        const struct token *tok = current_token(p);
+        add_error(p->msg, msg, &tok->pos);
         p->is_panic_mode = 1;
+
+        /*
+        */
+        print_token(tok);
+        printf("    >>>> in panic mode\n");
     }
 }
 
@@ -81,14 +87,19 @@ static void expect_or_error(struct parser *p, enum token_kind query, const char 
 {
     const struct token *tok = gettok(p);
 
-    if (tok->kind == query)
-        return;
-
     if (p->is_panic_mode) {
         if (tok->kind == query || tok->kind == TOK_EOF) {
             p->is_panic_mode = 0;
+
+            /*
+            */
+            print_token(tok);
+            printf("    <<<< out panic mode: expected '%c'\n", query);
         }
     } else {
+        if (tok->kind == query)
+            return;
+
         syntax_error(p, error_msg);
     }
 }
@@ -97,16 +108,27 @@ static void expect(struct parser *p, enum token_kind query)
 {
     const struct token *tok = gettok(p);
 
-    if (tok->kind == query)
-        return;
-
     if (p->is_panic_mode) {
         if (tok->kind == query || tok->kind == TOK_EOF) {
             p->is_panic_mode = 0;
+
+            /*
+            */
+            print_token(tok);
+            printf("    <<<< out panic mode: expected '%c'\n", query);
         }
     } else {
-        /* TODO improve error message */
-        syntax_error(p, "expected token '***' here");
+        if (tok->kind == query)
+            return;
+
+        {
+            char buf[1024] = {'\0'};
+            const char *msg = NULL;
+            /* TODO improve error message */
+            sprintf(buf, "expected token '%c' here", query);
+            msg = insert_string(p->lex.strtab, buf);
+            syntax_error(p, msg);
+        }
     }
 }
 
@@ -267,6 +289,7 @@ static struct ast_node *primary_expression(struct parser *p)
         return tree;
 
     default:
+        ungettok(p);
         syntax_error(p, "not an expression");
         return NULL;
     }
@@ -361,7 +384,7 @@ static struct ast_node *postfix_expression(struct parser *p)
 
         case '(':
             tree = new_node(NOD_CALL, tree, NULL);
-            if (!peektok(p, ')'))
+            if (!nexttok(p, ')'))
                 tree->r = argument_expression_list(p);
             expect(p, ')');
             break;
@@ -640,7 +663,9 @@ static struct ast_node *statement(struct parser *p)
     switch (tok->kind) {
 
     case TOK_RETURN:
-        tree = new_node(NOD_RETURN, expression(p), NULL);
+        tree = new_node(NOD_RETURN, NULL, NULL);
+        if (!nexttok(p, ';'))
+            tree->l = expression(p);
         expect_or_error(p, ';', "missing ';' at end of return statement");
         break;
 
@@ -1118,7 +1143,7 @@ static struct ast_node *declaration(struct parser *p)
     tree->l = spec;
     tree->r = init_declarator_list(p);
 
-    if (peektok(p, '{')) {
+    if (nexttok(p, '{')) {
         /* is func definition */
         tree = new_node(NOD_FUNC_DEF, tree, compound_statement(p));
         scope_end(p);

@@ -169,30 +169,32 @@ static int analyze_symbol_usage(struct symbol_table *table, struct message_list 
 
     for (i = 0; i < N; i++) {
         const struct symbol *sym = get_symbol(table, i);
+        /* TODO remove this */
+        const struct position pos = {0};
 
         if (is_local_var(sym)) {
             if (sym->is_redefined)
-                add_error(messages, "redefinition of variable", sym->file_pos);
+                add_error(messages, "redefinition of variable", &pos);
 
             if (!sym->is_defined && sym->is_used)
-                add_error(messages, "use of undefined symbol", sym->file_pos);
+                add_error(messages, "use of undefined symbol", &pos);
 
             if (sym->is_defined && !sym->is_used)
-                add_warning(messages, "unused variable", sym->file_pos);
+                add_warning(messages, "unused variable", &pos);
 
             if (sym->is_defined && sym->is_used && !sym->is_initialized)
-                add_warning(messages, "uninitialized variable used", sym->file_pos);
+                add_warning(messages, "uninitialized variable used", &pos);
         }
         else if (is_enumerator(sym)) {
             if (!sym->is_defined && sym->is_used)
-                add_error(messages, "use of undefined symbol", sym->file_pos);
+                add_error(messages, "use of undefined symbol", &pos);
 
             if (sym->is_assigned)
-                add_error(messages, "expression is not assignable", sym->file_pos);
+                add_error(messages, "expression is not assignable", &pos);
         }
         else if (is_func(sym)) {
             if (!sym->is_defined && sym->is_used)
-                add_warning(messages, "implicit declaration of function", sym->file_pos);
+                add_warning(messages, "implicit declaration of function", &pos);
         }
     }
     return 0;

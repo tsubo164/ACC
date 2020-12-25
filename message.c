@@ -87,6 +87,8 @@ static void print_message2(FILE *fp, const char *filename,
     int c = '\0';
     char line[1024] = {'\0'};
 #endif
+    err_col = msg->pos.x,
+    err_row = msg->pos.y;
 
     if (!strcmp(msg_type, "error")) {
         fprintf(stderr, TERMINAL_DECORATION_BOLD);
@@ -164,7 +166,7 @@ void free_message_list(struct message_list *list)
     MEM_FREE(list);
 }
 
-void add_warning(struct message_list *list, const char *msg, long file_pos)
+void add_warning(struct message_list *list, const char *msg, const struct position *pos)
 {
     struct message *m;
 
@@ -175,10 +177,10 @@ void add_warning(struct message_list *list, const char *msg, long file_pos)
 
     m = &list->warnings[list->warning_count++];
     m->str = msg;
-    m->file_pos = file_pos;
+    m->pos = *pos;
 }
 
-void add_error(struct message_list *list, const char *msg, long file_pos)
+void add_error(struct message_list *list, const char *msg, const struct position *pos)
 {
     struct message *m;
 
@@ -189,7 +191,7 @@ void add_error(struct message_list *list, const char *msg, long file_pos)
 
     m = &list->errors[list->error_count++];
     m->str = msg;
-    m->file_pos = file_pos;
+    m->pos = *pos;
 }
 
 void print_warning_messages(FILE *fp, const char *filename,
