@@ -25,6 +25,9 @@ enum token_kind {
     /* types */
     TOK_CHAR,
     TOK_INT,
+    /* unary op */
+    TOK_INC,
+    TOK_DEC,
     /* bin op */
     TOK_LE,
     TOK_GE,

@@ -32,6 +32,8 @@ enum ast_node_kind {
     NOD_GE,
     NOD_EQ,
     NOD_NE,
+    NOD_INC,
+    NOD_DEC,
     /* primary */
     NOD_IDENT,
     NOD_NUM,

@@ -813,6 +813,18 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2__(fp, node, IDIV_, DI_);
         break;
 
+    case NOD_INC:
+        gen_lvalue(fp, node->l);
+        code3__(fp, node, ADD_, imme(1), addr1(RAX));
+        code3__(fp, node, MOV_, addr1(RAX), A_);
+        break;
+
+    case NOD_DEC:
+        gen_lvalue(fp, node->l);
+        code3__(fp, node, SUB_, imme(1), addr1(RAX));
+        code3__(fp, node, MOV_, addr1(RAX), A_);
+        break;
+
     case NOD_LT:
         gen_relational(fp, node, SETL_);
         break;

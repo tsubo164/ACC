@@ -13,7 +13,7 @@ sources := $(addsuffix .c, $(files))
 objects := $(addsuffix .o, $(files))
 depends := $(addsuffix .d, $(files))
 
-.PHONY: all clean run run_cc test
+.PHONY: all clean run run_cc tree test
 
 all: $(target)
 
@@ -37,6 +37,9 @@ run: $(target)
 run_cc:
 	$(CC) -Wall -ansi --pedantic-errors input.c
 	./a.out
+
+tree: $(target)
+	./$(target) --print-tree input.c
 
 test: $(target)
 	@$(MAKE) --no-print-directory -C tests $@

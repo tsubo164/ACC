@@ -77,9 +77,9 @@ static void syntax_error(struct parser *p, const char *msg)
         p->is_panic_mode = 1;
 
         /*
-        */
         print_token(tok);
         printf("    >>>> in panic mode\n");
+        */
     }
 }
 
@@ -92,9 +92,9 @@ static void expect_or_error(struct parser *p, enum token_kind query, const char 
             p->is_panic_mode = 0;
 
             /*
-            */
             print_token(tok);
             printf("    <<<< out panic mode: expected '%c'\n", query);
+            */
         }
     } else {
         if (tok->kind == query)
@@ -113,9 +113,9 @@ static void expect(struct parser *p, enum token_kind query)
             p->is_panic_mode = 0;
 
             /*
-            */
             print_token(tok);
             printf("    <<<< out panic mode: expected '%c'\n", query);
+            */
         }
     } else {
         if (tok->kind == query)
@@ -403,11 +403,12 @@ static struct ast_node *postfix_expression(struct parser *p)
 }
 
 /*
- * unary_expression
- *     '+' primary_expression
- *     '-' primary_expression
- *     '*' unary_expression
- *     '&' unary_expression
+ * postfix_expression
+ *     TOK_INC unary_expression
+ *     TOK_DEC unary_expression
+ *     unary_operator cast_expression
+ *     TOK_SIZEOF unary_expression
+ *     TOK_SIZEOF '(' TOK_TYPENAME ')'
  */
 static struct ast_node *unary_expression(struct parser *p)
 {
@@ -431,6 +432,12 @@ static struct ast_node *unary_expression(struct parser *p)
 
     case '&':
         return new_node(NOD_ADDR, postfix_expression(p), NULL);
+
+    case TOK_INC:
+        return new_node(NOD_INC, unary_expression(p), NULL);
+
+    case TOK_DEC:
+        return new_node(NOD_DEC, unary_expression(p), NULL);
 
     default:
         ungettok(p);

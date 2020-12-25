@@ -1,10 +1,7 @@
 
 int main()
 {
-    int a = 19;
-    int b;
-
-    b = a;
+    char a = -13;
 
     return a;
 }

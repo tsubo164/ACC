@@ -124,7 +124,6 @@ state_initial:
     c = readc(l);
     tok_pos = get_file_pos(l);
 
-    /* POS */
     tok->pos = l->pos;
 
     switch (c) {
@@ -140,7 +139,33 @@ state_initial:
         goto state_final;
 
     /* arithmetic */
-    case '+': case '-': case '*':
+    case '+':
+        c = readc(l);
+        switch (c) {
+        case '+':
+            tok->kind = TOK_INC;
+            break;
+        default:
+            unreadc(l, c);
+            tok->kind = '+';
+            break;
+        }
+        goto state_final;
+
+    case '-':
+        c = readc(l);
+        switch (c) {
+        case '-':
+            tok->kind = TOK_DEC;
+            break;
+        default:
+            unreadc(l, c);
+            tok->kind = '-';
+            break;
+        }
+        goto state_final;
+
+    case '*':
         tok->kind = c;
         goto state_final;
 
@@ -413,22 +438,15 @@ void print_token(const struct token *tok)
 
     switch (tok->kind) {
 
+        /* unary op */
+    case TOK_INC: s = "++"; break;
+    case TOK_DEC: s = "--"; break;
          /* bin op */
-    case TOK_LE:
-        s = "<=";
-        break;
-    case TOK_GE:
-        s = ">=";
-        break;
-    case TOK_EQ:
-        s = "==";
-        break;
-    case TOK_NE:
-        s = "!=";
-        break;
-    case TOK_EOF:
-        s = "EOF";
-        break;
+    case TOK_LE: s = "<="; break;
+    case TOK_GE: s = ">="; break;
+    case TOK_EQ: s = "=="; break;
+    case TOK_NE: s = "!="; break;
+    case TOK_EOF: s = "EOF"; break;
 
     default:
         break;

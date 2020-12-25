@@ -8,6 +8,7 @@
   - goto
   - for
   - break, continue
+  - char <-> int, negative number literal
   - char literal
   - static, extern
   - const

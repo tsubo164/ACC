@@ -70,6 +70,8 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_GE: return "NOD_GE";
     case NOD_EQ: return "NOD_EQ";
     case NOD_NE: return "NOD_NE";
+    case NOD_INC: return "NOD_INC";
+    case NOD_DEC: return "NOD_DEC";
     case NOD_IDENT: return "NOD_IDENT";
     case NOD_NUM: return "NOD_NUM";
     case NOD_STRING: return "NOD_STRING";
