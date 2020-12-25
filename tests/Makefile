@@ -21,8 +21,9 @@ $(targets): %: %.c test.o
 	@./$@.out && echo "\033[0;32mOK\033[0;39m"
 
 test.o: test.c
-	$(ACC) $<
-	$(CC) -c -o test.o test.s
+	@echo 'compiling test.c ..'
+	@$(ACC) $<
+	@$(CC) -c -o test.o test.s
 
 clean:
 	$(RM) $(targets) *.s *.out *.o

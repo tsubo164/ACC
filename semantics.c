@@ -343,6 +343,7 @@ static void add_types(struct ast_node *node, struct symbol_table *table)
     switch (node->kind) {
 
     case NOD_ASSIGN:
+    case NOD_DECL_INIT:
         node->type = node->l->type;
         break;
 

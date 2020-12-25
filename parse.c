@@ -340,7 +340,10 @@ static struct ast_node *argument_expression_list(struct parser *p)
  * postfix_expression
  *     primary_expression
  *     postfix_expression '.' TOK_IDENT
+ *     postfix_expression '[' expression ']'
  *     postfix_expression '(' argument_expression_list ')'
+ *     postfix_expression TOK_INC
+ *     postfix_expression TOK_DEC
  */
 static struct ast_node *postfix_expression(struct parser *p)
 {
@@ -395,6 +398,14 @@ static struct ast_node *postfix_expression(struct parser *p)
             tree = new_node(NOD_DEREF, tree, NULL);
             break;
 
+        case TOK_INC:
+            tree = new_node(NOD_POSTINC, tree, NULL);
+            break;
+
+        case TOK_DEC:
+            tree = new_node(NOD_POSTDEC, tree, NULL);
+            break;
+
         default:
             ungettok(p);
             return tree;
@@ -403,7 +414,8 @@ static struct ast_node *postfix_expression(struct parser *p)
 }
 
 /*
- * postfix_expression
+ * unary_expression
+ *     postfix_expression
  *     TOK_INC unary_expression
  *     TOK_DEC unary_expression
  *     unary_operator cast_expression
@@ -434,10 +446,10 @@ static struct ast_node *unary_expression(struct parser *p)
         return new_node(NOD_ADDR, postfix_expression(p), NULL);
 
     case TOK_INC:
-        return new_node(NOD_INC, unary_expression(p), NULL);
+        return new_node(NOD_PREINC, unary_expression(p), NULL);
 
     case TOK_DEC:
-        return new_node(NOD_DEC, unary_expression(p), NULL);
+        return new_node(NOD_PREDEC, unary_expression(p), NULL);
 
     default:
         ungettok(p);

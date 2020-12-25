@@ -1,7 +1,8 @@
 
 int main()
 {
-    char a = -13;
+    int a = 9;
+    char b = a++;
 
-    return a;
+    return b;
 }

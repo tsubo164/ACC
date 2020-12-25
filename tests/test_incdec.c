@@ -30,5 +30,27 @@ int main()
         assert(21, ++b);
         assert(20, --b);
     }
+
+    {
+        int a = -13;
+        int b = 14;
+
+        assert(-13, a++);
+        assert(-12, a);
+
+        assert(-12, a++);
+        assert(-11, a);
+        assert(-11, a--);
+        assert(-12, a);
+
+        b = b + a;
+
+        assert(2, b);
+        assert(2, b++);
+        assert(3, b);
+        assert(3, b--);
+        assert(2, b);
+    }
+
     return 0;
 }
