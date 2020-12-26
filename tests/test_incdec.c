@@ -15,7 +15,6 @@ int main()
         assert(221134, --a);
         assert(221133, --a);
     }
-
     {
         int a = -111;
         int b = 130;
@@ -30,7 +29,6 @@ int main()
         assert(21, ++b);
         assert(20, --b);
     }
-
     {
         int a = -13;
         int b = 14;

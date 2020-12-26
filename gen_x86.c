@@ -701,6 +701,27 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
         /*
+         * do body;
+         * while (cond)
+         * -->
+         * label 0
+         *     body
+         *     cond ? jne 1
+         *     jmp 0
+         * label 1
+         */
+    case NOD_DOWHILE:
+        gen_label(fp, block_id, 0);
+        gen_code(fp, node->l);
+        gen_code(fp, node->r);
+        code3__(fp, node, CMP_, imme(0), A_);
+        code2__(fp, node, JE_,  label(block_id, 1));
+        code2__(fp, node, JMP_, label(block_id, 0));
+        gen_label(fp, block_id, 1);
+        block_id++;
+        break;
+
+        /*
          * if (cond)
          *     then;
          * else

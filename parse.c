@@ -714,6 +714,28 @@ static struct ast_node *for_statement(struct parser *p)
 }
 
 /*
+ * dowhile_statement
+ *     TOK_DO statement TOK_WHILE '(' expression ')' ';'
+ */
+static struct ast_node *dowhile_statement(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct ast_node *body = NULL, *cond = NULL;
+
+    expect(p, TOK_DO);
+    body = statement(p);
+    expect(p, TOK_WHILE);
+
+    expect(p, '(');
+    cond = expression(p);
+    expect(p, ')');
+    expect(p, ';');
+
+    tree = new_node(NOD_DOWHILE, body, cond);
+    return tree;
+}
+
+/*
  * statement
  *     expression ';'
  *     TOK_RETURN expression ';'
@@ -728,6 +750,10 @@ static struct ast_node *statement(struct parser *p)
     case TOK_FOR:
         ungettok(p);
         return for_statement(p);
+
+    case TOK_DO:
+        ungettok(p);
+        return dowhile_statement(p);
 
     case TOK_RETURN:
         tree = new_node(NOD_RETURN, NULL, NULL);

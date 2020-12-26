@@ -14,6 +14,7 @@ enum ast_node_kind {
     NOD_IF_THEN,
     NOD_RETURN,
     NOD_WHILE,
+    NOD_DOWHILE,
     NOD_FOR,
     NOD_FOR_PRE_COND,
     NOD_FOR_BODY_POST,

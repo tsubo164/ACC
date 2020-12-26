@@ -53,6 +53,7 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_IF_THEN: return "NOD_IF_THEN";
     case NOD_RETURN: return "NOD_RETURN";
     case NOD_WHILE: return "NOD_WHILE";
+    case NOD_DOWHILE: return "NOD_DOWHILE";
     case NOD_FOR: return "NOD_FOR";
     case NOD_FOR_PRE_COND: return "NOD_FOR_PRE_COND";
     case NOD_FOR_BODY_POST: return "NOD_FOR_BODY_POST";

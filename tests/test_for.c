@@ -11,7 +11,6 @@ int main()
         }
         assert(55, sum);
     }
-
     {
         int i;
 
@@ -21,7 +20,6 @@ int main()
 
         assert(15, i);
     }
-
     {
         int sum = 0;
         int i = 11;
@@ -37,6 +35,5 @@ int main()
     /*
     for (;;) {}
     */
-
     return 0;
 }
