@@ -226,6 +226,7 @@ static int decl_is_func(struct parser *p)
 /*
  * forward declarations
  */
+static struct ast_node *statement(struct parser *p);
 static struct ast_node *expression(struct parser *p);
 static struct ast_node *assignment_expression(struct parser *p);
 static struct ast_node *type_specifier(struct parser *p);
@@ -670,6 +671,49 @@ static struct ast_node *compound_statement(struct parser *p)
 }
 
 /*
+ * expression_statement
+ *     ';'
+ *     expression ';'
+ */
+static struct ast_node *expression_statement(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+
+    if (!nexttok(p, ';'))
+        tree = expression(p);
+    expect(p, ';');
+
+    return tree;
+}
+
+/*
+ * for_statement
+ *     TOK_FOR '(' expression_statement expression_statement ')' statement
+ *     TOK_FOR '(' expression_statement expression_statement expression ')' statement
+ */
+static struct ast_node *for_statement(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct ast_node *pre = NULL, *cond = NULL, *body = NULL, *post = NULL;
+    struct ast_node *pre_cond = NULL, *body_post = NULL;
+
+    expect(p, TOK_FOR);
+    expect(p, '(');
+    pre  = expression_statement(p);
+    cond = expression_statement(p);
+    if (!nexttok(p, ')'))
+        post = expression(p);
+    expect(p, ')');
+    body = statement(p);
+
+    pre_cond  = new_node(NOD_FOR_PRE_COND, pre, cond);
+    body_post = new_node(NOD_FOR_BODY_POST, body, post);
+    tree      = new_node(NOD_FOR, pre_cond, body_post);
+
+    return tree;
+}
+
+/*
  * statement
  *     expression ';'
  *     TOK_RETURN expression ';'
@@ -680,6 +724,10 @@ static struct ast_node *statement(struct parser *p)
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
+
+    case TOK_FOR:
+        ungettok(p);
+        return for_statement(p);
 
     case TOK_RETURN:
         tree = new_node(NOD_RETURN, NULL, NULL);
@@ -692,7 +740,7 @@ static struct ast_node *statement(struct parser *p)
         expect_or_error(p, '(', "missing '(' after if");
         tree = new_node(NOD_IF, expression(p), NULL);
         expect_or_error(p, ')', "missing ')' after if condition");
-        tree->r = new_node(NOD_THEN, statement(p), NULL);
+        tree->r = new_node(NOD_IF_THEN, statement(p), NULL);
         tok = gettok(p);
         if (tok->kind == TOK_ELSE) {
             tree->r->r = statement(p);

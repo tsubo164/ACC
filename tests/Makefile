@@ -5,7 +5,7 @@ RM = rm -f
 files   := \
 		test_0000 test_0001 test_0002 test_0003 test_0004 \
 		test_0005 test_0006 test_0007 test_0008 \
-		test_enum test_incdec test_string
+		test_enum test_for test_incdec test_string
 targets := $(files)
 
 .PHONY: all clean test $(targets)

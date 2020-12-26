@@ -1,8 +1,16 @@
 
 int main()
 {
-    int a = 9;
-    char b = a++;
+    int sum = 0;
+    int i;
 
-    return b;
+    for (i = 1; i <= 10; i++) {
+        sum = sum + i;
+    }
+
+    for (i = 1; i <= 10; i++) {
+        sum = sum + i;
+    }
+
+    return sum;
 }

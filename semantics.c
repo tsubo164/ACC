@@ -2,6 +2,7 @@
 #include <string.h>
 #include "semantics.h"
 #include "message.h"
+#include "ast.h"
 
 static int eval_(const struct ast_node *node, struct message_list *messages)
 {
@@ -261,6 +262,31 @@ static void compute_enum_values(struct ast_node *tree, struct message_list *mess
     enum_val_(tree, &val, messages);
 }
 
+static void check_control_for(struct ast_node *tree, struct message_list *messages)
+{
+    if (!tree)
+        return;
+
+    switch (tree->kind) {
+
+    case NOD_FOR:
+        check_control_for(tree->l, messages);
+        return;
+
+    case NOD_FOR_PRE_COND:
+        if (!tree->r) {
+            tree->r = new_ast_node(NOD_NUM, NULL, NULL);
+            tree->r->ival = 1;
+        }
+        return;
+
+    default:
+        check_control_for(tree->l, messages);
+        check_control_for(tree->r, messages);
+        return;
+    }
+}
+
 static void check_init_(struct ast_node *tree,
         struct symbol_table *table, struct declaration *decl)
 {
@@ -385,6 +411,7 @@ int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages)
 {
     check_initialization(tree, table);
+    check_control_for(tree, messages);
     compute_enum_values(tree, messages);
 
     analyze_symbol_usage(table, messages);

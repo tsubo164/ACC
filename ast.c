@@ -50,9 +50,12 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_COMPOUND: return "NOD_COMPOUND";
     case NOD_STMT: return "NOD_STMT";
     case NOD_IF: return "NOD_IF";
-    case NOD_THEN: return "NOD_THEN";
+    case NOD_IF_THEN: return "NOD_IF_THEN";
     case NOD_RETURN: return "NOD_RETURN";
     case NOD_WHILE: return "NOD_WHILE";
+    case NOD_FOR: return "NOD_FOR";
+    case NOD_FOR_PRE_COND: return "NOD_FOR_PRE_COND";
+    case NOD_FOR_BODY_POST: return "NOD_FOR_BODY_POST";
     case NOD_ASSIGN: return "NOD_ASSIGN";
     case NOD_STRUCT_REF: return "NOD_STRUCT_REF";
     case NOD_ADDR: return "NOD_ADDR";

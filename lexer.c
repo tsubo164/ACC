@@ -51,6 +51,8 @@ static void keyword_or_identifier(struct token *tok)
         tok->kind = TOK_ELSE;
     else if (!strcmp(text, "enum"))
         tok->kind = TOK_ENUM;
+    else if (!strcmp(text, "for"))
+        tok->kind = TOK_FOR;
     else if (!strcmp(text, "if"))
         tok->kind = TOK_IF;
     else if (!strcmp(text, "int"))

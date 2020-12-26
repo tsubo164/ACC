@@ -11,9 +11,12 @@ enum ast_node_kind {
     /* statement */
     NOD_STMT,
     NOD_IF,
-    NOD_THEN,
+    NOD_IF_THEN,
     NOD_RETURN,
     NOD_WHILE,
+    NOD_FOR,
+    NOD_FOR_PRE_COND,
+    NOD_FOR_BODY_POST,
     /* expression */
     NOD_ASSIGN,
     NOD_STRUCT_REF,

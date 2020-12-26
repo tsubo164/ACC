@@ -659,19 +659,78 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->r);
         break;
 
+        /*
+         * for (pre; cond; post)
+         *     body;
+         * -->
+         *     pre
+         * label 0
+         *     cond ? jne 1
+         *     body
+         *     post
+         *     jmp 0
+         * label 1
+         */
+    case NOD_FOR:
+        gen_code(fp, node->l);
+        gen_code(fp, node->r);
+        block_id++;
+        break;
+
+    case NOD_FOR_PRE_COND:
+        /* pre */
+        gen_comment(fp, "for-pre");
+        gen_code(fp, node->l);
+        /* cond */
+        gen_comment(fp, "for-cond");
+        gen_label(fp, block_id, 0);
+        gen_code(fp, node->r);
+        code3__(fp, node, CMP_, imme(0), A_);
+        code2__(fp, node, JE_,  label(block_id, 1));
+        break;
+
+    case NOD_FOR_BODY_POST:
+        /* body */
+        gen_comment(fp, "for-body");
+        gen_code(fp, node->l);
+        /* post */
+        gen_comment(fp, "for-post");
+        gen_code(fp, node->r);
+        code2__(fp, node, JMP_, label(block_id, 0));
+        gen_label(fp, block_id, 1);
+        break;
+
+        /*
+         * if (cond)
+         *     then;
+         * else
+         *     else;
+         * -->
+         *     cond ? je 0
+         *     then
+         *     jmp 1
+         * label 0
+         *     else
+         * label 1
+         */
     case NOD_IF:
         /* if */
         gen_code(fp, node->l);
         code3__(fp, node, CMP_, imme(0), A_);
         code2__(fp, node, JE_,  label(block_id, 0));
+        gen_code(fp, node->r);
+        block_id++;
+        break;
+
+    case NOD_IF_THEN:
+        gen_comment(fp, "then");
         /* then */
-        gen_code(fp, node->r->l);
+        gen_code(fp, node->l);
         code2__(fp, node, JMP_, label(block_id, 1));
         /* else */
         gen_label(fp, block_id, 0);
-        gen_code(fp, node->r->r);
+        gen_code(fp, node->r);
         gen_label(fp, block_id, 1);
-        block_id++;
         break;
 
     case NOD_WHILE:

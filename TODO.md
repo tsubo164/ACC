@@ -1,32 +1,41 @@
 * TODO
-  - typedef
   - include
   - define
   - struct arg
   - struct assign
+  - += ...
+  - -> op
+  - do while
+  - break, continue
   - switch case
   - goto
-  - for
-  - break, continue
+  - check args
   - char <-> int, negative number literal
   - char literal
   - static, extern
   - const
   - void
   - logical op &&, ||
-  - ++, --
-  - += ...
-  - -> op
   - return check
-  - short, long
-  - unsigned
   - array initializer
   - std stuff FILE, stderro, NULL ...
   - error with pos
-  - check args
+  - typedef
 
 * OPTIONAL
+  - unsigned
+  - short, long
   - bit shift <<, >>
   - bitwise op |, &, ~, ^
   - anonymous enum, struct, union
   - union
+
+* IMPLEMENTATION
+  - define_symbol() takes type args
+  - find_struct() - improve '.'
+  - new_number()
+  - remove const cast
+
+* DONE
+  - ++, --
+  - for
