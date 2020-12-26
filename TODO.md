@@ -5,7 +5,6 @@
   - struct assign
   - += ...
   - -> op
-  - do while
   - break, continue
   - switch case
   - goto
@@ -39,3 +38,4 @@
 * DONE
   - ++, --
   - for
+  - do while

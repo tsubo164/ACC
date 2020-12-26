@@ -714,6 +714,25 @@ static struct ast_node *for_statement(struct parser *p)
 }
 
 /*
+ * while_statement
+ *     TOK_WHILE '(' expression ')' statement
+ */
+static struct ast_node *while_statement(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct ast_node *body = NULL, *cond = NULL;
+
+    expect(p, TOK_WHILE);
+    expect(p, '(');
+    cond = expression(p);
+    expect(p, ')');
+    body = statement(p);
+
+    tree = new_node(NOD_WHILE, cond, body);
+    return tree;
+}
+
+/*
  * dowhile_statement
  *     TOK_DO statement TOK_WHILE '(' expression ')' ';'
  */
@@ -751,6 +770,10 @@ static struct ast_node *statement(struct parser *p)
         ungettok(p);
         return for_statement(p);
 
+    case TOK_WHILE:
+        ungettok(p);
+        return while_statement(p);
+
     case TOK_DO:
         ungettok(p);
         return dowhile_statement(p);
@@ -773,13 +796,6 @@ static struct ast_node *statement(struct parser *p)
         } else {
             ungettok(p);
         }
-        break;
-
-    case TOK_WHILE:
-        expect_or_error(p, '(', "missing '(' after while");
-        tree = new_node(NOD_WHILE, expression(p), NULL);
-        expect_or_error(p, ')', "missing ')' after while condition");
-        tree->r = statement(p);
         break;
 
     case '{':

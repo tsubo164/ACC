@@ -632,9 +632,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     static int reg_id = 0;
     static int block_id = 0;
 
-    if (node == NULL) {
+    if (node == NULL)
         return;
-    }
 
     switch (node->kind) {
 
@@ -701,6 +700,29 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
         /*
+         * while (cond)
+         *     body;
+         * -->
+         * label 0
+         *     cond ? jne 1
+         *     body
+         *     jmp 0
+         * label 1
+         */
+    case NOD_WHILE:
+        gen_comment(fp, "while-cond");
+        gen_label(fp, block_id, 0);
+        gen_code(fp, node->l);
+        code3__(fp, node, CMP_, imme(0), A_);
+        code2__(fp, node, JE_,  label(block_id, 1));
+        gen_comment(fp, "while-body");
+        gen_code(fp, node->r);
+        code2__(fp, node, JMP_, label(block_id, 0));
+        gen_label(fp, block_id, 1);
+        block_id++;
+        break;
+
+        /*
          * do body;
          * while (cond)
          * -->
@@ -711,8 +733,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
          * label 1
          */
     case NOD_DOWHILE:
+        gen_comment(fp, "while-body");
         gen_label(fp, block_id, 0);
         gen_code(fp, node->l);
+        gen_comment(fp, "while-cond");
         gen_code(fp, node->r);
         code3__(fp, node, CMP_, imme(0), A_);
         code2__(fp, node, JE_,  label(block_id, 1));
@@ -736,6 +760,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
          */
     case NOD_IF:
         /* if */
+        gen_comment(fp, "if-cond");
         gen_code(fp, node->l);
         code3__(fp, node, CMP_, imme(0), A_);
         code2__(fp, node, JE_,  label(block_id, 0));
@@ -744,25 +769,15 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_IF_THEN:
-        gen_comment(fp, "then");
         /* then */
+        gen_comment(fp, "if-then");
         gen_code(fp, node->l);
         code2__(fp, node, JMP_, label(block_id, 1));
         /* else */
+        gen_comment(fp, "if-else");
         gen_label(fp, block_id, 0);
         gen_code(fp, node->r);
         gen_label(fp, block_id, 1);
-        break;
-
-    case NOD_WHILE:
-        gen_label(fp, block_id, 0);
-        gen_code(fp, node->l);
-        code3__(fp, node, CMP_, imme(0), A_);
-        code2__(fp, node, JE_,  label(block_id, 1));
-        gen_code(fp, node->r);
-        code2__(fp, node, JMP_, label(block_id, 0));
-        gen_label(fp, block_id, 1);
-        block_id++;
         break;
 
     case NOD_RETURN:

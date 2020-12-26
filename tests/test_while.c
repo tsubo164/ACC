@@ -45,6 +45,17 @@ int main()
         int sum = 0;
         int i = 0;
 
+        while (i < 10) {
+            i++;
+            sum = sum + i;
+        }
+
+        assert(55, sum);
+    }
+    {
+        int sum = 0;
+        int i = 0;
+
         do {
             i++;
             sum = sum + i;
