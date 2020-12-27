@@ -58,6 +58,7 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_FOR_PRE_COND: return "NOD_FOR_PRE_COND";
     case NOD_FOR_BODY_POST: return "NOD_FOR_BODY_POST";
     case NOD_ASSIGN: return "NOD_ASSIGN";
+    case NOD_ADD_ASSIGN: return "NOD_ADD_ASSIGN";
     case NOD_STRUCT_REF: return "NOD_STRUCT_REF";
     case NOD_ADDR: return "NOD_ADDR";
     case NOD_DEREF: return "NOD_DEREF";

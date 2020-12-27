@@ -149,6 +149,9 @@ state_initial:
         case '+':
             tok->kind = TOK_INC;
             break;
+        case '=':
+            tok->kind = TOK_ADD_ASSIGN;
+            break;
         default:
             unreadc(l, c);
             tok->kind = '+';
@@ -445,7 +448,7 @@ void print_token(const struct token *tok)
 
     switch (tok->kind) {
 
-        /* unary op */
+         /* unary op */
     case TOK_INC: s = "++"; break;
     case TOK_DEC: s = "--"; break;
          /* bin op */
@@ -453,6 +456,8 @@ void print_token(const struct token *tok)
     case TOK_GE: s = ">="; break;
     case TOK_EQ: s = "=="; break;
     case TOK_NE: s = "!="; break;
+         /* assignment op */
+    case TOK_ADD_ASSIGN: s = "+="; break;
     case TOK_EOF: s = "EOF"; break;
 
     default:

@@ -20,6 +20,7 @@ enum ast_node_kind {
     NOD_FOR_BODY_POST,
     /* expression */
     NOD_ASSIGN,
+    NOD_ADD_ASSIGN,
     NOD_STRUCT_REF,
     NOD_ADDR,
     NOD_DEREF,

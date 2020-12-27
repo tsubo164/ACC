@@ -35,6 +35,9 @@ enum token_kind {
     TOK_GE,
     TOK_EQ,
     TOK_NE,
+    /* assignment op */
+    TOK_ADD_ASSIGN,
+    /* ---- */
     TOK_EOF
 };
 

@@ -600,32 +600,27 @@ static struct ast_node *conditional_expression(struct parser *p)
 
 /*
  * assignment_expression
- *     equality_expression
- *     primary_expression '=' assignment_expression
+ *     conditional_expression
+ *     unary_expression '=' assignment_expression
+ *     unary_expression TOK_ADD_ASSIGN assignment_expression
  */
 static struct ast_node *assignment_expression(struct parser *p)
 {
     struct ast_node *tree = conditional_expression(p);
+    const struct token *tok = gettok(p);
 
-    /*
-    for (;;) {
-    */
-        const struct token *tok = gettok(p);
+    switch (tok->kind) {
 
-        switch (tok->kind) {
+    case '=':
+        return new_node(NOD_ASSIGN, tree, assignment_expression(p));
 
-        case '=':
-            tree = new_node(NOD_ASSIGN, tree, assignment_expression(p));
-            break;
+    case TOK_ADD_ASSIGN:
+        return new_node(NOD_ADD_ASSIGN, tree, assignment_expression(p));
 
-        default:
-            ungettok(p);
-            return tree;
-        }
-    /*
+    default:
+        ungettok(p);
+        return tree;
     }
-    */
-            return tree;
 }
 
 /*

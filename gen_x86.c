@@ -395,7 +395,11 @@ static void code2__(FILE *fp, const struct ast_node *node,
 {
     const struct opecode o0 = op;
     const struct operand o1 = oper1;
-    const int tag = get_data_tag_from_type2(node);
+    int tag = get_data_tag_from_type2(node);
+
+    /* 64 bit mode supports only full register for pop and push */
+    if (!strcmp(op.mnemonic, "push") || !strcmp(op.mnemonic, "pop"))
+        tag = QUAD;
 
     code__(fp, tag, &o0, &o1, NULL);
 }
@@ -425,6 +429,7 @@ static void code3__(FILE *fp, const struct ast_node *node,
             break;
         }
     }
+
     code__(fp, tag, &o0, &o1, &o2);
 }
 
@@ -509,14 +514,38 @@ static void gen_func_body(FILE *fp, const struct ast_node *node)
 
 static void gen_func_call(FILE *fp, const struct ast_node *node)
 {
-    const struct ast_node *ident = NULL;
-    ident = find_node(node->l, NOD_IDENT);
-    ident = node->l;
+    static int reg_count = 0;
+    int i;
 
-    /* args */
-    gen_code(fp, node->r);
-    /* call */
-    code2__(fp, node, CALL_, str(ident->sym->name));
+    if (!node)
+        return;
+
+    switch (node->kind) {
+
+    case NOD_CALL:
+        reg_count = 0;
+        /* push args */
+        gen_func_call(fp, node->r);
+        /* pop args */
+        for (i = 0; i < reg_count; i++)
+            code2__(fp, node, POP_, arg(i));
+        /* call */
+        code2__(fp, node, CALL_, str(node->l->sym->name));
+        return;
+
+    case NOD_ARG:
+        /* push args */
+        gen_code(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        reg_count++;
+        return;
+
+    default:
+        /* walk tree from the rightmost arg */
+        gen_func_call(fp, node->r);
+        gen_func_call(fp, node->l);
+        return;
+    }
 }
 
 static void gen_comment(FILE *fp, const char *cmt)
@@ -629,7 +658,6 @@ static void gen_equality(FILE *fp, const struct ast_node *node, struct opecode o
 
 static void gen_code(FILE *fp, const struct ast_node *node)
 {
-    static int reg_id = 0;
     static int block_id = 0;
 
     if (node == NULL)
@@ -825,14 +853,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_CALL:
-        reg_id = 0;
         gen_func_call(fp, node);
-        break;
-
-    case NOD_ARG:
-        gen_code(fp, node->l);
-        gen_code(fp, node->r);
-        code3__(fp, node, MOV_, A_, arg(reg_id++));
         break;
 
     case NOD_FUNC_DEF:
@@ -842,11 +863,21 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_ASSIGN:
+        gen_comment(fp, "assign");
         gen_lvalue(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
         code2__(fp, node, POP_,  RDX);
         code3__(fp, node, MOV_, A_, addr1(RDX));
+        break;
+
+    case NOD_ADD_ASSIGN:
+        gen_comment(fp, "add-assign");
+        gen_lvalue(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code2__(fp, node, POP_,  RDX);
+        code3__(fp, node, ADD_, A_, addr1(RDX));
         break;
 
     case NOD_ADDR:

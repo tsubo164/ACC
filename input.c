@@ -1,10 +1,13 @@
+int add(int x, int y, int z, int w, int u)
+{
+    return x;
+}
+
 int main()
 {
-    int i = 0;
+    int i = 30;
 
-    do {
-        ++i;
-    } while (i <= 10);
+    i = add(i, 4 / 4, 11, 22, 33);
 
     return i;
 }
