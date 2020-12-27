@@ -119,6 +119,7 @@ const struct operand EAX = {OPR_REG, LONG, A__};
 
 const struct operand RAX = {OPR_REG, QUAD, A__};
 const struct operand RDX = {OPR_REG, QUAD, D__};
+const struct operand RSI = {OPR_REG, QUAD, SI__};
 const struct operand RIP = {OPR_REG, QUAD, IP__};
 const struct operand RBP = {OPR_REG, QUAD, BP__};
 const struct operand RSP = {OPR_REG, QUAD, SP__};
@@ -398,7 +399,8 @@ static void code2__(FILE *fp, const struct ast_node *node,
     int tag = get_data_tag_from_type2(node);
 
     /* 64 bit mode supports only full register for pop and push */
-    if (!strcmp(op.mnemonic, "push") || !strcmp(op.mnemonic, "pop"))
+    if (!strcmp(op.mnemonic, "push") ||
+        !strcmp(op.mnemonic, "pop"))
         tag = QUAD;
 
     code__(fp, tag, &o0, &o1, NULL);
@@ -878,6 +880,40 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->r);
         code2__(fp, node, POP_,  RDX);
         code3__(fp, node, ADD_, A_, addr1(RDX));
+        code3__(fp, node, MOV_, addr1(RDX), A_);
+        break;
+
+    case NOD_SUB_ASSIGN:
+        gen_comment(fp, "sub-assign");
+        gen_lvalue(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code2__(fp, node, POP_,  RDX);
+        code3__(fp, node, SUB_, A_, addr1(RDX));
+        code3__(fp, node, MOV_, addr1(RDX), A_);
+        break;
+
+    case NOD_MUL_ASSIGN:
+        gen_comment(fp, "mul-assign");
+        gen_lvalue(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code2__(fp, node, POP_,  RDX);
+        code3__(fp, node, IMUL_, addr1(RDX), A_);
+        code3__(fp, node, MOV_, A_, addr1(RDX));
+        break;
+
+    case NOD_DIV_ASSIGN:
+        gen_comment(fp, "div-assign");
+        gen_lvalue(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code3__(fp, node, MOV_, A_, DI_);
+        code2__(fp, node, POP_, RSI);
+        code3__(fp, node, MOV_, addr1(RSI), A_);
+        code1__(fp, node, CLTD_); /* rax -> rdx:rax */
+        code2__(fp, node, IDIV_, DI_);
+        code3__(fp, node, MOV_, A_, addr1(RSI));
         break;
 
     case NOD_ADDR:

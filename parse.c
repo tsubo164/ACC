@@ -603,6 +603,9 @@ static struct ast_node *conditional_expression(struct parser *p)
  *     conditional_expression
  *     unary_expression '=' assignment_expression
  *     unary_expression TOK_ADD_ASSIGN assignment_expression
+ *     unary_expression TOK_SUB_ASSIGN assignment_expression
+ *     unary_expression TOK_MUL_ASSIGN assignment_expression
+ *     unary_expression TOK_DIV_ASSIGN assignment_expression
  */
 static struct ast_node *assignment_expression(struct parser *p)
 {
@@ -616,6 +619,15 @@ static struct ast_node *assignment_expression(struct parser *p)
 
     case TOK_ADD_ASSIGN:
         return new_node(NOD_ADD_ASSIGN, tree, assignment_expression(p));
+
+    case TOK_SUB_ASSIGN:
+        return new_node(NOD_SUB_ASSIGN, tree, assignment_expression(p));
+
+    case TOK_MUL_ASSIGN:
+        return new_node(NOD_MUL_ASSIGN, tree, assignment_expression(p));
+
+    case TOK_DIV_ASSIGN:
+        return new_node(NOD_DIV_ASSIGN, tree, assignment_expression(p));
 
     default:
         ungettok(p);

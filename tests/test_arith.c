@@ -30,6 +30,33 @@ int main()
 
         assert(0, a++);
         assert(1, a);
+        assert(42, a += 41);
+    }
+    {
+        int a = -1;
+
+        a -= 1;
+
+        assert(-2, a++);
+        assert(-1, a);
+        assert(-42, a -= 41);
+    }
+    {
+        int a = 12;
+
+        a *= 4;
+
+        assert(48, a++);
+        assert(49, a);
+        assert(98, a *= 2);
+    }
+    {
+        int a = 12;
+
+        a /= 4;
+
+        assert(3, a);
+        assert(1, a /= 3);
     }
 
     return 0;

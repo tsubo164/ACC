@@ -37,6 +37,9 @@ enum token_kind {
     TOK_NE,
     /* assignment op */
     TOK_ADD_ASSIGN,
+    TOK_SUB_ASSIGN,
+    TOK_MUL_ASSIGN,
+    TOK_DIV_ASSIGN,
     /* ---- */
     TOK_EOF
 };

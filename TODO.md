@@ -3,8 +3,8 @@
   - define
   - struct arg
   - struct assign
-  - += ...
   - -> op
+  - logical op &&, ||
   - break, continue
   - switch case
   - goto
@@ -14,7 +14,6 @@
   - static, extern
   - const
   - void
-  - logical op &&, ||
   - return check
   - array initializer
   - std stuff FILE, stderro, NULL ...
@@ -30,12 +29,13 @@
   - union
 
 * IMPLEMENTATION
-  - define_symbol() takes type args
-  - find_struct() - improve '.'
-  - new_number()
+  - define symbol() takes type args
+  - find struct() - improve '.'
+  - new number()
   - remove const cast
 
 * DONE
   - ++, --
   - for
   - do while
+  - += ...

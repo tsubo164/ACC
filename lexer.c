@@ -165,6 +165,9 @@ state_initial:
         case '-':
             tok->kind = TOK_DEC;
             break;
+        case '=':
+            tok->kind = TOK_SUB_ASSIGN;
+            break;
         default:
             unreadc(l, c);
             tok->kind = '-';
@@ -173,7 +176,16 @@ state_initial:
         goto state_final;
 
     case '*':
-        tok->kind = c;
+        c = readc(l);
+        switch (c) {
+        case '=':
+            tok->kind = TOK_MUL_ASSIGN;
+            break;
+        default:
+            unreadc(l, c);
+            tok->kind = '*';
+            break;
+        }
         goto state_final;
 
     case '/':
@@ -183,6 +195,9 @@ state_initial:
             goto state_line_comment;
         case '*':
             goto state_block_comment;
+        case '=':
+            tok->kind = TOK_DIV_ASSIGN;
+            break;
         default:
             unreadc(l, c);
             tok->kind = '/';
@@ -458,6 +473,9 @@ void print_token(const struct token *tok)
     case TOK_NE: s = "!="; break;
          /* assignment op */
     case TOK_ADD_ASSIGN: s = "+="; break;
+    case TOK_SUB_ASSIGN: s = "+="; break;
+    case TOK_MUL_ASSIGN: s = "+="; break;
+    case TOK_DIV_ASSIGN: s = "+="; break;
     case TOK_EOF: s = "EOF"; break;
 
     default:

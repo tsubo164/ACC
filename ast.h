@@ -21,6 +21,9 @@ enum ast_node_kind {
     /* expression */
     NOD_ASSIGN,
     NOD_ADD_ASSIGN,
+    NOD_SUB_ASSIGN,
+    NOD_MUL_ASSIGN,
+    NOD_DIV_ASSIGN,
     NOD_STRUCT_REF,
     NOD_ADDR,
     NOD_DEREF,
