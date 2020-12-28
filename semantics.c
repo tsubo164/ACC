@@ -201,6 +201,55 @@ static int analyze_symbol_usage(struct symbol_table *table, struct message_list 
     return 0;
 }
 
+struct sema_context {
+    struct message_list *messages;
+    int loop_depth;
+    int switch_depth;
+};
+
+static void check_sema_(struct ast_node *tree, struct sema_context *ctx)
+{
+    /* TODO remove this */
+    const struct position pos = {0};
+
+    if (!tree)
+        return;
+
+    switch (tree->kind) {
+
+    case NOD_FOR:
+    case NOD_WHILE:
+    case NOD_DOWHILE:
+        ctx->loop_depth++;
+        check_sema_(tree->l, ctx);
+        check_sema_(tree->r, ctx);
+        ctx->loop_depth--;
+        return;
+
+    case NOD_BREAK:
+        if (ctx->loop_depth == 0 && ctx->switch_depth == 0)
+            add_error(ctx->messages, "'break' statement not in loop or switch statement", &pos);
+        return;
+
+    case NOD_CONTINUE:
+        if (ctx->loop_depth == 0)
+            add_error(ctx->messages, "'continue' statement not in loop statement", &pos);
+        return;
+
+    default:
+        check_sema_(tree->l, ctx);
+        check_sema_(tree->r, ctx);
+        return;
+    }
+}
+
+static void check_sema(struct ast_node *tree, struct message_list *messages)
+{
+    struct sema_context ctx = {0};
+    ctx.messages = messages;
+    check_sema_(tree, &ctx);
+}
+
 enum decl_kind {
     DECL_VAR,
     DECL_FUNC,
@@ -414,6 +463,9 @@ int semantic_analysis(struct ast_node *tree,
     check_initialization(tree, table);
     check_control_for(tree, messages);
     compute_enum_values(tree, messages);
+
+    /* TODO may be able to put all checks in here */
+    check_sema(tree, messages);
 
     analyze_symbol_usage(table, messages);
 

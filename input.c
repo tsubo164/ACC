@@ -7,9 +7,8 @@ int main()
     for (i = 0; i < 20; i++) {
         if (i / 3 == 3)
             continue;
-
-        printf("--------- %d\n", i);
     }
+    break;
 
     return i;
 }
