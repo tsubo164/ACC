@@ -5,7 +5,7 @@
   - struct assign
   - -> op
   - logical op &&, ||
-  - break, continue
+  - break, continue (need error)
   - switch case
   - goto
   - check **temporary** registers

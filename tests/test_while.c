@@ -89,6 +89,34 @@ int main()
         }
         assert(12, i);
     }
+    {
+        int sum = 0;
+        int i = 0;
+
+        while (i < 20) {
+            if (i / 3 == 3) {
+                sum += i;
+                i++;
+                continue;
+            }
+            i++;
+        }
+        assert(30, sum);
+    }
+    {
+        int sum = 0;
+        int i = 0;
+
+        do {
+            if (i / 3 == 3) {
+                sum += i;
+                i++;
+                continue;
+            }
+            i++;
+        } while (i < 20);
+        assert(30, sum);
+    }
 
     return 0;
 }

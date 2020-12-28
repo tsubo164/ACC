@@ -17,6 +17,7 @@ enum token_kind {
     TOK_STRING_LITERAL,
     /* keywords */
     TOK_BREAK,
+    TOK_CONTINUE,
     TOK_DO,
     TOK_ELSE,
     TOK_ENUM,

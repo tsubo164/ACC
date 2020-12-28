@@ -50,6 +50,18 @@ int main()
         }
         assert(12, i);
     }
+    {
+        int sum = 0;
+        int i = 0;
+
+        for (i = 0; i < 20; i++) {
+            if (i / 3 == 3) {
+                sum += i;
+                continue;
+            }
+        }
+        assert(30, sum);
+    }
 
     /*
     for (;;) {}

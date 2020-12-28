@@ -12,6 +12,7 @@ enum ast_node_kind {
     NOD_STMT,
     NOD_RETURN,
     NOD_BREAK,
+    NOD_CONTINUE,
     NOD_IF,
     NOD_IF_THEN,
     NOD_WHILE,

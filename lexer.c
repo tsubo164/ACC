@@ -49,6 +49,8 @@ static void keyword_or_identifier(struct token *tok)
         tok->kind = TOK_BREAK;
     else if (!strcmp(text, "char"))
         tok->kind = TOK_CHAR;
+    else if (!strcmp(text, "continue"))
+        tok->kind = TOK_CONTINUE;
     else if (!strcmp(text, "do"))
         tok->kind = TOK_DO;
     else if (!strcmp(text, "else"))
@@ -446,6 +448,7 @@ void print_token(const struct token *tok)
     case TOK_STRING_LITERAL:
          /* keywords */
     case TOK_BREAK:
+    case TOK_CONTINUE:
     case TOK_DO:
     case TOK_ELSE:
     case TOK_ENUM:
