@@ -1,15 +1,17 @@
-int add(int x, int y, int z, int w, int u)
-{
-    return x;
-}
+int printf(char *s, int i);
 
 int main()
 {
-    int i = 33;
+    int i = 0;
 
-    //i = add(i, 4 / 4, 11, 22, 33);
-
-    i /= 3;
+    {
+        while (1) {
+            if (i / 3 == 4)
+                if (i / 6 == 2)
+                    break;
+            i++;
+        }
+    }
 
     return i;
 }

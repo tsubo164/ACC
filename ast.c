@@ -49,9 +49,10 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_LIST: return "NOD_LIST";
     case NOD_COMPOUND: return "NOD_COMPOUND";
     case NOD_STMT: return "NOD_STMT";
+    case NOD_RETURN: return "NOD_RETURN";
+    case NOD_BREAK: return "NOD_BREAK";
     case NOD_IF: return "NOD_IF";
     case NOD_IF_THEN: return "NOD_IF_THEN";
-    case NOD_RETURN: return "NOD_RETURN";
     case NOD_WHILE: return "NOD_WHILE";
     case NOD_DOWHILE: return "NOD_DOWHILE";
     case NOD_FOR: return "NOD_FOR";

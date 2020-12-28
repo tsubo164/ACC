@@ -31,6 +31,25 @@ int main()
 
         assert(155, sum);
     }
+    {
+        int i;
+
+        for (i = 0; i < 10; i++)
+            if (i == 6)
+                break;
+        assert(6, i);
+    }
+    {
+        int i = 0;
+
+        for (;;) {
+            if (i / 3 == 4)
+                if (i / 6 == 2)
+                    break;
+            i++;
+        }
+        assert(12, i);
+    }
 
     /*
     for (;;) {}

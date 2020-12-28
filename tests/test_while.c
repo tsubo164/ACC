@@ -70,6 +70,25 @@ int main()
 
         assert(10, i);
     }
+    {
+        int i = 0;
+
+        while (i < 10)
+            if (i++ == 6)
+                break;
+        assert(7, i);
+    }
+    {
+        int i = 0;
+
+        while (1) {
+            if (i / 3 == 4)
+                if (i / 6 == 2)
+                    break;
+            i++;
+        }
+        assert(12, i);
+    }
 
     return 0;
 }

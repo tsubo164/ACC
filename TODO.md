@@ -8,6 +8,7 @@
   - break, continue
   - switch case
   - goto
+  - check **temporary** registers
   - check args
   - char <-> int, negative number literal
   - char literal
