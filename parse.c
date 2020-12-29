@@ -359,7 +359,7 @@ static struct ast_node *postfix_expression(struct parser *p)
             tree = new_node(NOD_STRUCT_REF, tree, identifier(p));
             /* TODO ADDSYM */
             {
-                const struct symbol *sym;
+                struct symbol *sym;
                 const struct symbol *sym_l = tree->l->sym;
                 const char *mem = tree->r->sval;
                 const char *tag;

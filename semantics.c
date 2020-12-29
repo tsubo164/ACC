@@ -205,6 +205,7 @@ struct sema_context {
     struct message_list *messages;
     int loop_depth;
     int switch_depth;
+    int enum_value;
 };
 
 static void check_sema_(struct ast_node *tree, struct sema_context *ctx)
@@ -216,6 +217,17 @@ static void check_sema_(struct ast_node *tree, struct sema_context *ctx)
         return;
 
     switch (tree->kind) {
+
+    case NOD_SPEC_ENUM:
+        ctx->enum_value = 0;
+        break;
+
+    case NOD_DECL_ENUMERATOR:
+        if (tree->r)
+            ctx->enum_value = eval_(tree->r, ctx->messages);
+        tree->l->sym->mem_offset = ctx->enum_value;
+        ctx->enum_value++;
+        return;
 
     case NOD_FOR:
     case NOD_WHILE:
@@ -279,44 +291,6 @@ static void duplicate_decl(struct declaration *dest, const struct declaration *s
 
     /* TODO make duplicate_type in data_type.c */
     *dest = *src;
-}
-
-static void enum_val_(struct ast_node *tree, int *pval, struct message_list *messages)
-{
-    if (!tree)
-        return;
-
-    switch (tree->kind) {
-
-    case NOD_SPEC_ENUM:
-        *pval = 0;
-        enum_val_(tree->r, pval, messages);
-        return;
-
-    case NOD_DECL_ENUMERATOR:
-        {
-            /* TODO remove const cast */
-            struct symbol *sym = (struct symbol *) tree->l->sym;
-
-            if (tree->r)
-                *pval = eval_(tree->r, messages);
-
-            sym->mem_offset = *pval;
-            *pval = *pval + 1;
-        }
-        return;
-
-    default:
-        enum_val_(tree->l, pval, messages);
-        enum_val_(tree->r, pval, messages);
-        return;
-    }
-}
-
-static void compute_enum_values(struct ast_node *tree, struct message_list *messages)
-{
-    int val = 0;
-    enum_val_(tree, &val, messages);
 }
 
 static void check_init_(struct ast_node *tree,
@@ -444,7 +418,6 @@ int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages)
 {
     check_initialization(tree, table);
-    compute_enum_values(tree, messages);
 
     /* TODO may be able to put all checks in here */
     check_sema(tree, messages);
