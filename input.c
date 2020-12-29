@@ -8,7 +8,6 @@ int main()
         if (i / 3 == 3)
             continue;
     }
-    break;
 
     return i;
 }

@@ -226,6 +226,13 @@ static void check_sema_(struct ast_node *tree, struct sema_context *ctx)
         ctx->loop_depth--;
         return;
 
+    case NOD_FOR_PRE_COND:
+        if (!tree->r) {
+            tree->r = new_ast_node(NOD_NUM, NULL, NULL);
+            tree->r->ival = 1;
+        }
+        break;
+
     case NOD_BREAK:
         if (ctx->loop_depth == 0 && ctx->switch_depth == 0)
             add_error(ctx->messages, "'break' statement not in loop or switch statement", &pos);
@@ -237,10 +244,11 @@ static void check_sema_(struct ast_node *tree, struct sema_context *ctx)
         return;
 
     default:
-        check_sema_(tree->l, ctx);
-        check_sema_(tree->r, ctx);
-        return;
+        break;;
     }
+
+    check_sema_(tree->l, ctx);
+    check_sema_(tree->r, ctx);
 }
 
 static void check_sema(struct ast_node *tree, struct message_list *messages)
@@ -309,31 +317,6 @@ static void compute_enum_values(struct ast_node *tree, struct message_list *mess
 {
     int val = 0;
     enum_val_(tree, &val, messages);
-}
-
-static void check_control_for(struct ast_node *tree, struct message_list *messages)
-{
-    if (!tree)
-        return;
-
-    switch (tree->kind) {
-
-    case NOD_FOR:
-        check_control_for(tree->l, messages);
-        return;
-
-    case NOD_FOR_PRE_COND:
-        if (!tree->r) {
-            tree->r = new_ast_node(NOD_NUM, NULL, NULL);
-            tree->r->ival = 1;
-        }
-        return;
-
-    default:
-        check_control_for(tree->l, messages);
-        check_control_for(tree->r, messages);
-        return;
-    }
 }
 
 static void check_init_(struct ast_node *tree,
@@ -461,7 +444,6 @@ int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages)
 {
     check_initialization(tree, table);
-    check_control_for(tree, messages);
     compute_enum_values(tree, messages);
 
     /* TODO may be able to put all checks in here */
