@@ -70,6 +70,7 @@ const struct opecode MOVSB_ = {"movsb", 1};
 const struct opecode MOVZB_ = {"movzb", 1};
 
 const struct opecode JE_    = {"je",  0};
+const struct opecode JNE_   = {"jne", 0};
 const struct opecode JMP_   = {"jmp", 0};
 
 const struct opecode SETE_  = {"sete",  0};
@@ -962,6 +963,46 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2__(fp, node, POP_, RAX);
         code1__(fp, node, CLTD_); /* rax -> rdx:rax */
         code2__(fp, node, IDIV_, DI_);
+        break;
+
+    case NOD_NOT:
+        gen_code(fp, node->l);
+        code3__(fp, node, CMP_, imme(0), A_);
+        code2__(fp, node, SETE_,  AL);
+        code3__(fp, node, MOVZB_, AL, A_);
+        break;
+
+    case NOD_LOGICAL_OR:
+        tmp = block;
+        block.id = block_next++;
+
+        gen_code(fp, node->l);
+        code3__(fp, node, CMP_, imme(0), A_);
+        code2__(fp, node, JNE_, label(block.id, L_CONTINUE));
+        gen_code(fp, node->r);
+        code3__(fp, node, CMP_, imme(0), A_);
+        code2__(fp, node, JE_,  label(block.id, L_EXIT));
+        gen_label(fp, block.id, L_CONTINUE);
+        code3__(fp, node, MOV_, imme(1), A_);
+        gen_label(fp, block.id, L_EXIT);
+
+        block = tmp;
+        break;
+
+    case NOD_LOGICAL_AND:
+        tmp = block;
+        block.id = block_next++;
+
+        gen_code(fp, node->l);
+        code3__(fp, node, CMP_, imme(0), A_);
+        code2__(fp, node, JE_,  label(block.id, L_EXIT));
+        gen_code(fp, node->r);
+        code3__(fp, node, CMP_, imme(0), A_);
+        code2__(fp, node, JE_,  label(block.id, L_EXIT));
+        code3__(fp, node, MOV_, imme(1), A_);
+        gen_label(fp, block.id, L_EXIT);
+
+        block = tmp;
         break;
 
     case NOD_PREINC:

@@ -80,6 +80,9 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_GE: return "NOD_GE";
     case NOD_EQ: return "NOD_EQ";
     case NOD_NE: return "NOD_NE";
+    case NOD_NOT: return "NOD_NOT";
+    case NOD_LOGICAL_OR: return "NOD_LOGICAL_OR";
+    case NOD_LOGICAL_AND: return "NOD_LOGICAL_AND";
     case NOD_PREINC: return "NOD_PREINC";
     case NOD_PREDEC: return "NOD_PREDEC";
     case NOD_POSTINC: return "NOD_POSTINC";

@@ -136,9 +136,31 @@ state_initial:
 
     switch (c) {
 
-    /* address */
+    /* ---- */
+    case '|':
+        c = readc(l);
+        switch (c) {
+        case '|':
+            tok->kind = TOK_LOGICAL_OR;
+            break;
+        default:
+            unreadc(l, c);
+            tok->kind = '|';
+            break;
+        }
+        goto state_final;
+
     case '&':
-        tok->kind = c;
+        c = readc(l);
+        switch (c) {
+        case '&':
+            tok->kind = TOK_LOGICAL_AND;
+            break;
+        default:
+            unreadc(l, c);
+            tok->kind = '&';
+            break;
+        }
         goto state_final;
 
     /* access */
@@ -477,6 +499,8 @@ void print_token(const struct token *tok)
     case TOK_GE: s = ">="; break;
     case TOK_EQ: s = "=="; break;
     case TOK_NE: s = "!="; break;
+    case TOK_LOGICAL_OR: s = "||"; break;
+    case TOK_LOGICAL_AND: s = "&&"; break;
          /* assignment op */
     case TOK_ADD_ASSIGN: s = "+="; break;
     case TOK_SUB_ASSIGN: s = "+="; break;

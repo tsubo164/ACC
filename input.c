@@ -2,12 +2,11 @@ int printf(char *s, int i);
 
 int main()
 {
-    int i = 0;
+    int a = 0;
+    int b = 7;
+    int c;
 
-    for (i = 0; i < 20; i++) {
-        if (i / 3 == 3)
-            continue;
-    }
+    c = !(a || b++);
 
-    return i;
+    return c;
 }

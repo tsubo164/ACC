@@ -446,6 +446,9 @@ static struct ast_node *unary_expression(struct parser *p)
     case '&':
         return new_node(NOD_ADDR, postfix_expression(p), NULL);
 
+    case '!':
+        return new_node(NOD_NOT, postfix_expression(p), NULL);
+
     case TOK_INC:
         return new_node(NOD_PREINC, unary_expression(p), NULL);
 
@@ -589,13 +592,76 @@ static struct ast_node *equality_expression(struct parser *p)
 }
 
 /*
+ * inclusive_or_expression
+ *     exclusive_or_expression
+ *     inclusive_or_expression '|' exclusive_or_expression
+ */
+static struct ast_node *inclusive_or_expression(struct parser *p)
+{
+    return equality_expression(p);
+}
+
+/*
+ * logical_and_expression
+ *     inclusive_or_expression
+ *     logical_and_expression TOK_LOGICAL_AND inclusive_or_expression
+ */
+static struct ast_node *logical_and_expression(struct parser *p)
+{
+    struct ast_node *tree = inclusive_or_expression(p);
+
+    for (;;) {
+        const struct token *tok = gettok(p);
+
+        switch (tok->kind) {
+
+        case TOK_LOGICAL_AND:
+            tree = new_node(NOD_LOGICAL_AND, tree, inclusive_or_expression(p));
+            break;
+
+        default:
+            ungettok(p);
+            return tree;
+        }
+    }
+}
+
+/*
+ * logical_or_expression
+ *     logical_and_expression
+ *     logical_or_expression TOK_LOGICAL_OR logical_and_expression
+ */
+static struct ast_node *logical_or_expression(struct parser *p)
+{
+    struct ast_node *tree = logical_and_expression(p);
+
+    for (;;) {
+        const struct token *tok = gettok(p);
+
+        switch (tok->kind) {
+
+        case TOK_LOGICAL_OR:
+            tree = new_node(NOD_LOGICAL_OR, tree, logical_and_expression(p));
+            break;
+
+        default:
+            ungettok(p);
+            return tree;
+        }
+    }
+}
+
+/*
  * conditional_expression
  *     logical_or_expression
  *     logical_or_expression '?' expression ':' conditional_expression
  */
 static struct ast_node *conditional_expression(struct parser *p)
 {
+    /*
     return equality_expression(p);
+    */
+    return logical_or_expression(p);
 }
 
 /*

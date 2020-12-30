@@ -4,7 +4,6 @@
   - struct arg
   - struct assign
   - -> op
-  - logical op &&, ||
   - switch case
   - goto
   - check **temporary** registers
@@ -40,3 +39,4 @@
   - do while
   - += ...
   - break, continue (need error)
+  - logical op &&, ||, !
