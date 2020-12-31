@@ -24,6 +24,7 @@ void make_output_filename(const char *input, char *output)
 int main(int argc, char **argv)
 {
     struct string_table *strtab = NULL;
+    struct symbol_table *symtab = NULL;
     struct parser *parser = NULL;
     struct ast_node *tree = NULL;
     struct message_list *messages = NULL;
@@ -62,24 +63,23 @@ int main(int argc, char **argv)
     }
 
     strtab = new_string_table();
+    symtab = new_symbol_table();
+    messages = new_message_list();
+
     parser = new_parser();
     parser->lex.file = file;
     parser->lex.strtab = strtab;
-
-    messages = new_message_list();
+    parser->symtab = symtab;
     parser->msg = messages;
 
     tree = parse(parser);
 
-    semantic_analysis(tree, &parser->symtbl, messages);
+    semantic_analysis(tree, symtab, messages);
 
     if (do_print_tree) {
         print_tree(tree);
         printf("\n");
-        print_symbol_table(&parser->symtbl);
-        /*
-        print_decl(tree);
-        */
+        print_symbol_table(symtab);
         return 0;
     }
 
@@ -102,16 +102,14 @@ int main(int argc, char **argv)
     if (!file) {
         return -1;
     }
-    gen_x86(file, tree, &parser->symtbl);
-    /*
-    gen_x86(stdout, tree, &parser->symtbl);
-    */
+    gen_x86(file, tree, symtab);
 
     fclose(file);
 
     /* ------------------------- */
     free_message_list(messages);
     free_parser(parser);
+    free_symbol_table(symtab);
     free_string_table(strtab);
 
     return 0;

@@ -3,13 +3,6 @@
 #include <string.h>
 #include "symbol.h"
 
-static void init_symbol(struct symbol *sym)
-{
-    struct symbol ini = {0};
-
-    *sym = ini;
-}
-
 int is_global_var(const struct symbol *sym)
 {
     if (sym->kind == SYM_VAR &&
@@ -46,20 +39,13 @@ int is_enumerator(const struct symbol *sym)
 struct symbol_table *new_symbol_table()
 {
     struct symbol_table *table;
-    int i;
-
     table = malloc(sizeof(struct symbol_table));
-
-    for (i = 0; i < SYMBOL_TABLE_SIZE; i++) {
-        init_symbol(&table->data[i]);
-    }
-
-    table->symbol_count = 0;
-    /* 0 means global scope */
-    table->current_scope_level = 0;
 
     table->head = NULL;
     table->tail = NULL;
+    /* 0 means global scope */
+    table->current_scope_level = 0;
+    table->symbol_count = 0;
 
     return table;
 }
@@ -80,28 +66,23 @@ void free_symbol_table(struct symbol_table *table)
     free(table);
 }
 
-#define SYM_LIST(S) \
-    S(SYM_SCOPE_BEGIN) \
-    S(SYM_SCOPE_END) \
-    S(SYM_VAR) \
-    S(SYM_FUNC) \
-    S(SYM_PARAM) \
-    S(SYM_MEMBER) \
-    S(SYM_ENUMERATOR) \
-    S(SYM_TAG_STRUCT) \
-    S(SYM_TAG_ENUM)
-
 const char *symbol_to_string(const struct symbol *sym)
 {
     if (!sym)
         return "null";
 
-#define S(kind) case kind: return #kind;
     switch (sym->kind) {
-SYM_LIST(S)
+    case SYM_SCOPE_BEGIN: return "SYM_SCOPE_BEGIN";
+    case SYM_SCOPE_END: return "SYM_SCOPE_END";
+    case SYM_VAR: return "SYM_VAR";
+    case SYM_FUNC: return "SYM_FUNC";
+    case SYM_PARAM: return "SYM_PARAM";
+    case SYM_MEMBER: return "SYM_MEMBER";
+    case SYM_ENUMERATOR: return "SYM_ENUMERATOR";
+    case SYM_TAG_STRUCT: return "SYM_TAG_STRUCT";
+    case SYM_TAG_ENUM: return "SYM_TAG_ENUM";
     default: return "**unknown**";
     }
-#undef S
 }
 
 static void print_horizonal_line(char c, int n)
@@ -157,8 +138,9 @@ void print_symbol_table(const struct symbol_table *table)
 
 static struct symbol *new_symbol()
 {
+    struct symbol ini = {0};
     struct symbol *sym = malloc(sizeof(struct symbol));
-    init_symbol(sym);
+    *sym = ini;
     return sym;
 }
 
@@ -181,22 +163,6 @@ static struct symbol *push_symbol(struct symbol_table *table, const char *name, 
 
     table->symbol_count++;
     return sym;
-}
-
-void init_symbol_table(struct symbol_table *table)
-{
-    int i;
-
-    for (i = 0; i < SYMBOL_TABLE_SIZE; i++) {
-        init_symbol(&table->data[i]);
-    }
-
-    table->symbol_count = 0;
-    /* 0 means global scope */
-    table->current_scope_level = 0;
-
-    table->head = NULL;
-    table->tail = NULL;
 }
 
 static int namespace(int kind)
@@ -270,9 +236,8 @@ struct symbol *insert_symbol(struct symbol_table *table,
 {
     struct symbol *sym = NULL;
 
-    if (lookup_symbol(table, name, kind) != NULL) {
+    if (lookup_symbol(table, name, kind) != NULL)
         return NULL;
-    }
 
     return sym;
 }

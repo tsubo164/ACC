@@ -14,7 +14,7 @@ struct parser {
     struct token tokbuf[TOKEN_BUFFER_SIZE];
     int head, curr;
 
-    struct symbol_table symtbl;
+    struct symbol_table *symtab;
     struct message_list *msg;
 
     long error_pos;
@@ -29,9 +29,6 @@ struct parser {
 
 extern struct parser *new_parser();
 extern void free_parser(struct parser *p);
-
-extern void parser_init(struct parser *p);
-
 extern struct ast_node *parse(struct parser *p);
 
 #endif /* _H */

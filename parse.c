@@ -135,28 +135,11 @@ static void expect(struct parser *p, enum token_kind query)
 struct parser *new_parser()
 {
     struct parser *p = malloc(sizeof(struct parser));
-    if (!p) {
-        return NULL;
-    }
-
-    parser_init(p);
-    return p;
-}
-
-void free_parser(struct parser *p)
-{
-    if (!p)
-        return;
-    free(p);
-}
-
-void parser_init(struct parser *p)
-{
     int i;
 
-    for (i = 0; i < TOKEN_BUFFER_SIZE; i++) {
+    for (i = 0; i < TOKEN_BUFFER_SIZE; i++)
         token_init(&p->tokbuf[i]);
-    }
+
     lexer_init(&p->lex);
     p->head = 0;
     p->curr = 0;
@@ -164,12 +147,17 @@ void parser_init(struct parser *p)
     p->error_pos = -1L;
     p->error_msg = "";
 
-    init_symbol_table(&p->symtbl);
-
     p->decl_kind = 0;
     p->decl_ident = NULL;
     p->decl_type = NULL;
     p->is_panic_mode = 0;
+
+    return p;
+}
+
+void free_parser(struct parser *p)
+{
+    free(p);
 }
 
 /* decl context */
@@ -177,7 +165,7 @@ static void define_sym(struct parser *p, struct ast_node *node)
 {
     struct symbol *sym;
 
-    sym = define_symbol(&p->symtbl, p->decl_ident, p->decl_kind);
+    sym = define_symbol(p->symtab, p->decl_ident, p->decl_kind);
     /* TODO need to pass type to define_symbol */
     sym->type = p->decl_type;
     node->sym = sym;
@@ -189,18 +177,18 @@ static void use_sym(struct parser *p, struct ast_node *node)
 
     /* TODO support incomplete struct/union/enum
      * currently registered as an int type */
-    sym = use_symbol(&p->symtbl, p->decl_ident, p->decl_kind);
+    sym = use_symbol(p->symtab, p->decl_ident, p->decl_kind);
     node->sym = sym;
 }
 
 static void scope_begin(struct parser *p)
 {
-    symbol_scope_begin(&p->symtbl);
+    symbol_scope_begin(p->symtab);
 }
 
 static void scope_end(struct parser *p)
 {
-    symbol_scope_end(&p->symtbl);
+    symbol_scope_end(p->symtab);
 }
 
 static void decl_begin(struct parser *p, int decl_kind)
@@ -365,7 +353,7 @@ static struct ast_node *postfix_expression(struct parser *p)
                 const char *tag;
 
                 tag = sym_l->type->tag;
-                sym = lookup_symbol(&p->symtbl, tag, SYM_TAG_STRUCT);
+                sym = lookup_symbol(p->symtab, tag, SYM_TAG_STRUCT);
                 for (;;) {
                     /* TODO stop searching when struct is incomplete */
                     if (sym->kind == SYM_SCOPE_END) {
