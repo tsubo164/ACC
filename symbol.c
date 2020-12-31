@@ -58,14 +58,26 @@ struct symbol_table *new_symbol_table()
     /* 0 means global scope */
     table->current_scope_level = 0;
 
+    table->head = NULL;
+    table->tail = NULL;
+
     return table;
+}
+
+void free_list(struct symbol *sym)
+{
+    if (!sym)
+        return;
+    free_list(sym->next);
+    free(sym);
 }
 
 void free_symbol_table(struct symbol_table *table)
 {
-    if (table) {
-        free(table);
-    }
+    if (!table)
+        return;
+    free_list(table->head);
+    free(table);
 }
 
 #define SYM_LIST(S) \
@@ -103,8 +115,7 @@ static void print_horizonal_line(char c, int n)
 void print_symbol_table(const struct symbol_table *table)
 {
     const int ROW = 79;
-    const int N = table->symbol_count;
-    int i;
+    const struct symbol *sym;
 
     print_horizonal_line('-', ROW);
 
@@ -119,8 +130,7 @@ void print_symbol_table(const struct symbol_table *table)
 
     print_horizonal_line('=', ROW);
 
-    for (i = 0; i < N; i++) {
-        const struct symbol *sym = &table->data[i];
+    for (sym = table->head; sym; sym = sym->next) {
         printf("|");
         printf("%15s | ", sym->name ? sym->name : "--");
         printf("%-20s | ",  symbol_to_string(sym));
@@ -145,17 +155,31 @@ void print_symbol_table(const struct symbol_table *table)
     print_horizonal_line('-', ROW);
 }
 
+static struct symbol *new_symbol()
+{
+    struct symbol *sym = malloc(sizeof(struct symbol));
+    init_symbol(sym);
+    return sym;
+}
+
 static struct symbol *push_symbol(struct symbol_table *table, const char *name, int kind)
 {
-    struct symbol *sym = &table->data[table->symbol_count++];
+    struct symbol *sym = new_symbol();
     sym->kind = kind;
+    sym->name = name;
     sym->scope_level = table->current_scope_level;
 
-    if (name != NULL) {
-        sym->name = malloc(strlen(name) + 1);
-        strcpy(sym->name, name);
+    if (!table->head) {
+        table->head = sym;
+        table->tail = sym;
+        return sym;
     }
 
+    table->tail->next = sym;
+    sym->prev = table->tail;
+    table->tail = sym;
+
+    table->symbol_count++;
     return sym;
 }
 
@@ -170,6 +194,9 @@ void init_symbol_table(struct symbol_table *table)
     table->symbol_count = 0;
     /* 0 means global scope */
     table->current_scope_level = 0;
+
+    table->head = NULL;
+    table->tail = NULL;
 }
 
 static int namespace(int kind)
@@ -206,13 +233,12 @@ static int is_same_namespace(int kind0, int kind1)
 struct symbol *lookup_symbol(struct symbol_table *table,
         const char *name, enum symbol_kind kind)
 {
+    struct symbol *sym;
     /* lowest level so far during search */
     int lv_low = table->current_scope_level;
-    int i;
 
     /* search backwards */
-    for (i = table->symbol_count - 1; i >= 0; i--) {
-        struct symbol *sym = &table->data[i];
+    for (sym = table->tail; sym; sym = sym->prev) {
 
         /* step down one level */
         if (sym->kind == SYM_SCOPE_BEGIN) {
@@ -302,10 +328,22 @@ int get_symbol_count(const struct symbol_table *table)
     return table->symbol_count;
 }
 
-struct symbol *get_symbol(struct symbol_table *table, int index)
+struct symbol *begin(struct symbol_table *table)
 {
-    if (index < 0 || index >= get_symbol_count(table)) {
-        return NULL;
-    }
-    return &table->data[index];
+    return table->head;
+}
+
+struct symbol *end(struct symbol_table *table)
+{
+    return NULL;
+}
+
+struct symbol *next(struct symbol *sym)
+{
+    return sym->next;
+}
+
+struct symbol *prev(struct symbol *sym)
+{
+    return sym->prev;
 }

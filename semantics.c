@@ -98,7 +98,7 @@ static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
         if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1) {
             break;
         }
-        sym++;
+        sym = next(sym);
     }
 
     strc->type->byte_size = align_to(total_offset, strc->type->alignment);
@@ -139,7 +139,7 @@ static void compute_func_stack_size(struct symbol_table *table, struct symbol *f
         if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1) {
             break;
         }
-        sym++;
+        sym = next(sym);
     }
 
     func->mem_offset = align_to(total_offset, 16);
@@ -147,29 +147,23 @@ static void compute_func_stack_size(struct symbol_table *table, struct symbol *f
 
 static void allocate_local_storage(struct symbol_table *table)
 {
-    const int N = get_symbol_count(table);
-    int i;
+    struct symbol *sym;
 
-    for (i = 0; i < N; i++) {
-        struct symbol *sym = get_symbol(table, i);
+    for (sym = begin(table); sym != end(table); sym = next(sym)) {
 
-        if (sym->kind == SYM_FUNC) {
+        if (sym->kind == SYM_FUNC)
             compute_func_stack_size(table, sym);
-        }
 
-        if (sym->kind == SYM_TAG_STRUCT) {
+        if (sym->kind == SYM_TAG_STRUCT)
             compute_struct_size(table, sym);
-        }
     }
 }
 
 static int analyze_symbol_usage(struct symbol_table *table, struct message_list *messages)
 {
-    const int N = get_symbol_count(table);
-    int i;
+    struct symbol *sym;
 
-    for (i = 0; i < N; i++) {
-        const struct symbol *sym = get_symbol(table, i);
+    for (sym = begin(table); sym != end(table); sym = next(sym)) {
         /* TODO remove this */
         const struct position pos = {0};
 

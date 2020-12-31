@@ -16,7 +16,7 @@ enum symbol_kind {
 };
 
 struct symbol {
-    char *name;
+    const char *name;
     int kind;
     int mem_offset;
 
@@ -25,6 +25,9 @@ struct symbol {
 
     /* TODO improve this */
     long file_pos;
+
+    struct symbol *next;
+    struct symbol *prev;
 
     /* flags */
     char is_declared;
@@ -37,6 +40,9 @@ struct symbol {
 
 #define SYMBOL_TABLE_SIZE 128
 struct symbol_table {
+    struct symbol *head;
+    struct symbol *tail;
+
     struct symbol data[SYMBOL_TABLE_SIZE];
     int symbol_count;
     int current_scope_level;
@@ -67,5 +73,10 @@ extern int symbol_scope_end(struct symbol_table *table);
 extern int get_symbol_count(const struct symbol_table *table);
 extern struct symbol *get_symbol(struct symbol_table *table, int index);
 extern void print_symbol_table(const struct symbol_table *table);
+
+extern struct symbol *begin(struct symbol_table *table);
+extern struct symbol *end(struct symbol_table *table);
+extern struct symbol *next(struct symbol *sym);
+extern struct symbol *prev(struct symbol *sym);
 
 #endif /* _H */

@@ -1062,13 +1062,12 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
 static void gen_global_func_list(FILE *fp, const struct symbol_table *table)
 {
-    const int N = get_symbol_count(table);
-    int i;
+    struct symbol *sym;
     int nfuncs = 0;
 
-    for (i = 0; i < N; i++) {
-        const struct symbol *sym = &table->data[i];
-
+    for (sym = begin((struct symbol_table *)table);
+            sym != end((struct symbol_table *)table);
+            sym = next(sym)) {
         if (sym->kind == SYM_FUNC) {
             if (nfuncs > 0)
                 fprintf(fp, ", ");
@@ -1077,18 +1076,17 @@ static void gen_global_func_list(FILE *fp, const struct symbol_table *table)
             nfuncs++;
         }
     }
-
     fprintf(fp, "\n");
 }
 
 static void gen_global_var_list(FILE *fp, const struct symbol_table *table)
 {
-    const int N = get_symbol_count(table);
+    struct symbol *sym;
     int nvars = 0;
-    int i;
 
-    for (i = 0; i < N; i++) {
-        const struct symbol *sym = &table->data[i];
+    for (sym = begin((struct symbol_table *)table);
+            sym != end((struct symbol_table *)table);
+            sym = next(sym)) {
 
         if (is_global_var(sym)) {
             if (nvars == 0) {
