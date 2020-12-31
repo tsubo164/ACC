@@ -79,10 +79,10 @@ static int align_to(int pos, int align)
 
 static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
 {
-    struct symbol *sym = strc;
+    struct symbol *sym;
     int total_offset = 0;
 
-    for (;;) {
+    for (sym = strc; sym; sym = sym->next) {
         /* TODO support nested struct by checking scope level */
         if (sym->kind == SYM_MEMBER) {
             const int size  = sym->type->byte_size;
@@ -95,10 +95,8 @@ static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
         }
 
         /* TODO struct scope_level is NOT ALWAYS 1 */
-        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1) {
+        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1)
             break;
-        }
-        sym = next(sym);
     }
 
     strc->type->byte_size = align_to(total_offset, strc->type->alignment);
@@ -107,10 +105,10 @@ static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
 
 static void compute_func_stack_size(struct symbol_table *table, struct symbol *func)
 {
-    struct symbol *sym = func;
+    struct symbol *sym;
     int total_offset = 0;
 
-    for (;;) {
+    for (sym = func; sym; sym = sym->next) {
         if (is_param(sym) || is_local_var(sym)) {
             int size  = 0;
             int align = 0;
@@ -132,25 +130,21 @@ static void compute_func_stack_size(struct symbol_table *table, struct symbol *f
             sym->mem_offset = total_offset;
         }
 
-        if (sym->kind == SYM_TAG_STRUCT) {
+        if (sym->kind == SYM_TAG_STRUCT)
             compute_struct_size(table, sym);
-        }
 
-        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1) {
+        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1)
             break;
-        }
-        sym = next(sym);
     }
 
     func->mem_offset = align_to(total_offset, 16);
 }
 
-static void allocate_local_storage(struct symbol_table *table)
+static void add_storage_size(struct symbol_table *table)
 {
     struct symbol *sym;
 
-    for (sym = begin(table); sym != end(table); sym = next(sym)) {
-
+    for (sym = table->head; sym; sym = sym->next) {
         if (sym->kind == SYM_FUNC)
             compute_func_stack_size(table, sym);
 
@@ -159,11 +153,11 @@ static void allocate_local_storage(struct symbol_table *table)
     }
 }
 
-static int analyze_symbol_usage(struct symbol_table *table, struct message_list *messages)
+static int check_symbol_usage(struct symbol_table *table, struct message_list *messages)
 {
     struct symbol *sym;
 
-    for (sym = begin(table); sym != end(table); sym = next(sym)) {
+    for (sym = table->head; sym; sym = sym->next) {
         /* TODO remove this */
         const struct position pos = {0};
 
@@ -195,50 +189,83 @@ static int analyze_symbol_usage(struct symbol_table *table, struct message_list 
     return 0;
 }
 
-struct sema_context {
+struct tree_context {
     struct message_list *messages;
     int loop_depth;
     int switch_depth;
     int enum_value;
+    int is_lvalue;
+    int has_init;
 };
 
-static void check_sema_(struct ast_node *tree, struct sema_context *ctx)
+static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 {
     /* TODO remove this */
     const struct position pos = {0};
 
-    if (!tree)
+    if (!node)
         return;
 
-    switch (tree->kind) {
+    switch (node->kind) {
 
+    /* declaration */
+    case NOD_DECL_INIT:
+        ctx->has_init = node->r ? 1 : 0;
+        check_tree_(node->l, ctx);
+        ctx->has_init = 0;
+        check_tree_(node->r, ctx);
+        return;
+
+    case NOD_DECL_IDENT:
+        node->sym->is_defined = 1;
+        node->sym->is_initialized = ctx->has_init;
+        return;
+
+    case NOD_ASSIGN:
+        /* evaluate rvalue first to check a = a + 1; */
+        check_tree_(node->r, ctx);
+        ctx->is_lvalue = 1;
+        check_tree_(node->l, ctx);
+        ctx->is_lvalue = 0;
+        return;
+
+    case NOD_IDENT:
+        if (ctx->is_lvalue && !node->sym->is_used)
+            node->sym->is_initialized = 1;
+        node->sym->is_assigned = ctx->is_lvalue;
+        node->sym->is_used = 1;
+        return;
+
+    /* enum */
     case NOD_SPEC_ENUM:
         ctx->enum_value = 0;
         break;
 
     case NOD_DECL_ENUMERATOR:
-        if (tree->r)
-            ctx->enum_value = eval_(tree->r, ctx->messages);
-        tree->l->sym->mem_offset = ctx->enum_value;
+        if (node->r)
+            ctx->enum_value = eval_(node->r, ctx->messages);
+        node->l->sym->mem_offset = ctx->enum_value;
         ctx->enum_value++;
         return;
 
+    /* loop */
     case NOD_FOR:
     case NOD_WHILE:
     case NOD_DOWHILE:
         ctx->loop_depth++;
-        check_sema_(tree->l, ctx);
-        check_sema_(tree->r, ctx);
+        check_tree_(node->l, ctx);
+        check_tree_(node->r, ctx);
         ctx->loop_depth--;
         return;
 
     case NOD_FOR_PRE_COND:
-        if (!tree->r) {
-            tree->r = new_ast_node(NOD_NUM, NULL, NULL);
-            tree->r->ival = 1;
+        if (!node->r) {
+            node->r = new_ast_node(NOD_NUM, NULL, NULL);
+            node->r->ival = 1;
         }
         break;
 
+    /* break and continue */
     case NOD_BREAK:
         if (ctx->loop_depth == 0 && ctx->switch_depth == 0)
             add_error(ctx->messages, "'break' statement not in loop or switch statement", &pos);
@@ -253,15 +280,15 @@ static void check_sema_(struct ast_node *tree, struct sema_context *ctx)
         break;;
     }
 
-    check_sema_(tree->l, ctx);
-    check_sema_(tree->r, ctx);
+    check_tree_(node->l, ctx);
+    check_tree_(node->r, ctx);
 }
 
-static void check_sema(struct ast_node *tree, struct message_list *messages)
+static void check_tree_semantics(struct ast_node *tree, struct message_list *messages)
 {
-    struct sema_context ctx = {0};
+    struct tree_context ctx = {0};
     ctx.messages = messages;
-    check_sema_(tree, &ctx);
+    check_tree_(tree, &ctx);
 }
 
 enum decl_kind {
@@ -271,92 +298,6 @@ enum decl_kind {
     DECL_STRUCT,
     DECL_MEMBER
 };
-
-struct declaration {
-    int kind;
-    const char *ident;
-    struct data_type *type;
-    int has_init;
-    int is_lvalue;
-};
-
-static void duplicate_decl(struct declaration *dest, const struct declaration *src)
-{
-
-    /* TODO make duplicate_type in data_type.c */
-    *dest = *src;
-}
-
-static void check_init_(struct ast_node *tree,
-        struct symbol_table *table, struct declaration *decl)
-{
-    if (!tree)
-        return;
-
-    switch (tree->kind) {
-
-    case NOD_DECL_INIT:
-        {
-            struct declaration new_decl = {0};
-            duplicate_decl(&new_decl, decl);
-            new_decl.has_init = tree->r ? 1 : 0;
-            if (new_decl.has_init) {
-                check_init_(tree->l, table, &new_decl);
-                check_init_(tree->r, table, decl);
-            }
-            return;
-        }
-
-    case NOD_DECL_IDENT:
-        if (decl->has_init) {
-            /* TODO remove const cast */
-            struct symbol *sym = (struct symbol *) tree->sym;
-            sym->is_initialized = 1;
-        }
-        return;
-
-    case NOD_ASSIGN:
-        {
-            struct declaration new_decl = {0};
-            /* evaluate rvalue first to check a = a + 1; */
-            check_init_(tree->r, table, decl);
-            new_decl.is_lvalue = 1;
-            check_init_(tree->l, table, &new_decl);
-            return;
-        }
-
-    case NOD_IDENT:
-        if (decl->is_lvalue && !tree->sym->is_used) {
-            /* TODO remove const cast */
-            struct symbol *sym = (struct symbol *) tree->sym;
-            sym->is_initialized = 1;
-        }
-        if (decl->is_lvalue) {
-            /* TODO remove const cast */
-            struct symbol *sym = (struct symbol *) tree->sym;
-            sym->is_assigned = 1;
-        }
-        {
-            /* TODO remove const cast */
-            struct symbol *sym = (struct symbol *) tree->sym;
-            sym->is_used = 1;
-        }
-        return;
-
-    default:
-        break;
-    }
-
-    check_init_(tree->l, table, decl);
-    check_init_(tree->r, table, decl);
-}
-
-static void check_initialization(struct ast_node *tree, struct symbol_table *table)
-{
-    struct declaration decl = {0};
-    check_init_(tree, table, &decl);
-    return;
-}
 
 static void add_types(struct ast_node *node, struct symbol_table *table)
 {
@@ -411,15 +352,11 @@ static void add_types(struct ast_node *node, struct symbol_table *table)
 int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages)
 {
-    check_initialization(tree, table);
-
-    /* TODO may be able to put all checks in here */
-    check_sema(tree, messages);
-
-    analyze_symbol_usage(table, messages);
+    check_tree_semantics(tree, messages);
+    check_symbol_usage(table, messages);
 
     add_types(tree, table);
-    allocate_local_storage(table);
+    add_storage_size(table);
 
     return 0;
 }
