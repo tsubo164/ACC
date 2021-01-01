@@ -194,6 +194,7 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
 
 struct tree_context {
     struct message_list *messages;
+    const struct symbol *func_sym;
     int loop_depth;
     int switch_depth;
     int enum_value;
@@ -221,6 +222,8 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
     case NOD_DECL_IDENT:
         node->sym->is_initialized = ctx->has_init;
+        if (node->sym->kind == SYM_FUNC)
+            ctx->func_sym = node->sym;
         break;
 
     case NOD_ASSIGN:
@@ -267,6 +270,17 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         }
         break;
 
+    /* function */
+    case NOD_DECL_FUNC:
+        ctx->func_sym = NULL;
+        break;
+
+    case NOD_FUNC_DEF:
+        check_tree_(node->l, ctx);
+        check_tree_(node->r, ctx);
+        ctx->func_sym = NULL;
+        return;
+
     /* break and continue */
     case NOD_BREAK:
         if (ctx->loop_depth == 0 && ctx->switch_depth == 0)
@@ -276,6 +290,13 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
     case NOD_CONTINUE:
         if (ctx->loop_depth == 0)
             add_error(ctx->messages, "'continue' statement not in loop statement", &pos);
+        break;
+
+    case NOD_RETURN:
+        if (ctx->func_sym->type->kind == DATA_TYPE_VOID && node->l)
+            add_error(ctx->messages, "function '' should not return a value", &pos);
+        if (ctx->func_sym->type->kind != DATA_TYPE_VOID && !node->l)
+            add_error(ctx->messages, "function '' should return a value", &pos);
         break;
 
     default:

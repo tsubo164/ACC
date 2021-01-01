@@ -12,8 +12,6 @@
   - char literal
   - static, extern
   - const
-  - void
-  - return check
   - array initializer
   - std stuff FILE, stderro, NULL ...
   - error with pos
@@ -26,6 +24,7 @@
   - bitwise op |, &, ~, ^
   - anonymous enum, struct, union
   - union
+  - control flow check
 
 * IMPLEMENTATION
   - find struct() - improve '.'
@@ -40,3 +39,5 @@
   - logical op &&, ||, !
   - define symbol() takes type args
   - remove const cast
+  - return check
+  - void

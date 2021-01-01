@@ -803,6 +803,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_RETURN:
         gen_code(fp, node->l);
+        code2__(fp, node, JMP_, label(scope.return_id, L_RETURN));
         break;
 
     case NOD_BREAK:
@@ -857,6 +858,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_FUNC_DEF:
         tmp = scope;
         scope.id = next_scope++;
+        scope.return_id = scope.id;
 
         gen_func_prologue(fp, node->l);
         gen_func_param_list(fp, node->l);
