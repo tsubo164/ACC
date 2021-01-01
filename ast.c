@@ -99,6 +99,7 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_DECL_PARAM: return "NOD_DECL_PARAM";
     case NOD_DECL_MEMBER: return "NOD_DECL_MEMBER";
     case NOD_DECL_ENUMERATOR: return "NOD_DECL_ENUMERATOR";
+    case NOD_SPEC_VOID: return "NOD_SPEC_VOID";
     case NOD_SPEC_CHAR: return "NOD_SPEC_CHAR";
     case NOD_SPEC_INT: return "NOD_SPEC_INT";
     case NOD_SPEC_POINTER: return "NOD_SPEC_POINTER";
@@ -128,7 +129,7 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         printf(TERMINAL_DECORATION_RESET);
         printf(TERMINAL_COLOR_RESET);
     }
-    else if (tree->kind >= NOD_SPEC_CHAR) {
+    else if (tree->kind >= NOD_SPEC_VOID) {
         printf(TERMINAL_COLOR_RED);
         printf(TERMINAL_DECORATION_BOLD);
             printf("%s", node_to_string(tree));
@@ -208,6 +209,10 @@ static void print_decl_recursive(const struct ast_node *tree)
 
     case NOD_SPEC_POINTER:
         printf(" pointer to");
+        break;
+
+    case NOD_SPEC_VOID:
+        printf(" void");
         break;
 
     case NOD_SPEC_CHAR:

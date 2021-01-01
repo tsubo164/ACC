@@ -3,7 +3,7 @@
 #include <string.h>
 #include "type.h"
 
-static struct data_type VOID_    = {DATA_TYPE_VOID,   0, 0, 1, NULL};
+static struct data_type VOID_    = {DATA_TYPE_VOID,   1, 4, 1, NULL};
 static struct data_type CHAR_    = {DATA_TYPE_CHAR,   1, 4, 1, NULL};
 static struct data_type INT_     = {DATA_TYPE_INT,    4, 4, 1, NULL};
 static struct data_type PTR_     = {DATA_TYPE_PTR,    8, 8, 1, NULL};

@@ -67,6 +67,8 @@ static void keyword_or_identifier(struct token *tok)
         tok->kind = TOK_RETURN;
     else if (!strcmp(text, "struct"))
         tok->kind = TOK_STRUCT;
+    else if (!strcmp(text, "void"))
+        tok->kind = TOK_VOID;
     else if (!strcmp(text, "while"))
         tok->kind = TOK_WHILE;
     else
@@ -480,6 +482,7 @@ void print_token(const struct token *tok)
     case TOK_STRUCT:
     case TOK_WHILE:
          /* types */
+    case TOK_VOID:
     case TOK_CHAR:
     case TOK_INT:
         printf("\"%s\"\n", tok->text);

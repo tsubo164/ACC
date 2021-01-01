@@ -27,6 +27,7 @@ enum token_kind {
     TOK_STRUCT,
     TOK_WHILE,
     /* types */
+    TOK_VOID,
     TOK_CHAR,
     TOK_INT,
     /* unary op */

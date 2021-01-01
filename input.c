@@ -1,12 +1,13 @@
 int printf(char *s, int i);
 
+void foo()
+{
+}
+
 int main()
 {
-    int a = 0;
-    int b = 7;
-    int c;
+    //void a = 11;
+    int a = 11;
 
-    c = !(a || b++);
-
-    return c;
+    return a;
 }

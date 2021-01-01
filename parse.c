@@ -1141,6 +1141,11 @@ static struct ast_node *type_specifier(struct parser *p)
 
     switch (tok->kind) {
 
+    case TOK_VOID:
+        tree = NEW_(NOD_SPEC_VOID);
+        decl_set_type(p, type_void());
+        break;
+
     case TOK_CHAR:
         tree = NEW_(NOD_SPEC_CHAR);
         decl_set_type(p, type_char());

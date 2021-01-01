@@ -168,6 +168,9 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
             if (!sym->is_defined && sym->is_used)
                 add_error(messages, "use of undefined symbol", &pos);
 
+            if (sym->type->kind == DATA_TYPE_VOID)
+                add_error(messages, "variable has incomplete type 'void'", &pos);
+
             if (sym->is_defined && !sym->is_used)
                 add_warning(messages, "unused variable", &pos);
 
