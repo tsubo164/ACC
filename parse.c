@@ -165,9 +165,7 @@ static void define_sym(struct parser *p, struct ast_node *node)
 {
     struct symbol *sym;
 
-    sym = define_symbol(p->symtab, p->decl_ident, p->decl_kind);
-    /* TODO need to pass type to define_symbol */
-    sym->type = p->decl_type;
+    sym = define_symbol(p->symtab, p->decl_ident, p->decl_kind, p->decl_type);
     node->sym = sym;
 }
 

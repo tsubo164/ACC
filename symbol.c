@@ -144,11 +144,13 @@ static struct symbol *new_symbol()
     return sym;
 }
 
-static struct symbol *push_symbol(struct symbol_table *table, const char *name, int kind)
+static struct symbol *push_symbol(struct symbol_table *table,
+        const char *name, int kind, struct data_type *type)
 {
     struct symbol *sym = new_symbol();
     sym->kind = kind;
     sym->name = name;
+    sym->type = type;
     sym->scope_level = table->current_scope_level;
 
     if (!table->head) {
@@ -246,17 +248,14 @@ struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind
 {
     struct symbol *sym = lookup_symbol(table, name, kind);
 
-    if (!sym) {
-        sym = push_symbol(table, name, kind);
-        sym->type = type_int();
-    }
+    if (!sym)
+        sym = push_symbol(table, name, kind, type_int());
 
-    /* symbol usage will be checked later */
-    /* sym->is_used = 1; */
     return sym;
 }
 
-struct symbol *define_symbol(struct symbol_table *table, const char *name, int kind)
+struct symbol *define_symbol(struct symbol_table *table,
+        const char *name, int kind, struct data_type *type)
 {
     struct symbol *sym = lookup_symbol(table, name, kind);
     const int cur_lv = table->current_scope_level;
@@ -266,7 +265,7 @@ struct symbol *define_symbol(struct symbol_table *table, const char *name, int k
         return sym;
     }
 
-    sym = push_symbol(table, name, kind);
+    sym = push_symbol(table, name, kind, type);
     sym->is_defined = 1;
 
     return sym;
@@ -275,14 +274,14 @@ struct symbol *define_symbol(struct symbol_table *table, const char *name, int k
 int symbol_scope_begin(struct symbol_table *table)
 {
     table->current_scope_level++;
-    push_symbol(table, NULL, SYM_SCOPE_BEGIN);
+    push_symbol(table, NULL, SYM_SCOPE_BEGIN, NULL);
 
     return table->current_scope_level;
 }
 
 int symbol_scope_end(struct symbol_table *table)
 {
-    push_symbol(table, NULL, SYM_SCOPE_END);
+    push_symbol(table, NULL, SYM_SCOPE_END, NULL);
     table->current_scope_level--;
 
     return table->current_scope_level;

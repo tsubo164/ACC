@@ -28,10 +28,8 @@
   - union
 
 * IMPLEMENTATION
-  - define symbol() takes type args
   - find struct() - improve '.'
   - new number()
-  - remove const cast
 
 * DONE
   - ++, --
@@ -40,3 +38,5 @@
   - += ...
   - break, continue (need error)
   - logical op &&, ||, !
+  - define symbol() takes type args
+  - remove const cast

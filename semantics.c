@@ -217,9 +217,8 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         return;
 
     case NOD_DECL_IDENT:
-        node->sym->is_defined = 1;
         node->sym->is_initialized = ctx->has_init;
-        return;
+        break;
 
     case NOD_ASSIGN:
         /* evaluate rvalue first to check a = a + 1; */
@@ -234,7 +233,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             node->sym->is_initialized = 1;
         node->sym->is_assigned = ctx->is_lvalue;
         node->sym->is_used = 1;
-        return;
+        break;
 
     /* enum */
     case NOD_SPEC_ENUM:
@@ -246,7 +245,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             ctx->enum_value = eval_(node->r, ctx->messages);
         node->l->sym->mem_offset = ctx->enum_value;
         ctx->enum_value++;
-        return;
+        break;
 
     /* loop */
     case NOD_FOR:
@@ -269,12 +268,12 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
     case NOD_BREAK:
         if (ctx->loop_depth == 0 && ctx->switch_depth == 0)
             add_error(ctx->messages, "'break' statement not in loop or switch statement", &pos);
-        return;
+        break;
 
     case NOD_CONTINUE:
         if (ctx->loop_depth == 0)
             add_error(ctx->messages, "'continue' statement not in loop statement", &pos);
-        return;
+        break;
 
     default:
         break;;
