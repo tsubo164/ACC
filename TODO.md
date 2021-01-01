@@ -15,9 +15,10 @@
   - array initializer
   - std stuff FILE, stderro, NULL ...
   - error with pos
-  - typedef
+  - pointer ++, --
 
 * OPTIONAL
+  - typedef
   - unsigned
   - short, long
   - bit shift <<, >>
@@ -25,6 +26,7 @@
   - anonymous enum, struct, union
   - union
   - control flow check
+  - void pointer, void parameter
 
 * IMPLEMENTATION
   - find struct() - improve '.'
