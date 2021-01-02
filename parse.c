@@ -644,9 +644,6 @@ static struct ast_node *logical_or_expression(struct parser *p)
  */
 static struct ast_node *conditional_expression(struct parser *p)
 {
-    /*
-    return equality_expression(p);
-    */
     return logical_or_expression(p);
 }
 
@@ -702,7 +699,7 @@ static struct ast_node *expression(struct parser *p)
  */
 static struct ast_node *constant_expression(struct parser *p)
 {
-    return conditional_expression(p);
+    return new_node(NOD_CONST_EXPR, conditional_expression(p), NULL);
 }
 
 /*

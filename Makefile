@@ -44,6 +44,10 @@ tree: $(target)
 test: $(target)
 	@$(MAKE) --no-print-directory -C tests $@
 
+test_cc: $(target)
+	@echo "\033[0;31m*** testing with cc ***\033[0;39m"
+	@$(MAKE) --no-print-directory -C tests test ACC='cc -S'
+
 $(depends): %.d: %.c
 	@echo '  dependency $<'
 	@$(CC) $(CFLAGS) -I$(incdir) -c -MM $< > $@

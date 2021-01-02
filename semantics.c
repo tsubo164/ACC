@@ -6,6 +6,8 @@
 
 static int eval_(const struct ast_node *node, struct message_list *messages)
 {
+    /* TODO remove this */
+    const struct position pos = {0};
     int l, r;
 
     if (!node)
@@ -39,13 +41,13 @@ static int eval_(const struct ast_node *node, struct message_list *messages)
     case NOD_DECL_IDENT:
     case NOD_IDENT:
         if (node->sym->kind != SYM_ENUMERATOR) {
-            add_error(messages, "expression is not a constant expression", 0);
+            add_error(messages, "expression is not a constant expression", &pos);
             return 0;
         }
         return node->sym->mem_offset;
 
     default:
-        add_error(messages, "expression is not a constant expression", 0);
+        add_error(messages, "expression is not a constant expression", &pos);
         return 0;
     }
 }
@@ -197,6 +199,7 @@ struct tree_context {
     const struct symbol *func_sym;
     int loop_depth;
     int switch_depth;
+    int case_id;
     int enum_value;
     int is_lvalue;
     int has_init;
@@ -206,6 +209,8 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 {
     /* TODO remove this */
     const struct position pos = {0};
+
+    int tmp;
 
     if (!node)
         return;
@@ -224,6 +229,10 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         node->sym->is_initialized = ctx->has_init;
         if (node->sym->kind == SYM_FUNC)
             ctx->func_sym = node->sym;
+        break;
+
+    case NOD_CONST_EXPR:
+        node->ival = eval_(node->l, ctx->messages);
         break;
 
     case NOD_ASSIGN:
@@ -247,11 +256,13 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         break;
 
     case NOD_DECL_ENUMERATOR:
+        check_tree_(node->l, ctx);
+        check_tree_(node->r, ctx);
         if (node->r)
-            ctx->enum_value = eval_(node->r, ctx->messages);
+            ctx->enum_value = node->r->ival;
         node->l->sym->mem_offset = ctx->enum_value;
         ctx->enum_value++;
-        break;
+        return;
 
     /* loop */
     case NOD_FOR:
@@ -268,6 +279,24 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             node->r = new_ast_node(NOD_NUM, NULL, NULL);
             node->r->ival = 1;
         }
+        break;
+
+    /* switch */
+    case NOD_SWITCH:
+        tmp = ctx->case_id;
+        ctx->case_id = 100;
+
+        ctx->switch_depth++;
+        check_tree_(node->l, ctx);
+        check_tree_(node->r, ctx);
+        ctx->switch_depth--;
+
+        ctx->case_id = tmp;
+        return;
+
+    case NOD_CASE:
+    case NOD_DEFAULT:
+        node->ival = ctx->case_id++;
         break;
 
     /* function */

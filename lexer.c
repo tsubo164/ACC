@@ -305,12 +305,8 @@ state_initial:
         tok->kind = c;
         goto state_final;
 
-    /* terminator */
-    case ';':
-        tok->kind = c;
-        goto state_final;
-
-    case ',':
+    /* separators */
+    case ':': case ';': case ',':
         tok->kind = c;
         goto state_final;
 
