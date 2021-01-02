@@ -779,7 +779,7 @@ static struct ast_node *for_statement(struct parser *p)
 static struct ast_node *while_statement(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    struct ast_node *body = NULL, *cond = NULL;
+    struct ast_node *cond = NULL, *body = NULL;
 
     expect(p, TOK_WHILE);
     expect(p, '(');
@@ -798,7 +798,7 @@ static struct ast_node *while_statement(struct parser *p)
 static struct ast_node *dowhile_statement(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    struct ast_node *body = NULL, *cond = NULL;
+    struct ast_node *cond = NULL, *body = NULL;
 
     expect(p, TOK_DO);
     body = statement(p);
@@ -844,6 +844,79 @@ static struct ast_node *continue_statement(struct parser *p)
 }
 
 /*
+ * return_statement
+ *     TOK_RETURN ';'
+ *     TOK_RETURN expression ';'
+ */
+static struct ast_node *return_statement(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct ast_node *expr = NULL;
+
+    expect(p, TOK_RETURN);
+    if (!nexttok(p, ';'))
+        expr = expression(p);
+    expect(p, ';');
+
+    tree = new_node(NOD_RETURN, expr, NULL);
+    return tree;
+}
+
+/*
+ * switch_statement
+ *     TOK_SWITCH '(' expression ')' statement
+ */
+static struct ast_node *switch_statement(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct ast_node *expr = NULL, *body = NULL;
+
+    expect(p, TOK_SWITCH);
+    expect(p, '(');
+    expr = expression(p);
+    expect(p, ')');
+    body = statement(p);
+
+    tree = new_node(NOD_SWITCH, expr, body);
+    return tree;
+}
+
+/*
+ * case_statement
+ *     TOK_CASE constant_expression ':' statement
+ */
+static struct ast_node *case_statement(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct ast_node *expr = NULL, *body = NULL;
+
+    expect(p, TOK_CASE);
+    expr = constant_expression(p);
+    expect(p, ':');
+    body = statement(p);
+
+    tree = new_node(NOD_CASE, expr, body);
+    return tree;
+}
+
+/*
+ * default_statement
+ *     TOK_DEFAULT ':' statement
+ */
+static struct ast_node *default_statement(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct ast_node *body = NULL;
+
+    expect(p, TOK_DEFAULT);
+    expect(p, ':');
+    body = statement(p);
+
+    tree = new_node(NOD_DEFAULT, body, NULL);
+    return tree;
+}
+
+/*
  * statement
  *     expression ';'
  *     TOK_RETURN expression ';'
@@ -876,11 +949,8 @@ static struct ast_node *statement(struct parser *p)
         return continue_statement(p);
 
     case TOK_RETURN:
-        tree = new_node(NOD_RETURN, NULL, NULL);
-        if (!nexttok(p, ';'))
-            tree->l = expression(p);
-        expect_or_error(p, ';', "missing ';' at end of return statement");
-        break;
+        ungettok(p);
+        return return_statement(p);
 
     case TOK_IF:
         expect_or_error(p, '(', "missing '(' after if");
@@ -894,6 +964,18 @@ static struct ast_node *statement(struct parser *p)
             ungettok(p);
         }
         break;
+
+    case TOK_SWITCH:
+        ungettok(p);
+        return switch_statement(p);
+
+    case TOK_CASE:
+        ungettok(p);
+        return case_statement(p);
+
+    case TOK_DEFAULT:
+        ungettok(p);
+        return default_statement(p);
 
     case '{':
         ungettok(p);

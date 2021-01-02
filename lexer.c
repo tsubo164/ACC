@@ -45,32 +45,43 @@ static void keyword_or_identifier(struct token *tok)
 {
     const char *text = tok->text;
 
-    if (!strcmp(text, "break"))
-        tok->kind = TOK_BREAK;
-    else if (!strcmp(text, "char"))
-        tok->kind = TOK_CHAR;
-    else if (!strcmp(text, "continue"))
-        tok->kind = TOK_CONTINUE;
-    else if (!strcmp(text, "do"))
-        tok->kind = TOK_DO;
+    if (!strcmp(text, "if"))
+        tok->kind = TOK_IF;
     else if (!strcmp(text, "else"))
         tok->kind = TOK_ELSE;
-    else if (!strcmp(text, "enum"))
-        tok->kind = TOK_ENUM;
+    else if (!strcmp(text, "switch"))
+        tok->kind = TOK_SWITCH;
+    else if (!strcmp(text, "case"))
+        tok->kind = TOK_CASE;
+    else if (!strcmp(text, "default"))
+        tok->kind = TOK_DEFAULT;
+
+    else if (!strcmp(text, "do"))
+        tok->kind = TOK_DO;
     else if (!strcmp(text, "for"))
         tok->kind = TOK_FOR;
-    else if (!strcmp(text, "if"))
-        tok->kind = TOK_IF;
-    else if (!strcmp(text, "int"))
-        tok->kind = TOK_INT;
-    else if (!strcmp(text, "return"))
-        tok->kind = TOK_RETURN;
-    else if (!strcmp(text, "struct"))
-        tok->kind = TOK_STRUCT;
-    else if (!strcmp(text, "void"))
-        tok->kind = TOK_VOID;
     else if (!strcmp(text, "while"))
         tok->kind = TOK_WHILE;
+
+    else if (!strcmp(text, "break"))
+        tok->kind = TOK_BREAK;
+    else if (!strcmp(text, "continue"))
+        tok->kind = TOK_CONTINUE;
+    else if (!strcmp(text, "return"))
+        tok->kind = TOK_RETURN;
+
+    else if (!strcmp(text, "struct"))
+        tok->kind = TOK_STRUCT;
+    else if (!strcmp(text, "enum"))
+        tok->kind = TOK_ENUM;
+
+    else if (!strcmp(text, "void"))
+        tok->kind = TOK_VOID;
+    else if (!strcmp(text, "char"))
+        tok->kind = TOK_CHAR;
+    else if (!strcmp(text, "int"))
+        tok->kind = TOK_INT;
+
     else
         tok->kind = TOK_IDENT;
 }
@@ -471,16 +482,19 @@ void print_token(const struct token *tok)
     case TOK_IDENT:
     case TOK_STRING_LITERAL:
          /* keywords */
+    case TOK_IF:
+    case TOK_ELSE:
+    case TOK_SWITCH:
+    case TOK_CASE:
+    case TOK_DEFAULT:
+    case TOK_DO:
+    case TOK_FOR:
+    case TOK_WHILE:
     case TOK_BREAK:
     case TOK_CONTINUE:
-    case TOK_DO:
-    case TOK_ELSE:
-    case TOK_ENUM:
-    case TOK_FOR:
-    case TOK_IF:
     case TOK_RETURN:
     case TOK_STRUCT:
-    case TOK_WHILE:
+    case TOK_ENUM:
          /* types */
     case TOK_VOID:
     case TOK_CHAR:
