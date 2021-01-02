@@ -343,14 +343,6 @@ static void check_tree_semantics(struct ast_node *tree, struct message_list *mes
     check_tree_(tree, &ctx);
 }
 
-enum decl_kind {
-    DECL_VAR,
-    DECL_FUNC,
-    DECL_PARAM,
-    DECL_STRUCT,
-    DECL_MEMBER
-};
-
 static void add_types(struct ast_node *node, struct symbol_table *table)
 {
     if (!node)

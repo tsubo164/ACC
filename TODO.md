@@ -4,7 +4,6 @@
   - struct arg
   - struct assign
   - -> op
-  - switch case
   - goto
   - check **temporary** registers
   - check args
@@ -43,3 +42,4 @@
   - remove const cast
   - return check
   - void
+  - switch case
