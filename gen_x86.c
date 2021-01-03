@@ -643,36 +643,6 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
     }
 }
 
-static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_scope)
-{
-    static int case_id = 0;
-
-    if (!node)
-        return;
-
-    switch (node->kind) {
-
-    case NOD_SWITCH:
-        case_id = 0;
-        break;
-
-    case NOD_CASE:
-        code3__(fp, node, CMP_, imme(node->l->ival), A_);
-        code2__(fp, node, JE_,  label(switch_scope, node->ival));
-        return;
-
-    case NOD_DEFAULT:
-        code2__(fp, node, JE_,  label(switch_scope, node->ival));
-        return;
-
-    default:
-        break;
-    }
-
-    gen_switch_table(fp, node->l, switch_scope);
-    gen_switch_table(fp, node->r, switch_scope);
-}
-
 static void gen_relational(FILE *fp, const struct ast_node *node, struct opecode op)
 {
     gen_code(fp, node->l);
@@ -701,7 +671,8 @@ enum jump_kind {
     JMP_ENTER,
     JMP_EXIT,
     JMP_ELSE,
-    JMP_CONTINUE
+    JMP_CONTINUE,
+    JMP_OFFSET = 100
 };
 
 struct jump_scope {
@@ -710,6 +681,36 @@ struct jump_scope {
     int continue_id;
     int return_id;
 };
+
+static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_scope)
+{
+    static int case_id = 0;
+
+    if (!node)
+        return;
+
+    switch (node->kind) {
+
+    case NOD_SWITCH:
+        case_id = 0;
+        break;
+
+    case NOD_CASE:
+        code3__(fp, node, CMP_, imme(node->l->ival), A_);
+        code2__(fp, node, JE_,  label(switch_scope, JMP_OFFSET + node->ival));
+        return;
+
+    case NOD_DEFAULT:
+        code2__(fp, node, JE_,  label(switch_scope, JMP_OFFSET + node->ival));
+        return;
+
+    default:
+        break;
+    }
+
+    gen_switch_table(fp, node->l, switch_scope);
+    gen_switch_table(fp, node->r, switch_scope);
+}
 
 static void gen_code(FILE *fp, const struct ast_node *node)
 {
@@ -847,7 +848,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_CASE:
     case NOD_DEFAULT:
-        gen_label(fp, scope.id, node->ival);
+        gen_label(fp, scope.id, JMP_OFFSET + node->ival);
         gen_code(fp, node->r);
         break;
 

@@ -19,13 +19,13 @@ int main()
             case 111: /* jump to here */
                 a *= 3;
                 break;
-            case 112:
+            case 1:
                 a *= 4;
                 break;
-            case 113:
+            case 2:
                 a *= 5;
                 break;
-            case 114:
+            case 11:
                 a -= 5;
                 break;
             }

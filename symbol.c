@@ -45,6 +45,7 @@ struct symbol_table *new_symbol_table()
     table->tail = NULL;
     /* 0 means global scope */
     table->current_scope_level = 0;
+    table->current_switch_level = 1000;
     table->symbol_count = 0;
 
     return table;
@@ -74,6 +75,10 @@ const char *symbol_to_string(const struct symbol *sym)
     switch (sym->kind) {
     case SYM_SCOPE_BEGIN: return "SYM_SCOPE_BEGIN";
     case SYM_SCOPE_END: return "SYM_SCOPE_END";
+    case SYM_SWITCH_BEGIN: return "SYM_SWITCH_BEGIN";
+    case SYM_SWITCH_END: return "SYM_SWITCH_END";
+    case SYM_CASE: return "SYM_CASE";
+    case SYM_DEFAULT: return "SYM_DEFAULT";
     case SYM_VAR: return "SYM_VAR";
     case SYM_FUNC: return "SYM_FUNC";
     case SYM_PARAM: return "SYM_PARAM";
@@ -173,6 +178,8 @@ static int namespace(int kind)
 
     case SYM_SCOPE_BEGIN:
     case SYM_SCOPE_END:
+    case SYM_SWITCH_BEGIN:
+    case SYM_SWITCH_END:
         return 0;
 
     case SYM_VAR:
@@ -193,9 +200,16 @@ static int namespace(int kind)
     }
 }
 
-static int is_same_namespace(int kind0, int kind1)
+static int match_namespace(int kind0, int kind1)
 {
     return namespace(kind0) == namespace(kind1);
+}
+
+static int match_name(const char *name0, const char *name1)
+{
+    if (!name0 || !name1)
+        return 0;
+    return !strcmp(name0, name1);
 }
 
 struct symbol *lookup_symbol(struct symbol_table *table,
@@ -216,18 +230,15 @@ struct symbol *lookup_symbol(struct symbol_table *table,
         }
 
         /* step up one level */
-        if (sym->kind == SYM_SCOPE_END) {
+        if (sym->kind == SYM_SCOPE_END)
             continue;
-        }
 
         /* skip upper level scope */
-        if (sym->scope_level > lv_low) {
+        if (sym->scope_level > lv_low)
             continue;
-        }
 
-        if (!strcmp(sym->name, name) && is_same_namespace(sym->kind, kind)) {
+        if (match_name(sym->name, name) && match_namespace(sym->kind, kind))
             return sym;
-        }
     }
 
     return NULL;
@@ -271,6 +282,21 @@ struct symbol *define_symbol(struct symbol_table *table,
     return sym;
 }
 
+struct symbol *define_case_symbol(struct symbol_table *table, int kind)
+{
+    struct symbol *sym;
+
+    if (kind != SYM_CASE && kind != SYM_DEFAULT)
+        return NULL;
+
+    sym = push_symbol(table, NULL, kind, NULL);
+
+    sym->scope_level = table->current_switch_level;
+    sym->is_defined = 1;
+
+    return sym;
+}
+
 int symbol_scope_begin(struct symbol_table *table)
 {
     table->current_scope_level++;
@@ -285,6 +311,28 @@ int symbol_scope_end(struct symbol_table *table)
     table->current_scope_level--;
 
     return table->current_scope_level;
+}
+
+int symbol_switch_begin(struct symbol_table *table)
+{
+    struct symbol *sym;
+
+    table->current_switch_level++;
+    sym = push_symbol(table, NULL, SYM_SWITCH_BEGIN, NULL);
+    sym->scope_level = table->current_switch_level;
+
+    return table->current_switch_level;
+}
+
+int symbol_switch_end(struct symbol_table *table)
+{
+    struct symbol *sym;
+
+    sym = push_symbol(table, NULL, SYM_SWITCH_END, NULL);
+    sym->scope_level = table->current_switch_level;
+    table->current_switch_level--;
+
+    return table->current_switch_level;
 }
 
 int get_symbol_count(const struct symbol_table *table)

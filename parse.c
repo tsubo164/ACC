@@ -75,11 +75,6 @@ static void syntax_error(struct parser *p, const char *msg)
         const struct token *tok = current_token(p);
         add_error(p->msg, msg, &tok->pos);
         p->is_panic_mode = 1;
-
-        /*
-        print_token(tok);
-        printf("    >>>> in panic mode\n");
-        */
     }
 }
 
@@ -90,11 +85,6 @@ static void expect_or_error(struct parser *p, enum token_kind query, const char 
     if (p->is_panic_mode) {
         if (tok->kind == query || tok->kind == TOK_EOF) {
             p->is_panic_mode = 0;
-
-            /*
-            print_token(tok);
-            printf("    <<<< out panic mode: expected '%c'\n", query);
-            */
         }
     } else {
         if (tok->kind == query)
@@ -111,11 +101,6 @@ static void expect(struct parser *p, enum token_kind query)
     if (p->is_panic_mode) {
         if (tok->kind == query || tok->kind == TOK_EOF) {
             p->is_panic_mode = 0;
-
-            /*
-            print_token(tok);
-            printf("    <<<< out panic mode: expected '%c'\n", query);
-            */
         }
     } else {
         if (tok->kind == query)
@@ -179,6 +164,14 @@ static void use_sym(struct parser *p, struct ast_node *node)
     node->sym = sym;
 }
 
+static void define_case(struct parser *p, struct ast_node *node, int kind)
+{
+    struct symbol *sym;
+
+    sym = define_case_symbol(p->symtab, kind);
+    node->sym = sym;
+}
+
 static void scope_begin(struct parser *p)
 {
     symbol_scope_begin(p->symtab);
@@ -187,6 +180,16 @@ static void scope_begin(struct parser *p)
 static void scope_end(struct parser *p)
 {
     symbol_scope_end(p->symtab);
+}
+
+static void switch_begin(struct parser *p)
+{
+    symbol_switch_begin(p->symtab);
+}
+
+static void switch_end(struct parser *p)
+{
+    symbol_switch_end(p->symtab);
 }
 
 static void decl_begin(struct parser *p, int decl_kind)
@@ -872,7 +875,10 @@ static struct ast_node *switch_statement(struct parser *p)
     expect(p, '(');
     expr = expression(p);
     expect(p, ')');
+
+    switch_begin(p);
     body = statement(p);
+    switch_end(p);
 
     tree = new_node(NOD_SWITCH, expr, body);
     return tree;
@@ -885,14 +891,16 @@ static struct ast_node *switch_statement(struct parser *p)
 static struct ast_node *case_statement(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    struct ast_node *expr = NULL, *body = NULL;
+    struct ast_node *expr = NULL;
 
     expect(p, TOK_CASE);
     expr = constant_expression(p);
     expect(p, ':');
-    body = statement(p);
 
-    tree = new_node(NOD_CASE, expr, body);
+    tree = new_node(NOD_CASE, expr, NULL);
+    define_case(p, tree, SYM_CASE);
+
+    tree->r = statement(p);
     return tree;
 }
 
@@ -903,13 +911,14 @@ static struct ast_node *case_statement(struct parser *p)
 static struct ast_node *default_statement(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    struct ast_node *body = NULL;
 
     expect(p, TOK_DEFAULT);
     expect(p, ':');
-    body = statement(p);
 
-    tree = new_node(NOD_DEFAULT, body, NULL);
+    tree = new_node(NOD_DEFAULT, NULL, NULL);
+    define_case(p, tree, SYM_DEFAULT);
+
+    tree->l = statement(p);
     return tree;
 }
 

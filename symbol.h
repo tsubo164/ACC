@@ -6,6 +6,10 @@
 enum symbol_kind {
     SYM_SCOPE_BEGIN,
     SYM_SCOPE_END,
+    SYM_SWITCH_BEGIN,
+    SYM_SWITCH_END,
+    SYM_CASE,
+    SYM_DEFAULT,
     SYM_VAR,
     SYM_FUNC,
     SYM_PARAM,
@@ -39,6 +43,7 @@ struct symbol_table {
     struct symbol *tail;
 
     int current_scope_level;
+    int current_switch_level;
     int symbol_count;
 };
 
@@ -62,8 +67,12 @@ extern struct symbol *insert_symbol(struct symbol_table *table,
 extern struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind);
 extern struct symbol *define_symbol(struct symbol_table *table,
         const char *name, int kind, struct data_type *type);
+extern struct symbol *define_case_symbol(struct symbol_table *table, int kind);
+
 extern int symbol_scope_begin(struct symbol_table *table);
 extern int symbol_scope_end(struct symbol_table *table);
+extern int symbol_switch_begin(struct symbol_table *table);
+extern int symbol_switch_end(struct symbol_table *table);
 
 extern struct symbol *begin(struct symbol_table *table);
 extern struct symbol *end(struct symbol_table *table);

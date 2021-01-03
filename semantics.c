@@ -205,6 +205,24 @@ struct tree_context {
     int has_init;
 };
 
+static int find_case_value(struct ast_node *node)
+{
+    const struct symbol *sym = node->sym;
+    const int val = node->l->ival;
+    const int lv = node->sym->scope_level;
+
+    /* search from sym->prev */
+    for (sym = sym->prev; sym; sym = sym->prev) {
+        if (sym->kind == SYM_CASE &&
+                sym->mem_offset == val && sym->scope_level == lv)
+            return 1;
+
+        if (sym->kind == SYM_SWITCH_BEGIN && sym->scope_level == lv)
+            break;
+    }
+    return 0;
+}
+
 static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 {
     /* TODO remove this */
@@ -284,7 +302,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
     /* switch */
     case NOD_SWITCH:
         tmp = ctx->case_id;
-        ctx->case_id = 100;
+        ctx->case_id = 0;
 
         ctx->switch_depth++;
         check_tree_(node->l, ctx);
@@ -295,6 +313,14 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         return;
 
     case NOD_CASE:
+        check_tree_(node->l, ctx);
+        check_tree_(node->r, ctx);
+        node->sym->mem_offset = node->l->ival;
+        node->ival = ctx->case_id++;
+        if (find_case_value(node))
+            add_error(ctx->messages, "duplicate case value", &pos);
+        return;
+
     case NOD_DEFAULT:
         node->ival = ctx->case_id++;
         break;
