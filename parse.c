@@ -69,6 +69,15 @@ static int nexttok(struct parser *p, int token_kind)
     return kind == token_kind;
 }
 
+static int peektok(struct parser *p)
+{
+    const struct token *tok = gettok(p);
+    const int kind = tok->kind;
+
+    ungettok(p);
+    return kind;
+}
+
 static void syntax_error(struct parser *p, const char *msg)
 {
     if (!p->is_panic_mode) {
@@ -78,6 +87,7 @@ static void syntax_error(struct parser *p, const char *msg)
     }
 }
 
+/*
 static void expect_or_error(struct parser *p, enum token_kind query, const char *error_msg)
 {
     const struct token *tok = gettok(p);
@@ -93,6 +103,7 @@ static void expect_or_error(struct parser *p, enum token_kind query, const char 
         syntax_error(p, error_msg);
     }
 }
+*/
 
 static void expect(struct parser *p, enum token_kind query)
 {
@@ -863,6 +874,31 @@ static struct ast_node *return_statement(struct parser *p)
 }
 
 /*
+ * if_statement
+ *     TOK_IF '(' expression ')' statement
+ *     TOK_IF '(' expression ')' statement TOK_ELSE statement
+ */
+static struct ast_node *if_statement(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct ast_node *cond = NULL, *then = NULL, *els = NULL;
+    struct ast_node *then_else = NULL;
+
+    expect(p, TOK_IF);
+    expect(p, '(');
+    cond = expression(p);
+    expect(p, ')');
+    then = statement(p);
+    if (consume(p, TOK_ELSE))
+        els = statement(p);
+
+    then_else = new_node(NOD_IF_THEN, then, els);
+    tree      = new_node(NOD_IF, cond, then_else);
+
+    return tree;
+}
+
+/*
  * switch_statement
  *     TOK_SWITCH '(' expression ')' statement
  */
@@ -924,81 +960,56 @@ static struct ast_node *default_statement(struct parser *p)
 
 /*
  * statement
- *     expression ';'
- *     TOK_RETURN expression ';'
+ *     labeled_statement
+ *     compound_statement
+ *     expression_statement
+ *     selection_statement
+ *     iteration_statement
+ *     jump_statement
  */
 static struct ast_node *statement(struct parser *p)
 {
-    struct ast_node *tree = NULL;
-    const struct token *tok = gettok(p);
-
-    switch (tok->kind) {
+    switch (peektok(p)) {
 
     case TOK_FOR:
-        ungettok(p);
         return for_statement(p);
 
     case TOK_WHILE:
-        ungettok(p);
         return while_statement(p);
 
     case TOK_DO:
-        ungettok(p);
         return dowhile_statement(p);
 
     case TOK_BREAK:
-        ungettok(p);
         return break_statement(p);
 
     case TOK_CONTINUE:
-        ungettok(p);
         return continue_statement(p);
 
     case TOK_RETURN:
-        ungettok(p);
         return return_statement(p);
 
     case TOK_IF:
-        expect_or_error(p, '(', "missing '(' after if");
-        tree = new_node(NOD_IF, expression(p), NULL);
-        expect_or_error(p, ')', "missing ')' after if condition");
-        tree->r = new_node(NOD_IF_THEN, statement(p), NULL);
-        tok = gettok(p);
-        if (tok->kind == TOK_ELSE) {
-            tree->r->r = statement(p);
-        } else {
-            ungettok(p);
-        }
-        break;
+        return if_statement(p);
 
     case TOK_SWITCH:
-        ungettok(p);
         return switch_statement(p);
 
     case TOK_CASE:
-        ungettok(p);
         return case_statement(p);
 
     case TOK_DEFAULT:
-        ungettok(p);
         return default_statement(p);
 
     case '{':
-        ungettok(p);
         return compound_statement(p);
 
     case '}':
-        ungettok(p);
         return NULL;
 
     default:
-        ungettok(p);
-        tree = expression(p);
-        expect_or_error(p, ';', "missing ';' at end of statement");
-        break;
+        return expression_statement(p);
     }
-
-    return tree;
 }
 
 static struct ast_node *decl_identifier(struct parser *p)

@@ -2,6 +2,14 @@ int printf(char *s, int i);
 
 int main()
 {
+    int i;
+
+    for (i = 0; i < 10; i++)
+        ;
+        /*
+        printf("i -> %d\n", i);
+        */
+    /*
     int a = 12;
 
     switch (a) {
@@ -31,6 +39,7 @@ int main()
     default:
         break;
     }
+    */
 
     return 42;
 }
