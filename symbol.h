@@ -10,6 +10,7 @@ enum symbol_kind {
     SYM_SWITCH_END,
     SYM_CASE,
     SYM_DEFAULT,
+    SYM_LABEL,
     SYM_VAR,
     SYM_FUNC,
     SYM_PARAM,

@@ -7,7 +7,7 @@
 #include "message.h"
 #include "type.h"
 
-#define TOKEN_BUFFER_SIZE 2
+#define TOKEN_BUFFER_SIZE 4
 
 struct parser {
     struct lexer lex;

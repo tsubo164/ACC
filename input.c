@@ -9,6 +9,10 @@ int main()
         /*
         printf("i -> %d\n", i);
         */
+
+final:
+    printf("final\n", 0);
+
     /*
     int a = 12;
 

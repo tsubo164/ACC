@@ -31,6 +31,9 @@
   - find struct() - improve '.'
   - new number()
 
+* BUG
+  - duplicate label for string
+
 * DONE
   - ++, --
   - for

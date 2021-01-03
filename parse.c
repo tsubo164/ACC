@@ -19,7 +19,7 @@ static const struct token *gettok(struct parser *p)
         p->curr = (p->curr + 1) % N;
     } else {
         p->curr = (p->curr + 1) % N;
-        return &p->tokbuf[p->head];
+        return &p->tokbuf[p->curr];
     }
 
     lex_get_token(&p->lex, &p->tokbuf[p->head]);
@@ -183,6 +183,14 @@ static void define_case(struct parser *p, struct ast_node *node, int kind)
     node->sym = sym;
 }
 
+static void define_label(struct parser *p, struct ast_node *node)
+{
+    struct symbol *sym;
+
+    sym = define_symbol(p->symtab, p->decl_ident, SYM_LABEL, type_int());
+    node->sym = sym;
+}
+
 static void scope_begin(struct parser *p)
 {
     symbol_scope_begin(p->symtab);
@@ -229,6 +237,7 @@ static int decl_is_func(struct parser *p)
 static struct ast_node *statement(struct parser *p);
 static struct ast_node *expression(struct parser *p);
 static struct ast_node *assignment_expression(struct parser *p);
+static struct ast_node *decl_identifier(struct parser *p);
 static struct ast_node *type_specifier(struct parser *p);
 static struct ast_node *declaration_specifier(struct parser *p);
 static struct ast_node *declarator(struct parser *p);
@@ -959,6 +968,27 @@ static struct ast_node *default_statement(struct parser *p)
 }
 
 /*
+ * labeled_statement
+ *     TOK_IDENT ':' statement
+ */
+static struct ast_node *labeled_statement(struct parser *p)
+{
+    /* this statement is actuallyy for only goto statement
+     * case and default statements are defined separately */
+    struct ast_node *tree = NULL;
+    struct ast_node *ident = NULL;
+
+    ident = decl_identifier(p);
+    expect(p, ':');
+
+    tree = new_node(NOD_LABEL, ident, NULL);
+    define_label(p, tree->l);
+
+    tree->r = statement(p);
+    return tree;
+}
+
+/*
  * statement
  *     labeled_statement
  *     compound_statement
@@ -1008,6 +1038,15 @@ static struct ast_node *statement(struct parser *p)
         return NULL;
 
     default:
+        if (consume(p, TOK_IDENT)) {
+            if (nexttok(p, ':')) {
+                /* unget identifier */
+                ungettok(p);
+                return labeled_statement(p);
+            }
+            /* unget identifier */
+            ungettok(p);
+        }
         return expression_statement(p);
     }
 }

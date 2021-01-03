@@ -18,6 +18,7 @@ enum ast_node_kind {
     NOD_SWITCH,
     NOD_CASE,
     NOD_DEFAULT,
+    NOD_LABEL,
     NOD_FOR,
     NOD_FOR_PRE_COND,
     NOD_FOR_BODY_POST,

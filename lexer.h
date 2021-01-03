@@ -27,6 +27,7 @@ enum token_kind {
     TOK_BREAK,
     TOK_CONTINUE,
     TOK_RETURN,
+    TOK_GOTO,
     TOK_STRUCT,
     TOK_ENUM,
     /* types */

@@ -57,6 +57,7 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_SWITCH: return "NOD_SWITCH";
     case NOD_CASE: return "NOD_CASE";
     case NOD_DEFAULT: return "NOD_DEFAULT";
+    case NOD_LABEL: return "NOD_LABEL";
     case NOD_FOR: return "NOD_FOR";
     case NOD_FOR_PRE_COND: return "NOD_FOR_PRE_COND";
     case NOD_FOR_BODY_POST: return "NOD_FOR_BODY_POST";

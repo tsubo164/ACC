@@ -69,6 +69,8 @@ static void keyword_or_identifier(struct token *tok)
         tok->kind = TOK_CONTINUE;
     else if (!strcmp(text, "return"))
         tok->kind = TOK_RETURN;
+    else if (!strcmp(text, "goto"))
+        tok->kind = TOK_GOTO;
 
     else if (!strcmp(text, "struct"))
         tok->kind = TOK_STRUCT;
@@ -489,6 +491,7 @@ void print_token(const struct token *tok)
     case TOK_BREAK:
     case TOK_CONTINUE:
     case TOK_RETURN:
+    case TOK_GOTO:
     case TOK_STRUCT:
     case TOK_ENUM:
          /* types */

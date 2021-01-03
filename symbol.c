@@ -79,6 +79,7 @@ const char *symbol_to_string(const struct symbol *sym)
     case SYM_SWITCH_END: return "SYM_SWITCH_END";
     case SYM_CASE: return "SYM_CASE";
     case SYM_DEFAULT: return "SYM_DEFAULT";
+    case SYM_LABEL: return "SYM_LABEL";
     case SYM_VAR: return "SYM_VAR";
     case SYM_FUNC: return "SYM_FUNC";
     case SYM_PARAM: return "SYM_PARAM";
