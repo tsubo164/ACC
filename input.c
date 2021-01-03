@@ -10,6 +10,8 @@ int main()
         printf("i -> %d\n", i);
         */
 
+    goto final;
+
 final:
     printf("final\n", 0);
 

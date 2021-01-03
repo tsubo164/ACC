@@ -883,6 +883,26 @@ static struct ast_node *return_statement(struct parser *p)
 }
 
 /*
+ * goto_statement
+ *     TOK_GOTO TOK_IDENT ';'
+ */
+static struct ast_node *goto_statement(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct ast_node *ident = NULL;
+
+    expect(p, TOK_GOTO);
+    ident = identifier(p);
+    expect(p, ';');
+
+    tree = new_node(NOD_GOTO, ident, NULL);
+    use_sym(p, tree->l);
+    /*
+    */
+    return tree;
+}
+
+/*
  * if_statement
  *     TOK_IF '(' expression ')' statement
  *     TOK_IF '(' expression ')' statement TOK_ELSE statement
@@ -1018,6 +1038,9 @@ static struct ast_node *statement(struct parser *p)
 
     case TOK_RETURN:
         return return_statement(p);
+
+    case TOK_GOTO:
+        return goto_statement(p);
 
     case TOK_IF:
         return if_statement(p);

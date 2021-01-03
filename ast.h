@@ -13,6 +13,7 @@ enum ast_node_kind {
     NOD_BREAK,
     NOD_CONTINUE,
     NOD_RETURN,
+    NOD_GOTO,
     NOD_IF,
     NOD_IF_THEN,
     NOD_SWITCH,

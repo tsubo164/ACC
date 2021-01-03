@@ -52,6 +52,7 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_BREAK: return "NOD_BREAK";
     case NOD_CONTINUE: return "NOD_CONTINUE";
     case NOD_RETURN: return "NOD_RETURN";
+    case NOD_GOTO: return "NOD_GOTO";
     case NOD_IF: return "NOD_IF";
     case NOD_IF_THEN: return "NOD_IF_THEN";
     case NOD_SWITCH: return "NOD_SWITCH";
