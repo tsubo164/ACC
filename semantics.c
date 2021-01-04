@@ -196,7 +196,7 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
 
 struct tree_context {
     struct message_list *messages;
-    const struct symbol *func_sym;
+    struct symbol *func_sym;
     int loop_depth;
     int switch_depth;
     int case_id;
@@ -323,6 +323,14 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
     case NOD_DEFAULT:
         node->ival = ctx->case_id++;
+        break;
+
+    /* goto */
+    case NOD_GOTO:
+        node->l->sym = use_label_symbol(ctx->func_sym, node->l->sval);
+        break;
+
+    case NOD_LABEL:
         break;
 
     /* function */

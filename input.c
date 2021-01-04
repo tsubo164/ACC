@@ -2,48 +2,58 @@ int printf(char *s, int i);
 
 int main()
 {
+        /*
     int i;
 
     for (i = 0; i < 10; i++)
         ;
-        /*
         printf("i -> %d\n", i);
         */
 
-    goto final;
+    int a = 5;
+
+    if (a > 3)
+        goto error;
+    else
+        goto final;
+
+error:
+    printf("******** error\n", 0);
 
 final:
-    printf("final\n", 0);
+    printf("******** final\n", 0);
 
     /*
-    int a = 12;
+    {
+        int a = 12;
 
-    switch (a) {
-    case 1:
-        return a;
-    case 2:
-        break;
-    case 12:
-        switch (110) {
-        case 110:
-            break;
-        case 111:
+        switch (a) {
+        case 1:
+            return a;
+        case 2:
             break;
         case 12:
+            switch (110) {
+            case 110:
+                break;
+            case 111:
+                break;
+            case 12:
+                break;
+            case 13:
+                break;
+            case 112:
+                break;
+            }
             break;
+            return a;
+
         case 13:
-            break;
-        case 112:
+            return a;
+
+        default:
             break;
         }
-        break;
-        return a;
-
-    case 13:
-        return a;
-
-    default:
-        break;
     }
     */
 

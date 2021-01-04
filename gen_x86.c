@@ -680,6 +680,7 @@ struct jump_scope {
     int break_id;
     int continue_id;
     int return_id;
+    int function_id;
 };
 
 static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_scope)
@@ -863,6 +864,15 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_CONTINUE:
         code2__(fp, node, JMP_, label(scope.continue_id, JMP_CONTINUE));
+        break;
+
+    case NOD_LABEL:
+        gen_label(fp, scope.function_id, node->l->sym->id);
+        gen_code(fp, node->r);
+        break;
+
+    case NOD_GOTO:
+        code2__(fp, node, JMP_, label(scope.function_id, node->l->sym->id));
         break;
 
     case NOD_IDENT:

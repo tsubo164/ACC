@@ -30,6 +30,7 @@
 * IMPLEMENTATION
   - find struct() - improve '.'
   - new number()
+  - insert symbol()
 
 * BUG
   - duplicate label for string

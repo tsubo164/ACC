@@ -87,24 +87,6 @@ static void syntax_error(struct parser *p, const char *msg)
     }
 }
 
-/*
-static void expect_or_error(struct parser *p, enum token_kind query, const char *error_msg)
-{
-    const struct token *tok = gettok(p);
-
-    if (p->is_panic_mode) {
-        if (tok->kind == query || tok->kind == TOK_EOF) {
-            p->is_panic_mode = 0;
-        }
-    } else {
-        if (tok->kind == query)
-            return;
-
-        syntax_error(p, error_msg);
-    }
-}
-*/
-
 static void expect(struct parser *p, enum token_kind query)
 {
     const struct token *tok = gettok(p);
@@ -896,8 +878,8 @@ static struct ast_node *goto_statement(struct parser *p)
     expect(p, ';');
 
     tree = new_node(NOD_GOTO, ident, NULL);
-    use_sym(p, tree->l);
     /*
+    use_sym(p, tree->l);
     */
     return tree;
 }

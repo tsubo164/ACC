@@ -46,7 +46,6 @@ struct symbol_table *new_symbol_table()
     /* 0 means global scope */
     table->current_scope_level = 0;
     table->current_switch_level = 1000;
-    table->symbol_count = 0;
 
     return table;
 }
@@ -101,7 +100,7 @@ static void print_horizonal_line(char c, int n)
 
 void print_symbol_table(const struct symbol_table *table)
 {
-    const int ROW = 79;
+    const int ROW = 87;
     const struct symbol *sym;
 
     print_horizonal_line('-', ROW);
@@ -112,6 +111,7 @@ void print_symbol_table(const struct symbol_table *table)
     printf("%10s | ", "type");
     printf("%5s | ", "level");
     printf("%5s | ", "mem");
+    printf("%5s | ", "id");
     printf("%6s | ", "DDRIAU");
     printf("\n");
 
@@ -127,6 +127,7 @@ void print_symbol_table(const struct symbol_table *table)
             printf("%5s | ",  "*");
         else
             printf("%5d | ",  sym->mem_offset);
+        printf("%5d | ",  sym->id);
 
         printf("%c", sym->is_declared    ? '*' : '.');
         printf("%c", sym->is_defined     ? '*' : '.');
@@ -144,9 +145,11 @@ void print_symbol_table(const struct symbol_table *table)
 
 static struct symbol *new_symbol()
 {
+    static int id = 0;
     struct symbol ini = {0};
     struct symbol *sym = malloc(sizeof(struct symbol));
     *sym = ini;
+    sym->id = id++;
     return sym;
 }
 
@@ -169,11 +172,10 @@ static struct symbol *push_symbol(struct symbol_table *table,
     sym->prev = table->tail;
     table->tail = sym;
 
-    table->symbol_count++;
     return sym;
 }
 
-static int namespace(int kind)
+static int namespace_of(int kind)
 {
     switch (kind) {
 
@@ -201,16 +203,18 @@ static int namespace(int kind)
     }
 }
 
-static int match_namespace(int kind0, int kind1)
+static int match_namespace(const struct symbol *sym, int kind)
 {
-    return namespace(kind0) == namespace(kind1);
+    if (!sym)
+        return 0;
+    return namespace_of(sym->kind) == namespace_of(kind);
 }
 
-static int match_name(const char *name0, const char *name1)
+static int match_name(const struct symbol *sym, const char *name)
 {
-    if (!name0 || !name1)
+    if (!sym->name || !name)
         return 0;
-    return !strcmp(name0, name1);
+    return !strcmp(sym->name, name);
 }
 
 struct symbol *lookup_symbol(struct symbol_table *table,
@@ -238,7 +242,7 @@ struct symbol *lookup_symbol(struct symbol_table *table,
         if (sym->scope_level > lv_low)
             continue;
 
-        if (match_name(sym->name, name) && match_namespace(sym->kind, kind))
+        if (match_name(sym, name) && match_namespace(sym, kind))
             return sym;
     }
 
@@ -336,9 +340,33 @@ int symbol_switch_end(struct symbol_table *table)
     return table->current_switch_level;
 }
 
-int get_symbol_count(const struct symbol_table *table)
+struct symbol *use_label_symbol(struct symbol *func_sym, const char *label)
 {
-    return table->symbol_count;
+    struct symbol *sym;
+
+    for (sym = func_sym; sym; sym = sym->next) {
+        if (match_name(sym, label))
+            break;
+
+        /* end of function */
+        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1) {
+            sym = NULL;
+            break;
+        }
+    }
+
+    if (!sym) {
+        sym = new_symbol();
+        sym->kind = SYM_LABEL;
+        sym->name = label;
+        sym->type = type_int();
+
+        sym->next = func_sym->next;
+        func_sym->next->prev = sym;
+        func_sym->next = sym;
+        sym->prev = func_sym;
+    }
+    return sym;
 }
 
 struct symbol *begin(struct symbol_table *table)

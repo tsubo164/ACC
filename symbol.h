@@ -26,6 +26,7 @@ struct symbol {
     struct data_type *type;
     int scope_level;
     int mem_offset;
+    int id;
 
     struct symbol *next;
     struct symbol *prev;
@@ -45,7 +46,6 @@ struct symbol_table {
 
     int current_scope_level;
     int current_switch_level;
-    int symbol_count;
 };
 
 /* symbol */
@@ -74,6 +74,9 @@ extern int symbol_scope_begin(struct symbol_table *table);
 extern int symbol_scope_end(struct symbol_table *table);
 extern int symbol_switch_begin(struct symbol_table *table);
 extern int symbol_switch_end(struct symbol_table *table);
+
+/* search symbol */
+extern struct symbol *use_label_symbol(struct symbol *func_sym, const char *label);
 
 extern struct symbol *begin(struct symbol_table *table);
 extern struct symbol *end(struct symbol_table *table);
