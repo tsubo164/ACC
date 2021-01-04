@@ -676,11 +676,10 @@ enum jump_kind {
 };
 
 struct jump_scope {
-    int id;
-    int break_id;
-    int continue_id;
-    int return_id;
-    int function_id;
+    int curr;
+    int brk;
+    int conti;
+    int func;
 };
 
 static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_scope)
@@ -734,9 +733,9 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_FOR:
         tmp = scope;
-        scope.id = next_scope++;
-        scope.break_id = scope.id;
-        scope.continue_id = scope.id;
+        scope.curr = next_scope++;
+        scope.brk = scope.curr;
+        scope.conti = scope.curr;
 
         gen_code(fp, node->l);
         gen_code(fp, node->r);
@@ -750,10 +749,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->l);
         /* cond */
         gen_comment(fp, "for-cond");
-        gen_label(fp, scope.id, JMP_ENTER);
+        gen_label(fp, scope.curr, JMP_ENTER);
         gen_code(fp, node->r);
         code3__(fp, node, CMP_, imme(0), A_);
-        code2__(fp, node, JE_,  label(scope.id, JMP_EXIT));
+        code2__(fp, node, JE_,  label(scope.curr, JMP_EXIT));
         break;
 
     case NOD_FOR_BODY_POST:
@@ -762,47 +761,47 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->l);
         /* post */
         gen_comment(fp, "for-post");
-        gen_label(fp, scope.id, JMP_CONTINUE);
+        gen_label(fp, scope.curr, JMP_CONTINUE);
         gen_code(fp, node->r);
-        code2__(fp, node, JMP_, label(scope.id, JMP_ENTER));
-        gen_label(fp, scope.id, JMP_EXIT);
+        code2__(fp, node, JMP_, label(scope.curr, JMP_ENTER));
+        gen_label(fp, scope.curr, JMP_EXIT);
         break;
 
     case NOD_WHILE:
         tmp = scope;
-        scope.id = next_scope++;
-        scope.break_id = scope.id;
-        scope.continue_id = scope.id;
+        scope.curr = next_scope++;
+        scope.brk = scope.curr;
+        scope.conti = scope.curr;
 
         gen_comment(fp, "while-cond");
-        gen_label(fp, scope.id, JMP_CONTINUE);
+        gen_label(fp, scope.curr, JMP_CONTINUE);
         gen_code(fp, node->l);
         code3__(fp, node, CMP_, imme(0), A_);
-        code2__(fp, node, JE_,  label(scope.id, JMP_EXIT));
+        code2__(fp, node, JE_,  label(scope.curr, JMP_EXIT));
         gen_comment(fp, "while-body");
         gen_code(fp, node->r);
-        code2__(fp, node, JMP_, label(scope.id, JMP_CONTINUE));
-        gen_label(fp, scope.id, JMP_EXIT);
+        code2__(fp, node, JMP_, label(scope.curr, JMP_CONTINUE));
+        gen_label(fp, scope.curr, JMP_EXIT);
 
         scope = tmp;
         break;
 
     case NOD_DOWHILE:
         tmp = scope;
-        scope.id = next_scope++;
-        scope.break_id = scope.id;
-        scope.continue_id = scope.id;
+        scope.curr = next_scope++;
+        scope.brk = scope.curr;
+        scope.conti = scope.curr;
 
         gen_comment(fp, "do-while-body");
-        gen_label(fp, scope.id, JMP_ENTER);
+        gen_label(fp, scope.curr, JMP_ENTER);
         gen_code(fp, node->l);
         gen_comment(fp, "do-while-cond");
-        gen_label(fp, scope.id, JMP_CONTINUE);
+        gen_label(fp, scope.curr, JMP_CONTINUE);
         gen_code(fp, node->r);
         code3__(fp, node, CMP_, imme(0), A_);
-        code2__(fp, node, JE_,  label(scope.id, JMP_EXIT));
-        code2__(fp, node, JMP_, label(scope.id, JMP_ENTER));
-        gen_label(fp, scope.id, JMP_EXIT);
+        code2__(fp, node, JE_,  label(scope.curr, JMP_EXIT));
+        code2__(fp, node, JMP_, label(scope.curr, JMP_ENTER));
+        gen_label(fp, scope.curr, JMP_EXIT);
 
         scope = tmp;
         break;
@@ -810,12 +809,12 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_IF:
         /* if */
         tmp = scope;
-        scope.id = next_scope++;
+        scope.curr = next_scope++;
 
         gen_comment(fp, "if-cond");
         gen_code(fp, node->l);
         code3__(fp, node, CMP_, imme(0), A_);
-        code2__(fp, node, JE_,  label(scope.id, JMP_ELSE));
+        code2__(fp, node, JE_,  label(scope.curr, JMP_ELSE));
         gen_code(fp, node->r);
 
         scope = tmp;
@@ -825,54 +824,54 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         /* then */
         gen_comment(fp, "if-then");
         gen_code(fp, node->l);
-        code2__(fp, node, JMP_, label(scope.id, JMP_EXIT));
+        code2__(fp, node, JMP_, label(scope.curr, JMP_EXIT));
         /* else */
         gen_comment(fp, "if-else");
-        gen_label(fp, scope.id, JMP_ELSE);
+        gen_label(fp, scope.curr, JMP_ELSE);
         gen_code(fp, node->r);
-        gen_label(fp, scope.id, JMP_EXIT);
+        gen_label(fp, scope.curr, JMP_EXIT);
         break;
 
     case NOD_SWITCH:
         tmp = scope;
-        scope.id = next_scope++;
-        scope.break_id = scope.id;
+        scope.curr = next_scope++;
+        scope.brk = scope.curr;
 
         gen_comment(fp, "switch-value");
         gen_code(fp, node->l);
-        gen_switch_table(fp, node, scope.id);
+        gen_switch_table(fp, node, scope.curr);
         gen_code(fp, node->r);
-        gen_label(fp, scope.id, JMP_EXIT);
+        gen_label(fp, scope.curr, JMP_EXIT);
 
         scope = tmp;
         break;
 
     case NOD_CASE:
     case NOD_DEFAULT:
-        gen_label(fp, scope.id, JMP_OFFSET + node->ival);
+        gen_label(fp, scope.curr, JMP_OFFSET + node->ival);
         gen_code(fp, node->r);
         break;
 
     case NOD_RETURN:
         gen_code(fp, node->l);
-        code2__(fp, node, JMP_, label(scope.return_id, JMP_RETURN));
+        code2__(fp, node, JMP_, label(scope.func, JMP_RETURN));
         break;
 
     case NOD_BREAK:
-        code2__(fp, node, JMP_, label(scope.break_id, JMP_EXIT));
+        code2__(fp, node, JMP_, label(scope.brk, JMP_EXIT));
         break;
 
     case NOD_CONTINUE:
-        code2__(fp, node, JMP_, label(scope.continue_id, JMP_CONTINUE));
+        code2__(fp, node, JMP_, label(scope.conti, JMP_CONTINUE));
         break;
 
     case NOD_LABEL:
-        gen_label(fp, scope.function_id, node->l->sym->id);
+        gen_label(fp, scope.func, JMP_OFFSET + node->l->sym->id);
         gen_code(fp, node->r);
         break;
 
     case NOD_GOTO:
-        code2__(fp, node, JMP_, label(scope.function_id, node->l->sym->id));
+        code2__(fp, node, JMP_, label(scope.func, JMP_OFFSET + node->l->sym->id));
         break;
 
     case NOD_IDENT:
@@ -918,13 +917,13 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_FUNC_DEF:
         tmp = scope;
-        scope.id = next_scope++;
-        scope.return_id = scope.id;
+        scope.curr = next_scope++;
+        scope.func = scope.curr;
 
         gen_func_prologue(fp, node->l);
         gen_func_param_list(fp, node->l);
         gen_func_body(fp, node->r);
-        gen_label(fp, scope.id, JMP_RETURN);
+        gen_label(fp, scope.curr, JMP_RETURN);
         gen_func_epilogue(fp, node->r);
 
         scope = tmp;
@@ -1050,33 +1049,33 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_LOGICAL_OR:
         tmp = scope;
-        scope.id = next_scope++;
+        scope.curr = next_scope++;
 
         gen_code(fp, node->l);
         code3__(fp, node, CMP_, imme(0), A_);
-        code2__(fp, node, JNE_, label(scope.id, JMP_CONTINUE));
+        code2__(fp, node, JNE_, label(scope.curr, JMP_CONTINUE));
         gen_code(fp, node->r);
         code3__(fp, node, CMP_, imme(0), A_);
-        code2__(fp, node, JE_,  label(scope.id, JMP_EXIT));
-        gen_label(fp, scope.id, JMP_CONTINUE);
+        code2__(fp, node, JE_,  label(scope.curr, JMP_EXIT));
+        gen_label(fp, scope.curr, JMP_CONTINUE);
         code3__(fp, node, MOV_, imme(1), A_);
-        gen_label(fp, scope.id, JMP_EXIT);
+        gen_label(fp, scope.curr, JMP_EXIT);
 
         scope = tmp;
         break;
 
     case NOD_LOGICAL_AND:
         tmp = scope;
-        scope.id = next_scope++;
+        scope.curr = next_scope++;
 
         gen_code(fp, node->l);
         code3__(fp, node, CMP_, imme(0), A_);
-        code2__(fp, node, JE_,  label(scope.id, JMP_EXIT));
+        code2__(fp, node, JE_,  label(scope.curr, JMP_EXIT));
         gen_code(fp, node->r);
         code3__(fp, node, CMP_, imme(0), A_);
-        code2__(fp, node, JE_,  label(scope.id, JMP_EXIT));
+        code2__(fp, node, JE_,  label(scope.curr, JMP_EXIT));
         code3__(fp, node, MOV_, imme(1), A_);
-        gen_label(fp, scope.id, JMP_EXIT);
+        gen_label(fp, scope.curr, JMP_EXIT);
 
         scope = tmp;
         break;
