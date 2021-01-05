@@ -36,6 +36,11 @@ int is_enumerator(const struct symbol *sym)
     return sym->kind == SYM_ENUMERATOR;
 }
 
+int is_label(const struct symbol *sym)
+{
+    return sym->kind == SYM_LABEL;
+}
+
 struct symbol_table *new_symbol_table()
 {
     struct symbol_table *table;
@@ -302,6 +307,68 @@ struct symbol *define_case_symbol(struct symbol_table *table, int kind)
     return sym;
 }
 
+struct symbol *define_label_symbol(struct symbol_table *table, const char *label)
+{
+    struct symbol *sym;
+    struct symbol *func_sym = NULL;
+
+    for (sym = table->tail; sym; sym = sym->prev) {
+
+        if (match_name(sym, label)) {
+            sym->is_redefined = 1;
+            return sym;
+        }
+
+        /* reached function sym */
+        if (is_func(sym)) {
+            func_sym = sym;
+            break;
+        }
+    }
+
+    sym = new_symbol();
+    sym->kind = SYM_LABEL;
+    sym->name = label;
+    sym->type = type_int();
+    sym->is_defined = 1;
+
+    sym->next = func_sym->next;
+    func_sym->next->prev = sym;
+    func_sym->next = sym;
+    sym->prev = func_sym;
+
+    return sym;
+}
+
+struct symbol *use_label_symbol(struct symbol *func_sym, const char *label)
+{
+    struct symbol *sym;
+
+    for (sym = func_sym; sym; sym = sym->next) {
+        if (match_name(sym, label))
+            break;
+
+        /* end of function */
+        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1) {
+            sym = NULL;
+            break;
+        }
+    }
+
+    if (!sym) {
+        sym = new_symbol();
+        sym->kind = SYM_LABEL;
+        sym->name = label;
+        sym->type = type_int();
+
+        sym->next = func_sym->next;
+        func_sym->next->prev = sym;
+        func_sym->next = sym;
+        sym->prev = func_sym;
+    }
+    return sym;
+}
+
 int symbol_scope_begin(struct symbol_table *table)
 {
     table->current_scope_level++;
@@ -338,35 +405,6 @@ int symbol_switch_end(struct symbol_table *table)
     table->current_switch_level--;
 
     return table->current_switch_level;
-}
-
-struct symbol *use_label_symbol(struct symbol *func_sym, const char *label)
-{
-    struct symbol *sym;
-
-    for (sym = func_sym; sym; sym = sym->next) {
-        if (match_name(sym, label))
-            break;
-
-        /* end of function */
-        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1) {
-            sym = NULL;
-            break;
-        }
-    }
-
-    if (!sym) {
-        sym = new_symbol();
-        sym->kind = SYM_LABEL;
-        sym->name = label;
-        sym->type = type_int();
-
-        sym->next = func_sym->next;
-        func_sym->next->prev = sym;
-        func_sym->next = sym;
-        sym->prev = func_sym;
-    }
-    return sym;
 }
 
 struct symbol *begin(struct symbol_table *table)

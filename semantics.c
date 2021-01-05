@@ -190,6 +190,13 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
             if (!sym->is_defined && sym->is_used)
                 add_warning(messages, "implicit declaration of function", &pos);
         }
+        else if (is_label(sym)) {
+            if (sym->is_redefined)
+                add_error(messages, "redefinition of label ''", &pos);
+
+            if (!sym->is_defined && sym->is_used)
+                add_error(messages, "use of undeclared label ''", &pos);
+        }
     }
     return 0;
 }
@@ -328,9 +335,6 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
     /* goto */
     case NOD_GOTO:
         node->l->sym = use_label_symbol(ctx->func_sym, node->l->sval);
-        break;
-
-    case NOD_LABEL:
         break;
 
     /* function */

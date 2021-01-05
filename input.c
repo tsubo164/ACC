@@ -56,6 +56,12 @@ final:
         }
     }
     */
+    /*
+    goto foo;
+    {
+error:
+    }
+    */
 
     return 42;
 }

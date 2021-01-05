@@ -169,7 +169,7 @@ static void define_label(struct parser *p, struct ast_node *node)
 {
     struct symbol *sym;
 
-    sym = define_symbol(p->symtab, p->decl_ident, SYM_LABEL, type_int());
+    sym = define_label_symbol(p->symtab, p->decl_ident);
     node->sym = sym;
 }
 
@@ -878,9 +878,8 @@ static struct ast_node *goto_statement(struct parser *p)
     expect(p, ';');
 
     tree = new_node(NOD_GOTO, ident, NULL);
-    /*
-    use_sym(p, tree->l);
-    */
+    /* check usage of label symbol in semantics as we need to see all
+     * label declarations in advance */
     return tree;
 }
 

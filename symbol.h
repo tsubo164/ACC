@@ -54,6 +54,7 @@ extern int is_local_var(const struct symbol *sym);
 extern int is_param(const struct symbol *sym);
 extern int is_func(const struct symbol *sym);
 extern int is_enumerator(const struct symbol *sym);
+extern int is_label(const struct symbol *sym);
 extern const char *symbol_to_string(const struct symbol *sym);
 
 /* symbol table */
@@ -65,18 +66,24 @@ extern struct symbol *lookup_symbol(struct symbol_table *table,
         const char *name, enum symbol_kind kind);
 extern struct symbol *insert_symbol(struct symbol_table *table,
         const char *name, enum symbol_kind kind);
-extern struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind);
+
+/* general symobls */
 extern struct symbol *define_symbol(struct symbol_table *table,
         const char *name, int kind, struct data_type *type);
+extern struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind);
+
+/* case symobls */
 extern struct symbol *define_case_symbol(struct symbol_table *table, int kind);
 
+/* label symobls */
+extern struct symbol *define_label_symbol(struct symbol_table *table, const char *label);
+extern struct symbol *use_label_symbol(struct symbol *func_sym, const char *label);
+
+/* scope symobls */
 extern int symbol_scope_begin(struct symbol_table *table);
 extern int symbol_scope_end(struct symbol_table *table);
 extern int symbol_switch_begin(struct symbol_table *table);
 extern int symbol_switch_end(struct symbol_table *table);
-
-/* search symbol */
-extern struct symbol *use_label_symbol(struct symbol *func_sym, const char *label);
 
 extern struct symbol *begin(struct symbol_table *table);
 extern struct symbol *end(struct symbol_table *table);
