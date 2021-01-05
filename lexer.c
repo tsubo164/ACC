@@ -93,11 +93,6 @@ static const char *make_text(struct lexer *l, const char *str)
     return insert_string(l->strtab, str);
 }
 
-static int make_id(struct lexer *l, const char *str)
-{
-    return find_string_id(l->strtab, str);
-}
-
 static void init_position(struct position *pos)
 {
     pos->x = 0;
@@ -408,7 +403,6 @@ state_string_literal:
     case '"':
         *tp = '\0';
         tok->text = make_text(l, textbuf);
-        tok->value = make_id(l, textbuf);
         tok->kind = TOK_STRING_LITERAL;
         goto state_final;
 

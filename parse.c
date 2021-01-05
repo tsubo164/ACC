@@ -173,6 +173,14 @@ static void define_label(struct parser *p, struct ast_node *node)
     node->sym = sym;
 }
 
+static void define_string(struct parser *p, struct ast_node *node)
+{
+    struct symbol *sym;
+
+    sym = define_string_symbol(p->symtab, node->sval);
+    node->sym = sym;
+}
+
 static void scope_begin(struct parser *p)
 {
     symbol_scope_begin(p->symtab);
@@ -266,7 +274,7 @@ static struct ast_node *primary_expression(struct parser *p)
     case TOK_STRING_LITERAL:
         tree = new_node(NOD_STRING, NULL, NULL);
         copy_token_text(p, tree);
-        copy_token_ival(p, tree);
+        define_string(p, tree);
         return tree;
 
     case TOK_IDENT:

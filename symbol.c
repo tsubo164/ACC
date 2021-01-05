@@ -89,6 +89,7 @@ const char *symbol_to_string(const struct symbol *sym)
     case SYM_CASE: return "SYM_CASE";
     case SYM_DEFAULT: return "SYM_DEFAULT";
     case SYM_LABEL: return "SYM_LABEL";
+    case SYM_STRING: return "SYM_STRING";
     case SYM_VAR: return "SYM_VAR";
     case SYM_FUNC: return "SYM_FUNC";
     case SYM_PARAM: return "SYM_PARAM";
@@ -129,7 +130,7 @@ void print_symbol_table(const struct symbol_table *table)
 
     for (sym = table->head; sym; sym = sym->next) {
         printf("|");
-        printf("%15s | ", sym->name ? sym->name : "--");
+        printf("%15.15s | ", sym->name ? sym->name : "--");
         printf("%-20s | ",  symbol_to_string(sym));
         printf("%-10s | ", data_type_to_string(sym->type));
         printf("%5d | ", sym->scope_level);
@@ -172,27 +173,33 @@ static struct symbol *new_symbol_(int kind, const char *name, struct data_type *
 
 static void insert_after(struct symbol *base, struct symbol *sym)
 {
+    if (!base->next) {
+        base->next = sym;
+        sym->prev = base;
+        return;
+    }
     sym->next = base->next;
     base->next->prev = sym;
     base->next = sym;
     sym->prev = base;
 }
 
+static void append_last(struct symbol_table *table, struct symbol *sym)
+{
+    if (!table->head) {
+        table->head = sym;
+        table->tail = sym;
+        return;
+    }
+    insert_after(table->tail, sym);
+    table->tail = sym;
+}
+
 static struct symbol *push_symbol(struct symbol_table *table,
         const char *name, int kind, struct data_type *type)
 {
     struct symbol *sym = new_symbol_(kind, name, type, table->current_scope_level);
-
-    if (!table->head) {
-        table->head = sym;
-        table->tail = sym;
-        return sym;
-    }
-
-    table->tail->next = sym;
-    sym->prev = table->tail;
-    table->tail = sym;
-
+    append_last(table, sym);
     return sym;
 }
 
@@ -332,7 +339,7 @@ struct symbol *define_label_symbol(struct symbol_table *table, const char *label
 
     label_sym = new_symbol_(SYM_LABEL, label, type_int(), SCOPE_GLOBAL);
     label_sym->is_defined = 1;
-    insert_after(func_sym, label_sym);
+    append_last(table, label_sym);
 
     return label_sym;
 }
@@ -340,23 +347,38 @@ struct symbol *define_label_symbol(struct symbol_table *table, const char *label
 struct symbol *use_label_symbol(struct symbol *func_sym, const char *label)
 {
     struct symbol *sym;
+    struct symbol *label_sym = NULL;
 
     for (sym = func_sym; sym; sym = sym->next) {
         if (match_name(sym, label))
-            break;
+            return sym;
 
         /* end of function */
-        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1) {
-            sym = NULL;
+        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1)
             break;
-        }
     }
 
-    if (!sym) {
-        sym = new_symbol_(SYM_LABEL, label, type_int(), SCOPE_GLOBAL);
-        insert_after(func_sym, sym);
+    label_sym = new_symbol_(SYM_LABEL, label, type_int(), SCOPE_GLOBAL);
+    insert_after(func_sym, label_sym);
+
+    return label_sym;
+}
+
+struct symbol *define_string_symbol(struct symbol_table *table, const char *str)
+{
+    struct symbol *sym;
+    struct symbol *str_sym = NULL;
+
+    for (sym = table->tail; sym; sym = sym->prev) {
+        if (match_name(sym, str))
+            return sym;
     }
-    return sym;
+
+    str_sym = new_symbol_(SYM_STRING, str, type_ptr(type_char()), SCOPE_GLOBAL);
+    str_sym->is_defined = 1;
+    append_last(table, str_sym);
+
+    return str_sym;
 }
 
 int symbol_scope_begin(struct symbol_table *table)

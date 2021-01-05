@@ -1,5 +1,7 @@
 int printf(char *s, int i);
 
+int a = 12;
+
 int main()
 {
         /*
@@ -18,13 +20,13 @@ int main()
     else
         goto final;
 
+    */
 error:
-    printf("******** error\n", 0);
+    printf("**** error\n", 0);
 
 final:
-    printf("******** final\n", 0);
+    printf("**** error\n", 0);
 
-    */
     {
         int a = 12;
 

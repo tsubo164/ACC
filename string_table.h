@@ -6,7 +6,6 @@
 
 struct table_entry {
     char *str;
-    int id;
     struct table_entry *next;
 };
 
@@ -20,6 +19,5 @@ extern void free_string_table(struct string_table *table);
 
 extern void init_string_table(struct string_table *table);
 extern const char *insert_string(struct string_table *table, const char *src);
-extern int find_string_id(struct string_table *table, const char *src);
 
 #endif /* _H */

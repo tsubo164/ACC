@@ -994,7 +994,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_STRING:
-        code3__(fp, node, LEA_, label__("L.str", node->ival), A_);
+        code3__(fp, node, LEA_, label__("L.str", node->sym->id), A_);
         break;
 
     case NOD_ADD:
@@ -1224,27 +1224,16 @@ static void gen_global_var_labels(FILE *fp, const struct ast_node *node)
     gen_global_var_labels(fp, node->r);
 }
 
-static void gen_string_literal(FILE *fp, const struct ast_node *node)
+static void gen_string_literal(FILE *fp, const struct symbol_table *table)
 {
-    static int n = 0;
+    struct symbol *sym;
 
-    if (!node)
-        return;
-
-    if (node->kind == NOD_STRING) {
-        if (n == 0)
-            fprintf(fp, ".data\n");
-        if (node->ival == 0)
-            fprintf(fp, "_L.str:\n");
-        else
-            fprintf(fp, "_L.str.%d:\n", node->ival);
-        fprintf(fp, "    .asciz \"%s\"\n", node->sval);
-        n++;
-        return;
+    for (sym = table->head; sym; sym = sym->next) {
+        if (sym->kind == SYM_STRING) {
+            fprintf(fp, "_L.str.%d:\n", sym->id);
+            fprintf(fp, "    .asciz \"%s\"\n", sym->name);
+        }
     }
-
-    gen_string_literal(fp, node->l);
-    gen_string_literal(fp, node->r);
 }
 
 void gen_x86(FILE *fp,
@@ -1254,7 +1243,8 @@ void gen_x86(FILE *fp,
         fprintf(fp, ".intel_syntax noprefix\n");
     }
 
-    gen_string_literal(fp, tree);
+    fprintf(fp, ".data\n");
+    gen_string_literal(fp, table);
     gen_global_var_list(fp, table);
     gen_global_var_labels(fp, tree);
 

@@ -11,6 +11,7 @@ enum symbol_kind {
     SYM_CASE,
     SYM_DEFAULT,
     SYM_LABEL,
+    SYM_STRING,
     SYM_VAR,
     SYM_FUNC,
     SYM_PARAM,
@@ -65,19 +66,22 @@ extern void print_symbol_table(const struct symbol_table *table);
 extern struct symbol *lookup_symbol(struct symbol_table *table,
         const char *name, enum symbol_kind kind);
 
-/* general symobls */
+/* general symobl */
 extern struct symbol *define_symbol(struct symbol_table *table,
         const char *name, int kind, struct data_type *type);
 extern struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind);
 
-/* case symobls */
+/* case symobl */
 extern struct symbol *define_case_symbol(struct symbol_table *table, int kind);
 
-/* label symobls */
+/* label symobl */
 extern struct symbol *define_label_symbol(struct symbol_table *table, const char *label);
 extern struct symbol *use_label_symbol(struct symbol *func_sym, const char *label);
 
-/* scope symobls */
+/* string symobl */
+extern struct symbol *define_string_symbol(struct symbol_table *table, const char *str);
+
+/* scope symobl */
 extern int symbol_scope_begin(struct symbol_table *table);
 extern int symbol_scope_end(struct symbol_table *table);
 extern int symbol_switch_begin(struct symbol_table *table);

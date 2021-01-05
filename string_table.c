@@ -91,20 +91,7 @@ const char *insert_string(struct string_table *table, const char *src)
     entry = new_entry(src);
 
     entry->next = table->entries[h];
-    entry->id = table->current_id++;
     table->entries[h] = entry;
 
     return entry->str;
-}
-
-int find_string_id(struct string_table *table, const char *src)
-{
-    struct table_entry *entry = NULL;
-    const unsigned int h = hash_fn(src);
-
-    for (entry = table->entries[h]; entry != NULL; entry = entry->next) {
-        if (!strcmp(src, entry->str))
-            return entry->id;
-    }
-    return -1;
 }

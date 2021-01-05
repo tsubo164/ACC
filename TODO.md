@@ -29,10 +29,9 @@
 * IMPLEMENTATION
   - find struct() - improve '.'
   - new number()
-  - insert symbol()
+  - push symbol()
 
 * BUG
-  - duplicate label for string
 
 * DONE
   - ++, --
@@ -47,3 +46,4 @@
   - void
   - switch case
   - goto
+  - duplicate label for string
