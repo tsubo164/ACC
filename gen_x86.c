@@ -682,26 +682,25 @@ struct jump_scope {
     int func;
 };
 
+static int jump_id(const struct ast_node *node)
+{
+    return JMP_OFFSET + node->sym->id;
+}
+
 static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_scope)
 {
-    static int case_id = 0;
-
     if (!node)
         return;
 
     switch (node->kind) {
 
-    case NOD_SWITCH:
-        case_id = 0;
-        break;
-
     case NOD_CASE:
         code3__(fp, node, CMP_, imme(node->l->ival), A_);
-        code2__(fp, node, JE_,  label(switch_scope, JMP_OFFSET + node->ival));
+        code2__(fp, node, JE_,  label(switch_scope, jump_id(node)));
         return;
 
     case NOD_DEFAULT:
-        code2__(fp, node, JE_,  label(switch_scope, JMP_OFFSET + node->ival));
+        code2__(fp, node, JE_,  label(switch_scope, jump_id(node)));
         return;
 
     default:
@@ -848,7 +847,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_CASE:
     case NOD_DEFAULT:
-        gen_label(fp, scope.curr, JMP_OFFSET + node->ival);
+        gen_label(fp, scope.curr, jump_id(node));
         gen_code(fp, node->r);
         break;
 
@@ -866,12 +865,12 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_LABEL:
-        gen_label(fp, scope.func, JMP_OFFSET + node->l->sym->id);
+        gen_label(fp, scope.func, jump_id(node->l));
         gen_code(fp, node->r);
         break;
 
     case NOD_GOTO:
-        code2__(fp, node, JMP_, label(scope.func, JMP_OFFSET + node->l->sym->id));
+        code2__(fp, node, JMP_, label(scope.func, jump_id(node->l)));
         break;
 
     case NOD_IDENT:

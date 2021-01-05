@@ -4,7 +4,6 @@
   - struct arg
   - struct assign
   - -> op
-  - goto
   - check **temporary** registers
   - check args
   - char <-> int, negative number literal
@@ -47,3 +46,4 @@
   - return check
   - void
   - switch case
+  - goto

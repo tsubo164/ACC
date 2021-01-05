@@ -10,6 +10,7 @@ int main()
         printf("i -> %d\n", i);
         */
 
+    /*
     int a = 5;
 
     if (a > 3)
@@ -23,7 +24,7 @@ error:
 final:
     printf("******** final\n", 0);
 
-    /*
+    */
     {
         int a = 12;
 
@@ -55,7 +56,6 @@ final:
             break;
         }
     }
-    */
     /*
     goto foo;
     {

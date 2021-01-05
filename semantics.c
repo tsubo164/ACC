@@ -206,7 +206,6 @@ struct tree_context {
     struct symbol *func_sym;
     int loop_depth;
     int switch_depth;
-    int case_id;
     int enum_value;
     int is_lvalue;
     int has_init;
@@ -234,8 +233,6 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 {
     /* TODO remove this */
     const struct position pos = {0};
-
-    int tmp;
 
     if (!node)
         return;
@@ -308,29 +305,19 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
     /* switch */
     case NOD_SWITCH:
-        tmp = ctx->case_id;
-        ctx->case_id = 0;
-
         ctx->switch_depth++;
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
         ctx->switch_depth--;
-
-        ctx->case_id = tmp;
         return;
 
     case NOD_CASE:
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
         node->sym->mem_offset = node->l->ival;
-        node->ival = ctx->case_id++;
         if (find_case_value(node))
             add_error(ctx->messages, "duplicate case value", &pos);
         return;
-
-    case NOD_DEFAULT:
-        node->ival = ctx->case_id++;
-        break;
 
     /* goto */
     case NOD_GOTO:
