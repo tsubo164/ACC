@@ -21,8 +21,8 @@ enum symbol_kind {
 };
 
 struct symbol {
-    const char *name;
     int kind;
+    const char *name;
     struct data_type *type;
     int scope_level;
     int mem_offset;
@@ -63,8 +63,6 @@ extern void free_symbol_table(struct symbol_table *table);
 extern void print_symbol_table(const struct symbol_table *table);
 
 extern struct symbol *lookup_symbol(struct symbol_table *table,
-        const char *name, enum symbol_kind kind);
-extern struct symbol *insert_symbol(struct symbol_table *table,
         const char *name, enum symbol_kind kind);
 
 /* general symobls */

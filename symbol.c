@@ -3,6 +3,11 @@
 #include <string.h>
 #include "symbol.h"
 
+enum scope {
+    SCOPE_GLOBAL = 0,
+    SCOPE_FUNCTION
+};
+
 int is_global_var(const struct symbol *sym)
 {
     if (sym->kind == SYM_VAR &&
@@ -148,24 +153,35 @@ void print_symbol_table(const struct symbol_table *table)
     print_horizonal_line('-', ROW);
 }
 
-static struct symbol *new_symbol()
+static struct symbol *new_symbol_(int kind, const char *name, struct data_type *type,
+        int scope_level)
 {
-    static int id = 0;
+    static int next_id = 0;
     struct symbol ini = {0};
     struct symbol *sym = malloc(sizeof(struct symbol));
     *sym = ini;
-    sym->id = id++;
+
+    sym->kind = kind;
+    sym->name = name;
+    sym->type = type;
+    sym->scope_level = scope_level;
+    sym->id = next_id++;
+
     return sym;
+}
+
+static void insert_after(struct symbol *base, struct symbol *sym)
+{
+    sym->next = base->next;
+    base->next->prev = sym;
+    base->next = sym;
+    sym->prev = base;
 }
 
 static struct symbol *push_symbol(struct symbol_table *table,
         const char *name, int kind, struct data_type *type)
 {
-    struct symbol *sym = new_symbol();
-    sym->kind = kind;
-    sym->name = name;
-    sym->type = type;
-    sym->scope_level = table->current_scope_level;
+    struct symbol *sym = new_symbol_(kind, name, type, table->current_scope_level);
 
     if (!table->head) {
         table->head = sym;
@@ -254,17 +270,6 @@ struct symbol *lookup_symbol(struct symbol_table *table,
     return NULL;
 }
 
-struct symbol *insert_symbol(struct symbol_table *table,
-        const char *name, enum symbol_kind kind)
-{
-    struct symbol *sym = NULL;
-
-    if (lookup_symbol(table, name, kind) != NULL)
-        return NULL;
-
-    return sym;
-}
-
 struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind)
 {
     struct symbol *sym = lookup_symbol(table, name, kind);
@@ -310,10 +315,9 @@ struct symbol *define_case_symbol(struct symbol_table *table, int kind)
 struct symbol *define_label_symbol(struct symbol_table *table, const char *label)
 {
     struct symbol *sym;
-    struct symbol *func_sym = NULL;
+    struct symbol *func_sym = NULL, *label_sym = NULL;
 
     for (sym = table->tail; sym; sym = sym->prev) {
-
         if (match_name(sym, label)) {
             sym->is_redefined = 1;
             return sym;
@@ -326,18 +330,11 @@ struct symbol *define_label_symbol(struct symbol_table *table, const char *label
         }
     }
 
-    sym = new_symbol();
-    sym->kind = SYM_LABEL;
-    sym->name = label;
-    sym->type = type_int();
-    sym->is_defined = 1;
+    label_sym = new_symbol_(SYM_LABEL, label, type_int(), SCOPE_GLOBAL);
+    label_sym->is_defined = 1;
+    insert_after(func_sym, label_sym);
 
-    sym->next = func_sym->next;
-    func_sym->next->prev = sym;
-    func_sym->next = sym;
-    sym->prev = func_sym;
-
-    return sym;
+    return label_sym;
 }
 
 struct symbol *use_label_symbol(struct symbol *func_sym, const char *label)
@@ -356,15 +353,8 @@ struct symbol *use_label_symbol(struct symbol *func_sym, const char *label)
     }
 
     if (!sym) {
-        sym = new_symbol();
-        sym->kind = SYM_LABEL;
-        sym->name = label;
-        sym->type = type_int();
-
-        sym->next = func_sym->next;
-        func_sym->next->prev = sym;
-        func_sym->next = sym;
-        sym->prev = func_sym;
+        sym = new_symbol_(SYM_LABEL, label, type_int(), SCOPE_GLOBAL);
+        insert_after(func_sym, sym);
     }
     return sym;
 }
