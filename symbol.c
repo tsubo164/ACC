@@ -406,23 +406,3 @@ int symbol_switch_end(struct symbol_table *table)
 
     return table->current_switch_level;
 }
-
-struct symbol *begin(struct symbol_table *table)
-{
-    return table->head;
-}
-
-struct symbol *end(struct symbol_table *table)
-{
-    return NULL;
-}
-
-struct symbol *next(struct symbol *sym)
-{
-    return sym->next;
-}
-
-struct symbol *prev(struct symbol *sym)
-{
-    return sym->prev;
-}

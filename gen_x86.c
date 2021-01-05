@@ -1139,9 +1139,7 @@ static void gen_global_func_list(FILE *fp, const struct symbol_table *table)
     struct symbol *sym;
     int nfuncs = 0;
 
-    for (sym = begin((struct symbol_table *)table);
-            sym != end((struct symbol_table *)table);
-            sym = next(sym)) {
+    for (sym = table->head; sym; sym = sym->next) {
         if (sym->kind == SYM_FUNC) {
             if (nfuncs > 0)
                 fprintf(fp, ", ");
@@ -1158,10 +1156,7 @@ static void gen_global_var_list(FILE *fp, const struct symbol_table *table)
     struct symbol *sym;
     int nvars = 0;
 
-    for (sym = begin((struct symbol_table *)table);
-            sym != end((struct symbol_table *)table);
-            sym = next(sym)) {
-
+    for (sym = table->head; sym; sym = sym->next) {
         if (is_global_var(sym)) {
             if (nvars == 0) {
                 fprintf(fp, ".data\n");

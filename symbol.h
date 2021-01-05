@@ -85,9 +85,4 @@ extern int symbol_scope_end(struct symbol_table *table);
 extern int symbol_switch_begin(struct symbol_table *table);
 extern int symbol_switch_end(struct symbol_table *table);
 
-extern struct symbol *begin(struct symbol_table *table);
-extern struct symbol *end(struct symbol_table *table);
-extern struct symbol *next(struct symbol *sym);
-extern struct symbol *prev(struct symbol *sym);
-
 #endif /* _H */

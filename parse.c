@@ -372,7 +372,7 @@ static struct ast_node *postfix_expression(struct parser *p)
                         tree->type = sym->type;
                         break;
                     }
-                    sym = next(sym);
+                    sym = sym->next;
                 }
             }
             break;
