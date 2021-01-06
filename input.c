@@ -1,6 +1,13 @@
 int printf(char *s, int i);
 
-int a = 12;
+struct point {
+    int x, y, z;
+};
+
+int add(int x, int y)
+{
+    return x + y + z;
+}
 
 int main()
 {
@@ -20,13 +27,14 @@ int main()
     else
         goto final;
 
-    */
 error:
     printf("**** error\n", 0);
 
 final:
     printf("**** error\n", 0);
+    */
 
+    /*
     {
         int a = 12;
 
@@ -58,12 +66,28 @@ final:
             break;
         }
     }
-    /*
     goto foo;
     {
 error:
     }
     */
+    struct point pt;
+    int a = 42;
+    int *p = 0;
+    char c = 0;
+    int b;
 
-    return 42;
+    b = sizeof(a + 2);
+    printf("size of b: => %d\n", b);
+
+    b = sizeof p;
+    printf("size of b: => %d\n", b);
+
+    b = sizeof c;
+    printf("size of b: => %d\n", b);
+
+    b = sizeof pt;
+    printf("size of b: => %d\n", b);
+
+    return b;
 }

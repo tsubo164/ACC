@@ -253,10 +253,6 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             ctx->func_sym = node->sym;
         break;
 
-    case NOD_CONST_EXPR:
-        node->ival = eval_(node->l, ctx->messages);
-        break;
-
     case NOD_ASSIGN:
         /* evaluate rvalue first to check a = a + 1; */
         check_tree_(node->r, ctx);
@@ -353,6 +349,11 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             add_error(ctx->messages, "function '' should return a value", &pos);
         break;
 
+    /* constant */
+    case NOD_CONST_EXPR:
+        node->ival = eval_(node->l, ctx->messages);
+        break;
+
     default:
         break;;
     }
@@ -410,6 +411,12 @@ static void add_types(struct ast_node *node, struct symbol_table *table)
 
     case NOD_STRING:
         node->type = type_ptr(type_char());
+        break;
+
+    case NOD_SIZEOF:
+        node->type = type_int();
+        /* TODO this should be done in check_tree_ */
+        node->ival = get_size(node->l->type);
         break;
 
     default:

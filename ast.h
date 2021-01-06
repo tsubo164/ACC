@@ -54,6 +54,7 @@ enum ast_node_kind {
     NOD_PREDEC,
     NOD_POSTINC,
     NOD_POSTDEC,
+    NOD_SIZEOF,
     /* primary */
     NOD_IDENT,
     NOD_NUM,

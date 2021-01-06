@@ -92,6 +92,7 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_PREDEC: return "NOD_PREDEC";
     case NOD_POSTINC: return "NOD_POSTINC";
     case NOD_POSTDEC: return "NOD_POSTDEC";
+    case NOD_SIZEOF: return "NOD_SIZEOF";
     case NOD_IDENT: return "NOD_IDENT";
     case NOD_NUM: return "NOD_NUM";
     case NOD_STRING: return "NOD_STRING";
@@ -169,7 +170,7 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
     case NOD_STRING:
         printf(TERMINAL_COLOR_MAGENTA);
         printf(TERMINAL_DECORATION_BOLD);
-            printf(" \"%s\"", tree->sval);
+            printf(" \"%s\"", tree->sym->name);
         printf(TERMINAL_DECORATION_RESET);
         printf(TERMINAL_COLOR_RESET);
         break;

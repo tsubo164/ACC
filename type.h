@@ -21,6 +21,8 @@ struct data_type {
     struct data_type *ptr_to;
 };
 
+extern int get_size(const struct data_type *type);
+
 extern const char *data_type_to_string(const struct data_type *dtype);
 extern void print_data_type(const struct data_type *dtype);
 

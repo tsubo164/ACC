@@ -454,6 +454,9 @@ static struct ast_node *unary_expression(struct parser *p)
     case TOK_DEC:
         return new_node(NOD_PREDEC, unary_expression(p), NULL);
 
+    case TOK_SIZEOF:
+        return new_node(NOD_SIZEOF, unary_expression(p), NULL);
+
     default:
         ungettok(p);
         return postfix_expression(p);

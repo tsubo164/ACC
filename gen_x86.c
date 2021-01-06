@@ -997,6 +997,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, LEA_, label__("L.str", node->sym->id), A_);
         break;
 
+    case NOD_SIZEOF:
+        code3__(fp, node, MOV_, imme(node->ival), A_);
+        break;
+
     case NOD_ADD:
         gen_code(fp, node->l);
         code2__(fp, node, PUSH_, RAX);

@@ -11,6 +11,11 @@ static struct data_type ARRAY_   = {DATA_TYPE_ARRAY,  0, 0, 0, NULL};
 static struct data_type STRUCT_  = {DATA_TYPE_STRUCT, 0, 4, 1, NULL};
 static struct data_type ENUM_    = {DATA_TYPE_ENUM,   4, 4, 1, NULL};
 
+int get_size(const struct data_type *type)
+{
+    return type->byte_size;
+}
+
 const char *data_type_to_string(const struct data_type *dtype)
 {
     if (!dtype)

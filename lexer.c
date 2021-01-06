@@ -72,6 +72,8 @@ static void keyword_or_identifier(struct token *tok)
     else if (!strcmp(text, "goto"))
         tok->kind = TOK_GOTO;
 
+    else if (!strcmp(text, "sizeof"))
+        tok->kind = TOK_SIZEOF;
     else if (!strcmp(text, "struct"))
         tok->kind = TOK_STRUCT;
     else if (!strcmp(text, "enum"))
@@ -486,6 +488,7 @@ void print_token(const struct token *tok)
     case TOK_CONTINUE:
     case TOK_RETURN:
     case TOK_GOTO:
+    case TOK_SIZEOF:
     case TOK_STRUCT:
     case TOK_ENUM:
          /* types */
