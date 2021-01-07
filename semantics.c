@@ -105,7 +105,7 @@ static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
     strc->mem_offset = strc->type->byte_size;
 }
 
-static void compute_func_stack_size(struct symbol_table *table, struct symbol *func)
+static void compute_func_size(struct symbol_table *table, struct symbol *func)
 {
     struct symbol *sym;
     int total_offset = 0;
@@ -142,13 +142,13 @@ static void compute_func_stack_size(struct symbol_table *table, struct symbol *f
     func->mem_offset = align_to(total_offset, 16);
 }
 
-static void add_storage_size(struct symbol_table *table)
+static void add_symbol_size(struct symbol_table *table)
 {
     struct symbol *sym;
 
     for (sym = table->head; sym; sym = sym->next) {
         if (sym->kind == SYM_FUNC)
-            compute_func_stack_size(table, sym);
+            compute_func_size(table, sym);
 
         if (sym->kind == SYM_TAG_STRUCT)
             compute_struct_size(table, sym);
@@ -315,11 +315,6 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             add_error(ctx->messages, "duplicate case value", &pos);
         return;
 
-    /* goto */
-    case NOD_GOTO:
-        node->l->sym = use_label_symbol(ctx->func_sym, node->l->sval);
-        break;
-
     /* function */
     case NOD_DECL_FUNC:
         ctx->func_sym = NULL;
@@ -369,13 +364,13 @@ static void check_tree_semantics(struct ast_node *tree, struct message_list *mes
     check_tree_(tree, &ctx);
 }
 
-static void add_types(struct ast_node *node, struct symbol_table *table)
+static void add_node_type(struct ast_node *node)
 {
     if (!node)
         return;
 
-    add_types(node->l, table);
-    add_types(node->r, table);
+    add_node_type(node->l);
+    add_node_type(node->r);
 
     switch (node->kind) {
 
@@ -428,11 +423,11 @@ static void add_types(struct ast_node *node, struct symbol_table *table)
 int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages)
 {
+    add_symbol_size(table);
+    add_node_type(tree);
+
     check_tree_semantics(tree, messages);
     check_symbol_usage(table, messages);
-
-    add_types(tree, table);
-    add_storage_size(table);
 
     return 0;
 }

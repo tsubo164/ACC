@@ -128,6 +128,7 @@ struct parser *new_parser()
     p->decl_kind = 0;
     p->decl_ident = NULL;
     p->decl_type = NULL;
+    p->func_sym = NULL;
     p->is_panic_mode = 0;
 
     return p;
@@ -173,12 +174,35 @@ static void define_label(struct parser *p, struct ast_node *node)
     node->sym = sym;
 }
 
+static void use_label(struct parser *p, struct ast_node *node)
+{
+    if (!node)
+        return;
+
+    if (node->kind == NOD_GOTO) {
+        struct ast_node *label = node->l;
+        label->sym = use_label_symbol(p->func_sym, label->sval);
+    }
+    use_label(p, node->l);
+    use_label(p, node->r);
+}
+
 static void define_string(struct parser *p, struct ast_node *node)
 {
     struct symbol *sym;
 
     sym = define_string_symbol(p->symtab, node->sval);
     node->sym = sym;
+}
+
+static void func_begin(struct parser *p, struct symbol *func_sym)
+{
+    p->func_sym = func_sym;
+}
+
+static void func_end(struct parser *p)
+{
+    p->func_sym = NULL;
 }
 
 static void scope_begin(struct parser *p)
@@ -1403,6 +1427,8 @@ static struct ast_node *direct_declarator(struct parser *p)
 
         decl_begin(p, SYM_FUNC);
         define_sym(p, tree->r);
+
+        func_begin(p, tree->r->sym);
         scope_begin(p);
 
         fn->l = tree;
@@ -1509,8 +1535,11 @@ static struct ast_node *declaration(struct parser *p)
 
     if (nexttok(p, '{')) {
         /* is func definition */
-        tree = new_node(NOD_FUNC_DEF, tree, compound_statement(p));
+        struct ast_node *stmt = compound_statement(p);
+        tree = new_node(NOD_FUNC_DEF, tree, stmt);
+        use_label(p, stmt);
         scope_end(p);
+        func_end(p);
         return tree;
     } else if (decl_is_func(p)) {
         /* is func prototype */
