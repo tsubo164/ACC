@@ -1,10 +1,15 @@
 int printf(char *s, int i);
-
 /*
+*/
+enum color {
+    R, G, B
+};
+
 struct point {
     int x, y, z;
 };
 
+/*
 int add(int x, int y)
 {
     return x + y + z;
@@ -21,6 +26,7 @@ int main()
         printf("i -> %d\n", i);
         */
 
+    /*
     int a = 5;
 
     if (a > 3)
@@ -35,7 +41,6 @@ final:
     printf("**** error\n", 0);
 
     return 42;
-    /*
     */
 
     /*
@@ -75,7 +80,6 @@ final:
 error:
     }
     */
-    /*
     struct point pt;
     int a = 42;
     int *p = 0;
@@ -90,10 +94,14 @@ error:
 
     b = sizeof c;
     printf("size of b: => %d\n", b);
+    /*
+    */
 
     b = sizeof pt;
     printf("size of b: => %d\n", b);
 
     return b;
+    /*
+    return sizeof pt;
     */
 }

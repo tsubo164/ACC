@@ -1206,17 +1206,21 @@ static struct ast_node *struct_or_union(struct parser *p)
 static struct ast_node *struct_or_union_specifier(struct parser *p)
 {
     struct ast_node *tree = NULL;
+    struct ast_node *ident = NULL;
 
     tree = struct_or_union(p);
-    tree->l = decl_identifier(p);
-
-    decl_set_type(p, type_struct(tree->l->sval));
+    ident = decl_identifier(p);
+    tree->l = ident;
 
     if (!consume(p, '{')) {
-        use_sym(p, tree->l);
+        /* define a variable of struct type */
+        use_sym(p, ident);
+        decl_set_type(p, ident->sym->type);
         return tree;
     } else {
-        define_sym(p, tree->l);
+        /* define a struct type */
+        decl_set_type(p, type_struct(ident->sval));
+        define_sym(p, ident);
     }
 
     scope_begin(p);
@@ -1248,7 +1252,7 @@ static struct ast_node *enumerator(struct parser *p)
     tree->l = ident;
 
     decl_set_type(p, type_int());
-    define_sym(p, tree->l);
+    define_sym(p, ident);
 
     if (consume(p, '='))
         tree->r = constant_expression(p);
@@ -1287,21 +1291,24 @@ static struct ast_node *enumerator_list(struct parser *p)
 static struct ast_node *enum_specifier(struct parser *p)
 {
     struct ast_node *tree = NULL;
+    struct ast_node *ident = NULL;
 
     expect(p, TOK_ENUM);
 
     decl_begin(p, SYM_TAG_ENUM);
 
     tree = NEW_(NOD_SPEC_ENUM);
-    tree->l = decl_identifier(p);
-
-    decl_set_type(p, type_enum(tree->l->sval));
+    ident = decl_identifier(p);
 
     if (!consume(p, '{')) {
-        use_sym(p, tree->l);
+        /* define a variable of enum type */
+        use_sym(p, ident);
+        decl_set_type(p, ident->sym->type);
         return tree;
     } else {
-        define_sym(p, tree->l);
+        /* define an enum type */
+        decl_set_type(p, type_enum(ident->sval));
+        define_sym(p, ident);
     }
 
     tree->r = enumerator_list(p);

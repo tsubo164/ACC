@@ -2,17 +2,20 @@
 #include <stdio.h>
 #include <string.h>
 #include "type.h"
+#include "symbol.h"
 
-static struct data_type VOID_    = {DATA_TYPE_VOID,   1, 4, 1, NULL};
-static struct data_type CHAR_    = {DATA_TYPE_CHAR,   1, 4, 1, NULL};
-static struct data_type INT_     = {DATA_TYPE_INT,    4, 4, 1, NULL};
-static struct data_type PTR_     = {DATA_TYPE_PTR,    8, 8, 1, NULL};
-static struct data_type ARRAY_   = {DATA_TYPE_ARRAY,  0, 0, 0, NULL};
-static struct data_type STRUCT_  = {DATA_TYPE_STRUCT, 0, 4, 1, NULL};
-static struct data_type ENUM_    = {DATA_TYPE_ENUM,   4, 4, 1, NULL};
+static struct data_type VOID_    = {DATA_TYPE_VOID,   1, 4, 1, NULL, NULL};
+static struct data_type CHAR_    = {DATA_TYPE_CHAR,   1, 4, 1, NULL, NULL};
+static struct data_type INT_     = {DATA_TYPE_INT,    4, 4, 1, NULL, NULL};
+static struct data_type PTR_     = {DATA_TYPE_PTR,    8, 8, 1, NULL, NULL};
+static struct data_type ARRAY_   = {DATA_TYPE_ARRAY,  0, 0, 0, NULL, NULL};
+static struct data_type STRUCT_  = {DATA_TYPE_STRUCT, 0, 4, 1, NULL, NULL};
+static struct data_type ENUM_    = {DATA_TYPE_ENUM,   4, 4, 1, NULL, NULL};
 
 int get_size(const struct data_type *type)
 {
+    if (type->kind == DATA_TYPE_STRUCT)
+        return type->sym->mem_offset;
     return type->byte_size;
 }
 

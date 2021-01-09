@@ -349,6 +349,10 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         node->ival = eval_(node->l, ctx->messages);
         break;
 
+    case NOD_SIZEOF:
+        node->ival = get_size(node->l->type);
+        break;
+
     default:
         break;;
     }
@@ -410,8 +414,6 @@ static void add_node_type(struct ast_node *node)
 
     case NOD_SIZEOF:
         node->type = type_int();
-        /* TODO this should be done in check_tree_ */
-        node->ival = get_size(node->l->type);
         break;
 
     default:

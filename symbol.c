@@ -301,6 +301,9 @@ struct symbol *define_symbol(struct symbol_table *table,
     sym = push_symbol(table, name, kind, type);
     sym->is_defined = 1;
 
+    if (kind == SYM_TAG_STRUCT)
+        type->sym = sym;
+
     return sym;
 }
 

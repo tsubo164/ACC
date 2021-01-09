@@ -11,6 +11,8 @@ enum data_type_kind {
     DATA_TYPE_ENUM
 };
 
+struct symbol;
+
 struct data_type {
     int kind;
     int byte_size;
@@ -19,6 +21,8 @@ struct data_type {
     /* XXX */
     const char *tag;
     struct data_type *ptr_to;
+    /* for struct, union, enum tags and typedefs */
+    struct symbol *sym;
 };
 
 extern int get_size(const struct data_type *type);
