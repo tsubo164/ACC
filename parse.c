@@ -245,6 +245,18 @@ static int decl_is_func(struct parser *p)
     return p->decl_kind == SYM_FUNC || p->decl_kind == SYM_PARAM;
 }
 
+static void decl_ordinal_ident(struct parser *p)
+{
+    decl_begin(p, SYM_VAR);
+}
+
+static void decl_reset_context(struct parser *p)
+{
+    p->decl_kind = 0;
+    p->decl_ident = NULL;
+    p->decl_type = NULL;
+}
+
 /*
  * forward declarations
  */
@@ -306,6 +318,7 @@ static struct ast_node *primary_expression(struct parser *p)
     case TOK_IDENT:
         ungettok(p);
         tree = identifier(p);
+        decl_ordinal_ident(p);
         use_sym(p, tree);
         return tree;
 
@@ -1297,7 +1310,7 @@ static struct ast_node *struct_or_union_specifier(struct parser *p)
     tree->l = ident;
 
     if (!consume(p, '{')) {
-        /* define a variable of struct type */
+        /* define an object of struct type */
         use_sym(p, ident);
         decl_set_type(p, ident->sym->type);
         return tree;
@@ -1385,7 +1398,7 @@ static struct ast_node *enum_specifier(struct parser *p)
     ident = decl_identifier(p);
 
     if (!consume(p, '{')) {
-        /* define a variable of enum type */
+        /* define an object of enum type */
         use_sym(p, ident);
         decl_set_type(p, ident->sym->type);
         return tree;
@@ -1514,8 +1527,8 @@ static struct ast_node *direct_declarator(struct parser *p)
     }
 
     if (consume(p, '(')) {
+        /* function */
         struct ast_node *fn = NEW_(NOD_DECL_FUNC);
-
         decl_begin(p, SYM_FUNC);
         define_sym(p, tree->r);
 
@@ -1527,7 +1540,7 @@ static struct ast_node *direct_declarator(struct parser *p)
         tree = fn;
         expect(p, ')');
     } else {
-        /* non-function */
+        /* variable, parameter, member, */
         define_sym(p, tree->r);
     }
 
@@ -1612,12 +1625,15 @@ static struct ast_node *declaration(struct parser *p)
     struct ast_node *tree = NULL;
     struct ast_node *spec = NULL;
 
+    decl_reset_context(p);
     /* Returning NULL doesn't mean syntax error in function scopes
      * We can try to parse a statement instead */
     spec = declaration_specifier(p);
     if (!spec)
         return NULL;
 
+    /* need to reset decl here because type spec might contain
+     * other decls such as struct, union or enum */
     decl_begin(p, SYM_VAR);
 
     tree = NEW_(NOD_DECL);
