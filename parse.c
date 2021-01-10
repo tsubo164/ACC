@@ -245,11 +245,6 @@ static int decl_is_func(struct parser *p)
     return p->decl_kind == SYM_FUNC || p->decl_kind == SYM_PARAM;
 }
 
-static void decl_ordinal_ident(struct parser *p)
-{
-    decl_begin(p, SYM_VAR);
-}
-
 static void decl_reset_context(struct parser *p)
 {
     p->decl_kind = 0;
@@ -318,7 +313,13 @@ static struct ast_node *primary_expression(struct parser *p)
     case TOK_IDENT:
         ungettok(p);
         tree = identifier(p);
+        /*
         decl_ordinal_ident(p);
+        */
+        if (nexttok(p, '('))
+            decl_begin(p, SYM_FUNC);
+        else
+            decl_begin(p, SYM_VAR);
         use_sym(p, tree);
         return tree;
 
@@ -1061,6 +1062,8 @@ static struct ast_node *labeled_statement(struct parser *p)
  */
 static struct ast_node *statement(struct parser *p)
 {
+    decl_reset_context(p);
+
     switch (peektok(p)) {
 
     case TOK_FOR:

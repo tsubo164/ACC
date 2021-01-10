@@ -79,6 +79,11 @@ static int align_to(int pos, int align)
     return ((pos + align - 1) / align) * align;
 }
 
+static void compute_enum_size(struct symbol_table *table, struct symbol *enm)
+{
+    enm->mem_offset = get_size(type_int());
+}
+
 static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
 {
     struct symbol *sym;
@@ -125,6 +130,9 @@ static void compute_func_size(struct symbol_table *table, struct symbol *func)
         if (sym->kind == SYM_TAG_STRUCT)
             compute_struct_size(table, sym);
 
+        if (sym->kind == SYM_TAG_ENUM)
+            compute_enum_size(table, sym);
+
         if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1)
             break;
     }
@@ -142,6 +150,9 @@ static void add_symbol_size(struct symbol_table *table)
 
         if (sym->kind == SYM_TAG_STRUCT)
             compute_struct_size(table, sym);
+
+        if (sym->kind == SYM_TAG_ENUM)
+            compute_enum_size(table, sym);
     }
 }
 
@@ -154,6 +165,10 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
         const struct position pos = {0};
 
         if (is_local_var(sym)) {
+            /* TODO support check for struct variables */
+            if (sym->type->kind == DATA_TYPE_STRUCT)
+                continue;
+
             if (sym->is_redefined)
                 add_error(messages, "redefinition of variable", &pos);
 

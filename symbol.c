@@ -287,6 +287,13 @@ struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind
     return sym;
 }
 
+static void link_type_to_sym(struct data_type *type, struct symbol *sym)
+{
+    if (sym->kind == SYM_TAG_STRUCT ||
+        sym->kind == SYM_TAG_ENUM)
+        type->sym = sym;
+}
+
 struct symbol *define_symbol(struct symbol_table *table,
         const char *name, int kind, struct data_type *type)
 {
@@ -301,9 +308,7 @@ struct symbol *define_symbol(struct symbol_table *table,
     sym = push_symbol(table, name, kind, type);
     sym->is_defined = 1;
 
-    if (kind == SYM_TAG_STRUCT)
-        type->sym = sym;
-
+    link_type_to_sym(type, sym);
     return sym;
 }
 

@@ -14,9 +14,11 @@
   - std stuff FILE, stderro, NULL ...
   - error with pos
   - pointer ++, --
-  - sizeof (typename)
 
 * OPTIONAL
+  - struct usage
+  - incomplete struct
+  - function prototype
   - typedef
   - unsigned
   - short, long
@@ -49,3 +51,4 @@
   - goto
   - duplicate label for string
   - sizeof unary expression
+  - sizeof (typename)
