@@ -86,6 +86,8 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_EQ: return "NOD_EQ";
     case NOD_NE: return "NOD_NE";
     case NOD_NOT: return "NOD_NOT";
+    case NOD_COND: return "NOD_COND";
+    case NOD_COND_THEN: return "NOD_COND_THEN";
     case NOD_LOGICAL_OR: return "NOD_LOGICAL_OR";
     case NOD_LOGICAL_AND: return "NOD_LOGICAL_AND";
     case NOD_PREINC: return "NOD_PREINC";

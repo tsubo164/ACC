@@ -131,14 +131,14 @@ void lexer_init(struct lexer *lex)
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
 {
     static char textbuf[1024] = {'\0'};
-    char *tp;
+    char *buf;
     int c = '\0';
     long tok_pos;
 
     token_init(tok);
 
     textbuf[0] = '\0';
-    tp = textbuf;
+    buf = textbuf;
 
 state_initial:
     c = readc(l);
@@ -305,7 +305,7 @@ state_initial:
         goto state_final;
 
     /* separators */
-    case ':': case ';': case ',':
+    case ':': case ';': case ',': case '?':
         tok->kind = c;
         goto state_final;
 
@@ -316,7 +316,7 @@ state_initial:
     /* number */
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
-        *tp++ = c;
+        *buf++ = c;
         goto state_number;
 
     /* word */
@@ -331,7 +331,7 @@ state_initial:
     case 'k': case 'l': case 'm': case 'n': case 'o':
     case 'p': case 'q': case 'r': case 's': case 't':
     case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
-        *tp++ = c;
+        *buf++ = c;
         goto state_word;
 
     /* string literal */
@@ -356,15 +356,15 @@ state_number:
 
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
-        *tp++ = c;
+        *buf++ = c;
         goto state_number;
 
     default:
-        *tp = '\0';
+        *buf = '\0';
         unreadc(l, c);
         tok->text = make_text(l, textbuf);
         tok->kind = TOK_NUM;
-        tok->value = strtol(tok->text, &tp, 10);
+        tok->value = strtol(tok->text, &buf, 10);
         goto state_final;
     }
 
@@ -386,11 +386,11 @@ state_word:
     case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
-        *tp++ = c;
+        *buf++ = c;
         goto state_word;
 
     default:
-        *tp = '\0';
+        *buf = '\0';
         unreadc(l, c);
         tok->text = make_text(l, textbuf);
         keyword_or_identifier(tok);
@@ -403,13 +403,13 @@ state_string_literal:
     switch (c) {
 
     case '"':
-        *tp = '\0';
+        *buf = '\0';
         tok->text = make_text(l, textbuf);
         tok->kind = TOK_STRING_LITERAL;
         goto state_final;
 
     default:
-        *tp++ = c;
+        *buf++ = c;
         goto state_string_literal;
     }
 

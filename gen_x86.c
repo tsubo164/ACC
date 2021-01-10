@@ -1050,6 +1050,32 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, MOVZB_, AL, A_);
         break;
 
+    case NOD_COND:
+        /* cond */
+        gen_comment(fp, "cond-?");
+        tmp = scope;
+        scope.curr = next_scope++;
+
+        gen_code(fp, node->l);
+        code3__(fp, node, CMP_, imme(0), A_);
+        code2__(fp, node, JE_,  label(scope.curr, JMP_ELSE));
+        gen_code(fp, node->r);
+
+        scope = tmp;
+        break;
+
+    case NOD_COND_THEN:
+        /* then */
+        gen_comment(fp, "cond-then");
+        gen_code(fp, node->l);
+        code2__(fp, node, JMP_, label(scope.curr, JMP_EXIT));
+        /* else */
+        gen_comment(fp, "cond-else");
+        gen_label(fp, scope.curr, JMP_ELSE);
+        gen_code(fp, node->r);
+        gen_label(fp, scope.curr, JMP_EXIT);
+        break;
+
     case NOD_LOGICAL_OR:
         tmp = scope;
         scope.curr = next_scope++;

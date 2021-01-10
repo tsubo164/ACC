@@ -313,9 +313,6 @@ static struct ast_node *primary_expression(struct parser *p)
     case TOK_IDENT:
         ungettok(p);
         tree = identifier(p);
-        /*
-        decl_ordinal_ident(p);
-        */
         if (nexttok(p, '('))
             decl_begin(p, SYM_FUNC);
         else
@@ -711,7 +708,30 @@ static struct ast_node *logical_or_expression(struct parser *p)
  */
 static struct ast_node *conditional_expression(struct parser *p)
 {
-    return logical_or_expression(p);
+    struct ast_node *tree = NULL;
+    struct ast_node *then_else = NULL, *then = NULL, *els = NULL;
+    const struct token *tok = NULL;
+
+    tree = logical_or_expression(p);
+
+    tok = gettok(p);
+
+    switch (tok->kind) {
+
+    case '?':
+        then = expression(p);
+        expect(p, ':');
+        els  = conditional_expression(p);
+
+        then_else = new_node(NOD_COND_THEN, then, els);
+        tree = new_node(NOD_COND, tree, then_else);
+        break;
+
+    default:
+        ungettok(p);
+        break;
+    }
+    return tree;
 }
 
 /*
