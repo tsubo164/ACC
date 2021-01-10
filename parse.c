@@ -252,6 +252,8 @@ static struct ast_node *statement(struct parser *p);
 static struct ast_node *expression(struct parser *p);
 static struct ast_node *assignment_expression(struct parser *p);
 static struct ast_node *decl_identifier(struct parser *p);
+static struct ast_node *type_name(struct parser *p);
+static struct ast_node *pointer(struct parser *p);
 static struct ast_node *type_specifier(struct parser *p);
 static struct ast_node *declaration_specifier(struct parser *p);
 static struct ast_node *declarator(struct parser *p);
@@ -444,7 +446,7 @@ static struct ast_node *postfix_expression(struct parser *p)
  *     TOK_DEC unary_expression
  *     unary_operator cast_expression
  *     TOK_SIZEOF unary_expression
- *     TOK_SIZEOF '(' TOK_TYPENAME ')'
+ *     TOK_SIZEOF '(' type_name ')'
  */
 static struct ast_node *unary_expression(struct parser *p)
 {
@@ -479,6 +481,17 @@ static struct ast_node *unary_expression(struct parser *p)
         return new_node(NOD_PREDEC, unary_expression(p), NULL);
 
     case TOK_SIZEOF:
+        if (consume(p, '(')) {
+            struct ast_node *tname = type_name(p);
+            if (tname) {
+                tree = new_node(NOD_SIZEOF, tname, NULL);
+                expect(p, ')');
+                return tree;
+            } else {
+                /* unget '(' */
+                ungettok(p);
+            }
+        }
         return new_node(NOD_SIZEOF, unary_expression(p), NULL);
 
     default:
@@ -1088,6 +1101,77 @@ static struct ast_node *statement(struct parser *p)
         }
         return expression_statement(p);
     }
+}
+/* direct_abstract_declarator
+ *     '(' abstract_declarator ')'
+ *     '[' ']'
+ *     '[' constant_expression ']'
+ *     direct_abstract_declarator '[' ']'
+ *     direct_abstract_declarator '[' constant_expression ']'
+ *     '(' ')'
+ *     '(' parameter_type_list ')'
+ *     direct_abstract_declarator '(' ')'
+ *     direct_abstract_declarator '(' parameter_type_list ')'
+ */
+static struct ast_node *direct_abstract_declarator(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+
+    return tree;
+}
+
+/*
+ * abstract_declarator
+ *     pointer
+ *     direct_abstract_declarator
+ *     pointer direct_abstract_declarator
+ */
+static struct ast_node *abstract_declarator(struct parser *p)
+{
+    struct ast_node *tree = NEW_(NOD_DECLARATOR);
+
+    tree->l = pointer(p);
+    tree->r = direct_abstract_declarator(p);
+
+    return tree;
+}
+
+/*
+ * specifier_qualifier_list
+ *     type_specifier specifier_qualifier_list
+ *     type_specifier
+ *     type_qualifier specifier_qualifier_list
+ *     type_qualifier
+ */
+static struct ast_node *specifier_qualifier_list(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    tree = type_specifier(p);
+    return tree;
+}
+
+/*
+ * type_name
+ *     specifier_qualifier_list
+ *     specifier_qualifier_list abstract_declarator
+ */
+static struct ast_node *type_name(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct ast_node *spec = NULL;
+
+    spec = specifier_qualifier_list(p);
+    if (!spec)
+        return NULL;
+
+    tree = NEW_(NOD_TYPE_NAME);
+    tree->l = spec;
+    tree->r = abstract_declarator(p);
+
+    /* TODO may need to create symbol for type name */
+    tree->type = p->decl_type;
+
+    return tree;
 }
 
 static struct ast_node *decl_identifier(struct parser *p)

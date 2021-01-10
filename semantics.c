@@ -83,6 +83,8 @@ static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
 {
     struct symbol *sym;
     int total_offset = 0;
+    /* inside of struct is one level upper than struct scope */
+    const int struct_scope = strc->scope_level + 1;
 
     for (sym = strc; sym; sym = sym->next) {
         /* TODO support nested struct by checking scope level */
@@ -96,8 +98,7 @@ static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
             total_offset += len * size;
         }
 
-        /* TODO struct scope_level is NOT ALWAYS 1 */
-        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1)
+        if (sym->kind == SYM_SCOPE_END && sym->scope_level == struct_scope)
             break;
     }
 
@@ -112,20 +113,9 @@ static void compute_func_size(struct symbol_table *table, struct symbol *func)
 
     for (sym = func; sym; sym = sym->next) {
         if (is_param(sym) || is_local_var(sym)) {
-            int size  = 0;
-            int align = 0;
-            int len   = 0;
-
-            if (sym->type->kind == DATA_TYPE_STRUCT) {
-                struct symbol *strc = lookup_symbol(table, sym->type->tag, SYM_TAG_STRUCT);
-                size  = strc->type->byte_size;
-                align = strc->type->alignment;
-                len   = strc->type->array_len;
-            } else {
-                size  = sym->type->byte_size;
-                align = sym->type->alignment;
-                len   = sym->type->array_len;
-            }
+            const int size  = get_size(sym->type);
+            const int align = get_alignment(sym->type);
+            const int len   = get_array_length(sym->type);
 
             total_offset = align_to(total_offset, align);
             total_offset += len * size;
@@ -414,6 +404,10 @@ static void add_node_type(struct ast_node *node)
 
     case NOD_SIZEOF:
         node->type = type_int();
+        break;
+
+    case NOD_TYPE_NAME:
+        /* type already set in parser */
         break;
 
     default:

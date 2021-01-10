@@ -97,6 +97,7 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_NUM: return "NOD_NUM";
     case NOD_STRING: return "NOD_STRING";
     case NOD_CONST_EXPR: return "NOD_CONST_EXPR";
+    case NOD_TYPE_NAME: return "NOD_TYPE_NAME";
     case NOD_DECL: return "NOD_DECL";
     case NOD_DECLARATOR: return "NOD_DECLARATOR";
     case NOD_DECL_DIRECT: return "NOD_DECL_DIRECT";

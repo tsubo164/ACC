@@ -1,21 +1,28 @@
-int printf(char *s, int i);
 /*
-*/
+int printf(char *s, int i);
 enum color {
     R, G, B
 };
-
-struct point {
-    int x, y, z;
-};
+*/
 
 /*
+struct point {
+    int x, y;
+};
+
 int add(int x, int y)
 {
     return x + y + z;
 }
 */
 
+int size(int a)
+{
+    /*
+    printf("size: %d\n", a);
+    */
+    return a;
+}
 int main()
 {
         /*
@@ -80,6 +87,21 @@ final:
 error:
     }
     */
+    {
+        struct point {
+            int x, y;
+        };
+        struct point p;
+        /*
+        int b = sizeof (struct point);
+        size(sizeof(struct point));
+        size(sizeof(p));
+        */
+        size(8);
+
+        return 0;
+    }
+    /*
     struct point pt;
     int a = 42;
     int *p = 0;
@@ -94,14 +116,14 @@ error:
 
     b = sizeof c;
     printf("size of b: => %d\n", b);
-    /*
     */
 
+    /*
     b = sizeof pt;
     printf("size of b: => %d\n", b);
 
     return b;
-    /*
     return sizeof pt;
+    return sizeof (struct point);
     */
 }

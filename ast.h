@@ -60,6 +60,7 @@ enum ast_node_kind {
     NOD_NUM,
     NOD_STRING,
     NOD_CONST_EXPR,
+    NOD_TYPE_NAME,
     /* declaration */
     NOD_DECL,
     NOD_DECLARATOR,

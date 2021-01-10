@@ -19,6 +19,20 @@ int get_size(const struct data_type *type)
     return type->byte_size;
 }
 
+int get_alignment(const struct data_type *type)
+{
+    if (type->kind == DATA_TYPE_STRUCT)
+        return type->sym->type->alignment;
+    return type->alignment;
+}
+
+int get_array_length(const struct data_type *type)
+{
+    if (type->kind == DATA_TYPE_STRUCT)
+        return type->sym->type->array_len;
+    return type->array_len;
+}
+
 const char *data_type_to_string(const struct data_type *dtype)
 {
     if (!dtype)
