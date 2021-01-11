@@ -1,13 +1,14 @@
 int printf(char *s, int i);
 
+struct vec {
+    int x, y, z;
+};
+
 int main()
 {
-    int a = 2;
-    int b;
+    struct vec v;
 
-    b = a < 10 ? 111 : a > 50 ? 1111 : 19;
+    v.x = 19;
 
-    printf("b: %d\n", b);
-
-    return 0;
+    return v.x;
 }

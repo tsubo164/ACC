@@ -245,7 +245,7 @@ static int match_name(const struct symbol *sym, const char *name)
     return !strcmp(sym->name, name);
 }
 
-struct symbol *lookup_symbol(struct symbol_table *table,
+static struct symbol *lookup_symbol(struct symbol_table *table,
         const char *name, enum symbol_kind kind)
 {
     struct symbol *sym;
@@ -277,16 +277,6 @@ struct symbol *lookup_symbol(struct symbol_table *table,
     return NULL;
 }
 
-struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind)
-{
-    struct symbol *sym = lookup_symbol(table, name, kind);
-
-    if (!sym)
-        sym = push_symbol(table, name, kind, type_int());
-
-    return sym;
-}
-
 static void link_type_to_sym(struct data_type *type, struct symbol *sym)
 {
     if (sym->kind == SYM_TAG_STRUCT ||
@@ -309,6 +299,57 @@ struct symbol *define_symbol(struct symbol_table *table,
     sym->is_defined = 1;
 
     link_type_to_sym(type, sym);
+    return sym;
+}
+
+struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind)
+{
+    struct symbol *sym = lookup_symbol(table, name, kind);
+
+    if (!sym)
+        sym = push_symbol(table, name, kind, type_int());
+
+    return sym;
+}
+
+static int is_struct_scope(int scope, struct symbol *strct)
+{
+    if (scope == strct->scope_level + 1)
+        return 1;
+    else
+        return 0;
+}
+
+static struct symbol *find_struct_member(struct symbol *strct, const char *member)
+{
+    struct symbol *sym;
+
+    /* TODO check flag sym->incomplete */
+    if (strct->next->kind != SYM_SCOPE_BEGIN)
+        return NULL;
+
+    for (sym = strct; sym; sym = sym->next) {
+        if (!is_struct_scope(sym->scope_level, strct))
+            continue;
+
+        if (match_name(sym, member))
+            return sym;
+
+        if (sym->kind == SYM_SCOPE_END)
+            break;
+    }
+    return NULL;
+}
+
+struct symbol *use_struct_member_symbol(struct symbol *strct, const char *member)
+{
+    struct symbol *sym = find_struct_member(strct, member);
+
+    if (!sym) {
+        sym = new_symbol_(SYM_MEMBER, member, type_int(), strct->scope_level);
+        insert_after(strct, sym);
+    }
+
     return sym;
 }
 

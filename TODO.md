@@ -30,7 +30,6 @@
   - void pointer, void parameter
 
 * IMPLEMENTATION
-  - find struct() - improve '.'
   - new number()
   - push symbol()
 
@@ -53,3 +52,4 @@
   - sizeof unary expression
   - sizeof (typename)
   - conditional op (?:)
+  - find struct() - improve '.'

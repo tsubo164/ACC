@@ -63,13 +63,13 @@ extern struct symbol_table *new_symbol_table();
 extern void free_symbol_table(struct symbol_table *table);
 extern void print_symbol_table(const struct symbol_table *table);
 
-extern struct symbol *lookup_symbol(struct symbol_table *table,
-        const char *name, enum symbol_kind kind);
-
 /* general symobl */
 extern struct symbol *define_symbol(struct symbol_table *table,
         const char *name, int kind, struct data_type *type);
 extern struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind);
+
+/* struct member symobl */
+struct symbol *use_struct_member_symbol(struct symbol *strct, const char *member);
 
 /* case symobl */
 extern struct symbol *define_case_symbol(struct symbol_table *table, int kind);

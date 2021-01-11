@@ -158,6 +158,18 @@ static void use_sym(struct parser *p, struct ast_node *node)
     node->sym = sym;
 }
 
+static void use_struct_member(struct parser *p, struct ast_node *node)
+{
+    struct symbol *member_sym;
+    struct symbol *struct_sym = node->l->sym;
+    const char *member_name = node->r->sval;
+
+    member_sym = use_struct_member_symbol(struct_sym->type->sym, member_name);
+
+    node->r->sym = member_sym;
+    node->sym = member_sym;
+}
+
 static void define_case(struct parser *p, struct ast_node *node, int kind)
 {
     struct symbol *sym;
@@ -393,33 +405,7 @@ static struct ast_node *postfix_expression(struct parser *p)
 
         case '.':
             tree = new_node(NOD_STRUCT_REF, tree, identifier(p));
-            /* TODO ADDSYM */
-            {
-                struct symbol *sym;
-                const struct symbol *sym_l = tree->l->sym;
-                const char *mem = tree->r->sval;
-                const char *tag;
-
-                tag = sym_l->type->tag;
-                sym = lookup_symbol(p->symtab, tag, SYM_TAG_STRUCT);
-                for (;;) {
-                    /* TODO stop searching when struct is incomplete */
-                    if (sym->kind == SYM_SCOPE_END) {
-                        /* end of struct definition */
-                        break;
-                    }
-
-                    if (sym->name && !strcmp(sym->name, mem)) {
-                        tree->r->sym = sym;
-                        /* TODO adding type to node? */
-                        tree->r->type = sym->type;
-                        tree->sym = sym;
-                        tree->type = sym->type;
-                        break;
-                    }
-                    sym = sym->next;
-                }
-            }
+            use_struct_member(p, tree);
             break;
 
         case '(':
