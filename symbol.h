@@ -54,6 +54,7 @@ extern int is_global_var(const struct symbol *sym);
 extern int is_local_var(const struct symbol *sym);
 extern int is_param(const struct symbol *sym);
 extern int is_func(const struct symbol *sym);
+extern int is_member(const struct symbol *sym);
 extern int is_enumerator(const struct symbol *sym);
 extern int is_label(const struct symbol *sym);
 extern const char *symbol_to_string(const struct symbol *sym);
@@ -69,7 +70,8 @@ extern struct symbol *define_symbol(struct symbol_table *table,
 extern struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind);
 
 /* struct member symobl */
-struct symbol *use_struct_member_symbol(struct symbol *strct, const char *member);
+struct symbol *use_struct_member_symbol(struct symbol_table *table,
+        struct symbol *strct, const char *member);
 
 /* case symobl */
 extern struct symbol *define_case_symbol(struct symbol_table *table, int kind);

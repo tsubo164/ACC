@@ -184,6 +184,12 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
             if (sym->is_defined && sym->is_used && !sym->is_initialized)
                 add_warning(messages, "uninitialized variable used", &pos);
         }
+        /*
+        else if (is_member(sym)) {
+            if (!sym->is_defined && sym->is_used)
+                add_error(messages, "no member named '' in ''", &pos);
+        }
+        */
         else if (is_enumerator(sym)) {
             if (!sym->is_defined && sym->is_used)
                 add_error(messages, "use of undefined symbol", &pos);
@@ -285,6 +291,19 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             ctx->enum_value = node->r->ival;
         node->l->sym->mem_offset = ctx->enum_value;
         ctx->enum_value++;
+        return;
+
+    /* struct */
+    case NOD_STRUCT_REF:
+        check_tree_(node->l, ctx);
+        check_tree_(node->r, ctx);
+        if (node->l->sym->type->kind != DATA_TYPE_STRUCT) {
+            add_error(ctx->messages,
+                    "member reference base type '' is not a structure or union", &pos);
+            return;
+        }
+        if (!node->r->sym->is_defined)
+            add_error(ctx->messages, "no member named '' in ''", &pos);
         return;
 
     /* loop */

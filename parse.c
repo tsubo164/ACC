@@ -164,7 +164,7 @@ static void use_struct_member(struct parser *p, struct ast_node *node)
     struct symbol *struct_sym = node->l->sym;
     const char *member_name = node->r->sval;
 
-    member_sym = use_struct_member_symbol(struct_sym->type->sym, member_name);
+    member_sym = use_struct_member_symbol(p->symtab, struct_sym->type->sym, member_name);
 
     node->r->sym = member_sym;
     node->sym = member_sym;

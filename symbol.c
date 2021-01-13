@@ -36,6 +36,11 @@ int is_func(const struct symbol *sym)
     return sym->kind == SYM_FUNC;
 }
 
+int is_member(const struct symbol *sym)
+{
+    return sym->kind == SYM_MEMBER;
+}
+
 int is_enumerator(const struct symbol *sym)
 {
     return sym->kind == SYM_ENUMERATOR;
@@ -324,6 +329,9 @@ static struct symbol *find_struct_member(struct symbol *strct, const char *membe
 {
     struct symbol *sym;
 
+    if (!strct)
+        return NULL;
+
     /* TODO check flag sym->incomplete */
     if (strct->next->kind != SYM_SCOPE_BEGIN)
         return NULL;
@@ -341,13 +349,13 @@ static struct symbol *find_struct_member(struct symbol *strct, const char *membe
     return NULL;
 }
 
-struct symbol *use_struct_member_symbol(struct symbol *strct, const char *member)
+struct symbol *use_struct_member_symbol(struct symbol_table *table,
+        struct symbol *strct, const char *member)
 {
     struct symbol *sym = find_struct_member(strct, member);
 
     if (!sym) {
-        sym = new_symbol_(SYM_MEMBER, member, type_int(), strct->scope_level);
-        insert_after(strct, sym);
+        sym = push_symbol(table, member, SYM_MEMBER, type_int());
     }
 
     return sym;

@@ -7,8 +7,9 @@ struct vec {
 int main()
 {
     struct vec v;
+    int i = 118;
 
-    v.x = 19;
+    v.x = i;
 
     return v.x;
 }
