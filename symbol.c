@@ -311,8 +311,17 @@ struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind
 {
     struct symbol *sym = lookup_symbol(table, name, kind);
 
-    if (!sym)
-        sym = push_symbol(table, name, kind, type_int());
+    if (!sym) {
+        struct data_type *type;
+        if (kind == SYM_TAG_STRUCT)
+            type = type_struct(name);
+        else if (kind == SYM_TAG_ENUM)
+            type = type_enum(name);
+        else
+            type = type_int();
+        sym = push_symbol(table, name, kind, type);
+        link_type_to_sym(type, sym);
+    }
 
     return sym;
 }

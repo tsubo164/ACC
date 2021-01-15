@@ -91,8 +91,11 @@ static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
     /* inside of struct is one level upper than struct scope */
     const int struct_scope = strc->scope_level + 1;
 
+    /* incomplete struct type */
+    if (!strc->is_defined)
+        return;
+
     for (sym = strc; sym; sym = sym->next) {
-        /* TODO support nested struct by checking scope level */
         if (sym->kind == SYM_MEMBER) {
             const int size  = sym->type->byte_size;
             const int align = sym->type->alignment;
@@ -175,8 +178,10 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
             if (!sym->is_defined && sym->is_used)
                 add_error(messages, "use of undefined symbol", &pos);
 
+            /*
             if (sym->type->kind == DATA_TYPE_VOID)
                 add_error(messages, "variable has incomplete type 'void'", &pos);
+            */
 
             if (sym->is_defined && !sym->is_used)
                 add_warning(messages, "unused variable", &pos);
@@ -262,6 +267,11 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         node->sym->is_initialized = ctx->has_init;
         if (node->sym->kind == SYM_FUNC)
             ctx->func_sym = node->sym;
+        if (is_incomplete(node->sym->type) &&
+                (is_local_var(node->sym) || is_global_var(node->sym))) {
+            add_error(ctx->messages, "variable has incomplete type ''", &pos);
+            return;
+        }
         break;
 
     case NOD_ASSIGN:
@@ -300,6 +310,10 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         if (node->l->sym->type->kind != DATA_TYPE_STRUCT) {
             add_error(ctx->messages,
                     "member reference base type '' is not a structure or union", &pos);
+            return;
+        }
+        if (!node->l->sym->type->sym->is_defined) {
+            add_error(ctx->messages, "incomplete definition of type 'struct '", &pos);
             return;
         }
         if (!node->r->sym->is_defined)

@@ -33,12 +33,23 @@ int get_array_length(const struct data_type *type)
     return type->array_len;
 }
 
-const char *data_type_to_string(const struct data_type *dtype)
+int is_incomplete(const struct data_type *type)
 {
-    if (!dtype)
+    if (type->kind == DATA_TYPE_VOID)
+        return 1;
+    if (type->kind == DATA_TYPE_ENUM && !type->sym->is_defined)
+        return 1;
+    if (type->kind == DATA_TYPE_STRUCT && !type->sym->is_defined)
+        return 1;
+    return 0;
+}
+
+const char *data_type_to_string(const struct data_type *type)
+{
+    if (!type)
         return "--";
 
-    switch (dtype->kind) {
+    switch (type->kind) {
     case DATA_TYPE_VOID:   return "void";
     case DATA_TYPE_CHAR:   return "char";
     case DATA_TYPE_INT:    return "int";
@@ -50,17 +61,17 @@ const char *data_type_to_string(const struct data_type *dtype)
     }
 }
 
-void print_data_type(const struct data_type *dtype)
+void print_data_type(const struct data_type *type)
 {
-    if (!dtype)
+    if (!type)
         return;
 
-    printf("    name:      %s\n", data_type_to_string(dtype));
-    printf("    kind:      %d\n", dtype->kind);
-    printf("    byte_size: %d\n", dtype->byte_size);
-    printf("    array_len: %d\n", dtype->array_len);
-    printf("    tag:       %s\n", dtype->tag);
-    printf("    ptr_to:    %p\n", (void *) dtype->ptr_to);
+    printf("    name:      %s\n", data_type_to_string(type));
+    printf("    kind:      %d\n", type->kind);
+    printf("    byte_size: %d\n", type->byte_size);
+    printf("    array_len: %d\n", type->array_len);
+    printf("    tag:       %s\n", type->tag);
+    printf("    ptr_to:    %p\n", (void *) type->ptr_to);
 }
 
 struct data_type *type_void()
@@ -80,61 +91,49 @@ struct data_type *type_int()
 
 struct data_type *type_ptr(struct data_type *base_type)
 {
-    struct data_type *dtype;
+    struct data_type *type;
 
-    dtype = malloc(sizeof(struct data_type));
-    *dtype = PTR_;
-    dtype->ptr_to = base_type;
+    type = malloc(sizeof(struct data_type));
+    *type = PTR_;
+    type->ptr_to = base_type;
 
-    return dtype;
+    return type;
 }
 
 struct data_type *type_array(struct data_type *base_type, int length)
 {
-    struct data_type *dtype;
+    struct data_type *type;
 
-    dtype = malloc(sizeof(struct data_type));
-    *dtype = ARRAY_;
-    dtype->ptr_to = base_type;
+    type = malloc(sizeof(struct data_type));
+    *type = ARRAY_;
+    type->ptr_to = base_type;
 
     /* XXX */
-    dtype->byte_size = base_type->byte_size;
-    dtype->alignment = base_type->alignment;
-    dtype->array_len = length;
+    type->byte_size = base_type->byte_size;
+    type->alignment = base_type->alignment;
+    type->array_len = length;
 
-    return dtype;
+    return type;
 }
 
 struct data_type *type_struct(const char *tag)
 {
-    struct data_type *dtype;
+    struct data_type *type;
 
-    dtype = malloc(sizeof(struct data_type));
-    *dtype = STRUCT_;
+    type = malloc(sizeof(struct data_type));
+    *type = STRUCT_;
+    type->tag = tag;
 
-    {
-        /* XXX */
-        char *t = (char *) malloc(sizeof(char) * (strlen(tag)+1));
-        strcpy(t, tag);
-        dtype->tag = t;
-    }
-
-    return dtype;
+    return type;
 }
 
 struct data_type *type_enum(const char *tag)
 {
-    struct data_type *dtype;
+    struct data_type *type;
 
-    dtype = malloc(sizeof(struct data_type));
-    *dtype = ENUM_;
+    type = malloc(sizeof(struct data_type));
+    *type = ENUM_;
+    type->tag = tag;
 
-    {
-        /* TODO remove malloc */
-        char *t = (char *) malloc(sizeof(char) * (strlen(tag)+1));
-        strcpy(t, tag);
-        dtype->tag = t;
-    }
-
-    return dtype;
+    return type;
 }
