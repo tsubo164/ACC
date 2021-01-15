@@ -1,13 +1,5 @@
 int printf(char *s, int i);
 
-struct point
-/*
-{
-    int x, y;
-}
-*/
-;
-
 struct vec {
     int x, y, z;
 };
@@ -16,11 +8,14 @@ int main()
 {
     //struct point p;
     struct vec v;
-    //void k;
+    struct vec *pv;
 
-    v.x = 42;
+    pv = &v;
+    pv->x = 51;
 
-    //p.x = 13;
+    //v.x = 42;
+    //*pv = 119;
+
 
     return v.x;
 }

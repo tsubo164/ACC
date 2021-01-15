@@ -206,6 +206,9 @@ state_initial:
         case '=':
             tok->kind = TOK_SUB_ASSIGN;
             break;
+        case '>':
+            tok->kind = TOK_POINTER;
+            break;
         default:
             unreadc(l, c);
             tok->kind = '-';
@@ -514,6 +517,7 @@ void print_token(const struct token *tok)
     case TOK_NE: s = "!="; break;
     case TOK_LOGICAL_OR: s = "||"; break;
     case TOK_LOGICAL_AND: s = "&&"; break;
+    case TOK_POINTER: s = "->"; break;
          /* assignment op */
     case TOK_ADD_ASSIGN: s = "+="; break;
     case TOK_SUB_ASSIGN: s = "+="; break;
