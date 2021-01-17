@@ -8,14 +8,18 @@ int main()
 {
     //struct point p;
     struct vec v;
-    struct vec *pv;
+    //struct vec *pv;
 
+    /*
     pv = &v;
     pv->x = 51;
+    */
 
-    //v.x = 42;
-    //*pv = 119;
+    v.x = 42;
+    // *pv = 119;
 
 
     return v.x;
 }
+/*
+*/

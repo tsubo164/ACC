@@ -438,16 +438,22 @@ static void add_node_type(struct ast_node *node)
     /* nodes with symbol */
     case NOD_DECL_IDENT:
     case NOD_IDENT:
+        /*
         node->type = node->sym->type;
+        */
         break;
 
     /* nodes with literal */
     case NOD_NUM:
+        /*
         node->type = type_int();
+        */
         break;
 
     case NOD_STRING:
+        /*
         node->type = type_ptr(type_char());
+        */
         break;
 
     case NOD_SIZEOF:

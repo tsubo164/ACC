@@ -265,6 +265,20 @@ static void decl_reset_context(struct parser *p)
 }
 
 /*
+ * type
+ */
+static void type_set(struct ast_node *node, struct data_type *type)
+{
+    node->type = type;
+}
+
+static void type_from_sym(struct ast_node *node)
+{
+    /* TODO may be done in define_sym()/use_sym() */
+    node->type = node->sym->type;
+}
+
+/*
  * forward declarations
  */
 static struct ast_node *statement(struct parser *p);
@@ -314,12 +328,14 @@ static struct ast_node *primary_expression(struct parser *p)
         tree = new_node(NOD_NUM, NULL, NULL);
         copy_token_text(p, tree);
         copy_token_ival(p, tree);
+        type_set(tree, type_int());
         return tree;
 
     case TOK_STRING_LITERAL:
         tree = new_node(NOD_STRING, NULL, NULL);
         copy_token_text(p, tree);
         define_string(p, tree);
+        type_set(tree, type_ptr(type_char()));
         return tree;
 
     case TOK_IDENT:
@@ -330,6 +346,7 @@ static struct ast_node *primary_expression(struct parser *p)
         else
             decl_begin(p, SYM_VAR);
         use_sym(p, tree);
+        type_from_sym(tree);
         return tree;
 
     case '(':
@@ -1507,6 +1524,7 @@ static struct ast_node *param_decl_list(struct parser *p)
 static struct ast_node *direct_declarator(struct parser *p)
 {
     struct ast_node *tree = NULL;
+    struct ast_node *ident = NULL;
 
     tree = NEW_(NOD_DECL_DIRECT);
 
@@ -1515,9 +1533,9 @@ static struct ast_node *direct_declarator(struct parser *p)
         expect(p, ')');
     }
 
-    if (consume(p, TOK_IDENT)) {
-        ungettok(p);
-        tree->r = decl_identifier(p);
+    if (nexttok(p, TOK_IDENT)) {
+        ident = decl_identifier(p);
+        tree->r = ident;
     } else {
         /* no identifier declared */
         return tree;
@@ -1539,9 +1557,10 @@ static struct ast_node *direct_declarator(struct parser *p)
         /* function */
         struct ast_node *fn = NEW_(NOD_DECL_FUNC);
         decl_begin(p, SYM_FUNC);
-        define_sym(p, tree->r);
+        define_sym(p, ident);
+        type_from_sym(ident);
 
-        func_begin(p, tree->r->sym);
+        func_begin(p, ident->sym);
         scope_begin(p);
 
         fn->l = tree;
@@ -1550,7 +1569,8 @@ static struct ast_node *direct_declarator(struct parser *p)
         expect(p, ')');
     } else {
         /* variable, parameter, member, */
-        define_sym(p, tree->r);
+        define_sym(p, ident);
+        type_from_sym(ident);
     }
 
     return tree;
