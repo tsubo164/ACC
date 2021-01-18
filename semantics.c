@@ -423,8 +423,8 @@ static void add_node_type(struct ast_node *node)
         break;
 
     case NOD_DEREF:
-        node->type = node->l->type->ptr_to;;
         /*
+        node->type = node->l->type->ptr_to;;
         */
         break;
 

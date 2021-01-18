@@ -8,12 +8,12 @@ int main()
 {
     //struct point p;
     struct vec v;
+    char i = 0;
+    i += 3;
     //struct vec *pv;
 
-    /*
-    pv = &v;
-    pv->x = 51;
-    */
+    //pv = &v;
+    //pv->x = 51;
 
     v.x = 42;
     // *pv = 119;

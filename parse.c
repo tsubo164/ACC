@@ -283,6 +283,33 @@ static void type_from_sym(struct ast_node *node)
     node->type = node->sym->type;
 }
 
+static const struct data_type *promote_type(
+        const struct ast_node *n1, const struct ast_node *n2)
+{
+    if (!n1 && !n2)
+        return type_void();
+    if (!n1)
+        return n2->type;
+    if (!n2)
+        return n1->type;
+
+    if (n1->type->kind > n2->type->kind)
+        return n1->type;
+    else
+        return n2->type;
+}
+
+static void add_type(struct ast_node *node)
+{
+    if (!node)
+        return;
+    switch (node->kind) {
+    default:
+        node->type = promote_type(node->l, node->r);
+        break;
+    }
+}
+
 /*
  * forward declarations
  */
@@ -440,11 +467,10 @@ static struct ast_node *postfix_expression(struct parser *p)
 
         case '[':
             tree = new_node(NOD_ADD, tree, expression(p));
+            add_type(tree);
             expect(p, ']');
             tree = new_node(NOD_DEREF, tree, NULL);
-            /*
             type_set(tree, underlying(tree->l->type));
-            */
             break;
 
         case TOK_INC:
@@ -489,13 +515,10 @@ static struct ast_node *unary_expression(struct parser *p)
         return tree;
 
     case '*':
-        return new_node(NOD_DEREF, postfix_expression(p), NULL);
-        /*
         tree = new_node(NOD_DEREF, NULL, NULL);
         tree->l = postfix_expression(p);
         type_set(tree, underlying(tree->l->type));
         return tree;
-        */
 
     case '&':
         return new_node(NOD_ADDR, postfix_expression(p), NULL);
@@ -580,6 +603,7 @@ static struct ast_node *additive_expression(struct parser *p)
 
         case '+':
             tree = new_node(NOD_ADD, tree, multiplicative_expression(p));
+            add_type(tree);
             break;
 
         case '-':
