@@ -304,6 +304,15 @@ static void add_type(struct ast_node *node)
     if (!node)
         return;
     switch (node->kind) {
+
+    case NOD_ASSIGN:
+    case NOD_ADD_ASSIGN:
+    case NOD_SUB_ASSIGN:
+    case NOD_MUL_ASSIGN:
+    case NOD_DIV_ASSIGN:
+        node->type = node->l->type;
+        break;
+
     default:
         node->type = promote_type(node->l, node->r);
         break;
@@ -792,24 +801,45 @@ static struct ast_node *conditional_expression(struct parser *p)
 static struct ast_node *assignment_expression(struct parser *p)
 {
     struct ast_node *tree = conditional_expression(p);
+    struct ast_node *assign = NULL;
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
 
     case '=':
-        return new_node(NOD_ASSIGN, tree, assignment_expression(p));
+        assign = new_node(NOD_ASSIGN, NULL, NULL);
+        assign->l = tree;
+        assign->r = assignment_expression(p);
+        add_type(assign);
+        return assign;
 
     case TOK_ADD_ASSIGN:
-        return new_node(NOD_ADD_ASSIGN, tree, assignment_expression(p));
+        assign = new_node(NOD_ADD_ASSIGN, NULL, NULL);
+        assign->l = tree;
+        assign->r = assignment_expression(p);
+        add_type(assign);
+        return assign;
 
     case TOK_SUB_ASSIGN:
-        return new_node(NOD_SUB_ASSIGN, tree, assignment_expression(p));
+        assign = new_node(NOD_SUB_ASSIGN, NULL, NULL);
+        assign->l = tree;
+        assign->r = assignment_expression(p);
+        add_type(assign);
+        return assign;
 
     case TOK_MUL_ASSIGN:
-        return new_node(NOD_MUL_ASSIGN, tree, assignment_expression(p));
+        assign = new_node(NOD_MUL_ASSIGN, NULL, NULL);
+        assign->l = tree;
+        assign->r = assignment_expression(p);
+        add_type(assign);
+        return assign;
 
     case TOK_DIV_ASSIGN:
-        return new_node(NOD_DIV_ASSIGN, tree, assignment_expression(p));
+        assign = new_node(NOD_DIV_ASSIGN, NULL, NULL);
+        assign->l = tree;
+        assign->r = assignment_expression(p);
+        add_type(assign);
+        return assign;
 
     default:
         ungettok(p);
