@@ -423,12 +423,15 @@ static void add_node_type(struct ast_node *node)
         break;
 
     case NOD_DEREF:
-        node->type = promote_data_type(node->l, node->r);
-        node->type = node->type->ptr_to;;
+        node->type = node->l->type->ptr_to;;
+        /*
+        */
         break;
 
     case NOD_CALL:
+        /*
         node->type = node->l->type;
+        */
         break;
 
     case NOD_STRUCT_REF:
@@ -457,7 +460,9 @@ static void add_node_type(struct ast_node *node)
         break;
 
     case NOD_SIZEOF:
+        /*
         node->type = type_int();
+        */
         break;
 
     case NOD_TYPE_NAME:

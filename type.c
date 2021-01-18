@@ -44,6 +44,11 @@ int is_incomplete(const struct data_type *type)
     return 0;
 }
 
+struct data_type *underlying(const struct data_type *type)
+{
+    return type->ptr_to;
+}
+
 const char *data_type_to_string(const struct data_type *type)
 {
     if (!type)

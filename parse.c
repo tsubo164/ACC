@@ -272,6 +272,11 @@ static void type_set(struct ast_node *node, struct data_type *type)
     node->type = type;
 }
 
+static void type_from_left(struct ast_node *node)
+{
+    node->type = node->l ? node->l->type : NULL;
+}
+
 static void type_from_sym(struct ast_node *node)
 {
     /* TODO may be done in define_sym()/use_sym() */
@@ -427,6 +432,7 @@ static struct ast_node *postfix_expression(struct parser *p)
 
         case '(':
             tree = new_node(NOD_CALL, tree, NULL);
+            type_from_left(tree);
             if (!nexttok(p, ')'))
                 tree->r = argument_expression_list(p);
             expect(p, ')');
@@ -436,6 +442,9 @@ static struct ast_node *postfix_expression(struct parser *p)
             tree = new_node(NOD_ADD, tree, expression(p));
             expect(p, ']');
             tree = new_node(NOD_DEREF, tree, NULL);
+            /*
+            type_set(tree, underlying(tree->l->type));
+            */
             break;
 
         case TOK_INC:
@@ -481,6 +490,12 @@ static struct ast_node *unary_expression(struct parser *p)
 
     case '*':
         return new_node(NOD_DEREF, postfix_expression(p), NULL);
+        /*
+        tree = new_node(NOD_DEREF, NULL, NULL);
+        tree->l = postfix_expression(p);
+        type_set(tree, underlying(tree->l->type));
+        return tree;
+        */
 
     case '&':
         return new_node(NOD_ADDR, postfix_expression(p), NULL);
@@ -499,6 +514,7 @@ static struct ast_node *unary_expression(struct parser *p)
             struct ast_node *tname = type_name(p);
             if (tname) {
                 tree = new_node(NOD_SIZEOF, tname, NULL);
+                type_set(tree, type_int());
                 expect(p, ')');
                 return tree;
             } else {
@@ -506,7 +522,10 @@ static struct ast_node *unary_expression(struct parser *p)
                 ungettok(p);
             }
         }
-        return new_node(NOD_SIZEOF, unary_expression(p), NULL);
+        tree = new_node(NOD_SIZEOF, NULL, NULL);
+        type_set(tree, type_int());
+        tree->l = unary_expression(p);
+        return tree;
 
     default:
         ungettok(p);
@@ -1207,9 +1226,7 @@ static struct ast_node *type_name(struct parser *p)
     tree->l = spec;
     tree->r = abstract_declarator(p);
 
-    /* TODO may need to create symbol for type name */
-    tree->type = p->decl_type;
-
+    type_set(tree, p->decl_type);
     return tree;
 }
 
