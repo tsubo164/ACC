@@ -878,7 +878,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_DECL_INIT:
-        {
+        if (node->r) {
             const struct ast_node *ident;
             const struct symbol *sym;
 
@@ -920,7 +920,9 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         scope.func = scope.curr;
 
         gen_func_prologue(fp, node->l);
+        gen_comment(fp, "func params");
         gen_func_param_list(fp, node->l);
+        gen_comment(fp, "func body");
         gen_func_body(fp, node->r);
         gen_label(fp, scope.curr, JMP_RETURN);
         gen_func_epilogue(fp, node->r);

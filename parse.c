@@ -303,6 +303,7 @@ static void add_type(struct ast_node *node)
 {
     if (!node)
         return;
+
     switch (node->kind) {
 
     case NOD_ASSIGN:
@@ -310,6 +311,7 @@ static void add_type(struct ast_node *node)
     case NOD_SUB_ASSIGN:
     case NOD_MUL_ASSIGN:
     case NOD_DIV_ASSIGN:
+    case NOD_DECL_INIT:
         node->type = node->l->type;
         break;
 
@@ -1644,6 +1646,7 @@ static struct ast_node *direct_declarator(struct parser *p)
         type_from_sym(ident);
     }
 
+    add_type(tree);
     return tree;
 }
 
@@ -1666,6 +1669,7 @@ static struct ast_node *declarator(struct parser *p)
     tree->l = pointer(p);
     tree->r = direct_declarator(p);
 
+    add_type(tree);
     return tree;
 }
 
@@ -1684,6 +1688,7 @@ static struct ast_node *init_declarator(struct parser *p)
     if (consume(p, '='))
         tree->r = initializer(p);
 
+    add_type(tree);
     return tree;
 }
 

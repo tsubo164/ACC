@@ -416,14 +416,12 @@ static void add_node_type(struct ast_node *node)
 
     switch (node->kind) {
 
-        /*
     case NOD_ASSIGN:
     case NOD_ADD_ASSIGN:
-        */
     case NOD_DECL_INIT:
+        /*
         node->type = node->l->type;
-    case NOD_ASSIGN:
-    case NOD_ADD_ASSIGN:
+        */
         break;
 
     case NOD_DEREF:

@@ -24,6 +24,7 @@ struct ast_node *new_ast_node(enum ast_node_kind kind,
     n->r = r;
 
     n->type = type_void();
+    n->sym = NULL;
 
     n->ival = 0;
     n->sval = NULL;

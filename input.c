@@ -1,3 +1,15 @@
+/*
+int main()
+{
+    int a = 7;
+    int b = 2;
+
+    b = a && b;
+
+    return b;
+}
+
+*/
 int printf(char *s, int i);
 
 struct vec {
@@ -21,5 +33,3 @@ int main()
 
     return v.x;
 }
-/*
-*/
