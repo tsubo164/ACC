@@ -437,7 +437,9 @@ static void add_node_type(struct ast_node *node)
         break;
 
     case NOD_STRUCT_REF:
+        /*
         node->type = node->sym->type;
+        */
         break;
 
     /* nodes with symbol */

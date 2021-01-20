@@ -161,6 +161,15 @@ static void use_sym(struct parser *p, struct ast_node *node)
 static void use_struct_member(struct parser *p, struct ast_node *node)
 {
     struct symbol *member_sym;
+    struct symbol *struct_sym = node->l->type->sym;
+    const char *member_name = node->r->sval;
+
+    member_sym = use_struct_member_symbol(p->symtab, struct_sym/*->type->sym*/, member_name);
+
+    node->r->sym = member_sym;
+    node->sym = member_sym;
+    /*
+    struct symbol *member_sym;
     struct symbol *struct_sym = node->l->sym;
     const char *member_name = node->r->sval;
 
@@ -168,7 +177,18 @@ static void use_struct_member(struct parser *p, struct ast_node *node)
 
     node->r->sym = member_sym;
     node->sym = member_sym;
+    */
 }
+
+/*
+static void use_member_sym(struct parser *p,
+        struct data_type *struct_type, struct ast_node *node)
+{
+    const char *member_name = node->sval;
+
+    node->sym = use_struct_member_symbol(p->symtab, struct_type->sym, member_name);
+}
+*/
 
 static void define_case(struct parser *p, struct ast_node *node, int kind)
 {
@@ -313,6 +333,10 @@ static void add_type(struct ast_node *node)
     case NOD_DIV_ASSIGN:
     case NOD_DECL_INIT:
         node->type = node->l->type;
+        break;
+
+    case NOD_STRUCT_REF:
+        node->type = node->sym->type;
         break;
 
     default:
@@ -465,7 +489,12 @@ static struct ast_node *postfix_expression(struct parser *p)
 
         case '.':
             tree = new_node(NOD_STRUCT_REF, tree, identifier(p));
+            /*
+            printf("            struct %s\n", tree->l->type->sym->name);
+            printf("                 . %s\n", tree->r->sval);
+            */
             use_struct_member(p, tree);
+            add_type(tree);
             break;
 
         case '(':

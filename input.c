@@ -20,8 +20,6 @@ int main()
 {
     //struct point p;
     struct vec v;
-    char i = 0;
-    i += 3;
     //struct vec *pv;
 
     //pv = &v;
