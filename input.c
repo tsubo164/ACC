@@ -29,5 +29,5 @@ int main()
     // *pv = 119;
 
 
-    return v.x;
+    return sizeof v.x;
 }
