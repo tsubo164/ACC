@@ -79,6 +79,14 @@ void print_data_type(const struct data_type *type)
     printf("    ptr_to:    %p\n", (void *) type->ptr_to);
 }
 
+void print_type_name(const struct data_type *type)
+{
+    if (type->kind == DATA_TYPE_STRUCT)
+        printf("struct %s", type->tag);
+    else
+        printf("%s", data_type_to_string(type));
+}
+
 struct data_type *type_void()
 {
     return &VOID_;

@@ -1,33 +1,28 @@
-/*
-int main()
-{
-    int a = 7;
-    int b = 2;
-
-    b = a && b;
-
-    return b;
-}
-
-*/
-int printf(char *s, int i);
-
 struct vec {
     int x, y, z;
 };
 
+struct point;
+
 int main()
 {
-    //struct point p;
+    //struct point *pp;
     struct vec v;
-    //struct vec *pv;
+    struct vec *pv;
+    //int i = 0;
 
-    //pv = &v;
+    pv = &v;
+
+    //v.x = 42;
     //pv->x = 51;
+    //v->x = 51;
+    //i->x = 51;
+    //v->x = 51;
+    //pp->no = 0;
 
-    v.x = 42;
-    // *pv = 119;
+    pv->x = 0;
 
+    (*pv).x = 42;
 
-    return sizeof v.x;
+    return v.x;
 }

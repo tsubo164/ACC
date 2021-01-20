@@ -307,17 +307,24 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
     case NOD_STRUCT_REF:
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
-        if (node->l->sym->type->kind != DATA_TYPE_STRUCT) {
+        if (node->l->type->kind != DATA_TYPE_STRUCT) {
             add_error(ctx->messages,
                     "member reference base type '' is not a structure or union", &pos);
             return;
         }
-        if (!node->l->sym->type->sym->is_defined) {
+        if (is_incomplete(node->l->type)) {
             add_error(ctx->messages, "incomplete definition of type 'struct '", &pos);
             return;
         }
         if (!node->r->sym->is_defined)
             add_error(ctx->messages, "no member named '' in ''", &pos);
+        return;
+
+    case NOD_DEREF:
+        check_tree_(node->l, ctx);
+        check_tree_(node->r, ctx);
+        if (!underlying(node->l->type))
+            add_error(ctx->messages, "indirection requires pointer operand", &pos);
         return;
 
     /* loop */

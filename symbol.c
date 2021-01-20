@@ -341,8 +341,7 @@ static struct symbol *find_struct_member(struct symbol *strct, const char *membe
     if (!strct)
         return NULL;
 
-    /* TODO check flag sym->incomplete */
-    if (strct->next->kind != SYM_SCOPE_BEGIN)
+    if (is_incomplete(strct->type))
         return NULL;
 
     for (sym = strct; sym; sym = sym->next) {

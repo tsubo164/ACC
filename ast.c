@@ -154,7 +154,8 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
 
         /* print data type of node */
         printf(TERMINAL_COLOR_RED);
-            printf(" %s", data_type_to_string(tree->type));
+            printf(" ");
+            print_type_name(tree->type);
         printf(TERMINAL_COLOR_RESET);
 
     switch (tree->kind) {

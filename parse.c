@@ -311,6 +311,12 @@ static void add_type(struct ast_node *node)
         node->type = node->l->type;
         break;
 
+    case NOD_DEREF:
+        node->type = underlying(node->l->type);
+        if (!node->type)
+            node->type = node->l->type;
+        break;
+
     case NOD_STRUCT_REF:
         node->type = node->r->type;
         break;
@@ -477,6 +483,19 @@ static struct ast_node *postfix_expression(struct parser *p)
         switch (tok->kind) {
 
         case '.':
+            member = identifier(p);
+            use_member_sym(p, tree->type, member);
+            add_type(member);
+
+            tree = new_node(NOD_STRUCT_REF, tree, member);
+            add_type(tree);
+            break;
+
+        case TOK_POINTER:
+            tree = new_node(NOD_DEREF, tree, NULL);
+            add_type(tree);
+
+            /* todo make a function */
             member = identifier(p);
             use_member_sym(p, tree->type, member);
             add_type(member);

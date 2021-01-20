@@ -3,7 +3,6 @@
   - define
   - struct arg
   - struct assign
-  - -> op
   - check **temporary** registers
   - check args
   - char <-> int, negative number literal
@@ -16,8 +15,6 @@
   - pointer ++, --
 
 * OPTIONAL
-  - struct usage
-  - incomplete struct
   - function prototype
   - typedef
   - unsigned
@@ -53,3 +50,6 @@
   - sizeof (typename)
   - conditional op (?:)
   - find struct() - improve '.'
+  - -> op
+  - incomplete struct
+  - struct usage

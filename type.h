@@ -33,6 +33,7 @@ struct data_type *underlying(const struct data_type *type);
 
 extern const char *data_type_to_string(const struct data_type *type);
 extern void print_data_type(const struct data_type *type);
+extern void print_type_name(const struct data_type *type);
 
 extern struct data_type *type_void();
 extern struct data_type *type_char();
