@@ -18,6 +18,7 @@
 struct ast_node *new_ast_node(enum ast_node_kind kind,
         struct ast_node *l, struct ast_node *r)
 {
+    struct position pos = {0};
     struct ast_node *n = malloc(sizeof(struct ast_node));
     n->kind = kind;
     n->l = l;
@@ -28,6 +29,7 @@ struct ast_node *new_ast_node(enum ast_node_kind kind,
 
     n->ival = 0;
     n->sval = NULL;
+    n->pos = pos;
 
     return n;
 }

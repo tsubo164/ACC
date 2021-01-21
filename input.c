@@ -20,9 +20,10 @@ int main()
     //v->x = 51;
     //pp->no = 0;
 
-    pv->x = 0;
+    pv->q = 0;
 
-    (*pv).x = 42;
+    //(*pv).x = 42;
 
-    return v.x;
+    //return v.x;
+    return 42;
 }

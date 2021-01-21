@@ -37,6 +37,19 @@ static void ungettok(struct parser *p)
     p->curr = (p->curr - 1 + N) % N;
 }
 
+static const struct position *tokpos(const struct parser *p)
+{
+    const struct token *tok = current_token(p);
+    return &tok->pos;
+}
+
+static struct ast_node *new_node_(enum ast_node_kind kind, const struct position *pos)
+{
+    struct ast_node *node = new_ast_node(kind, NULL, NULL);
+    node->pos = *pos;
+    return node;
+}
+
 static void copy_token_text(struct parser *p, struct ast_node *node)
 {
     const struct token *tok = current_token(p);
@@ -295,10 +308,10 @@ static const struct data_type *promote_type(
         return n2->type;
 }
 
-static void add_type(struct ast_node *node)
+static struct ast_node *typed_(struct ast_node *node)
 {
     if (!node)
-        return;
+        return NULL;
 
     switch (node->kind) {
 
@@ -337,6 +350,16 @@ static void add_type(struct ast_node *node)
         node->type = promote_type(node->l, node->r);
         break;
     }
+
+    return node;
+}
+
+static struct ast_node *branch_(struct ast_node *node,
+        struct ast_node *l, struct ast_node *r)
+{
+    node->l = l;
+    node->r = r;
+    return typed_(node);
 }
 
 /*
@@ -365,7 +388,7 @@ static struct ast_node *identifier(struct parser *p)
     if (!consume(p, TOK_IDENT))
         return NULL;
 
-    tree = new_node(NOD_IDENT, NULL, NULL);
+    tree = new_node_(NOD_IDENT, tokpos(p));
     copy_token_text(p, tree);
     decl_set_ident(p, tree->sval);
 
@@ -472,36 +495,52 @@ static struct ast_node *argument_expression_list(struct parser *p)
  *     postfix_expression TOK_INC
  *     postfix_expression TOK_DEC
  */
+/*
+static struct ast_node *struct_ref_(struct parser *p, struct ast_node *strc)
+{
+    struct ast_node *member = NULL, *ref = NULL;
+    member = identifier(p);
+    use_member_sym(p, strc->type, member);
+    typed_(member);
+
+    ref = new_node_(NOD_STRUCT_REF, tokpos(p));
+    return branch_(ref, strc, member);
+}
+*/
 static struct ast_node *postfix_expression(struct parser *p)
 {
     struct ast_node *tree = primary_expression(p);
 
     for (;;) {
-        struct ast_node *member = NULL;
+        struct ast_node *member = NULL, *deref = NULL, *ref = NULL;
         const struct token *tok = gettok(p);
 
         switch (tok->kind) {
 
         case '.':
+            /*
+            tree = struct_ref_(p, tree);
+            */
             member = identifier(p);
             use_member_sym(p, tree->type, member);
-            add_type(member);
+            typed_(member);
 
             tree = new_node(NOD_STRUCT_REF, tree, member);
-            add_type(tree);
+            typed_(tree);
             break;
 
         case TOK_POINTER:
-            tree = new_node(NOD_DEREF, tree, NULL);
-            add_type(tree);
-
-            /* todo make a function */
+            deref = new_node_(NOD_DEREF, tokpos(p));
+            tree = branch_(deref, tree, NULL);
+            /*
+            tree = struct_ref_(p, tree);
+            */
             member = identifier(p);
             use_member_sym(p, tree->type, member);
-            add_type(member);
+            typed_(member);
 
-            tree = new_node(NOD_STRUCT_REF, tree, member);
-            add_type(tree);
+            ref = new_node_(NOD_STRUCT_REF, tokpos(p));
+            tree = branch_(ref, tree, member);
             break;
 
         case '(':
@@ -514,7 +553,7 @@ static struct ast_node *postfix_expression(struct parser *p)
 
         case '[':
             tree = new_node(NOD_ADD, tree, expression(p));
-            add_type(tree);
+            typed_(tree);
             expect(p, ']');
             tree = new_node(NOD_DEREF, tree, NULL);
             type_set(tree, underlying(tree->l->type));
@@ -650,7 +689,7 @@ static struct ast_node *additive_expression(struct parser *p)
 
         case '+':
             tree = new_node(NOD_ADD, tree, multiplicative_expression(p));
-            add_type(tree);
+            typed_(tree);
             break;
 
         case '-':
@@ -839,45 +878,35 @@ static struct ast_node *conditional_expression(struct parser *p)
 static struct ast_node *assignment_expression(struct parser *p)
 {
     struct ast_node *tree = conditional_expression(p);
-    struct ast_node *assign = NULL;
+    struct ast_node *asgn = NULL;
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
 
     case '=':
-        assign = new_node(NOD_ASSIGN, NULL, NULL);
-        assign->l = tree;
-        assign->r = assignment_expression(p);
-        add_type(assign);
-        return assign;
+        asgn = new_node_(NOD_ASSIGN, tokpos(p));
+        asgn = branch_(asgn, tree, assignment_expression(p));
+        return typed_(asgn);
 
     case TOK_ADD_ASSIGN:
-        assign = new_node(NOD_ADD_ASSIGN, NULL, NULL);
-        assign->l = tree;
-        assign->r = assignment_expression(p);
-        add_type(assign);
-        return assign;
+        asgn = new_node_(NOD_ADD_ASSIGN, tokpos(p));
+        asgn = branch_(asgn, tree, assignment_expression(p));
+        return typed_(asgn);
 
     case TOK_SUB_ASSIGN:
-        assign = new_node(NOD_SUB_ASSIGN, NULL, NULL);
-        assign->l = tree;
-        assign->r = assignment_expression(p);
-        add_type(assign);
-        return assign;
+        asgn = new_node_(NOD_SUB_ASSIGN, tokpos(p));
+        asgn = branch_(asgn, tree, assignment_expression(p));
+        return typed_(asgn);
 
     case TOK_MUL_ASSIGN:
-        assign = new_node(NOD_MUL_ASSIGN, NULL, NULL);
-        assign->l = tree;
-        assign->r = assignment_expression(p);
-        add_type(assign);
-        return assign;
+        asgn = new_node_(NOD_MUL_ASSIGN, tokpos(p));
+        asgn = branch_(asgn, tree, assignment_expression(p));
+        return typed_(asgn);
 
     case TOK_DIV_ASSIGN:
-        assign = new_node(NOD_DIV_ASSIGN, NULL, NULL);
-        assign->l = tree;
-        assign->r = assignment_expression(p);
-        add_type(assign);
-        return assign;
+        asgn = new_node_(NOD_DIV_ASSIGN, tokpos(p));
+        asgn = branch_(asgn, tree, assignment_expression(p));
+        return typed_(asgn);
 
     default:
         ungettok(p);
@@ -1682,8 +1711,7 @@ static struct ast_node *direct_declarator(struct parser *p)
         type_from_sym(ident);
     }
 
-    add_type(tree);
-    return tree;
+    return typed_(tree);
 }
 
 static struct ast_node *pointer(struct parser *p)
@@ -1705,8 +1733,7 @@ static struct ast_node *declarator(struct parser *p)
     tree->l = pointer(p);
     tree->r = direct_declarator(p);
 
-    add_type(tree);
-    return tree;
+    return typed_(tree);
 }
 
 static struct ast_node *initializer(struct parser *p)
@@ -1724,8 +1751,7 @@ static struct ast_node *init_declarator(struct parser *p)
     if (consume(p, '='))
         tree->r = initializer(p);
 
-    add_type(tree);
-    return tree;
+    return typed_(tree);
 }
 
 /*

@@ -3,11 +3,7 @@
 
 #include <stdio.h>
 #include "string_table.h"
-
-struct position {
-    int x, y;
-    const char *filename;
-};
+#include "position.h"
 
 enum token_kind {
     TOK_UNKNOWN = -1,

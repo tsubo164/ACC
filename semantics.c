@@ -317,14 +317,14 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             return;
         }
         if (!node->r->sym->is_defined)
-            add_error(ctx->messages, "no member named '' in ''", &pos);
+            add_error(ctx->messages, "no member named '' in ''", &node->pos);
         return;
 
     case NOD_DEREF:
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
         if (!underlying(node->l->type))
-            add_error(ctx->messages, "indirection requires pointer operand", &pos);
+            add_error(ctx->messages, "indirection requires pointer operand", &node->pos);
         return;
 
     /* loop */

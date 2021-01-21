@@ -1,6 +1,7 @@
 #ifndef AST_H
 #define AST_H
 
+#include "position.h"
 #include "symbol.h"
 #include "type.h"
 
@@ -93,6 +94,7 @@ struct ast_node {
 
     int ival;
     const char *sval;
+    struct position pos;
 };
 
 extern struct ast_node *new_ast_node(enum ast_node_kind kind,
