@@ -1,8 +1,8 @@
 #ifndef MESSAGE_H
 #define MESSAGE_H
 
-#include "lexer.h"
-/* TODO for struct position. remove this include */
+#include "position.h"
+#include "string_table.h"
 
 #define MAX_MESSAGE_COUNT 5
 
@@ -18,6 +18,7 @@ struct message_list {
 
     int warning_count;
     int error_count;
+    struct string_table *strtab;
 };
 
 extern struct message_list *new_message_list();
@@ -28,9 +29,12 @@ extern void add_warning(struct message_list *list,
 extern void add_error(struct message_list *list,
         const char *msg, const struct position *pos);
 
+extern void add_error2(struct message_list *list, const struct position *pos,
+        const char *msg, ...);
+
 extern void print_warning_messages(FILE *fp, const char *filename,
         const struct message_list *list);
 extern void print_error_messages(FILE *fp, const char *filename,
         const struct message_list *list);
 
-#endif /* MESSAGE_H */
+#endif /* _H */

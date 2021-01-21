@@ -65,6 +65,7 @@ int main(int argc, char **argv)
     strtab = new_string_table();
     symtab = new_symbol_table();
     messages = new_message_list();
+    messages->strtab = strtab;
 
     parser = new_parser();
     parser->lex.file = file;

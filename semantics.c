@@ -308,16 +308,21 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
         if (node->l->type->kind != DATA_TYPE_STRUCT) {
-            add_error(ctx->messages,
-                    "member reference base type '' is not a structure or union", &pos);
+            add_error2(ctx->messages, &node->pos,
+                    "member reference base type '%.32s' is not a structure or union",
+                    data_type_to_string(node->l->type));
             return;
         }
         if (is_incomplete(node->l->type)) {
-            add_error(ctx->messages, "incomplete definition of type 'struct '", &pos);
+            add_error2(ctx->messages, &pos,
+                    "incomplete definition of type 'struct %.32s'",
+                    node->l->type->sym->name);
             return;
         }
         if (!node->r->sym->is_defined)
-            add_error(ctx->messages, "no member named '' in ''", &node->pos);
+            add_error2(ctx->messages, &node->pos,
+                    "no member named '%.32s' in 'struct %.32s'",
+                    node->r->sym->name, node->l->type->sym->name);
         return;
 
     case NOD_DEREF:

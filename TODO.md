@@ -3,18 +3,18 @@
   - define
   - struct arg
   - struct assign
-  - check **temporary** registers
   - check args
+  - cast
   - char <-> int, negative number literal
   - char literal
   - static, extern
   - const
   - array initializer
   - std stuff FILE, stderro, NULL ...
-  - error with pos
   - pointer ++, --
 
 * OPTIONAL
+  - use registers r10 r11
   - function prototype
   - typedef
   - unsigned
@@ -29,8 +29,6 @@
 * IMPLEMENTATION
   - new number()
   - push symbol()
-
-* BUG
 
 * DONE
   - ++, --
@@ -53,3 +51,4 @@
   - -> op
   - incomplete struct
   - struct usage
+  - error with pos

@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 /* TODO remove this */
 #include <string.h>
 #include "message.h"
@@ -157,6 +158,7 @@ struct message_list *new_message_list()
 
     list->warning_count = 0;
     list->error_count = 0;
+    list->strtab = NULL;
 
     return list;
 }
@@ -192,6 +194,29 @@ void add_error(struct message_list *list, const char *msg, const struct position
     m = &list->errors[list->error_count++];
     m->str = msg;
     m->pos = *pos;
+}
+
+extern void add_error2(struct message_list *list, const struct position *pos,
+        const char *msg, ...)
+{
+    va_list va;
+    va_start(va, msg);
+    {
+        struct message *m;
+        char buf[1024] = {'\0'};
+
+        if (list->error_count >= MAX_MESSAGE_COUNT) {
+            list->error_count++;
+            return;
+        }
+
+        m = &list->errors[list->error_count++];
+        m->pos = *pos;
+
+        vsprintf(buf, msg, va);
+        m->str = insert_string(list->strtab, buf);
+    }
+    va_end(va);
 }
 
 void print_warning_messages(FILE *fp, const char *filename,
