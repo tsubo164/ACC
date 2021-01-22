@@ -141,6 +141,9 @@ struct parser *new_parser()
     p->decl_kind = 0;
     p->decl_ident = NULL;
     p->decl_type = NULL;
+
+    p->is_typedef = 0;
+
     p->func_sym = NULL;
     p->is_panic_mode = 0;
 
@@ -264,11 +267,27 @@ static int decl_is_func(struct parser *p)
     return p->decl_kind == SYM_FUNC || p->decl_kind == SYM_PARAM;
 }
 
+static void typedef_begin(struct parser *p)
+{
+    p->is_typedef = 1;
+}
+
+static void typedef_end(struct parser *p)
+{
+    p->is_typedef = 0;
+}
+
+static int decl_is_typedef(struct parser *p)
+{
+    return p->is_typedef == 1;
+}
+
 static void decl_reset_context(struct parser *p)
 {
     p->decl_kind = 0;
     p->decl_ident = NULL;
     p->decl_type = NULL;
+    typedef_end(p);
 }
 
 /*
@@ -1798,6 +1817,7 @@ static struct ast_node *storage_class_specifier(struct parser *p)
     case TOK_TYPEDEF:
         tree = new_node_(NOD_DECL_TYPEDEF, tokpos(p));
         decl_set_type(p, type_void());
+        typedef_begin(p);
         break;
 
     default:
@@ -1852,7 +1872,10 @@ static struct ast_node *declaration(struct parser *p)
 
     /* need to reset decl here because type spec might contain
      * other decls such as struct, union or enum */
-    decl_begin(p, SYM_VAR);
+    if (decl_is_typedef(p))
+        decl_begin(p, SYM_TYPEDEF);
+    else
+        decl_begin(p, SYM_VAR);
 
     tree = NEW_(NOD_DECL);
     tree->l = spec;

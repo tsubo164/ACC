@@ -21,9 +21,13 @@ struct parser {
     const char *error_msg;
 
     /* TODO may need struct declaration */
+    /* declaration context */
     int decl_kind;
     const char * decl_ident;
     struct data_type *decl_type;
+
+    int is_typedef;
+
     struct symbol *func_sym;
     int is_panic_mode;
 };

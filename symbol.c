@@ -102,6 +102,7 @@ const char *symbol_to_string(const struct symbol *sym)
     case SYM_ENUMERATOR: return "SYM_ENUMERATOR";
     case SYM_TAG_STRUCT: return "SYM_TAG_STRUCT";
     case SYM_TAG_ENUM: return "SYM_TAG_ENUM";
+    case SYM_TYPEDEF: return "SYM_TYPEDEF";
     default: return "**unknown**";
     }
 }
@@ -222,6 +223,7 @@ static int namespace_of(int kind)
     case SYM_FUNC:
     case SYM_PARAM:
     case SYM_ENUMERATOR:
+    case SYM_TYPEDEF:
         return 1;
 
     case SYM_TAG_STRUCT:

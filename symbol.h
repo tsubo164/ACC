@@ -18,7 +18,8 @@ enum symbol_kind {
     SYM_MEMBER,
     SYM_ENUMERATOR,
     SYM_TAG_STRUCT,
-    SYM_TAG_ENUM
+    SYM_TAG_ENUM,
+    SYM_TYPEDEF
 };
 
 struct symbol {
