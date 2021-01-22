@@ -1,8 +1,12 @@
+struct vec {
+    int x, y, z;
+};
 
 typedef int Integer;
 
 int main()
 {
+    struct vec v;
     int a = 13;
 
     return a;

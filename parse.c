@@ -165,8 +165,6 @@ static void use_sym(struct parser *p, struct ast_node *node)
 {
     struct symbol *sym;
 
-    /* TODO support incomplete struct/union/enum
-     * currently registered as an int type */
     sym = use_symbol(p->symtab, p->decl_ident, p->decl_kind);
     node->sym = sym;
 }
@@ -281,11 +279,6 @@ static void type_set(struct ast_node *node, struct data_type *type)
     node->type = type;
 }
 
-static void type_from_left(struct ast_node *node)
-{
-    node->type = node->l ? node->l->type : NULL;
-}
-
 static void type_from_sym(struct ast_node *node)
 {
     /* TODO may be done in define_sym()/use_sym() */
@@ -324,6 +317,10 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = node->l->type;
         break;
 
+    case NOD_CALL:
+        node->type = node->l->type;
+        break;
+
     case NOD_DEREF:
         node->type = underlying(node->l->type);
         if (!node->type)
@@ -344,6 +341,15 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_DECL:
     case NOD_LIST:
     case NOD_COMPOUND:
+        break;
+
+    /* nodes with literal */
+    case NOD_NUM:
+        node->type = type_int();
+        break;
+
+    case NOD_STRING:
+        node->type = type_ptr(type_char());
         break;
 
     default:
@@ -409,18 +415,16 @@ static struct ast_node *primary_expression(struct parser *p)
     switch (tok->kind) {
 
     case TOK_NUM:
-        tree = new_node(NOD_NUM, NULL, NULL);
+        tree = new_node_(NOD_NUM, tokpos(p));
         copy_token_text(p, tree);
         copy_token_ival(p, tree);
-        type_set(tree, type_int());
-        return tree;
+        return typed_(tree);
 
     case TOK_STRING_LITERAL:
-        tree = new_node(NOD_STRING, NULL, NULL);
+        tree = new_node_(NOD_STRING, tokpos(p));
         copy_token_text(p, tree);
         define_string(p, tree);
-        type_set(tree, type_ptr(type_char()));
-        return tree;
+        return typed_(tree);
 
     case TOK_IDENT:
         ungettok(p);
@@ -430,8 +434,7 @@ static struct ast_node *primary_expression(struct parser *p)
         else
             decl_begin(p, SYM_VAR);
         use_sym(p, tree);
-        type_from_sym(tree);
-        return tree;
+        return typed_(tree);
 
     case '(':
         tree = expression(p);
@@ -513,6 +516,7 @@ static struct ast_node *postfix_expression(struct parser *p)
 
     for (;;) {
         struct ast_node *member = NULL, *deref = NULL, *ref = NULL;
+        struct ast_node *call = NULL, *args = NULL;
         const struct token *tok = gettok(p);
 
         switch (tok->kind) {
@@ -539,10 +543,10 @@ static struct ast_node *postfix_expression(struct parser *p)
             break;
 
         case '(':
-            tree = new_node(NOD_CALL, tree, NULL);
-            type_from_left(tree);
+            call = new_node_(NOD_CALL, tokpos(p));
             if (!nexttok(p, ')'))
-                tree->r = argument_expression_list(p);
+                args = argument_expression_list(p);
+            tree = branch_(call, tree, args);
             expect(p, ')');
             break;
 
