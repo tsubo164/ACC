@@ -1,3 +1,14 @@
+
+typedef int Integer;
+
+int main()
+{
+    int a = 13;
+
+    return a;
+}
+
+/*
 struct vec {
     int x, y, z;
 };
@@ -27,3 +38,4 @@ int main()
     return v.x;
     //return 42;
 }
+*/

@@ -78,6 +78,8 @@ static void keyword_or_identifier(struct token *tok)
         tok->kind = TOK_STRUCT;
     else if (!strcmp(text, "enum"))
         tok->kind = TOK_ENUM;
+    else if (!strcmp(text, "typedef"))
+        tok->kind = TOK_TYPEDEF;
 
     else if (!strcmp(text, "void"))
         tok->kind = TOK_VOID;
@@ -494,6 +496,7 @@ void print_token(const struct token *tok)
     case TOK_SIZEOF:
     case TOK_STRUCT:
     case TOK_ENUM:
+    case TOK_TYPEDEF:
          /* types */
     case TOK_VOID:
     case TOK_CHAR:

@@ -340,10 +340,10 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = node->sym->type;
         break;
 
+    /* nodes without type */
     case NOD_DECL:
     case NOD_LIST:
     case NOD_COMPOUND:
-        /* no type added */
         break;
 
     default:
@@ -372,7 +372,7 @@ static struct ast_node *decl_identifier(struct parser *p);
 static struct ast_node *type_name(struct parser *p);
 static struct ast_node *pointer(struct parser *p);
 static struct ast_node *type_specifier(struct parser *p);
-static struct ast_node *declaration_specifier(struct parser *p);
+static struct ast_node *declaration_specifiers(struct parser *p);
 static struct ast_node *declarator(struct parser *p);
 static struct ast_node *declaration_list(struct parser *p);
 static struct ast_node *statement_list(struct parser *p);
@@ -1624,7 +1624,7 @@ static struct ast_node *param_decl(struct parser *p)
     struct ast_node *tree = NULL;
     struct ast_node *spec = NULL;
 
-    spec = declaration_specifier(p);
+    spec = declaration_specifiers(p);
     if (!spec)
         return NULL;
 
@@ -1776,16 +1776,63 @@ static struct ast_node *init_declarator_list(struct parser *p)
     }
 }
 
-static struct ast_node *declaration_specifier(struct parser *p)
+/*
+ * storage_class_specifier
+ *     TOK_TYPEDEF
+ *     TOK_EXTERN
+ *     TOK_STATIC
+ *     TOK_AUTO
+ *     TOK_REGISTER
+ */
+static struct ast_node *storage_class_specifier(struct parser *p)
 {
-    struct ast_node *tree = type_specifier(p);
+    struct ast_node *tree = NULL;
+    const struct token *tok = gettok(p);
+
+    switch (tok->kind) {
+
+    case TOK_TYPEDEF:
+        tree = new_node_(NOD_DECL_TYPEDEF, tokpos(p));
+        decl_set_type(p, type_void());
+        break;
+
+    default:
+        ungettok(p);
+        break;
+    }
+
     return tree;
 }
 
 /*
+ * declaration_specifiers
+ *     storage_class_specifier
+ *     storage_class_specifier declaration_specifiers
+ *     type_specifier
+ *     type_specifier declaration_specifiers
+ *     type_qualifier
+ *     type_qualifier declaration_specifiers
+ */
+static struct ast_node *declaration_specifiers(struct parser *p)
+{
+    /* this function should return NULL when there is no type spec
+     * so decl know we're not parsing a decl anymore and move on to
+     * parsing statements. */
+    struct ast_node *stor = storage_class_specifier(p);
+    struct ast_node *spec = type_specifier(p);
+    struct ast_node *tree = NULL;
+
+    if (!stor && !spec)
+        return NULL;
+
+    tree = new_node_(NOD_DECL_SPEC, tokpos(p));
+    return branch_(tree, stor, spec);
+}
+
+/*
  * declaration
- *     declaration_specifier ';'
- *     declaration_specifier init_declarator_list ';'
+ *     declaration_specifiers ';'
+ *     declaration_specifiers init_declarator_list ';'
  */
 static struct ast_node *declaration(struct parser *p)
 {
@@ -1795,7 +1842,7 @@ static struct ast_node *declaration(struct parser *p)
     decl_reset_context(p);
     /* Returning NULL doesn't mean syntax error in function scopes
      * We can try to parse a statement instead */
-    spec = declaration_specifier(p);
+    spec = declaration_specifiers(p);
     if (!spec)
         return NULL;
 

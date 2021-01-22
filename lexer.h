@@ -27,6 +27,7 @@ enum token_kind {
     TOK_SIZEOF,
     TOK_STRUCT,
     TOK_ENUM,
+    TOK_TYPEDEF,
     /* types */
     TOK_VOID,
     TOK_CHAR,

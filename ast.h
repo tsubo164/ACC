@@ -66,6 +66,7 @@ enum ast_node_kind {
     NOD_TYPE_NAME,
     /* declaration */
     NOD_DECL,
+    NOD_DECL_SPEC,
     NOD_DECLARATOR,
     NOD_DECL_DIRECT,
     NOD_DECL_INIT,
@@ -74,6 +75,7 @@ enum ast_node_kind {
     NOD_DECL_PARAM,
     NOD_DECL_MEMBER,
     NOD_DECL_ENUMERATOR,
+    NOD_DECL_TYPEDEF,
     /* type specifier */
     NOD_SPEC_VOID,
     NOD_SPEC_CHAR,
