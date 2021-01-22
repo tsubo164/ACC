@@ -6,7 +6,7 @@ typedef int Integer;
 
 int main()
 {
-    struct vec v;
+    //Integer i = 9;
     int a = 13;
 
     return a;

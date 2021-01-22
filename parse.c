@@ -10,20 +10,33 @@ static struct ast_node *new_node(enum ast_node_kind kind,
     return new_ast_node(kind, l, r);
 }
 
+static void type_name_or_ident(struct parser *p)
+{
+    struct token *tok = &p->tokbuf[p->curr];
+
+    if (tok->kind != TOK_IDENT)
+        return;
+
+    if (is_type_name(p->symtab, tok->text))
+        /* The Lexer Hack */
+        tok->kind = TOK_TYPE_NAME;
+}
+
 static const struct token *gettok(struct parser *p)
 {
     const int N = TOKEN_BUFFER_SIZE;
 
     if (p->head == p->curr) {
-        p->head = (p->head + 1) % N;
         p->curr = (p->curr + 1) % N;
+        p->head = p->curr;
+        lex_get_token(&p->lex, &p->tokbuf[p->curr]);
+        /* The Lexer Hack */
+        type_name_or_ident(p);
     } else {
         p->curr = (p->curr + 1) % N;
-        return &p->tokbuf[p->curr];
     }
 
-    lex_get_token(&p->lex, &p->tokbuf[p->head]);
-    return &p->tokbuf[p->head];
+    return &p->tokbuf[p->curr];
 }
 
 static const struct token *current_token(const struct parser *p)
@@ -1632,6 +1645,11 @@ static struct ast_node *type_specifier(struct parser *p)
     case TOK_ENUM:
         ungettok(p);
         tree = enum_specifier(p);
+        break;
+
+    case TOK_TYPE_NAME:
+        tree = new_node_(NOD_SPEC_TYPE_NAME, tokpos(p));
+        decl_set_type(p, type_type_name(tok->text));
         break;
 
     default:

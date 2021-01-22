@@ -252,7 +252,7 @@ static int match_name(const struct symbol *sym, const char *name)
     return !strcmp(sym->name, name);
 }
 
-static struct symbol *lookup_symbol(struct symbol_table *table,
+static struct symbol *lookup(struct symbol_table *table,
         const char *name, enum symbol_kind kind)
 {
     struct symbol *sym;
@@ -294,7 +294,7 @@ static void link_type_to_sym(struct data_type *type, struct symbol *sym)
 struct symbol *define_symbol(struct symbol_table *table,
         const char *name, int kind, struct data_type *type)
 {
-    struct symbol *sym = lookup_symbol(table, name, kind);
+    struct symbol *sym = lookup(table, name, kind);
     const int cur_lv = table->current_scope_level;
 
     if (sym && sym->scope_level == cur_lv) {
@@ -311,7 +311,7 @@ struct symbol *define_symbol(struct symbol_table *table,
 
 struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind)
 {
-    struct symbol *sym = lookup_symbol(table, name, kind);
+    struct symbol *sym = lookup(table, name, kind);
 
     if (!sym) {
         struct data_type *type;
@@ -484,4 +484,11 @@ int symbol_switch_end(struct symbol_table *table)
     table->current_switch_level--;
 
     return table->current_switch_level;
+}
+
+int is_type_name(struct symbol_table *table, const char *name)
+{
+    struct symbol *sym = lookup(table, name, SYM_TYPEDEF);
+
+    return (sym && sym->kind == SYM_TYPEDEF);
 }

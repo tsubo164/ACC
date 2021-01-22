@@ -90,4 +90,6 @@ extern int symbol_scope_end(struct symbol_table *table);
 extern int symbol_switch_begin(struct symbol_table *table);
 extern int symbol_switch_end(struct symbol_table *table);
 
+extern int is_type_name(struct symbol_table *table, const char *name);
+
 #endif /* _H */

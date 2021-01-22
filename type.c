@@ -11,6 +11,7 @@ static struct data_type PTR_     = {DATA_TYPE_PTR,    8, 8, 1, NULL, NULL};
 static struct data_type ARRAY_   = {DATA_TYPE_ARRAY,  0, 0, 0, NULL, NULL};
 static struct data_type STRUCT_  = {DATA_TYPE_STRUCT, 0, 4, 1, NULL, NULL};
 static struct data_type ENUM_    = {DATA_TYPE_ENUM,   4, 4, 1, NULL, NULL};
+static struct data_type TYPE_NAME_ = {DATA_TYPE_TYPE_NAME, 0, 4, 1, NULL, NULL};
 
 int get_size(const struct data_type *type)
 {
@@ -147,6 +148,17 @@ struct data_type *type_enum(const char *tag)
     type = malloc(sizeof(struct data_type));
     *type = ENUM_;
     type->tag = tag;
+
+    return type;
+}
+
+struct data_type *type_type_name(const char *name)
+{
+    struct data_type *type;
+
+    type = malloc(sizeof(struct data_type));
+    *type = TYPE_NAME_;
+    type->tag = name;
 
     return type;
 }

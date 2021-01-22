@@ -11,6 +11,7 @@ enum token_kind {
     TOK_NUM,
     TOK_IDENT,
     TOK_STRING_LITERAL,
+    TOK_TYPE_NAME,
     /* keywords */
     TOK_IF,
     TOK_ELSE,
