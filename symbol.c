@@ -448,6 +448,16 @@ struct symbol *define_string_symbol(struct symbol_table *table, const char *str)
     return str_sym;
 }
 
+struct symbol *find_type_name_symbol(struct symbol_table *table, const char *name)
+{
+    struct symbol *sym = lookup(table, name, SYM_TYPEDEF);
+
+    if (sym && sym->kind == SYM_TYPEDEF)
+        return sym;
+
+    return NULL;
+}
+
 int symbol_scope_begin(struct symbol_table *table)
 {
     table->current_scope_level++;
@@ -484,11 +494,4 @@ int symbol_switch_end(struct symbol_table *table)
     table->current_switch_level--;
 
     return table->current_switch_level;
-}
-
-int is_type_name(struct symbol_table *table, const char *name)
-{
-    struct symbol *sym = lookup(table, name, SYM_TYPEDEF);
-
-    return (sym && sym->kind == SYM_TYPEDEF);
 }

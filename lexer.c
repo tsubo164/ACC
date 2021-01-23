@@ -480,7 +480,6 @@ void print_token(const struct token *tok)
     case TOK_NUM:
     case TOK_IDENT:
     case TOK_STRING_LITERAL:
-    case TOK_TYPE_NAME:
          /* keywords */
     case TOK_IF:
     case TOK_ELSE:

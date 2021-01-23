@@ -360,6 +360,18 @@ static void code__(FILE *fp, int tag,
     fprintf(fp, "\n");
 }
 
+static int get_data_tag_from_type3(const struct data_type *type)
+{
+    switch (type->kind) {
+    case DATA_TYPE_CHAR: return BYTE;
+    case DATA_TYPE_INT:  return LONG;
+    case DATA_TYPE_PTR:  return QUAD;
+    case DATA_TYPE_TYPE_NAME:  return get_data_tag_from_type3(type->sym->type);
+    default:             return QUAD;
+    }
+}
+
+/* TODO merge with get_data_tag_from_type3 */
 static int get_data_tag_from_type2(const struct ast_node *node)
 {
     const struct data_type *dt;
@@ -374,6 +386,7 @@ static int get_data_tag_from_type2(const struct ast_node *node)
     case DATA_TYPE_CHAR: return BYTE;
     case DATA_TYPE_INT:  return LONG;
     case DATA_TYPE_PTR:  return QUAD;
+    case DATA_TYPE_TYPE_NAME:  return get_data_tag_from_type3(dt->sym->type);
     default:             return QUAD;
     }
 }
@@ -891,6 +904,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             sym = ident->sym;
 
             if (is_local_var(sym)) {
+                gen_comment(fp, "local var init");
                 /* ident */
                 gen_lvalue(fp, ident);
                 code2__(fp, ident, PUSH_, RAX);

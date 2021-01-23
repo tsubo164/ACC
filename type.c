@@ -17,6 +17,8 @@ int get_size(const struct data_type *type)
 {
     if (type->kind == DATA_TYPE_STRUCT)
         return type->sym->mem_offset;
+    if (type->kind == DATA_TYPE_TYPE_NAME)
+        return get_size(type->sym->type);
     return type->byte_size;
 }
 
@@ -24,6 +26,8 @@ int get_alignment(const struct data_type *type)
 {
     if (type->kind == DATA_TYPE_STRUCT)
         return type->sym->type->alignment;
+    if (type->kind == DATA_TYPE_TYPE_NAME)
+        return get_alignment(type->sym->type);
     return type->alignment;
 }
 
@@ -31,6 +35,8 @@ int get_array_length(const struct data_type *type)
 {
     if (type->kind == DATA_TYPE_STRUCT)
         return type->sym->type->array_len;
+    if (type->kind == DATA_TYPE_TYPE_NAME)
+        return get_array_length(type->sym->type);
     return type->array_len;
 }
 
@@ -63,6 +69,7 @@ const char *data_type_to_string(const struct data_type *type)
     case DATA_TYPE_ARRAY:  return "array";
     case DATA_TYPE_STRUCT: return "struct";
     case DATA_TYPE_ENUM:   return "enum";
+    case DATA_TYPE_TYPE_NAME: return "type_name";
     default:               return "unknown";
     }
 }

@@ -84,12 +84,13 @@ extern struct symbol *use_label_symbol(struct symbol *func_sym, const char *labe
 /* string symobl */
 extern struct symbol *define_string_symbol(struct symbol_table *table, const char *str);
 
+/* type name symobl */
+extern struct symbol *find_type_name_symbol(struct symbol_table *table, const char *name);
+
 /* scope symobl */
 extern int symbol_scope_begin(struct symbol_table *table);
 extern int symbol_scope_end(struct symbol_table *table);
 extern int symbol_switch_begin(struct symbol_table *table);
 extern int symbol_switch_end(struct symbol_table *table);
-
-extern int is_type_name(struct symbol_table *table, const char *name);
 
 #endif /* _H */
