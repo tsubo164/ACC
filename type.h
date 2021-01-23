@@ -43,6 +43,6 @@ extern struct data_type *type_ptr(struct data_type *base_type);
 extern struct data_type *type_array(struct data_type *base_type, int length);
 extern struct data_type *type_struct(const char *tag);
 extern struct data_type *type_enum(const char *tag);
-extern struct data_type *type_type_name(const char *name);
+extern struct data_type *type_type_name(const char *name, struct symbol *type_name);
 
 #endif /* _H */

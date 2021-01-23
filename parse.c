@@ -1603,6 +1603,7 @@ static struct ast_node *enum_specifier(struct parser *p)
 
 static struct ast_node *type_specifier(struct parser *p)
 {
+    struct symbol *sym = NULL;
     struct ast_node *tree = NULL;
     const struct token *tok = gettok(p);
 
@@ -1633,24 +1634,19 @@ static struct ast_node *type_specifier(struct parser *p)
         tree = enum_specifier(p);
         break;
 
-    default:
-        if (tok->kind == TOK_IDENT) {
-            struct symbol *sym = find_type_name_symbol(p->symtab, tok->text);
+    case TOK_IDENT:
+        sym = find_type_name_symbol(p->symtab, tok->text);
 
-            if (sym) {
-                tree = new_node_(NOD_SPEC_TYPE_NAME, tokpos(p));
-                decl_set_type(p, type_type_name(tok->text));
-                p->decl_type->sym = sym;
-                /*
-                tree->sym = sym;
-                tree->type = sym->type;
-                */
-            } else {
-                /* unget identifier */
-                ungettok(p);
-            }
+        if (sym) {
+            tree = new_node_(NOD_SPEC_TYPE_NAME, tokpos(p));
+            decl_set_type(p, type_type_name(tok->text, sym));
+        } else {
+            /* unget identifier */
+            ungettok(p);
         }
-        else
+        break;
+
+    default:
         ungettok(p);
         break;
     }
@@ -1888,6 +1884,10 @@ static struct ast_node *declaration(struct parser *p)
 
     /* need to reset decl here because type spec might contain
      * other decls such as struct, union or enum */
+    /*
+    printf("%s --------------\n", p->decl_ident);
+    print_data_type(p->decl_type);
+    */
     if (decl_is_typedef(p))
         decl_begin(p, SYM_TYPEDEF);
     else

@@ -18,20 +18,25 @@ int main()
 }
     */
 /*
-struct vec {
-    int x, y, z;
-};
+typedef struct vec {
+    int x;
+} vec;
 */
 
-typedef int Integer;
-typedef char CH;
+//typedef int Integer;
+//typedef char CH;
 
 int main()
 {
-    Integer i = 42;
+    struct foo {
+        int i;
+    } f;
+    //Integer i = 42;
     //int a = 13;
-    Integer c = 3;
+    //CH c = 3;
 
     //return a;
-    return c + i;
+    //return c + i;
+    //return c;
+    return f.i;
 }

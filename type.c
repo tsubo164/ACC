@@ -69,7 +69,7 @@ const char *data_type_to_string(const struct data_type *type)
     case DATA_TYPE_ARRAY:  return "array";
     case DATA_TYPE_STRUCT: return "struct";
     case DATA_TYPE_ENUM:   return "enum";
-    case DATA_TYPE_TYPE_NAME: return "type_name";
+    case DATA_TYPE_TYPE_NAME: return type->tag;
     default:               return "unknown";
     }
 }
@@ -159,13 +159,14 @@ struct data_type *type_enum(const char *tag)
     return type;
 }
 
-struct data_type *type_type_name(const char *name)
+struct data_type *type_type_name(const char *name, struct symbol *type_name)
 {
     struct data_type *type;
 
     type = malloc(sizeof(struct data_type));
     *type = TYPE_NAME_;
     type->tag = name;
+    type->sym = type_name;
 
     return type;
 }
