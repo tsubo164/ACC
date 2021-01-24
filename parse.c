@@ -154,6 +154,104 @@ void free_parser(struct parser *p)
     free(p);
 }
 
+/* type */
+static void type_set(struct ast_node *node, struct data_type *type)
+{
+    node->type = type;
+}
+
+static void type_from_sym(struct ast_node *node)
+{
+    node->type = node->sym->type;
+}
+
+static const struct data_type *promote_type(
+        const struct ast_node *n1, const struct ast_node *n2)
+{
+    if (!n1 && !n2)
+        return type_void();
+    if (!n1)
+        return n2->type;
+    if (!n2)
+        return n1->type;
+
+    if (n1->type->kind > n2->type->kind)
+        return n1->type;
+    else
+        return n2->type;
+}
+
+static struct ast_node *typed_(struct ast_node *node)
+{
+    if (!node)
+        return NULL;
+
+    switch (node->kind) {
+
+    case NOD_ASSIGN:
+    case NOD_ADD_ASSIGN:
+    case NOD_SUB_ASSIGN:
+    case NOD_MUL_ASSIGN:
+    case NOD_DIV_ASSIGN:
+    case NOD_DECL_INIT:
+        node->type = node->l->type;
+        break;
+
+    case NOD_CALL:
+        node->type = node->l->type;
+        break;
+
+    case NOD_DEREF:
+        node->type = underlying(node->l->type);
+        if (!node->type)
+            node->type = node->l->type;
+        break;
+
+    case NOD_STRUCT_REF:
+        node->type = node->r->type;
+        break;
+
+    /* nodes with symbol */
+    case NOD_DECL_IDENT:
+    case NOD_IDENT:
+        node->type = node->sym->type;
+        break;
+
+    /* nodes without type */
+    case NOD_DECL:
+    case NOD_LIST:
+    case NOD_COMPOUND:
+        break;
+
+    /* nodes with literal */
+    case NOD_NUM:
+        node->type = type_int();
+        break;
+
+    case NOD_STRING:
+        node->type = type_ptr(type_char());
+        break;
+
+    case NOD_SIZEOF:
+        node->type = type_int();
+        break;
+
+    default:
+        node->type = promote_type(node->l, node->r);
+        break;
+    }
+
+    return node;
+}
+
+static struct ast_node *branch_(struct ast_node *node,
+        struct ast_node *l, struct ast_node *r)
+{
+    node->l = l;
+    node->r = r;
+    return typed_(node);
+}
+
 /* decl context */
 static void define_sym(struct parser *p, struct ast_node *node)
 {
@@ -161,6 +259,7 @@ static void define_sym(struct parser *p, struct ast_node *node)
 
     sym = define_symbol(p->symtab, p->decl_ident, p->decl_kind, p->decl_type);
     node->sym = sym;
+    type_from_sym(node);
 }
 
 static void use_sym(struct parser *p, struct ast_node *node)
@@ -169,6 +268,7 @@ static void use_sym(struct parser *p, struct ast_node *node)
 
     sym = use_symbol(p->symtab, p->decl_ident, p->decl_kind);
     node->sym = sym;
+    type_from_sym(node);
 }
 
 static void use_member_sym(struct parser *p,
@@ -287,103 +387,6 @@ static void decl_reset_context(struct parser *p)
     p->decl_ident = NULL;
     p->decl_type = NULL;
     typedef_end(p);
-}
-
-/*
- * type
- */
-static void type_set(struct ast_node *node, struct data_type *type)
-{
-    node->type = type;
-}
-
-static void type_from_sym(struct ast_node *node)
-{
-    /* TODO may be done in define_sym()/use_sym() */
-    node->type = node->sym->type;
-}
-
-static const struct data_type *promote_type(
-        const struct ast_node *n1, const struct ast_node *n2)
-{
-    if (!n1 && !n2)
-        return type_void();
-    if (!n1)
-        return n2->type;
-    if (!n2)
-        return n1->type;
-
-    if (n1->type->kind > n2->type->kind)
-        return n1->type;
-    else
-        return n2->type;
-}
-
-static struct ast_node *typed_(struct ast_node *node)
-{
-    if (!node)
-        return NULL;
-
-    switch (node->kind) {
-
-    case NOD_ASSIGN:
-    case NOD_ADD_ASSIGN:
-    case NOD_SUB_ASSIGN:
-    case NOD_MUL_ASSIGN:
-    case NOD_DIV_ASSIGN:
-    case NOD_DECL_INIT:
-        node->type = node->l->type;
-        break;
-
-    case NOD_CALL:
-        node->type = node->l->type;
-        break;
-
-    case NOD_DEREF:
-        node->type = underlying(node->l->type);
-        if (!node->type)
-            node->type = node->l->type;
-        break;
-
-    case NOD_STRUCT_REF:
-        node->type = node->r->type;
-        break;
-
-    /* nodes with symbol */
-    case NOD_DECL_IDENT:
-    case NOD_IDENT:
-        node->type = node->sym->type;
-        break;
-
-    /* nodes without type */
-    case NOD_DECL:
-    case NOD_LIST:
-    case NOD_COMPOUND:
-        break;
-
-    /* nodes with literal */
-    case NOD_NUM:
-        node->type = type_int();
-        break;
-
-    case NOD_STRING:
-        node->type = type_ptr(type_char());
-        break;
-
-    default:
-        node->type = promote_type(node->l, node->r);
-        break;
-    }
-
-    return node;
-}
-
-static struct ast_node *branch_(struct ast_node *node,
-        struct ast_node *l, struct ast_node *r)
-{
-    node->l = l;
-    node->r = r;
-    return typed_(node);
 }
 
 /*
@@ -639,19 +642,16 @@ static struct ast_node *unary_expression(struct parser *p)
         if (consume(p, '(')) {
             struct ast_node *tname = type_name(p);
             if (tname) {
-                tree = new_node(NOD_SIZEOF, tname, NULL);
-                type_set(tree, type_int());
+                tree = new_node_(NOD_SIZEOF, tokpos(p));
                 expect(p, ')');
-                return tree;
+                return branch_(tree, tname, NULL);
             } else {
                 /* unget '(' */
                 ungettok(p);
             }
         }
-        tree = new_node(NOD_SIZEOF, NULL, NULL);
-        type_set(tree, type_int());
-        tree->l = unary_expression(p);
-        return tree;
+        tree = new_node_(NOD_SIZEOF, tokpos(p));
+        return branch_(tree, unary_expression(p), NULL);
 
     default:
         ungettok(p);
@@ -1426,10 +1426,10 @@ static struct ast_node *struct_declarator_list(struct parser *p)
 }
 
 /*
- * struct_decl
+ * struct_declaration
  *     spec_qual_list struct_declarator_list
  */
-static struct ast_node *struct_decl(struct parser *p)
+static struct ast_node *struct_declaration(struct parser *p)
 {
     struct ast_node *tree = NULL;
     struct ast_node *spec = NULL;
@@ -1449,15 +1449,15 @@ static struct ast_node *struct_decl(struct parser *p)
 
 /*
  * struct_declaration_list
- *     struct_decl
- *     struct_declaration_list ',' struct_decl
+ *     struct_declaration
+ *     struct_declaration_list ',' struct_declaration
  */
 static struct ast_node *struct_declaration_list(struct parser *p)
 {
     struct ast_node *tree = NULL;
 
     for (;;) {
-        struct ast_node *decl = struct_decl(p);
+        struct ast_node *decl = struct_declaration(p);
 
         if (!decl)
             return tree;
@@ -1511,6 +1511,10 @@ static struct ast_node *struct_or_union_specifier(struct parser *p)
     scope_end(p);
 
     expect(p, '}');
+
+    /* pops struct type as struct declarations (members)
+     * override decl type in their contexts */
+    decl_set_type(p, ident->sym->type);
 
     return tree;
 }
@@ -1731,7 +1735,6 @@ static struct ast_node *direct_declarator(struct parser *p)
         struct ast_node *fn = NEW_(NOD_DECL_FUNC);
         decl_begin(p, SYM_FUNC);
         define_sym(p, ident);
-        type_from_sym(ident);
 
         func_begin(p, ident->sym);
         scope_begin(p);
@@ -1743,7 +1746,6 @@ static struct ast_node *direct_declarator(struct parser *p)
     } else {
         /* variable, parameter, member, */
         define_sym(p, ident);
-        type_from_sym(ident);
     }
 
     return typed_(tree);

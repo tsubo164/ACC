@@ -29,14 +29,17 @@ typedef struct vec {
 int main()
 {
     struct foo {
-        int i;
+        int i, j, k;
     } f;
     //Integer i = 42;
     //int a = 13;
     //CH c = 3;
+    struct foo ff;
 
+    f.i = 121;
+    ff.j = 111;
     //return a;
     //return c + i;
     //return c;
-    return f.i;
+    return f.i - ff.j;
 }
