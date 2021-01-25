@@ -51,6 +51,15 @@ int is_incomplete(const struct data_type *type)
     return 0;
 }
 
+int is_struct(const struct data_type *type)
+{
+    if (type->kind == DATA_TYPE_STRUCT)
+        return 1;
+    if (type->kind == DATA_TYPE_TYPE_NAME)
+        return is_struct(type->sym->type);
+    return 0;
+}
+
 struct data_type *underlying(const struct data_type *type)
 {
     return type->ptr_to;
@@ -79,12 +88,15 @@ void print_data_type(const struct data_type *type)
     if (!type)
         return;
 
-    printf("    name:      %s\n", data_type_to_string(type));
+    printf("    name:      ");
+        print_type_name(type);
+        printf("\n");
     printf("    kind:      %d\n", type->kind);
     printf("    byte_size: %d\n", type->byte_size);
     printf("    array_len: %d\n", type->array_len);
     printf("    tag:       %s\n", type->tag);
     printf("    ptr_to:    %p\n", (void *) type->ptr_to);
+    printf("    sym:       %p\n", (void *) type->sym);
 }
 
 void print_type_name(const struct data_type *type)
@@ -129,7 +141,6 @@ struct data_type *type_array(struct data_type *base_type, int length)
     *type = ARRAY_;
     type->ptr_to = base_type;
 
-    /* XXX */
     type->byte_size = base_type->byte_size;
     type->alignment = base_type->alignment;
     type->array_len = length;

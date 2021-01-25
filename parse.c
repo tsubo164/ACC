@@ -1886,10 +1886,6 @@ static struct ast_node *declaration(struct parser *p)
 
     /* need to reset decl here because type spec might contain
      * other decls such as struct, union or enum */
-    /*
-    printf("%s --------------\n", p->decl_ident);
-    print_data_type(p->decl_type);
-    */
     if (decl_is_typedef(p))
         decl_begin(p, SYM_TYPEDEF);
     else
