@@ -55,23 +55,14 @@ static int eval_(const struct ast_node *node, struct message_list *messages)
 static const struct data_type *promote_data_type(
         const struct ast_node *n1, const struct ast_node *n2)
 {
-    if (!n1 && !n2) {
+    if (!n1 && !n2)
         return type_void();
-    }
-
-    if (!n1) {
+    if (!n1)
         return n2->type;
-    }
-
-    if (!n2) {
+    if (!n2)
         return n1->type;
-    }
 
-    if (n1->type->kind > n2->type->kind) {
-        return n1->type;
-    } else {
-        return n2->type;
-    }
+    return promote(n1->type, n2->type);
 }
 
 static int align_to(int pos, int align)

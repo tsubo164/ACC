@@ -175,10 +175,7 @@ static const struct data_type *promote_type(
     if (!n2)
         return n1->type;
 
-    if (n1->type->kind > n2->type->kind)
-        return n1->type;
-    else
-        return n2->type;
+    return promote(n1->type, n2->type);
 }
 
 static struct ast_node *typed_(struct ast_node *node)
@@ -276,7 +273,7 @@ static void use_member_sym(struct parser *p,
 {
     const char *member_name = node->sval;
 
-    node->sym = use_struct_member_symbol(p->symtab, struct_type->sym, member_name);
+    node->sym = use_struct_member_symbol(p->symtab, symbol_of(struct_type), member_name);
 }
 
 static void define_case(struct parser *p, struct ast_node *node, int kind)

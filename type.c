@@ -40,6 +40,32 @@ int get_array_length(const struct data_type *type)
     return type->array_len;
 }
 
+struct data_type *underlying(const struct data_type *type)
+{
+    return type->ptr_to;
+}
+
+struct symbol *symbol_of(const struct data_type *type)
+{
+    return type->sym;
+}
+
+const struct data_type *promote(
+        const struct data_type *t1, const struct data_type *t2)
+{
+    if (!t1 && !t2)
+        return type_void();
+    if (!t1)
+        return t2;
+    if (!t2)
+        return t1;
+
+    if (t1->kind > t2->kind)
+        return t1;
+    else
+        return t2;
+}
+
 int is_incomplete(const struct data_type *type)
 {
     if (type->kind == DATA_TYPE_VOID)
@@ -58,11 +84,6 @@ int is_struct(const struct data_type *type)
     if (type->kind == DATA_TYPE_TYPE_NAME)
         return is_struct(type->sym->type);
     return 0;
-}
-
-struct data_type *underlying(const struct data_type *type)
-{
-    return type->ptr_to;
 }
 
 const char *data_type_to_string(const struct data_type *type)
