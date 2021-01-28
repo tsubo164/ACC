@@ -92,41 +92,54 @@ const struct data_type *promote(
 
 int is_incomplete(const struct data_type *type)
 {
-    if (type->kind == DATA_TYPE_VOID)
+    if (is_void(type))
         return 1;
-    if (type->kind == DATA_TYPE_ENUM && !type->sym->is_defined)
+    if (is_enum(type) && !type->sym->is_defined)
         return 1;
-    if (type->kind == DATA_TYPE_STRUCT && !type->sym->is_defined)
+    if (is_struct(type) && !type->sym->is_defined)
         return 1;
     return 0;
 }
 
 int is_void(const struct data_type *type)
 {
-    return type->kind == DATA_TYPE_VOID;
+    return type && type->kind == DATA_TYPE_VOID;
 }
 
 int is_char(const struct data_type *type)
 {
-    return type->kind == DATA_TYPE_CHAR;
+    return type && type->kind == DATA_TYPE_CHAR;
 }
 
 int is_int(const struct data_type *type)
 {
-    return type->kind == DATA_TYPE_INT;
+    return type && type->kind == DATA_TYPE_INT;
 }
 
 int is_array(const struct data_type *type)
 {
-    return type->kind == DATA_TYPE_ARRAY;
+    return type && type->kind == DATA_TYPE_ARRAY;
 }
 
 int is_struct(const struct data_type *type)
 {
+    if (!type)
+        return 0;
     if (type->kind == DATA_TYPE_STRUCT)
         return 1;
-    if (type->kind == DATA_TYPE_TYPE_NAME)
+    if (is_type_name(type))
         return is_struct(type->sym->type);
+    return 0;
+}
+
+int is_enum(const struct data_type *type)
+{
+    if (!type)
+        return 0;
+    if (type->kind == DATA_TYPE_ENUM)
+        return 1;
+    if (is_type_name(type))
+        return is_enum(type->sym->type);
     return 0;
 }
 
@@ -135,7 +148,7 @@ int is_type_name(const struct data_type *type)
     return type->kind == DATA_TYPE_TYPE_NAME;
 }
 
-const char *data_type_to_string(const struct data_type *type)
+const char *type_name_of(const struct data_type *type)
 {
     if (!type)
         return "--";
@@ -146,7 +159,7 @@ const char *data_type_to_string(const struct data_type *type)
     case DATA_TYPE_INT:    return "int";
     case DATA_TYPE_PTR:    return "ptr";
     case DATA_TYPE_ARRAY:  return "array";
-    case DATA_TYPE_STRUCT: return "struct";
+    case DATA_TYPE_STRUCT: return type->tag;
     case DATA_TYPE_ENUM:   return "enum";
     case DATA_TYPE_TYPE_NAME: return type->tag;
     default:               return "unknown";
@@ -159,22 +172,16 @@ void print_data_type(const struct data_type *type)
         return;
 
     printf("    name:      ");
-        print_type_name(type);
-        printf("\n");
+    if (is_struct(type))
+        printf("struct ");
+    printf("%s\n", type_name_of(type));
+
     printf("    kind:      %d\n", type->kind);
     printf("    byte_size: %d\n", type->byte_size);
     printf("    array_len: %d\n", type->array_len);
     printf("    tag:       %s\n", type->tag);
     printf("    ptr_to:    %p\n", (void *) type->ptr_to);
     printf("    sym:       %p\n", (void *) type->sym);
-}
-
-void print_type_name(const struct data_type *type)
-{
-    if (type->kind == DATA_TYPE_STRUCT)
-        printf("struct %s", type->tag);
-    else
-        printf("%s", data_type_to_string(type));
 }
 
 struct data_type *type_void()

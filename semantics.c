@@ -294,7 +294,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         if (!is_struct(node->l->type)) {
             add_error2(ctx->messages, &node->pos,
                     "member reference base type '%.32s' is not a structure or union",
-                    data_type_to_string(node->l->type));
+                    type_name_of(node->l->type));
             return;
         }
         if (is_incomplete(node->l->type)) {

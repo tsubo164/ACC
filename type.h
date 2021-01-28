@@ -46,11 +46,11 @@ extern int is_char(const struct data_type *type);
 extern int is_int(const struct data_type *type);
 extern int is_array(const struct data_type *type);
 extern int is_struct(const struct data_type *type);
+extern int is_enum(const struct data_type *type);
 extern int is_type_name(const struct data_type *type);
 
-extern const char *data_type_to_string(const struct data_type *type);
+extern const char *type_name_of(const struct data_type *type);
 extern void print_data_type(const struct data_type *type);
-extern void print_type_name(const struct data_type *type);
 
 extern struct data_type *type_void();
 extern struct data_type *type_char();
