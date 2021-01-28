@@ -17,10 +17,11 @@ int main()
     return 0;
 }
     */
+/*
 typedef struct vec {
     int x, y, z;
 } vec;
-/*
+struct vec;
 */
 
 //typedef int Integer;
@@ -37,7 +38,7 @@ int main()
     struct foo ff;
 
     /*
-    vec v;
+    struct vec v;
     v.y = 111;
     */
 
@@ -46,6 +47,8 @@ int main()
     //return a;
     //return c + i;
     //return c;
-    //return f.i - ff.j;
+    return f.i - ff.j;
+    /*
     return sizeof(vec) ;//+ v.y;
+    */
 }

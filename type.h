@@ -1,6 +1,8 @@
 #ifndef TYPE_H
 #define TYPE_H
 
+#include "string_table.h"
+
 enum data_type_kind {
     DATA_TYPE_VOID,
     DATA_TYPE_CHAR,
@@ -31,11 +33,20 @@ extern int get_alignment(const struct data_type *type);
 extern int get_array_length(const struct data_type *type);
 extern struct data_type *underlying(const struct data_type *type);
 extern struct symbol *symbol_of(const struct data_type *type);
+extern const char *tag_of(const struct data_type *type);
+
+extern void set_struct_size(struct data_type *type, int size);
+extern void set_symbol(struct data_type *type, struct symbol *sym);
 
 extern const struct data_type *promote(
         const struct data_type *t1, const struct data_type *t2);
 extern int is_incomplete(const struct data_type *type);
+extern int is_void(const struct data_type *type);
+extern int is_char(const struct data_type *type);
+extern int is_int(const struct data_type *type);
+extern int is_array(const struct data_type *type);
 extern int is_struct(const struct data_type *type);
+extern int is_type_name(const struct data_type *type);
 
 extern const char *data_type_to_string(const struct data_type *type);
 extern void print_data_type(const struct data_type *type);

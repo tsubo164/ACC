@@ -13,29 +13,36 @@ static struct data_type STRUCT_  = {DATA_TYPE_STRUCT, 0, 4, 1, NULL, NULL};
 static struct data_type ENUM_    = {DATA_TYPE_ENUM,   4, 4, 1, NULL, NULL};
 static struct data_type TYPE_NAME_ = {DATA_TYPE_TYPE_NAME, 0, 4, 1, NULL, NULL};
 
+static const struct data_type *original_(const struct data_type *type)
+{
+    if (is_type_name(type))
+        return original_(underlying(type));
+    return type;
+}
+
 int get_size(const struct data_type *type)
 {
-    if (type->kind == DATA_TYPE_STRUCT)
-        return type->sym->mem_offset;
-    if (type->kind == DATA_TYPE_TYPE_NAME)
-        return get_size(type->sym->type);
-    return type->byte_size;
+    const struct data_type *t = original_(type);
+
+    if (is_array(t))
+        return get_size(underlying(t));
+    return t->byte_size;
 }
 
 int get_alignment(const struct data_type *type)
 {
-    if (type->kind == DATA_TYPE_STRUCT)
+    if (is_struct(type))
         return type->sym->type->alignment;
-    if (type->kind == DATA_TYPE_TYPE_NAME)
+    if (is_type_name(type))
         return get_alignment(type->sym->type);
     return type->alignment;
 }
 
 int get_array_length(const struct data_type *type)
 {
-    if (type->kind == DATA_TYPE_STRUCT)
+    if (is_struct(type))
         return type->sym->type->array_len;
-    if (type->kind == DATA_TYPE_TYPE_NAME)
+    if (is_type_name(type))
         return get_array_length(type->sym->type);
     return type->array_len;
 }
@@ -48,6 +55,23 @@ struct data_type *underlying(const struct data_type *type)
 struct symbol *symbol_of(const struct data_type *type)
 {
     return type->sym;
+}
+
+const char *tag_of(const struct data_type *type)
+{
+    return type->tag;
+}
+
+void set_struct_size(struct data_type *type, int size)
+{
+    if (!is_struct(type))
+        return;
+    type->byte_size = size;
+}
+
+void set_symbol(struct data_type *type, struct symbol *sym)
+{
+    type->sym = sym;
 }
 
 const struct data_type *promote(
@@ -77,6 +101,26 @@ int is_incomplete(const struct data_type *type)
     return 0;
 }
 
+int is_void(const struct data_type *type)
+{
+    return type->kind == DATA_TYPE_VOID;
+}
+
+int is_char(const struct data_type *type)
+{
+    return type->kind == DATA_TYPE_CHAR;
+}
+
+int is_int(const struct data_type *type)
+{
+    return type->kind == DATA_TYPE_INT;
+}
+
+int is_array(const struct data_type *type)
+{
+    return type->kind == DATA_TYPE_ARRAY;
+}
+
 int is_struct(const struct data_type *type)
 {
     if (type->kind == DATA_TYPE_STRUCT)
@@ -84,6 +128,11 @@ int is_struct(const struct data_type *type)
     if (type->kind == DATA_TYPE_TYPE_NAME)
         return is_struct(type->sym->type);
     return 0;
+}
+
+int is_type_name(const struct data_type *type)
+{
+    return type->kind == DATA_TYPE_TYPE_NAME;
 }
 
 const char *data_type_to_string(const struct data_type *type)

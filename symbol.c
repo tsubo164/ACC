@@ -288,7 +288,7 @@ static void link_type_to_sym(struct data_type *type, struct symbol *sym)
 {
     if (sym->kind == SYM_TAG_STRUCT ||
         sym->kind == SYM_TAG_ENUM)
-        type->sym = sym;
+        set_symbol(type, sym);
 }
 
 struct symbol *define_symbol(struct symbol_table *table,

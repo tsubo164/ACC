@@ -16,13 +16,14 @@ enum data_tag {
 struct data_spec {
     const char *suffix;
     const char *directive;
+    const char *sizename;
 };
 
 const struct data_spec data_spec_table[] = {
-    {"b", "byte  ptr"},
-    {"w", "word  ptr"},
-    {"l", "dword ptr"},
-    {"q", "qword ptr"}
+    {"b", "byte  ptr", "byte"},
+    {"w", "word  ptr", "word"},
+    {"l", "dword ptr", "long"},
+    {"q", "qword ptr", "quad"}
 };
 
 static const char *get_data_suffix(int tag)
@@ -360,35 +361,15 @@ static void code__(FILE *fp, int tag,
     fprintf(fp, "\n");
 }
 
-static int get_data_tag_from_type3(const struct data_type *type)
+static int data_tag_(const struct data_type *type)
 {
-    switch (type->kind) {
-    case DATA_TYPE_CHAR: return BYTE;
-    case DATA_TYPE_INT:  return LONG;
-    case DATA_TYPE_PTR:  return QUAD;
-    case DATA_TYPE_TYPE_NAME:  return get_data_tag_from_type3(type->sym->type);
-    default:             return QUAD;
-    }
-}
-
-/* TODO merge with get_data_tag_from_type3 */
-static int get_data_tag_from_type2(const struct ast_node *node)
-{
-    const struct data_type *dt;
-
-    if (node == NULL) {
-        return 0;
-    }
-
-    dt = node->type;
-
-    switch (dt->kind) {
-    case DATA_TYPE_CHAR: return BYTE;
-    case DATA_TYPE_INT:  return LONG;
-    case DATA_TYPE_PTR:  return QUAD;
-    case DATA_TYPE_TYPE_NAME:  return get_data_tag_from_type3(dt->sym->type);
-    default:             return QUAD;
-    }
+    if (is_char(type))
+        return BYTE;
+    if (is_int(type))
+        return LONG;
+    if (is_type_name(type))
+        return data_tag_(underlying(type));
+    return QUAD;
 }
 
 static int get_mem_offset(const struct ast_node *node)
@@ -400,7 +381,7 @@ static void code1__(FILE *fp, const struct ast_node *node,
         struct opecode op)
 {
     const struct opecode o0 = op;
-    const int tag = get_data_tag_from_type2(node);
+    const int tag = data_tag_(node->type);
 
     code__(fp, tag, &o0, NULL, NULL);
 }
@@ -410,7 +391,7 @@ static void code2__(FILE *fp, const struct ast_node *node,
 {
     const struct opecode o0 = op;
     const struct operand o1 = oper1;
-    int tag = get_data_tag_from_type2(node);
+    int tag = data_tag_(node->type);
 
     /* 64 bit mode supports only full register for pop and push */
     if (!strcmp(op.mnemonic, "push") ||
@@ -426,7 +407,7 @@ static void code3__(FILE *fp, const struct ast_node *node,
     struct opecode o0 = op;
     struct operand o1 = oper1;
     struct operand o2 = oper2;
-    int tag = get_data_tag_from_type2(node);
+    int tag = data_tag_(node->type);
 
     /* this rule comes from x86-64 machine instructions.
      * it depends on the size of register when loading from memory.
@@ -599,7 +580,7 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
     else {
         const int disp = -get_mem_offset(node);
 
-        if (node->type->kind == DATA_TYPE_ARRAY) {
+        if (is_array(node->type)) {
             code3__(fp, node, LEA_, addr2(RBP, disp), A_);
         } else {
             code3__(fp, node, MOV_, addr2(RBP, disp), A_);
@@ -1024,8 +1005,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2__(fp, node, POP_, RDX);
 
         /* TODO find the best place to handle array subscript */
-        if (node->l->type->kind == DATA_TYPE_ARRAY) {
-            const int sz = node->l->type->ptr_to->byte_size;
+        if (is_array(node->l->type)) {
+            const int sz = get_size(underlying(node->l->type));
             code3__(fp, node, IMUL_, imme(sz), RAX);
         }
 
@@ -1242,25 +1223,11 @@ static void gen_global_var_labels(FILE *fp, const struct ast_node *node)
             /* TODO need eval instead of find NOD_NUM */
             const struct ast_node *init = find_node(node, NOD_NUM);
             const int val = init ? init->ival : 0;
+            const int tag = data_tag_(sym->type);
+            const char *szname = data_spec_table[tag].sizename;
 
-            const char *datasize;
-            switch (sym->type->kind) {
-            case DATA_TYPE_CHAR:
-                datasize = "byte";
-                break;
-            case DATA_TYPE_INT:
-                datasize = "long";
-                break;
-            case DATA_TYPE_PTR:
-            case DATA_TYPE_ARRAY:
-                datasize = "quad";
-                break;
-            default:
-                datasize = "byte";
-                break;
-            }
             fprintf(fp, "_%s:\n", sym->name);
-            fprintf(fp, "    .%s %d\n", datasize, val);
+            fprintf(fp, "    .%s %d\n", szname, val);
         }
 
         return;

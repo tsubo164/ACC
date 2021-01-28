@@ -75,10 +75,12 @@ static void compute_enum_size(struct symbol_table *table, struct symbol *enm)
     enm->mem_offset = get_size(type_int());
 }
 
+/* TODO this might be good to go to symbol.c */
 static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
 {
     struct symbol *sym;
     int total_offset = 0;
+    int struct_size = 0;
     /* inside of struct is one level upper than struct scope */
     const int struct_scope = strc->scope_level + 1;
 
@@ -88,9 +90,9 @@ static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
 
     for (sym = strc; sym; sym = sym->next) {
         if (sym->kind == SYM_MEMBER) {
-            const int size  = sym->type->byte_size;
-            const int align = sym->type->alignment;
-            const int len   = sym->type->array_len;
+            const int size  = get_size(sym->type);
+            const int align = get_alignment(sym->type);
+            const int len   = get_array_length(sym->type);
 
             total_offset = align_to(total_offset, align);
             sym->mem_offset = total_offset;
@@ -101,8 +103,10 @@ static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
             break;
     }
 
-    strc->type->byte_size = align_to(total_offset, strc->type->alignment);
-    strc->mem_offset = strc->type->byte_size;
+    struct_size = align_to(total_offset, get_alignment(strc->type));
+
+    set_struct_size(strc->type, struct_size);
+    strc->mem_offset = struct_size;
 }
 
 static void compute_func_size(struct symbol_table *table, struct symbol *func)
@@ -160,7 +164,7 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
 
         if (is_local_var(sym)) {
             /* TODO support check for struct variables */
-            if (sym->type->kind == DATA_TYPE_STRUCT)
+            if (is_struct(sym->type))
                 continue;
 
             if (sym->is_redefined)
@@ -169,23 +173,12 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
             if (!sym->is_defined && sym->is_used)
                 add_error(messages, "use of undefined symbol", &pos);
 
-            /*
-            if (sym->type->kind == DATA_TYPE_VOID)
-                add_error(messages, "variable has incomplete type 'void'", &pos);
-            */
-
             if (sym->is_defined && !sym->is_used)
                 add_warning(messages, "unused variable", &pos);
 
             if (sym->is_defined && sym->is_used && !sym->is_initialized)
                 add_warning(messages, "uninitialized variable used", &pos);
         }
-        /*
-        else if (is_member(sym)) {
-            if (!sym->is_defined && sym->is_used)
-                add_error(messages, "no member named '' in ''", &pos);
-        }
-        */
         else if (is_enumerator(sym)) {
             if (!sym->is_defined && sym->is_used)
                 add_error(messages, "use of undefined symbol", &pos);
@@ -306,14 +299,13 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         }
         if (is_incomplete(node->l->type)) {
             add_error2(ctx->messages, &pos,
-                    "incomplete definition of type 'struct %.32s'",
-                    node->l->type->sym->name);
+                    "incomplete definition of type 'struct %.32s'", tag_of(node->l->type));
             return;
         }
         if (!node->r->sym->is_defined)
             add_error2(ctx->messages, &node->pos,
                     "no member named '%.32s' in 'struct %.32s'",
-                    node->r->sym->name, node->l->type->sym->name);
+                    node->r->sym->name, tag_of(node->l->type));
         return;
 
     case NOD_DEREF:
@@ -379,9 +371,9 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         break;
 
     case NOD_RETURN:
-        if (ctx->func_sym->type->kind == DATA_TYPE_VOID && node->l)
+        if (is_void(ctx->func_sym->type) && node->l)
             add_error(ctx->messages, "function '' should not return a value", &pos);
-        if (ctx->func_sym->type->kind != DATA_TYPE_VOID && !node->l)
+        if (!is_void(ctx->func_sym->type) && !node->l)
             add_error(ctx->messages, "function '' should return a value", &pos);
         break;
 
@@ -429,7 +421,6 @@ static void add_node_type(struct ast_node *node)
 
     case NOD_DEREF:
         /*
-        node->type = node->l->type->ptr_to;;
         */
         break;
 
