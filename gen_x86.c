@@ -368,7 +368,7 @@ static int data_tag_(const struct data_type *type)
     if (is_int(type))
         return LONG;
     if (is_type_name(type))
-        return data_tag_(underlying(type));
+        return data_tag_(original(type));
     return QUAD;
 }
 

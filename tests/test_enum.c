@@ -21,6 +21,9 @@ int main()
         assert(10, R);
         assert(11, G);
         assert(12, B);
+
+        assert(4, sizeof R);
+        assert(4, sizeof (enum color));
     }
     {
         enum color {

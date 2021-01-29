@@ -13,20 +13,13 @@ static struct data_type STRUCT_  = {DATA_TYPE_STRUCT, 0, 4, 1, NULL, NULL};
 static struct data_type ENUM_    = {DATA_TYPE_ENUM,   4, 4, 1, NULL, NULL};
 static struct data_type TYPE_NAME_ = {DATA_TYPE_TYPE_NAME, 0, 4, 1, NULL, NULL};
 
-static const struct data_type *original_(const struct data_type *type)
-{
-    if (is_type_name(type))
-        return original_(underlying(type));
-    return type;
-}
-
 int get_size(const struct data_type *type)
 {
-    const struct data_type *t = original_(type);
-
-    if (is_array(t))
-        return get_size(underlying(t));
-    return t->byte_size;
+    if (is_struct(type))
+        return type->sym->type->byte_size;
+    if (is_type_name(type))
+        return get_size(type->sym->type);
+    return type->byte_size;
 }
 
 int get_alignment(const struct data_type *type)
@@ -50,6 +43,13 @@ int get_array_length(const struct data_type *type)
 struct data_type *underlying(const struct data_type *type)
 {
     return type->ptr_to;
+}
+
+const struct data_type *original(const struct data_type *type)
+{
+    if (is_type_name(type))
+        return type->sym->type;
+    return type;
 }
 
 struct symbol *symbol_of(const struct data_type *type)
@@ -160,7 +160,7 @@ const char *type_name_of(const struct data_type *type)
     case DATA_TYPE_PTR:    return "ptr";
     case DATA_TYPE_ARRAY:  return "array";
     case DATA_TYPE_STRUCT: return type->tag;
-    case DATA_TYPE_ENUM:   return "enum";
+    case DATA_TYPE_ENUM:   return type->tag;
     case DATA_TYPE_TYPE_NAME: return type->tag;
     default:               return "unknown";
     }

@@ -23,31 +23,42 @@ typedef struct vec {
 } vec;
 struct vec;
 */
+struct vec {
+    int x, y, z;
+};
 
-//typedef int Integer;
+typedef int Integer;
 //typedef char CH;
 
 int main()
 {
+    /*
+    struct vec v;
     struct foo {
         int i, j, k;
     } f;
-    //Integer i = 42;
+    */
+    Integer i;
     //int a = 13;
     //CH c = 3;
-    struct foo ff;
+    //struct foo ff;
+    //v.x = 12;
+    i = 42;
 
     /*
     struct vec v;
     v.y = 111;
     */
 
+    /*
     f.i = 121;
     ff.j = 111;
+    */
     //return a;
     //return c + i;
     //return c;
-    return f.i - ff.j;
+    return i;
+    //return f.i - ff.j;
     /*
     return sizeof(vec) ;//+ v.y;
     */

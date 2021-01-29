@@ -32,6 +32,7 @@ extern int get_size(const struct data_type *type);
 extern int get_alignment(const struct data_type *type);
 extern int get_array_length(const struct data_type *type);
 extern struct data_type *underlying(const struct data_type *type);
+extern const struct data_type *original(const struct data_type *type);
 extern struct symbol *symbol_of(const struct data_type *type);
 extern const char *tag_of(const struct data_type *type);
 
