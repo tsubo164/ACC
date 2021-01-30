@@ -6,6 +6,10 @@ struct point {
     int y;
 };
 
+typedef struct vec {
+    int x, y, z;
+} vec;
+
 int main()
 {
     {
@@ -61,5 +65,21 @@ int main()
         fa[2].k = 42;
         assert(142, fa[1].j);
         assert(42, fa[2].k);
+    }
+    {
+        vec v0, v1;
+        vec *vp = &v1;
+
+        v0.x = 123;
+        v1.y = 23;
+
+        assert(123, v0.x);
+        assert(23, v1.y);
+
+        vp->x = 31;
+        vp->z = 91;
+
+        assert(31, v1.x);
+        assert(91, v1.z);
     }
 }

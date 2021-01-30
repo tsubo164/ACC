@@ -126,8 +126,8 @@ void print_symbol_table(const struct symbol_table *table)
     printf("%15s | ", "name");
     printf("%20s | ", "kind");
     printf("%10s | ", "type");
-    printf("%5s | ", "level");
-    printf("%5s | ", "mem");
+    printf("%5s | ", "scope");
+    printf("%5s| ", "offset");
     printf("%5s | ", "id");
     printf("%6s | ", "DDRIAU");
     printf("\n");
@@ -139,7 +139,9 @@ void print_symbol_table(const struct symbol_table *table)
         printf("%15.15s | ", sym->name ? sym->name : "--");
         printf("%-20s | ",  symbol_to_string(sym));
 
-        if (is_struct(sym->type)) {
+        if (is_type_name(sym->type)) {
+            printf("%-10s | ", type_name_of(sym->type));
+        } else if (is_struct(sym->type)) {
             static char buf[128] = {'\0'};
             sprintf(buf, "struct %s", type_name_of(sym->type));
             printf("%-10s | ", buf);

@@ -61,6 +61,8 @@ const struct data_type *original_const(const struct data_type *type)
 
 struct symbol *symbol_of(const struct data_type *type)
 {
+    if (is_type_name(type))
+        return symbol_of(original_const(type));
     return type->sym;
 }
 
@@ -152,6 +154,8 @@ int is_enum(const struct data_type *type)
 
 int is_type_name(const struct data_type *type)
 {
+    if (!type)
+        return 0;
     return type->kind == DATA_TYPE_TYPE_NAME;
 }
 

@@ -12,11 +12,11 @@
   - array initializer
   - std stuff FILE, stderro, NULL ...
   - pointer ++, --
+  - variable arguments
 
 * OPTIONAL
   - use registers r10 r11
   - function prototype
-  - typedef
   - unsigned
   - short, long
   - bit shift <<, >>
@@ -52,3 +52,4 @@
   - incomplete struct
   - struct usage
   - error with pos
+  - typedef

@@ -17,15 +17,15 @@ int main()
     return 0;
 }
     */
-/*
 typedef struct vec {
     int x, y, z;
 } vec;
+/*
 struct vec;
-*/
 struct vec {
     int x, y, z;
 };
+*/
 
 typedef int Integer;
 typedef Integer myInt;
@@ -34,11 +34,11 @@ typedef myInt Integer;
 
 int main()
 {
-    /*
-    struct vec v;
+    vec v;
     struct foo {
         int i, j, k;
     } f;
+    /*
     */
     myInt mi = 3;
     Integer i;
@@ -54,15 +54,17 @@ int main()
     v.y = 111;
     */
 
-    /*
     f.i = 121;
+
+    v.x = 39;
+    /*
     ff.j = 111;
     */
     //return a;
     //return c + i;
     //return c;
-    return i;
-    //return f.i - ff.j;
+    //return i;
+    return f.i + v.x;
     /*
     return sizeof(vec) ;//+ v.y;
     */
