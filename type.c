@@ -45,7 +45,14 @@ struct data_type *underlying(const struct data_type *type)
     return type->ptr_to;
 }
 
-const struct data_type *original(const struct data_type *type)
+struct data_type *original(struct data_type *type)
+{
+    if (is_type_name(type))
+        return type->sym->type;
+    return type;
+}
+
+const struct data_type *original_const(const struct data_type *type)
 {
     if (is_type_name(type))
         return type->sym->type;

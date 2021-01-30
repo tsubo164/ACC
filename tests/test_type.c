@@ -18,6 +18,8 @@ enum color {
     R, G, B
 };
 
+typedef int id_t;
+
 int main()
 {
     {
@@ -67,6 +69,20 @@ int main()
         assert(4, sizeof R);
 
         assert(4, sizeof (enum color));
+    }
+    {
+        typedef char token_t;
+
+        id_t id = 123;
+        token_t tok = 97;
+
+        assert(123, id);
+        assert(4, sizeof id);
+        assert(4, sizeof(id_t));
+
+        assert(97, tok);
+        assert(1, sizeof tok);
+        assert(1, sizeof(token_t));
     }
 
     return 0;

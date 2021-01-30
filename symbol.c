@@ -154,12 +154,12 @@ void print_symbol_table(const struct symbol_table *table)
             printf("%5d | ",  sym->mem_offset);
         printf("%5d | ",  sym->id);
 
-        printf("%c", sym->is_declared    ? '*' : '.');
-        printf("%c", sym->is_defined     ? '*' : '.');
-        printf("%c", sym->is_redefined   ? '*' : '.');
-        printf("%c", sym->is_initialized ? '*' : '.');
-        printf("%c", sym->is_assigned    ? '*' : '.');
-        printf("%c", sym->is_used        ? '*' : '.');
+        printf("%c", sym->is_declared    ? 'D' : '.');
+        printf("%c", sym->is_defined     ? 'D' : '.');
+        printf("%c", sym->is_redefined   ? 'R' : '.');
+        printf("%c", sym->is_initialized ? 'I' : '.');
+        printf("%c", sym->is_assigned    ? 'A' : '.');
+        printf("%c", sym->is_used        ? 'U' : '.');
         printf(" |");
 
         printf("\n");

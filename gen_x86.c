@@ -368,7 +368,7 @@ static int data_tag_(const struct data_type *type)
     if (is_int(type))
         return LONG;
     if (is_type_name(type))
-        return data_tag_(original(type));
+        return data_tag_(original_const(type));
     return QUAD;
 }
 
@@ -411,8 +411,7 @@ static void code3__(FILE *fp, const struct ast_node *node,
 
     /* this rule comes from x86-64 machine instructions.
      * it depends on the size of register when loading from memory.
-     * it is independent of language data types.
-     */
+     * it is independent of language data types. */
     if (!strcmp(op.mnemonic, "mov") &&
         oper1.kind == OPR_ADDR &&
         oper2.kind == OPR_REG)

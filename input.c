@@ -28,6 +28,8 @@ struct vec {
 };
 
 typedef int Integer;
+typedef Integer myInt;
+typedef myInt Integer;
 //typedef char CH;
 
 int main()
@@ -38,12 +40,14 @@ int main()
         int i, j, k;
     } f;
     */
+    myInt mi = 3;
     Integer i;
     //int a = 13;
     //CH c = 3;
     //struct foo ff;
     //v.x = 12;
     i = 42;
+    i = mi;
 
     /*
     struct vec v;
