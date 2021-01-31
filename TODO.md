@@ -11,7 +11,6 @@
   - const
   - array initializer
   - std stuff FILE, stderro, NULL ...
-  - pointer ++, --
   - variable arguments
 
 * OPTIONAL
@@ -53,3 +52,4 @@
   - struct usage
   - error with pos
   - typedef
+  - pointer ++, --

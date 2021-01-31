@@ -233,6 +233,13 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = type_int();
         break;
 
+    case NOD_PREINC:
+    case NOD_PREDEC:
+    case NOD_POSTINC:
+    case NOD_POSTDEC:
+        node->type = promote_type(node->l, node->r);
+        break;
+
     default:
         node->type = promote_type(node->l, node->r);
         break;
@@ -398,6 +405,7 @@ static void decl_reset_context(struct parser *p)
  */
 static struct ast_node *statement(struct parser *p);
 static struct ast_node *expression(struct parser *p);
+static struct ast_node *unary_expression(struct parser *p);
 static struct ast_node *assignment_expression(struct parser *p);
 static struct ast_node *decl_identifier(struct parser *p);
 static struct ast_node *type_name(struct parser *p);
@@ -541,7 +549,7 @@ static struct ast_node *postfix_expression(struct parser *p)
 
     for (;;) {
         struct ast_node *member = NULL, *deref = NULL, *ref = NULL;
-        struct ast_node *call = NULL, *args = NULL;
+        struct ast_node *call = NULL, *args = NULL, *incdec = NULL;
         const struct token *tok = gettok(p);
 
         switch (tok->kind) {
@@ -584,11 +592,13 @@ static struct ast_node *postfix_expression(struct parser *p)
             break;
 
         case TOK_INC:
-            tree = new_node(NOD_POSTINC, tree, NULL);
+            incdec = new_node_(NOD_POSTINC, tokpos(p));
+            tree = branch_(incdec, tree, NULL);
             break;
 
         case TOK_DEC:
-            tree = new_node(NOD_POSTDEC, tree, NULL);
+            incdec = new_node_(NOD_POSTDEC, tokpos(p));
+            tree = branch_(incdec, tree, NULL);
             break;
 
         default:
@@ -596,6 +606,16 @@ static struct ast_node *postfix_expression(struct parser *p)
             return tree;
         }
     }
+}
+
+/*
+ * cast_expression
+ *     unary_expression
+ *     '(' type_name ')' cast_expression
+ */
+static struct ast_node *cast_expression(struct parser *p)
+{
+    return unary_expression(p);
 }
 
 /*
@@ -615,32 +635,32 @@ static struct ast_node *unary_expression(struct parser *p)
     switch (tok->kind) {
 
     case '+':
-        return postfix_expression(p);
+        return cast_expression(p);
 
     case '-':
         /* TODO tree = new_number(-1); */
         tree = new_node(NOD_NUM, NULL, NULL);
         tree->ival = -1;
-        tree = new_node(NOD_MUL, tree, postfix_expression(p));
+        tree = new_node(NOD_MUL, tree, cast_expression(p));
         return tree;
 
     case '*':
-        tree = new_node(NOD_DEREF, NULL, NULL);
-        tree->l = postfix_expression(p);
-        type_set(tree, underlying(tree->l->type));
-        return tree;
+        tree = new_node_(NOD_DEREF, tokpos(p));
+        return branch_(tree, cast_expression(p), NULL);
 
     case '&':
-        return new_node(NOD_ADDR, postfix_expression(p), NULL);
+        return new_node(NOD_ADDR, cast_expression(p), NULL);
 
     case '!':
-        return new_node(NOD_NOT, postfix_expression(p), NULL);
+        return new_node(NOD_NOT, cast_expression(p), NULL);
 
     case TOK_INC:
-        return new_node(NOD_PREINC, unary_expression(p), NULL);
+        tree = new_node_(NOD_PREINC, tokpos(p));
+        return branch_(tree, unary_expression(p), NULL);
 
     case TOK_DEC:
-        return new_node(NOD_PREDEC, unary_expression(p), NULL);
+        tree = new_node_(NOD_PREDEC, tokpos(p));
+        return branch_(tree, unary_expression(p), NULL);
 
     case TOK_SIZEOF:
         if (consume(p, '(')) {

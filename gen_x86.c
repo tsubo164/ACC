@@ -636,6 +636,17 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
     }
 }
 
+static void gen_preincdec(FILE *fp, const struct ast_node *node, struct opecode op)
+{
+    int sz = 1;
+    if (is_pointer(node->type))
+        sz = get_size(underlying(node->type));
+
+    gen_lvalue(fp, node->l);
+    code3__(fp, node, op, imme(sz), addr1(RAX));
+    code3__(fp, node, MOV_, addr1(RAX), A_);
+}
+
 static void gen_postincdec(FILE *fp, const struct ast_node *node, struct opecode op)
 {
     int sz = 1;
@@ -1118,15 +1129,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_PREINC:
-        gen_lvalue(fp, node->l);
-        code3__(fp, node, ADD_, imme(1), addr1(RAX));
-        code3__(fp, node, MOV_, addr1(RAX), A_);
+        gen_preincdec(fp, node, ADD_);
         break;
 
     case NOD_PREDEC:
-        gen_lvalue(fp, node->l);
-        code3__(fp, node, SUB_, imme(1), addr1(RAX));
-        code3__(fp, node, MOV_, addr1(RAX), A_);
+        gen_preincdec(fp, node, SUB_);
         break;
 
     case NOD_POSTINC:
