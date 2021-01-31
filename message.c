@@ -196,7 +196,30 @@ void add_error(struct message_list *list, const char *msg, const struct position
     m->pos = *pos;
 }
 
-extern void add_error2(struct message_list *list, const struct position *pos,
+void add_warning2(struct message_list *list, const struct position *pos,
+        const char *msg, ...)
+{
+    va_list va;
+    va_start(va, msg);
+    {
+        struct message *m;
+        char buf[1024] = {'\0'};
+
+        if (list->warning_count >= MAX_MESSAGE_COUNT) {
+            list->warning_count++;
+            return;
+        }
+
+        m = &list->warnings[list->warning_count++];
+        m->pos = *pos;
+
+        vsprintf(buf, msg, va);
+        m->str = insert_string(list->strtab, buf);
+    }
+    va_end(va);
+}
+
+void add_error2(struct message_list *list, const struct position *pos,
         const char *msg, ...)
 {
     va_list va;

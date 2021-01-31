@@ -29,6 +29,8 @@ extern void add_warning(struct message_list *list,
 extern void add_error(struct message_list *list,
         const char *msg, const struct position *pos);
 
+extern void add_warning2(struct message_list *list, const struct position *pos,
+        const char *msg, ...);
 extern void add_error2(struct message_list *list, const struct position *pos,
         const char *msg, ...);
 

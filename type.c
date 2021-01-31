@@ -125,6 +125,11 @@ int is_int(const struct data_type *type)
     return type && type->kind == DATA_TYPE_INT;
 }
 
+int is_pointer(const struct data_type *type)
+{
+    return type && type->kind == DATA_TYPE_PTR;
+}
+
 int is_array(const struct data_type *type)
 {
     return type && type->kind == DATA_TYPE_ARRAY;

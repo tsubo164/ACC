@@ -186,9 +186,6 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
 
             if (sym->is_defined && !sym->is_used)
                 add_warning(messages, "unused variable", &pos);
-
-            if (sym->is_defined && sym->is_used && !sym->is_initialized)
-                add_warning(messages, "uninitialized variable used", &pos);
         }
         else if (is_enumerator(sym)) {
             if (!sym->is_defined && sym->is_used)
@@ -282,6 +279,17 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             node->sym->is_initialized = 1;
         node->sym->is_assigned = ctx->is_lvalue;
         node->sym->is_used = 1;
+
+        {
+            struct symbol *sym = node->sym;
+
+            if (is_local_var(sym))
+                if (sym->is_defined && sym->is_used && !sym->is_initialized)
+                    /* array, struct, union will not be treated as uninitialized */
+                    if (!is_array(sym->type) && !is_struct(sym->type))
+                        add_warning2(ctx->messages, &node->pos,
+                                "'%s' is not initialized", sym->name);
+        }
         break;
 
     /* enum */

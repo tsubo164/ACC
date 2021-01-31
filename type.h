@@ -46,6 +46,7 @@ extern int is_incomplete(const struct data_type *type);
 extern int is_void(const struct data_type *type);
 extern int is_char(const struct data_type *type);
 extern int is_int(const struct data_type *type);
+extern int is_pointer(const struct data_type *type);
 extern int is_array(const struct data_type *type);
 extern int is_struct(const struct data_type *type);
 extern int is_enum(const struct data_type *type);
