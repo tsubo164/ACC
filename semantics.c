@@ -97,11 +97,10 @@ static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
         if (sym->kind == SYM_MEMBER) {
             const int size  = get_size(sym->type);
             const int align = get_alignment(sym->type);
-            const int len   = get_array_length(sym->type);
 
             total_offset = align_to(total_offset, align);
             sym->mem_offset = total_offset;
-            total_offset += len * size;
+            total_offset += size;
         }
 
         if (sym->kind == SYM_SCOPE_END && sym->scope_level == struct_scope)
@@ -123,10 +122,9 @@ static void compute_func_size(struct symbol_table *table, struct symbol *func)
         if (is_param(sym) || is_local_var(sym)) {
             const int size  = get_size(sym->type);
             const int align = get_alignment(sym->type);
-            const int len   = get_array_length(sym->type);
 
             total_offset = align_to(total_offset, align);
-            total_offset += len * size;
+            total_offset += size;
             sym->mem_offset = total_offset;
         }
 
@@ -181,16 +179,10 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
             if (sym->is_redefined)
                 add_error(messages, "redefinition of variable", &pos);
 
-            if (!sym->is_defined && sym->is_used)
-                add_error(messages, "use of undefined symbol", &pos);
-
             if (sym->is_defined && !sym->is_used)
                 add_warning(messages, "unused variable", &pos);
         }
         else if (is_enumerator(sym)) {
-            if (!sym->is_defined && sym->is_used)
-                add_error(messages, "use of undefined symbol", &pos);
-
             if (sym->is_assigned)
                 add_error(messages, "expression is not assignable", &pos);
         }
@@ -283,12 +275,17 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         {
             struct symbol *sym = node->sym;
 
-            if (is_local_var(sym))
+            if (is_local_var(sym)) {
                 if (sym->is_defined && sym->is_used && !sym->is_initialized)
                     /* array, struct, union will not be treated as uninitialized */
                     if (!is_array(sym->type) && !is_struct(sym->type))
                         add_warning2(ctx->messages, &node->pos,
                                 "'%s' is not initialized", sym->name);
+
+                if (!sym->is_defined && sym->is_used)
+                    add_error2(ctx->messages, &node->pos,
+                            "'%s' is not defined", sym->name);
+            }
         }
         break;
 

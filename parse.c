@@ -407,6 +407,7 @@ static struct ast_node *statement(struct parser *p);
 static struct ast_node *expression(struct parser *p);
 static struct ast_node *unary_expression(struct parser *p);
 static struct ast_node *assignment_expression(struct parser *p);
+static struct ast_node *initializer_list(struct parser *p);
 static struct ast_node *decl_identifier(struct parser *p);
 static struct ast_node *type_name(struct parser *p);
 static struct ast_node *pointer(struct parser *p);
@@ -1797,10 +1798,53 @@ static struct ast_node *declarator(struct parser *p)
     return typed_(tree);
 }
 
+/*
+ * initializer
+ *     assignment_expression
+ *     '{' initializer_list '}'
+ *     '{' initializer_list ',' '}'
+ */
 static struct ast_node *initializer(struct parser *p)
 {
-    struct ast_node *tree = assignment_expression(p);
-    return tree;
+    struct ast_node *tree = NULL;
+    const struct token *tok = gettok(p);
+
+    switch (tok->kind) {
+
+    case '{':
+        tree = initializer_list(p);
+        expect(p, '}');
+        /* ',' at the end of list is handled by initializer_list */
+        return tree;
+
+    default:
+        ungettok(p);
+        return assignment_expression(p);
+    }
+}
+
+/*
+ * initializer_list
+ *     initializer
+ *     initializer_list ',' initializer
+ */
+static struct ast_node *initializer_list(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+
+    for (;;) {
+        struct ast_node *init = initializer(p);
+        struct ast_node *list = NULL;
+
+        if (!init)
+            return tree;
+
+        list = new_node_(NOD_LIST, tokpos(p));
+        tree = branch_(list, tree, init);
+
+        if (!consume(p, ','))
+            return tree;
+    }
 }
 
 static struct ast_node *init_declarator(struct parser *p)
@@ -1810,7 +1854,7 @@ static struct ast_node *init_declarator(struct parser *p)
     tree->l = declarator(p);
 
     if (consume(p, '='))
-        tree->r = initializer(p);
+        tree->r = initializer_list(p);
 
     return typed_(tree);
 }

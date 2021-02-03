@@ -15,6 +15,8 @@ static struct data_type TYPE_NAME_ = {DATA_TYPE_TYPE_NAME, 0, 4, 1, NULL, NULL};
 
 int get_size(const struct data_type *type)
 {
+    if (is_array(type))
+        return get_array_length(type) * get_size(underlying(type));
     if (is_struct(type))
         return type->sym->type->byte_size;
     if (is_type_name(type))
