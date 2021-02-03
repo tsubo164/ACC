@@ -52,19 +52,6 @@ static int eval_(const struct ast_node *node, struct message_list *messages)
     }
 }
 
-static const struct data_type *promote_data_type(
-        const struct ast_node *n1, const struct ast_node *n2)
-{
-    if (!n1 && !n2)
-        return type_void();
-    if (!n1)
-        return n2->type;
-    if (!n2)
-        return n1->type;
-
-    return promote(n1->type, n2->type);
-}
-
 static int align_to(int pos, int align)
 {
     return ((pos + align - 1) / align) * align;
@@ -207,6 +194,8 @@ struct tree_context {
     int loop_depth;
     int switch_depth;
     int enum_value;
+    int is_array;
+    int array_length;
     int is_lvalue;
     int has_init;
 };
@@ -251,6 +240,12 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         node->sym->is_initialized = ctx->has_init;
         if (node->sym->kind == SYM_FUNC)
             ctx->func_sym = node->sym;
+        if (ctx->is_array) {
+            set_array_length(node->type, ctx->array_length);
+            ctx->is_array = 0;
+            ctx->array_length = 0;
+        }
+
         if (is_incomplete(node->sym->type) &&
                 (is_local_var(node->sym) || is_global_var(node->sym))) {
             add_error(ctx->messages, "variable has incomplete type ''", &pos);
@@ -288,6 +283,14 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             }
         }
         break;
+
+    /* array */
+    case NOD_SPEC_ARRAY:
+        check_tree_(node->l, ctx);
+        ctx->is_array = 1;
+        if (node->l)
+            ctx->array_length = node->l->ival;
+        return;
 
     /* enum */
     case NOD_SPEC_ENUM:
@@ -417,86 +420,13 @@ static void check_tree_semantics(struct ast_node *tree, struct message_list *mes
     check_tree_(tree, &ctx);
 }
 
-static void add_node_type(struct ast_node *node)
-{
-    if (!node)
-        return;
-
-    add_node_type(node->l);
-    add_node_type(node->r);
-
-    switch (node->kind) {
-
-    case NOD_ASSIGN:
-    case NOD_ADD_ASSIGN:
-    case NOD_DECL_INIT:
-        /*
-        node->type = node->l->type;
-        */
-        break;
-
-    case NOD_DEREF:
-        /*
-        */
-        break;
-
-    case NOD_CALL:
-        /*
-        node->type = node->l->type;
-        */
-        break;
-
-    case NOD_STRUCT_REF:
-        /*
-        node->type = node->sym->type;
-        */
-        break;
-
-    /* nodes with symbol */
-    case NOD_DECL_IDENT:
-    case NOD_IDENT:
-        /*
-        node->type = node->sym->type;
-        */
-        break;
-
-    /* nodes with literal */
-    case NOD_NUM:
-        /*
-        node->type = type_int();
-        */
-        break;
-
-    case NOD_STRING:
-        /*
-        node->type = type_ptr(type_char());
-        */
-        break;
-
-    case NOD_SIZEOF:
-        /*
-        node->type = type_int();
-        */
-        break;
-
-    case NOD_TYPE_NAME:
-        /* type already set in parser */
-        break;
-
-    default:
-        node->type = promote_data_type(node->l, node->r);
-        break;
-    }
-}
-
 int semantic_analysis(struct ast_node *tree,
         struct symbol_table *table, struct message_list *messages)
 {
-    add_symbol_size(table);
-    add_node_type(tree);
-
     check_tree_semantics(tree, messages);
     check_symbol_usage(table, messages);
+
+    add_symbol_size(table);
 
     return 0;
 }

@@ -89,7 +89,7 @@ enum ast_node_kind {
 
 struct ast_node {
     enum ast_node_kind kind;
-    const struct data_type *type;
+    struct data_type *type;
     struct symbol *sym;
 
     struct ast_node *l;

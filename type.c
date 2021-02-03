@@ -73,6 +73,13 @@ const char *tag_of(const struct data_type *type)
     return type->tag;
 }
 
+void set_array_length(struct data_type *type, int len)
+{
+    if (!is_array(type))
+        return;
+    type->array_len = len;
+}
+
 void set_struct_size(struct data_type *type, int size)
 {
     if (!is_struct(type))
@@ -85,8 +92,7 @@ void set_symbol(struct data_type *type, struct symbol *sym)
     type->sym = sym;
 }
 
-const struct data_type *promote(
-        const struct data_type *t1, const struct data_type *t2)
+struct data_type *promote(struct data_type *t1, struct data_type *t2)
 {
     if (!t1 && !t2)
         return type_void();

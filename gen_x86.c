@@ -1017,7 +1017,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_SIZEOF:
-        code3__(fp, node, MOV_, imme(node->ival), A_);
+        code3__(fp, node, MOV_, imme(get_size(node->l->type)), A_);
         break;
 
     case NOD_ADD:

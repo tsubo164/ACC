@@ -165,8 +165,7 @@ static void type_from_sym(struct ast_node *node)
     node->type = node->sym->type;
 }
 
-static const struct data_type *promote_type(
-        const struct ast_node *n1, const struct ast_node *n2)
+static struct data_type *promote_type(struct ast_node *n1, struct ast_node *n2)
 {
     if (!n1 && !n2)
         return type_void();
@@ -976,7 +975,14 @@ static struct ast_node *expression(struct parser *p)
  */
 static struct ast_node *constant_expression(struct parser *p)
 {
-    return new_node(NOD_CONST_EXPR, conditional_expression(p), NULL);
+    struct ast_node *tree = NULL;
+    struct ast_node *expr = conditional_expression(p);
+
+    if (!expr)
+        return NULL;
+
+    tree = new_node_(NOD_CONST_EXPR, tokpos(p));
+    return branch_(tree, expr, NULL);
 }
 
 /*
@@ -1744,10 +1750,8 @@ static struct ast_node *direct_declarator(struct parser *p)
     }
 
     if (consume(p, '[')) {
-        struct ast_node *array = NEW_(NOD_SPEC_ARRAY);
-
-        if (consume(p, TOK_NUM))
-            copy_token_ival(p, array);
+        struct ast_node *array = new_node_(NOD_SPEC_ARRAY, tokpos(p));
+        branch_(array, constant_expression(p), NULL);
 
         tree->l = array;
         expect(p, ']');
