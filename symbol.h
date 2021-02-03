@@ -2,6 +2,7 @@
 #define SYMBOL_H
 
 #include "type.h"
+#include "position.h"
 
 enum symbol_kind {
     SYM_SCOPE_BEGIN,
@@ -29,6 +30,7 @@ struct symbol {
     int scope_level;
     int mem_offset;
     int id;
+    struct position pos;
 
     struct symbol *next;
     struct symbol *prev;

@@ -18,6 +18,22 @@ int main()
         assert(16, sizeof a);
         assert(4, sizeof a[2]);
     }
+    {
+        enum length {
+            ARRAY_LENGTH = 3
+        };
+
+        /* array length with constant expression */
+        int a[3 + 1];
+        int b[ARRAY_LENGTH];
+
+        a[3] = 42;
+        b[2] = 19;
+
+        assert(42, a[3]);
+        assert(19, b[2]);
+        assert(23, a[3] - b[2]);
+    }
 
     return 0;
 }

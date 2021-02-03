@@ -234,7 +234,7 @@ struct data_type *type_ptr(struct data_type *base_type)
     return type;
 }
 
-struct data_type *type_array(struct data_type *base_type, int length)
+struct data_type *type_array(struct data_type *base_type)
 {
     struct data_type *type;
 
@@ -244,7 +244,7 @@ struct data_type *type_array(struct data_type *base_type, int length)
 
     type->byte_size = base_type->byte_size;
     type->alignment = base_type->alignment;
-    type->array_len = length;
+    /* type->array_len will be computed in later phase */
 
     return type;
 }

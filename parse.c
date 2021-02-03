@@ -268,6 +268,7 @@ static void define_sym(struct parser *p, struct ast_node *node)
         decl_type = p->decl_type;
 
     sym = define_symbol(p->symtab, p->decl_ident, p->decl_kind, decl_type);
+    sym->pos = node->pos;
     node->sym = sym;
     type_from_sym(node);
 }
@@ -1411,7 +1412,7 @@ static struct ast_node *decl_identifier(struct parser *p)
     if (!consume(p, TOK_IDENT))
         return tree;
 
-    tree = NEW_(NOD_DECL_IDENT);
+    tree = new_node_(NOD_DECL_IDENT, tokpos(p));
     copy_token_text(p, tree);
 
     decl_set_ident(p, tree->sval);
@@ -1752,11 +1753,12 @@ static struct ast_node *direct_declarator(struct parser *p)
     if (consume(p, '[')) {
         struct ast_node *array = new_node_(NOD_SPEC_ARRAY, tokpos(p));
         branch_(array, constant_expression(p), NULL);
-
-        tree->l = array;
         expect(p, ']');
 
-        decl_set_type(p, type_array(p->decl_type, array->ival));
+        tree->l = array;
+        decl_set_type(p, type_array(p->decl_type));
+        /* reset decl ident as it might be overriden in constant_expression() */
+        decl_set_ident(p, ident->sval);
     }
 
     if (consume(p, '(')) {
