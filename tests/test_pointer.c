@@ -93,6 +93,25 @@ int main()
         assert(44, *++p);
         assert(43, --*p);
     }
+    {
+        int i = 13;
+        int *p;
+        int **pp;
+        int ***ppp;
+
+        p = &i;
+        pp = &p;
+        ppp = &pp;
+
+        *p = 13;
+        assert(13, *p);
+
+        **pp = *p + 11;
+        assert(24, **pp);
+
+        ***ppp = **pp + 18;
+        assert(42, **pp);
+    }
 
     return 0;
 }

@@ -1730,6 +1730,28 @@ static struct ast_node *param_decl_list(struct parser *p)
     }
 }
 
+/*
+ * array
+ *     '[' constant_expression ']'
+ *     array '[' constant_expression ']'
+ */
+static struct ast_node *array(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    struct ast_node *expr = NULL;
+
+    if (consume(p, '[')) {
+        tree = new_node_(NOD_SPEC_ARRAY, tokpos(p));
+        expr = constant_expression(p);
+        expect(p, ']');
+
+        tree = branch_(tree, expr, array(p));
+        decl_set_type(p, type_array(p->decl_type));
+    }
+
+    return tree;
+}
+
 static struct ast_node *direct_declarator(struct parser *p)
 {
     struct ast_node *tree = NULL;
@@ -1750,16 +1772,10 @@ static struct ast_node *direct_declarator(struct parser *p)
         return tree;
     }
 
-    if (consume(p, '[')) {
-        struct ast_node *array = new_node_(NOD_SPEC_ARRAY, tokpos(p));
-        branch_(array, constant_expression(p), NULL);
-        expect(p, ']');
-
-        tree->l = array;
-        decl_set_type(p, type_array(p->decl_type));
-        /* reset decl ident as it might be overriden in constant_expression() */
-        decl_set_ident(p, ident->sval);
-    }
+    tree->l = array(p);
+    /* reset decl ident here as it might be overriden
+     * in constant_expression() in array() */
+    decl_set_ident(p, ident->sval);
 
     if (consume(p, '(')) {
         /* function */
@@ -1787,6 +1803,7 @@ static struct ast_node *pointer(struct parser *p)
     struct ast_node *tree = NULL;
 
     while (consume(p, '*')) {
+        /* we treat as if the first '*' is associated with type specifier */
         tree = new_node(NOD_SPEC_POINTER, tree, NULL);
         decl_set_type(p, type_ptr(p->decl_type));
     }

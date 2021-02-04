@@ -1,20 +1,18 @@
-/*
-struct vec {
-    int x, y;
-};
-*/
-
-enum size {
-    ARRAY_SIZE = 3
-};
-
 int main()
 {
-    int a[2 + 2];// = {1, 2, 3, 42};
-    int b[ARRAY_SIZE];// = {1, 2, 3, 42};
+    int i = 13;
+    int *p;
+    int **pp;
+    int ***ppp;
+    int a[3][2];
 
-    a[3] = 42;
-    b[2] = 19;
+    p = &i;
+    pp = &p;
+    ppp = &pp;
 
-    return a[3] + b[2];
+    //*p = 41;
+    //**pp = 41;
+    ***ppp = 41;
+
+    return ***ppp;
 }
