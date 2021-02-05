@@ -432,6 +432,32 @@ static void code3__(FILE *fp, const struct ast_node *node,
 /* forward declaration */
 static void gen_code(FILE *fp, const struct ast_node *node);
 
+static void gen_addr(FILE *fp, const struct ast_node *node)
+{
+    if (!node)
+        return;
+
+    switch (node->kind) {
+
+    case NOD_DEREF:
+        gen_code(fp, node->l);
+        break;
+
+    default:
+        break;
+    }
+}
+
+static void load_value(FILE *fp, const struct ast_node *node)
+{
+    const struct data_type *type = node->type;
+
+    if (is_array(type))
+        return;
+
+    code3__(fp, node, MOV_, addr1(RAX), A_);
+}
+
 static int gen_one_param(FILE *fp, const struct ast_node *node, int reg_index)
 {
     int max_index = 0;
@@ -1005,7 +1031,12 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_DEREF:
         gen_code(fp, node->l);
+        if (!is_array(node->type))
+            code3__(fp, node, MOV_, addr1(RAX), A_);
+#if 0
+        gen_code(fp, node->l);
         code3__(fp, node, MOV_, addr1(RAX), A_);
+#endif
         break;
 
     case NOD_NUM:
