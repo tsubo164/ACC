@@ -20,7 +20,7 @@ int get_size(const struct data_type *type)
     if (is_struct(type))
         return type->sym->type->byte_size;
     if (is_type_name(type))
-        return get_size(type->sym->type);
+        return get_size(original_const(type));
     return type->byte_size;
 }
 
@@ -29,7 +29,7 @@ int get_alignment(const struct data_type *type)
     if (is_struct(type))
         return type->sym->type->alignment;
     if (is_type_name(type))
-        return get_alignment(type->sym->type);
+        return get_alignment(original_const(type));
     return type->alignment;
 }
 
@@ -38,7 +38,7 @@ int get_array_length(const struct data_type *type)
     if (is_struct(type))
         return type->sym->type->array_len;
     if (is_type_name(type))
-        return get_array_length(type->sym->type);
+        return get_array_length(original_const(type));
     return type->array_len;
 }
 

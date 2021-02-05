@@ -194,8 +194,6 @@ struct tree_context {
     int loop_depth;
     int switch_depth;
     int enum_value;
-    int is_array;
-    int array_length;
     int is_lvalue;
     int has_init;
 };
@@ -240,11 +238,6 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         node->sym->is_initialized = ctx->has_init;
         if (node->sym->kind == SYM_FUNC)
             ctx->func_sym = node->sym;
-        if (ctx->is_array) {
-            set_array_length(node->type, ctx->array_length);
-            ctx->is_array = 0;
-            ctx->array_length = 0;
-        }
 
         if (is_incomplete(node->sym->type) &&
                 (is_local_var(node->sym) || is_global_var(node->sym))) {
@@ -287,9 +280,9 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
     /* array */
     case NOD_SPEC_ARRAY:
         check_tree_(node->l, ctx);
-        ctx->is_array = 1;
         if (node->l)
-            ctx->array_length = node->l->ival;
+            set_array_length(node->type, node->l->ival);
+        check_tree_(node->r, ctx);
         return;
 
     /* enum */

@@ -1747,6 +1747,7 @@ static struct ast_node *array(struct parser *p)
 
         tree = branch_(tree, expr, array(p));
         decl_set_type(p, type_array(p->decl_type));
+        type_set(tree, p->decl_type);
     }
 
     return tree;

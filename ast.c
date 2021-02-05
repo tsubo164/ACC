@@ -126,6 +126,21 @@ const char *node_to_string(const struct ast_node *node)
     }
 }
 
+static void print_type_(const struct data_type *type)
+{
+    printf(" ");
+    if (is_type_name(type))
+        printf("%s", type_name_of(type));
+    else if (is_struct(type))
+        printf("struct %s", type_name_of(type));
+    else if (is_array(type)) {
+        printf("[%d]", get_array_length(type));
+        print_type_(underlying(type));
+    }
+    else
+        printf("%s", type_name_of(type));
+}
+
 static void print_tree_recursive(const struct ast_node *tree, int depth)
 {
     int i;
@@ -157,16 +172,10 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         printf("%s", node_to_string(tree));
     }
 
-        /* print data type of node */
-        printf(TERMINAL_COLOR_RED);
-            printf(" ");
-            if (is_type_name(tree->type))
-                printf("%s", type_name_of(tree->type));
-            else if (is_struct(tree->type))
-                printf("struct %s", type_name_of(tree->type));
-            else
-                printf("%s", type_name_of(tree->type));
-        printf(TERMINAL_COLOR_RESET);
+    /* print data type of node */
+    printf(TERMINAL_COLOR_RED);
+        print_type_(tree->type);
+    printf(TERMINAL_COLOR_RESET);
 
     switch (tree->kind) {
 

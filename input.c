@@ -1,18 +1,8 @@
 int main()
 {
-    int i = 13;
-    int *p;
-    int **pp;
-    int ***ppp;
     int a[3][2];
 
-    p = &i;
-    pp = &p;
-    ppp = &pp;
+    //a[2][1] = 13;
 
-    //*p = 41;
-    //**pp = 41;
-    ***ppp = 41;
-
-    return ***ppp;
+    return sizeof a;//a[2][1];
 }
