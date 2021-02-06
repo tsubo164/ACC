@@ -51,7 +51,6 @@ const char *node_to_string(const struct ast_node *node)
     switch (node->kind) {
     case NOD_LIST: return "NOD_LIST";
     case NOD_COMPOUND: return "NOD_COMPOUND";
-    case NOD_STMT: return "NOD_STMT";
     case NOD_BREAK: return "NOD_BREAK";
     case NOD_CONTINUE: return "NOD_CONTINUE";
     case NOD_RETURN: return "NOD_RETURN";

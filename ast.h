@@ -10,7 +10,6 @@ enum ast_node_kind {
     NOD_LIST,
     NOD_COMPOUND,
     /* statement */
-    NOD_STMT,
     NOD_BREAK,
     NOD_CONTINUE,
     NOD_RETURN,

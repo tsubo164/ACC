@@ -45,6 +45,17 @@ int main()
         assert(29, b[3][2][0]);
         assert(42, a[2][1] + b[3][2][0]);
     }
+    {
+        struct vec {
+            int x, y;
+        } a[3][2];
+
+        a[2][1].x = 13;
+        a[2][1].y = 31;
+
+        assert(13, a[2][1].x);
+        assert(31, a[2][1].y);
+    }
 
     return 0;
 }
