@@ -3,6 +3,7 @@
 #include <string.h>
 #include "symbol.h"
 
+/* TODO consider removing enum scope */
 enum scope {
     SCOPE_GLOBAL = 0,
     SCOPE_FUNCTION
@@ -117,10 +118,10 @@ static void print_horizonal_line(char c, int n)
 
 void print_symbol_table(const struct symbol_table *table)
 {
-    const int ROW = 87;
+    const int COLUMNS = 87;
     const struct symbol *sym;
 
-    print_horizonal_line('-', ROW);
+    print_horizonal_line('-', COLUMNS);
 
     printf("|");
     printf("%15s | ", "name");
@@ -132,7 +133,7 @@ void print_symbol_table(const struct symbol_table *table)
     printf("%6s | ", "DDRIAU");
     printf("\n");
 
-    print_horizonal_line('=', ROW);
+    print_horizonal_line('=', COLUMNS);
 
     for (sym = table->head; sym; sym = sym->next) {
         printf("|");
@@ -140,13 +141,13 @@ void print_symbol_table(const struct symbol_table *table)
         printf("%-20s | ",  symbol_to_string(sym));
 
         if (is_type_name(sym->type)) {
-            printf("%-10s | ", type_name_of(sym->type));
+            printf("%-10.10s | ", type_name_of(sym->type));
         } else if (is_struct(sym->type)) {
             static char buf[128] = {'\0'};
             sprintf(buf, "struct %s", type_name_of(sym->type));
-            printf("%-10s | ", buf);
+            printf("%-10.10s | ", buf);
         } else {
-            printf("%-10s | ", type_name_of(sym->type));
+            printf("%-10.10s | ", type_name_of(sym->type));
         }
 
         printf("%5d | ", sym->scope_level);
@@ -167,7 +168,7 @@ void print_symbol_table(const struct symbol_table *table)
         printf("\n");
     }
 
-    print_horizonal_line('-', ROW);
+    print_horizonal_line('-', COLUMNS);
 }
 
 static struct symbol *new_symbol_(int kind, const char *name, struct data_type *type,
@@ -223,28 +224,25 @@ static int namespace_of(int kind)
 {
     switch (kind) {
 
-    case SYM_SCOPE_BEGIN:
-    case SYM_SCOPE_END:
-    case SYM_SWITCH_BEGIN:
-    case SYM_SWITCH_END:
-        return 0;
-
     case SYM_VAR:
     case SYM_FUNC:
     case SYM_PARAM:
     case SYM_ENUMERATOR:
     case SYM_TYPEDEF:
-        return 1;
+        return 0;
 
     case SYM_TAG_STRUCT:
     case SYM_TAG_ENUM:
-        return 2;
+        return 1;
 
     case SYM_MEMBER:
+        return 2;
+
+    case SYM_LABEL:
         return 3;
 
     default:
-        return 0;
+        return -1;
     }
 }
 

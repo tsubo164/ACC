@@ -13,6 +13,7 @@ typedef struct vec {
 int main()
 {
     {
+        /* struct and pointer */
         struct point p;
         int *ptr;
 
@@ -26,6 +27,7 @@ int main()
         assert(42, p.x + p.y);
     }
     {
+        /* pointer access of struct */
         struct point p;
         struct point *pp;
 
@@ -46,6 +48,7 @@ int main()
         assert(8, sizeof (struct point));
     }
     {
+        /* array of struct */
         struct foo {
             int i, j, k;
         } f;
@@ -67,6 +70,7 @@ int main()
         assert(42, fa[2].k);
     }
     {
+        /* typedef'ed struct */
         vec v0, v1;
         vec *vp = &v1;
 
@@ -82,4 +86,25 @@ int main()
         assert(31, v1.x);
         assert(91, v1.z);
     }
+    {
+        /* nested struct */
+        typedef struct point {
+            int x, y;
+        } point;
+
+        struct line {
+            point p0, p1;
+        };
+
+        struct line l;
+
+        l.p0.x = 19;
+        l.p1.y = 23;
+
+        assert(19, l.p0.x);
+        assert(23, l.p1.y);
+        assert(42, l.p0.x + l.p1.y);
+    }
+
+    return 0;
 }

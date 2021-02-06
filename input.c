@@ -1,13 +1,16 @@
-typedef struct vec {
+typedef struct point {
     int x, y;
-} vec;
+} point;
+
+struct line {
+    point p0, p1;
+};
 
 int main()
 {
-    struct vec a[3][2];
+    struct line l;
 
-    a[2][1].x = 13;
-    a[2][1].y = 31;
+    l.p0.x = 19;
 
-    return a[2][1].y;
+    return l.p0.x;
 }
