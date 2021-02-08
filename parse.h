@@ -27,8 +27,6 @@ struct parser {
     struct data_type *decl_type;
 
     int is_typedef;
-
-    struct symbol *func_sym;
     int is_panic_mode;
 };
 

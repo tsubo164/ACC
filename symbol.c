@@ -292,6 +292,11 @@ static struct symbol *lookup(struct symbol_table *table,
     return NULL;
 }
 
+static int is_defined_at(struct symbol *sym, int scope)
+{
+    return sym && sym->scope_level == scope;
+}
+
 static void link_type_to_sym(struct data_type *type, struct symbol *sym)
 {
     if (sym->kind == SYM_TAG_STRUCT ||
@@ -303,26 +308,22 @@ struct symbol *define_symbol(struct symbol_table *table,
         const char *name, int kind, struct data_type *type)
 {
     struct symbol *sym = lookup(table, name, kind);
-    const int cur_lv = table->current_scope_level;
+    const int curr_scope = table->current_scope_level;
+    struct data_type *defined_type = type;
 
-    if (sym && sym->scope_level == cur_lv) {
+    if (is_defined_at(sym, curr_scope)) {
         if (is_incomplete(sym->type)) {
-            struct symbol *sym_incomp = sym;
-            sym = push_symbol(table, name, kind, sym_incomp->type);
-            sym->is_defined = 1;
-
-            link_type_to_sym(sym_incomp->type, sym);
-            return sym;
+            defined_type = sym->type;
         } else {
             sym->is_redefined = 1;
             return sym;
         }
     }
 
-    sym = push_symbol(table, name, kind, type);
+    sym = push_symbol(table, name, kind, defined_type);
     sym->is_defined = 1;
+    link_type_to_sym(defined_type, sym);
 
-    link_type_to_sym(type, sym);
     return sym;
 }
 
@@ -406,7 +407,7 @@ struct symbol *define_case_symbol(struct symbol_table *table, int kind)
 struct symbol *define_label_symbol(struct symbol_table *table, const char *label)
 {
     struct symbol *sym;
-    struct symbol *func_sym = NULL, *label_sym = NULL;
+    struct symbol *label_sym = NULL;
 
     for (sym = table->tail; sym; sym = sym->prev) {
         if (match_name(sym, label)) {
@@ -415,37 +416,30 @@ struct symbol *define_label_symbol(struct symbol_table *table, const char *label
         }
 
         /* reached function sym */
-        if (is_func(sym)) {
-            func_sym = sym;
+        if (is_func(sym))
             break;
-        }
     }
 
-    label_sym = new_symbol_(SYM_LABEL, label, type_int(), SCOPE_GLOBAL);
+    label_sym = push_symbol(table, label, SYM_LABEL, type_int());
     label_sym->is_defined = 1;
-    append_last(table, label_sym);
 
     return label_sym;
 }
 
-struct symbol *use_label_symbol(struct symbol *func_sym, const char *label)
+struct symbol *use_label_symbol(struct symbol_table *table, const char *label)
 {
     struct symbol *sym;
-    struct symbol *label_sym = NULL;
 
-    for (sym = func_sym; sym; sym = sym->next) {
+    for (sym = table->tail; sym; sym = sym->prev) {
         if (match_name(sym, label))
             return sym;
 
-        /* end of function */
-        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1)
+        /* reached function sym */
+        if (is_func(sym))
             break;
     }
 
-    label_sym = new_symbol_(SYM_LABEL, label, type_int(), SCOPE_GLOBAL);
-    insert_after(func_sym, label_sym);
-
-    return label_sym;
+    return push_symbol(table, label, SYM_LABEL, type_int());
 }
 
 struct symbol *define_string_symbol(struct symbol_table *table, const char *str)
