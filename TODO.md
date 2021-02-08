@@ -28,6 +28,16 @@
 * IMPLEMENTATION
   - new number()
   - push symbol()
+  - use label() and enum scope
+
+* BUG
+  - void printf(char *s, ind n) -> infinite loop
+  - //typedef struct node Node;
+    struct node {
+        int id;
+        Node *next;
+    };
+    -> infinite loop
 
 * DONE
   - ++, --

@@ -306,8 +306,17 @@ struct symbol *define_symbol(struct symbol_table *table,
     const int cur_lv = table->current_scope_level;
 
     if (sym && sym->scope_level == cur_lv) {
-        sym->is_redefined = 1;
-        return sym;
+        if (is_incomplete(sym->type)) {
+            struct symbol *sym_incomp = sym;
+            sym = push_symbol(table, name, kind, sym_incomp->type);
+            sym->is_defined = 1;
+
+            link_type_to_sym(sym_incomp->type, sym);
+            return sym;
+        } else {
+            sym->is_redefined = 1;
+            return sym;
+        }
     }
 
     sym = push_symbol(table, name, kind, type);

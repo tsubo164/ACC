@@ -1,16 +1,27 @@
-typedef struct point {
-    int x, y;
-} point;
+void printf(char *s, int n);
 
-struct line {
-    point p0, p1;
+typedef struct node Node;
+
+struct node {
+    int id;
+    Node *next;
 };
 
 int main()
 {
-    struct line l;
+    Node n0, n1, n2;
+    Node *n;
 
-    l.p0.x = 19;
+    n0.id = 123;
+    n1.id = 765;
+    n2.id = 999;
 
-    return l.p0.x;
+    n0.next = &n1;
+    n1.next = &n2;
+    n2.next = 0;
+
+    for (n = &n0; n; n = n->next)
+        printf("node.id: %d\n", n->id);
+
+    return n0.id;
 }
