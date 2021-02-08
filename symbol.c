@@ -171,7 +171,7 @@ void print_symbol_table(const struct symbol_table *table)
     print_horizonal_line('-', COLUMNS);
 }
 
-static struct symbol *new_symbol_(int kind, const char *name, struct data_type *type,
+static struct symbol *new_symbol(int kind, const char *name, struct data_type *type,
         int scope_level)
 {
     static int next_id = 0;
@@ -188,35 +188,21 @@ static struct symbol *new_symbol_(int kind, const char *name, struct data_type *
     return sym;
 }
 
-static void insert_after(struct symbol *base, struct symbol *sym)
-{
-    if (!base->next) {
-        base->next = sym;
-        sym->prev = base;
-        return;
-    }
-    sym->next = base->next;
-    base->next->prev = sym;
-    base->next = sym;
-    sym->prev = base;
-}
-
-static void append_last(struct symbol_table *table, struct symbol *sym)
-{
-    if (!table->head) {
-        table->head = sym;
-        table->tail = sym;
-        return;
-    }
-    insert_after(table->tail, sym);
-    table->tail = sym;
-}
-
 static struct symbol *push_symbol(struct symbol_table *table,
         const char *name, int kind, struct data_type *type)
 {
-    struct symbol *sym = new_symbol_(kind, name, type, table->current_scope_level);
-    append_last(table, sym);
+    struct symbol *sym = new_symbol(kind, name, type, table->current_scope_level);
+
+    if (!table->head) {
+        table->head = sym;
+        table->tail = sym;
+        return sym;
+    }
+
+    table->tail->next = sym;
+    sym->prev = table->tail;
+    table->tail = sym;
+
     return sym;
 }
 
@@ -452,9 +438,8 @@ struct symbol *define_string_symbol(struct symbol_table *table, const char *str)
             return sym;
     }
 
-    str_sym = new_symbol_(SYM_STRING, str, type_ptr(type_char()), SCOPE_GLOBAL);
+    str_sym = push_symbol(table, str, SYM_STRING, type_ptr(type_char()));
     str_sym->is_defined = 1;
-    append_last(table, str_sym);
 
     return str_sym;
 }
