@@ -3,12 +3,6 @@
 #include <string.h>
 #include "symbol.h"
 
-/* TODO consider removing enum scope */
-enum scope {
-    SCOPE_GLOBAL = 0,
-    SCOPE_FUNCTION
-};
-
 int is_global_var(const struct symbol *sym)
 {
     if (sym->kind == SYM_VAR &&
