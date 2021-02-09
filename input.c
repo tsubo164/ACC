@@ -1,17 +1,13 @@
-void puts(char *s);
+//void puts(char *s);
+
+struct {
+    int x, y;
+} no_tag;
 
 int main()
 {
-    int x[4];
+    //no_tag.x = 123;
 
-    int a = 5;
-    int b = 10;
-
-    if (a > b)
-        goto final;
-
-final:
-    puts("Hello, world!\n");
-
-    return a;
+    //return no_tag.x;
+    return 0;
 }
