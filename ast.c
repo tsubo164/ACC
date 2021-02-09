@@ -134,6 +134,9 @@ static void print_type(const struct data_type *type)
     else if (is_struct(type)) {
         printf("struct %s", type_name_of(type));
     }
+    else if (is_enum(type)) {
+        printf("enum %s", type_name_of(type));
+    }
     else if (is_array(type)) {
         printf("[%d]", get_array_length(type));
         print_type(underlying(type));

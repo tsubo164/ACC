@@ -1,9 +1,10 @@
-enum {
+enum color {
     red = 101, green, blue
-} col;
+};
 
 int main()
 {
-    col = green;
-    return col;
+    enum color c = green;
+
+    return c;
 }

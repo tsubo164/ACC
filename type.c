@@ -4,6 +4,7 @@
 #include "type.h"
 #include "symbol.h"
 
+/*                                                    Sz Al Ln Ul    Sy  */
 static struct data_type VOID_    = {DATA_TYPE_VOID,   1, 4, 1, NULL, NULL};
 static struct data_type CHAR_    = {DATA_TYPE_CHAR,   1, 4, 1, NULL, NULL};
 static struct data_type INT_     = {DATA_TYPE_INT,    4, 4, 1, NULL, NULL};
@@ -198,6 +199,8 @@ void print_data_type(const struct data_type *type)
     printf("    name:      ");
     if (is_struct(type))
         printf("struct ");
+    else if (is_enum(type))
+        printf("enum ");
     printf("%s\n", type_name_of(type));
 
     printf("    kind:      %d\n", type->kind);

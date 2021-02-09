@@ -77,6 +77,16 @@ int main()
 
         assert(102, col);
     }
+    {
+        /* variable with enum specifier */
+        enum color {
+            red = 101, green, blue
+        };
+
+        enum color c = blue;
+
+        assert(103, c);
+    }
 
     return 0;
 }
