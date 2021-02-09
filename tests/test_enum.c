@@ -13,6 +13,7 @@ int main()
     assert(2, B);
 
     {
+        /* enum and sizeof */
         enum color {
             R = 10,
             G,
@@ -26,6 +27,7 @@ int main()
         assert(4, sizeof (enum color));
     }
     {
+        /* enum with constant expression */
         enum color {
             R = 10,
             G,
@@ -36,6 +38,7 @@ int main()
         assert(21, B);
     }
     {
+        /* enum with constant expression */
         enum axis {
             X = -1,
             Y = 9,
@@ -46,6 +49,7 @@ int main()
         assert(-5, Z);
     }
     {
+        /* enum with constant expression */
         enum axis {
             X,
             Y,
@@ -56,11 +60,22 @@ int main()
         assert(0, Z);
     }
     {
+        /* lookup global enum */
         int a = R;
         int b = G;
         int c = B;
 
         assert(8, a + 2 * b + 3 * c);
+    }
+    {
+        /* enum with no tag */
+        enum {
+            red = 101, green, blue
+        } col;
+
+        col = green;
+
+        assert(102, col);
     }
 
     return 0;

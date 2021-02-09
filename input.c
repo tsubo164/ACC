@@ -1,11 +1,9 @@
-//void puts(char *s);
-
-struct {
-    int x, y;
-} no_tag;
+enum {
+    red = 101, green, blue
+} col;
 
 int main()
 {
-    no_tag.x = 123;
-    return no_tag.x;
+    col = green;
+    return col;
 }

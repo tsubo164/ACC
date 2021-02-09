@@ -149,6 +149,15 @@ void print_symbol_table(const struct symbol_table *table)
             } else {
                 printf("%-10.10s | ", "struct");
             }
+        } else if (is_enum(sym->type)) {
+            const char *tname = type_name_of(sym->type);
+            if (tname) {
+                static char buf[128] = {'\0'};
+                sprintf(buf, "enum %s", tname);
+                printf("%-10.10s | ", buf);
+            } else {
+                printf("%-10.10s | ", "enum");
+            }
         } else {
             printf("%-10.10s | ", type_name_of(sym->type));
         }

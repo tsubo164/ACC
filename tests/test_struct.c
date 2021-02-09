@@ -152,6 +152,7 @@ int main()
         assert(999, n1.next->id);
     }
     {
+        /* struct with no tag */
         struct {
             int x, y;
         } no_tag;
