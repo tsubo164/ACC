@@ -20,7 +20,6 @@
   - short, long
   - bit shift <<, >>
   - bitwise op |, &, ~, ^
-  - anonymous enum, struct, union
   - union
   - control flow check
   - void pointer, void parameter
@@ -36,6 +35,7 @@
         Node *next;
     };
     -> infinite loop
+  - { ...  } } -> infinite loop
 
 * DONE
   - ++, --
@@ -63,3 +63,4 @@
   - pointer ++, --
   - push symbol()
   - use label() and enum scope
+  - enum, struct with no tag

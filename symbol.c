@@ -131,26 +131,39 @@ void print_symbol_table(const struct symbol_table *table)
 
     for (sym = table->head; sym; sym = sym->next) {
         printf("|");
+        /* symbol name */
         printf("%15.15s | ", sym->name ? sym->name : "--");
+
+        /* symbol kind */
         printf("%-20s | ",  symbol_to_string(sym));
 
+        /* type */
         if (is_type_name(sym->type)) {
             printf("%-10.10s | ", type_name_of(sym->type));
         } else if (is_struct(sym->type)) {
-            static char buf[128] = {'\0'};
-            sprintf(buf, "struct %s", type_name_of(sym->type));
-            printf("%-10.10s | ", buf);
+            const char *tname = type_name_of(sym->type);
+            if (tname) {
+                static char buf[128] = {'\0'};
+                sprintf(buf, "struct %s", tname);
+                printf("%-10.10s | ", buf);
+            } else {
+                printf("%-10.10s | ", "struct");
+            }
         } else {
             printf("%-10.10s | ", type_name_of(sym->type));
         }
 
+        /* scope level */
         printf("%5d | ", sym->scope_level);
+
+        /* memory offset */
         if (is_global_var(sym))
             printf("%5s | ",  "*");
         else
             printf("%5d | ",  sym->mem_offset);
         printf("%5d | ",  sym->id);
 
+        /* flags */
         printf("%c", sym->is_declared    ? 'D' : '.');
         printf("%c", sym->is_defined     ? 'D' : '.');
         printf("%c", sym->is_redefined   ? 'R' : '.');

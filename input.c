@@ -6,8 +6,6 @@ struct {
 
 int main()
 {
-    //no_tag.x = 123;
-
-    //return no_tag.x;
-    return 0;
+    no_tag.x = 123;
+    return no_tag.x;
 }

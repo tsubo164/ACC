@@ -1397,13 +1397,14 @@ static struct ast_node *decl_identifier(struct parser *p)
 {
     struct ast_node *tree = NULL;
 
-    if (!consume(p, TOK_IDENT))
-        return tree;
-
-    tree = new_node_(NOD_DECL_IDENT, tokpos(p));
-    copy_token_text(p, tree);
-
-    decl_set_ident(p, tree->sval);
+    if (consume(p, TOK_IDENT)) {
+        tree = new_node_(NOD_DECL_IDENT, tokpos(p));
+        copy_token_text(p, tree);
+        decl_set_ident(p, tree->sval);
+    } else {
+        tree = new_node_(NOD_DECL_IDENT, tokpos(p));
+        decl_set_ident(p, NULL);
+    }
 
     return tree;
 }
@@ -1549,9 +1550,9 @@ static struct ast_node *enumerator(struct parser *p)
     struct ast_node *tree = NULL;
     struct ast_node *ident = NULL;
 
-    ident = decl_identifier(p);
-    if (!ident)
+    if (!nexttok(p, TOK_IDENT))
         return NULL;
+    ident = decl_identifier(p);
 
     decl_begin(p, SYM_ENUMERATOR);
 

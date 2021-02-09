@@ -151,6 +151,18 @@ int main()
         assert(999, n0.next->next->id);
         assert(999, n1.next->id);
     }
+    {
+        struct {
+            int x, y;
+        } no_tag;
+
+        no_tag.x = 111;
+        no_tag.y = 19;
+
+        assert(111, no_tag.x);
+        assert(19, no_tag.y);
+        assert(130, no_tag.x + no_tag.y);
+    }
 
     return 0;
 }
