@@ -343,6 +343,10 @@ state_initial:
     case '"':
         goto state_string_literal;
 
+    /* char literal */
+    case '\'':
+        goto state_char_literal;
+
     /* eof */
     case EOF:
         tok->kind = TOK_EOF;
@@ -417,6 +421,36 @@ state_string_literal:
         *buf++ = c;
         goto state_string_literal;
     }
+
+state_char_literal:
+    c = readc(l);
+
+    if (c == '\\') {
+        c = readc(l);
+        switch (c) {
+        case '0':  tok->value = '\0'; break;
+        case '\\': tok->value = '\\'; break;
+        case '\'': tok->value = '\''; break;
+        case 'a':  tok->value = '\a'; break;
+        case 'b':  tok->value = '\b'; break;
+        case 'f':  tok->value = '\f'; break;
+        case 'n':  tok->value = '\n'; break;
+        case 'r':  tok->value = '\r'; break;
+        case 't':  tok->value = '\t'; break;
+        case 'v':  tok->value = '\v'; break;
+        default:
+            /* error */
+            break;
+        }
+        tok->kind = TOK_NUM;
+    } else {
+        tok->kind = TOK_NUM;
+        tok->value = c;
+    }
+    c = readc(l);
+    if (c != '\'')
+        ;/* error */
+    goto state_final;
 
 state_line_comment:
     c = readc(l);

@@ -6,7 +6,6 @@
   - check args
   - cast
   - char <-> int, negative number literal
-  - char literal
   - static, extern
   - const
   - array initializer
@@ -23,6 +22,7 @@
   - union
   - control flow check
   - void pointer, void parameter
+  - lexer error
 
 * IMPLEMENTATION
   - new number()
@@ -64,3 +64,4 @@
   - push symbol()
   - use label() and enum scope
   - enum, struct with no tag
+  - char literal

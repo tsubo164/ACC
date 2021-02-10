@@ -40,6 +40,27 @@ int main()
         assert(42, a + x[0]);
     }
     {
+        /* char literal */
+        char c = 'a';
+
+        assert(97, c);
+
+        c = '\0';
+        assert(0, c);
+
+        c = '\n';
+        assert(10, c);
+
+        c = '\\';
+        assert(92, c);
+
+        c = '\'';
+        assert(39, c);
+
+        c = 'X';
+        assert(88, c);
+    }
+    {
         /*
         void i = 0;
         */

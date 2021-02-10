@@ -1,10 +1,8 @@
-enum color {
-    red = 101, green, blue
-};
-
 int main()
 {
-    enum color c = green;
+    char c = 'a';
+
+    c = '\n';
 
     return c;
 }
