@@ -3,6 +3,11 @@
 #include <string.h>
 #include "symbol.h"
 
+int is_external_var(const struct symbol *sym)
+{
+    return is_global_var(sym) && sym->is_extern;
+}
+
 int is_global_var(const struct symbol *sym)
 {
     if (sym->kind == SYM_VAR &&
@@ -124,7 +129,7 @@ void print_symbol_table(const struct symbol_table *table)
     printf("%5s | ", "scope");
     printf("%5s| ", "offset");
     printf("%5s | ", "id");
-    printf("%6s | ", "DDRIAU");
+    printf("%6s | ", "EDRIAU");
     printf("\n");
 
     print_horizonal_line('=', COLUMNS);
@@ -173,7 +178,7 @@ void print_symbol_table(const struct symbol_table *table)
         printf("%5d | ",  sym->id);
 
         /* flags */
-        printf("%c", sym->is_declared    ? 'D' : '.');
+        printf("%c", sym->is_extern      ? 'E' : '.');
         printf("%c", sym->is_defined     ? 'D' : '.');
         printf("%c", sym->is_redefined   ? 'R' : '.');
         printf("%c", sym->is_initialized ? 'I' : '.');

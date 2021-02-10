@@ -75,6 +75,7 @@ enum ast_node_kind {
     NOD_DECL_MEMBER,
     NOD_DECL_ENUMERATOR,
     NOD_DECL_TYPEDEF,
+    NOD_DECL_EXTERN,
     /* type specifier */
     NOD_SPEC_VOID,
     NOD_SPEC_CHAR,

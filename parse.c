@@ -142,6 +142,7 @@ struct parser *new_parser()
     p->decl_type = NULL;
 
     p->is_typedef = 0;
+    p->is_extern = 0;
     p->is_panic_mode = 0;
 
     return p;
@@ -266,7 +267,9 @@ static void define_sym(struct parser *p, struct ast_node *node)
         decl_type = p->decl_type;
 
     sym = define_symbol(p->symtab, p->decl_ident, p->decl_kind, decl_type);
+    sym->is_extern = p->is_extern;
     sym->pos = node->pos;
+
     node->sym = sym;
     type_from_sym(node);
 }
@@ -325,27 +328,27 @@ static void define_string(struct parser *p, struct ast_node *node)
     node->sym = sym;
 }
 
-static void scope_begin(struct parser *p)
+static void begin_scope(struct parser *p)
 {
     symbol_scope_begin(p->symtab);
 }
 
-static void scope_end(struct parser *p)
+static void end_scope(struct parser *p)
 {
     symbol_scope_end(p->symtab);
 }
 
-static void switch_begin(struct parser *p)
+static void begin_switch(struct parser *p)
 {
     symbol_switch_begin(p->symtab);
 }
 
-static void switch_end(struct parser *p)
+static void end_switch(struct parser *p)
 {
     symbol_switch_end(p->symtab);
 }
 
-static void decl_begin(struct parser *p, int decl_kind)
+static void decl_set_kind(struct parser *p, int decl_kind)
 {
     p->decl_kind = decl_kind;
 }
@@ -365,12 +368,12 @@ static int decl_is_func(struct parser *p)
     return p->decl_kind == SYM_FUNC || p->decl_kind == SYM_PARAM;
 }
 
-static void typedef_begin(struct parser *p)
+static void begin_typedef(struct parser *p)
 {
     p->is_typedef = 1;
 }
 
-static void typedef_end(struct parser *p)
+static void end_typedef(struct parser *p)
 {
     p->is_typedef = 0;
 }
@@ -380,12 +383,23 @@ static int decl_is_typedef(struct parser *p)
     return p->is_typedef == 1;
 }
 
+static void begin_extern(struct parser *p)
+{
+    p->is_extern = 1;
+}
+
+static void end_extern(struct parser *p)
+{
+    p->is_extern = 0;
+}
+
 static void decl_reset_context(struct parser *p)
 {
     p->decl_kind = 0;
     p->decl_ident = NULL;
     p->decl_type = NULL;
-    typedef_end(p);
+    end_typedef(p);
+    end_extern(p);
 }
 
 /*
@@ -452,9 +466,9 @@ static struct ast_node *primary_expression(struct parser *p)
         ungettok(p);
         tree = identifier(p);
         if (nexttok(p, '('))
-            decl_begin(p, SYM_FUNC);
+            decl_set_kind(p, SYM_FUNC);
         else
-            decl_begin(p, SYM_VAR);
+            decl_set_kind(p, SYM_VAR);
         use_sym(p, tree);
         return typed_(tree);
 
@@ -987,11 +1001,11 @@ static struct ast_node *compound_statement(struct parser *p)
 
     expect(p, '{');
 
-    scope_begin(p);
+    begin_scope(p);
     tree = new_node(NOD_COMPOUND, NULL, NULL);
     tree->l = declaration_list(p);
     tree->r = statement_list(p);
-    scope_end(p);
+    end_scope(p);
 
     expect(p, '}');
 
@@ -1189,9 +1203,9 @@ static struct ast_node *switch_statement(struct parser *p)
     expr = expression(p);
     expect(p, ')');
 
-    switch_begin(p);
+    begin_switch(p);
     body = statement(p);
-    switch_end(p);
+    end_switch(p);
 
     tree = new_node(NOD_SWITCH, expr, body);
     return tree;
@@ -1459,7 +1473,7 @@ static struct ast_node *struct_declaration(struct parser *p)
     if (!spec)
         return NULL;
 
-    decl_begin(p, SYM_MEMBER);
+    decl_set_kind(p, SYM_MEMBER);
 
     tree = NEW_(NOD_DECL_MEMBER);
     tree->l = spec;
@@ -1496,7 +1510,7 @@ static struct ast_node *struct_or_union(struct parser *p)
     switch (tok->kind) {
 
     case TOK_STRUCT:
-        decl_begin(p, SYM_TAG_STRUCT);
+        decl_set_kind(p, SYM_TAG_STRUCT);
         tree = NEW_(NOD_SPEC_STRUCT);
         break;
 
@@ -1527,9 +1541,9 @@ static struct ast_node *struct_or_union_specifier(struct parser *p)
         define_sym(p, ident);
     }
 
-    scope_begin(p);
+    begin_scope(p);
     tree->r = struct_declaration_list(p);
-    scope_end(p);
+    end_scope(p);
 
     expect(p, '}');
 
@@ -1554,7 +1568,7 @@ static struct ast_node *enumerator(struct parser *p)
         return NULL;
     ident = decl_identifier(p);
 
-    decl_begin(p, SYM_ENUMERATOR);
+    decl_set_kind(p, SYM_ENUMERATOR);
 
     tree = NEW_(NOD_DECL_ENUMERATOR);
     tree->l = ident;
@@ -1603,7 +1617,7 @@ static struct ast_node *enum_specifier(struct parser *p)
 
     expect(p, TOK_ENUM);
 
-    decl_begin(p, SYM_TAG_ENUM);
+    decl_set_kind(p, SYM_TAG_ENUM);
 
     tree = NEW_(NOD_SPEC_ENUM);
     ident = decl_identifier(p);
@@ -1688,7 +1702,7 @@ static struct ast_node *param_decl(struct parser *p)
     if (!spec)
         return NULL;
 
-    decl_begin(p, SYM_PARAM);
+    decl_set_kind(p, SYM_PARAM);
 
     tree = NEW_(NOD_DECL_PARAM);
     tree->l = spec;
@@ -1770,10 +1784,10 @@ static struct ast_node *direct_declarator(struct parser *p)
     if (consume(p, '(')) {
         /* function */
         struct ast_node *fn = NEW_(NOD_DECL_FUNC);
-        decl_begin(p, SYM_FUNC);
+        decl_set_kind(p, SYM_FUNC);
         define_sym(p, ident);
 
-        scope_begin(p);
+        begin_scope(p);
         fn->l = tree;
         fn->r = param_decl_list(p);
         tree = fn;
@@ -1910,7 +1924,12 @@ static struct ast_node *storage_class_specifier(struct parser *p)
     case TOK_TYPEDEF:
         tree = new_node_(NOD_DECL_TYPEDEF, tokpos(p));
         decl_set_type(p, type_void());
-        typedef_begin(p);
+        begin_typedef(p);
+        break;
+
+    case TOK_EXTERN:
+        tree = new_node_(NOD_DECL_EXTERN, tokpos(p));
+        begin_extern(p);
         break;
 
     default:
@@ -1966,9 +1985,9 @@ static struct ast_node *declaration(struct parser *p)
     /* need to reset decl here because type spec might contain
      * other decls such as struct, union or enum */
     if (decl_is_typedef(p))
-        decl_begin(p, SYM_TYPEDEF);
+        decl_set_kind(p, SYM_TYPEDEF);
     else
-        decl_begin(p, SYM_VAR);
+        decl_set_kind(p, SYM_VAR);
 
     tree = NEW_(NOD_DECL);
     tree->l = spec;
@@ -1979,11 +1998,11 @@ static struct ast_node *declaration(struct parser *p)
         struct ast_node *stmt = compound_statement(p);
         tree = new_node(NOD_FUNC_DEF, tree, stmt);
         use_label(p, stmt);
-        scope_end(p);
+        end_scope(p);
         return tree;
     } else if (decl_is_func(p)) {
         /* is func prototype */
-        scope_end(p);
+        end_scope(p);
     }
 
     expect(p, ';');

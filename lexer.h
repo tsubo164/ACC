@@ -28,6 +28,7 @@ enum token_kind {
     TOK_STRUCT,
     TOK_ENUM,
     TOK_TYPEDEF,
+    TOK_EXTERN,
     /* types */
     TOK_VOID,
     TOK_CHAR,

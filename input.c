@@ -1,8 +1,10 @@
+typedef int id_t;
+
+extern int exti;
+
 int main()
 {
-    char c = 'a';
+    id_t id = exti;
 
-    c = '\n';
-
-    return c;
+    return id;
 }

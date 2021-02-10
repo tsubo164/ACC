@@ -27,6 +27,7 @@ struct parser {
     struct data_type *decl_type;
 
     int is_typedef;
+    int is_extern;
     int is_panic_mode;
 };
 

@@ -36,7 +36,7 @@ struct symbol {
     struct symbol *prev;
 
     /* flags */
-    char is_declared;
+    char is_extern;
     char is_defined;
     char is_redefined;
     char is_initialized;
@@ -53,6 +53,7 @@ struct symbol_table {
 };
 
 /* symbol */
+extern int is_external_var(const struct symbol *sym);
 extern int is_global_var(const struct symbol *sym);
 extern int is_local_var(const struct symbol *sym);
 extern int is_param(const struct symbol *sym);

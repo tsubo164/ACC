@@ -1197,7 +1197,7 @@ static void gen_global_var_list(FILE *fp, const struct symbol_table *table)
     int nvars = 0;
 
     for (sym = table->head; sym; sym = sym->next) {
-        if (is_global_var(sym)) {
+        if (is_global_var(sym) && !is_external_var(sym)) {
             if (nvars == 0) {
                 fprintf(fp, ".data\n");
                 fprintf(fp, ".global ");
@@ -1232,7 +1232,7 @@ static void gen_global_var_labels(FILE *fp, const struct ast_node *node)
 
         sym = ident->sym;
 
-        if (is_global_var(sym)) {
+        if (is_global_var(sym) && !is_external_var(sym)) {
             /* TODO need eval instead of find NOD_NUM */
             const struct ast_node *init = find_node(node, NOD_NUM);
             const int val = init ? init->ival : 0;
