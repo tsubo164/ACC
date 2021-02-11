@@ -490,6 +490,7 @@ static void gen_func_prologue(FILE *fp, const struct ast_node *node)
     ident = find_node(ddecl->r, NOD_DECL_IDENT);
     /* TODO assert(ident) */
 
+    fprintf(fp, "    .global _%s\n", ident->sym->name);
     fprintf(fp, "_%s:\n", ident->sym->name);
     code2__(fp, ident, PUSH_, RBP);
     code3__(fp, ident, MOV_,  RSP, RBP);
@@ -1174,48 +1175,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     }
 }
 
-static void gen_global_func_list(FILE *fp, const struct symbol_table *table)
-{
-    struct symbol *sym;
-    int nfuncs = 0;
-
-    for (sym = table->head; sym; sym = sym->next) {
-        if (sym->kind == SYM_FUNC) {
-            if (nfuncs > 0)
-                fprintf(fp, ", ");
-
-            fprintf(fp, "_%s", sym->name);
-            nfuncs++;
-        }
-    }
-    fprintf(fp, "\n");
-}
-
-static void gen_global_var_list(FILE *fp, const struct symbol_table *table)
-{
-    struct symbol *sym;
-    int nvars = 0;
-
-    for (sym = table->head; sym; sym = sym->next) {
-        if (is_global_var(sym) && !is_external_var(sym)) {
-            if (nvars == 0) {
-                fprintf(fp, ".data\n");
-                fprintf(fp, ".global ");
-
-                fprintf(fp, "_%s", sym->name);
-            } else {
-                fprintf(fp, ", _%s", sym->name);
-            }
-
-            nvars++;
-        }
-    }
-
-    if (nvars > 0)
-        fprintf(fp, "\n");
-}
-
-static void gen_global_var_labels(FILE *fp, const struct ast_node *node)
+static void gen_global_vars(FILE *fp, const struct ast_node *node)
 {
     if (!node)
         return;
@@ -1239,15 +1199,16 @@ static void gen_global_var_labels(FILE *fp, const struct ast_node *node)
             const int tag = data_tag_(sym->type);
             const char *szname = data_spec_table[tag].sizename;
 
+            fprintf(fp, "    .global _%s\n", sym->name);
             fprintf(fp, "_%s:\n", sym->name);
-            fprintf(fp, "    .%s %d\n", szname, val);
+            fprintf(fp, "    .%s %d\n\n", szname, val);
         }
 
         return;
     }
 
-    gen_global_var_labels(fp, node->l);
-    gen_global_var_labels(fp, node->r);
+    gen_global_vars(fp, node->l);
+    gen_global_vars(fp, node->r);
 }
 
 static void gen_string_literal(FILE *fp, const struct symbol_table *table)
@@ -1257,7 +1218,7 @@ static void gen_string_literal(FILE *fp, const struct symbol_table *table)
     for (sym = table->head; sym; sym = sym->next) {
         if (sym->kind == SYM_STRING) {
             fprintf(fp, "_L.str.%d:\n", sym->id);
-            fprintf(fp, "    .asciz \"%s\"\n", sym->name);
+            fprintf(fp, "    .asciz \"%s\"\n\n", sym->name);
         }
     }
 }
@@ -1269,15 +1230,10 @@ void gen_x86(FILE *fp,
         fprintf(fp, ".intel_syntax noprefix\n");
     }
 
-    fprintf(fp, ".data\n");
+    fprintf(fp, "    .data\n\n");
     gen_string_literal(fp, table);
-    gen_global_var_list(fp, table);
-    gen_global_var_labels(fp, tree);
+    gen_global_vars(fp, tree);
 
-    fprintf(fp, ".text\n");
-    fprintf(fp, ".global ");
-
-    gen_global_func_list(fp, table);
-
+    fprintf(fp, "    .text\n\n");
     gen_code(fp, tree);
 }
