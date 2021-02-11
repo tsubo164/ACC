@@ -169,6 +169,10 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
             if (sym->is_defined && !sym->is_used)
                 add_warning2(messages, &sym->pos, "unused variable '%s'", sym->name);
         }
+        else if (is_global_var(sym)) {
+            if (is_static(sym) && !sym->is_used)
+                add_warning2(messages, &sym->pos, "unused variable '%s'", sym->name);
+        }
         else if (is_enumerator(sym)) {
             if (sym->is_assigned)
                 add_error(messages, "expression is not assignable", &pos);

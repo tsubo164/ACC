@@ -1200,7 +1200,8 @@ static void gen_global_vars(FILE *fp, const struct ast_node *node)
             const int tag = data_tag_(sym->type);
             const char *szname = data_spec_table[tag].sizename;
 
-            fprintf(fp, "    .global _%s\n", sym->name);
+            if (!is_static(sym))
+                fprintf(fp, "    .global _%s\n", sym->name);
             fprintf(fp, "_%s:\n", sym->name);
             fprintf(fp, "    .%s %d\n\n", szname, val);
         }

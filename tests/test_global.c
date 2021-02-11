@@ -8,7 +8,7 @@ int add(int x, int y)
 int x;
 int z;
 
-extern g_count;
+extern int g_count;
 void set_count(int val);
 
 int main()
