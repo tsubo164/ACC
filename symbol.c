@@ -4,9 +4,9 @@
 #include "symbol.h"
 
 /* TODO consider removing this */
-int is_external_var(const struct symbol *sym)
+int is_extern(const struct symbol *sym)
 {
-    return is_global_var(sym) && sym->is_extern;
+    return sym->is_extern;
 }
 
 /* TODO consider removing this */
@@ -20,6 +20,11 @@ int is_global_var(const struct symbol *sym)
     if (sym->kind == SYM_VAR &&
         sym->scope_level == 0)
         return 1;
+
+    if (sym->kind == SYM_VAR &&
+        sym->scope_level > 0 &&
+        sym->is_static)
+        return 1;
     else
         return 0;
 }
@@ -27,7 +32,8 @@ int is_global_var(const struct symbol *sym)
 int is_local_var(const struct symbol *sym)
 {
     if (sym->kind == SYM_VAR &&
-        sym->scope_level > 0)
+        sym->scope_level > 0 &&
+        !sym->is_static)
         return 1;
     else
         return 0;

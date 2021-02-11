@@ -1193,7 +1193,7 @@ static void gen_global_vars(FILE *fp, const struct ast_node *node)
 
         sym = ident->sym;
 
-        if (is_global_var(sym) && !is_external_var(sym)) {
+        if (is_global_var(sym) && !is_extern(sym)) {
             /* TODO need eval instead of find NOD_NUM */
             const struct ast_node *init = find_node(node, NOD_NUM);
             const int val = init ? init->ival : 0;

@@ -54,7 +54,7 @@ struct symbol_table {
 };
 
 /* symbol */
-extern int is_external_var(const struct symbol *sym);
+extern int is_extern(const struct symbol *sym);
 extern int is_static(const struct symbol *sym);
 extern int is_global_var(const struct symbol *sym);
 extern int is_local_var(const struct symbol *sym);

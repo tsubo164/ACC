@@ -6,7 +6,6 @@
   - check args
   - cast
   - char <-> int, negative number literal
-  - static, extern
   - const
   - array initializer
   - std stuff FILE, stderro, NULL ...
@@ -65,3 +64,4 @@
   - use label() and enum scope
   - enum, struct with no tag
   - char literal
+  - static, extern

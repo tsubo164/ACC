@@ -8,8 +8,16 @@ int add(int x, int y)
 int x;
 int z;
 
+/* defined in test.c */
 extern int g_count;
 void set_count(int val);
+
+/* static local variable */
+static int count_up()
+{
+    static int count = 0;
+    return ++count;
+}
 
 int main()
 {
@@ -38,6 +46,15 @@ int main()
 
         set_count(19);
         assert(19, g_count);
+    }
+    {
+        /* static local variable */
+        assert(1, count_up());
+        assert(2, count_up());
+        assert(3, count_up());
+        assert(4, count_up());
+        assert(5, count_up());
+        assert(6, count_up());
     }
 
     return 0;
