@@ -17,9 +17,6 @@ struct parser {
     struct symbol_table *symtab;
     struct message_list *msg;
 
-    long error_pos;
-    const char *error_msg;
-
     /* TODO may need struct declaration */
     /* declaration context */
     int decl_kind;
@@ -28,6 +25,7 @@ struct parser {
 
     int is_typedef;
     int is_extern;
+    int is_static;
     int is_panic_mode;
 };
 

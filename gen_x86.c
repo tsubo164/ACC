@@ -490,7 +490,8 @@ static void gen_func_prologue(FILE *fp, const struct ast_node *node)
     ident = find_node(ddecl->r, NOD_DECL_IDENT);
     /* TODO assert(ident) */
 
-    fprintf(fp, "    .global _%s\n", ident->sym->name);
+    if (!is_static(ident->sym))
+        fprintf(fp, "    .global _%s\n", ident->sym->name);
     fprintf(fp, "_%s:\n", ident->sym->name);
     code2__(fp, ident, PUSH_, RBP);
     code3__(fp, ident, MOV_,  RSP, RBP);

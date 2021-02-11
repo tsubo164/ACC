@@ -134,15 +134,13 @@ struct parser *new_parser()
     p->head = 0;
     p->curr = 0;
 
-    p->error_pos = -1L;
-    p->error_msg = "";
-
     p->decl_kind = 0;
     p->decl_ident = NULL;
     p->decl_type = NULL;
 
     p->is_typedef = 0;
     p->is_extern = 0;
+    p->is_static = 0;
     p->is_panic_mode = 0;
 
     return p;
@@ -267,7 +265,12 @@ static void define_sym(struct parser *p, struct ast_node *node)
         decl_type = p->decl_type;
 
     sym = define_symbol(p->symtab, p->decl_ident, p->decl_kind, decl_type);
+    /* >> TODO make func */
     sym->is_extern = p->is_extern;
+    sym->is_static = p->is_static;
+    p->is_extern = 0;
+    p->is_static = 0;
+    /* << make func */
     sym->pos = node->pos;
 
     node->sym = sym;
@@ -393,6 +396,16 @@ static void end_extern(struct parser *p)
     p->is_extern = 0;
 }
 
+static void begin_static(struct parser *p)
+{
+    p->is_static = 1;
+}
+
+static void end_static(struct parser *p)
+{
+    p->is_static = 0;
+}
+
 static void decl_reset_context(struct parser *p)
 {
     p->decl_kind = 0;
@@ -400,6 +413,7 @@ static void decl_reset_context(struct parser *p)
     p->decl_type = NULL;
     end_typedef(p);
     end_extern(p);
+    end_static(p);
 }
 
 /*
@@ -1930,6 +1944,11 @@ static struct ast_node *storage_class_specifier(struct parser *p)
     case TOK_EXTERN:
         tree = new_node_(NOD_DECL_EXTERN, tokpos(p));
         begin_extern(p);
+        break;
+
+    case TOK_STATIC:
+        tree = new_node_(NOD_DECL_STATIC, tokpos(p));
+        begin_static(p);
         break;
 
     default:

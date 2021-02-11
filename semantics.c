@@ -174,6 +174,9 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
                 add_error(messages, "expression is not assignable", &pos);
         }
         else if (is_func(sym)) {
+            if (sym->is_defined && !sym->is_used && is_static(sym))
+                add_warning2(messages, &sym->pos, "unused function '%s'", sym->name);
+
             if (!sym->is_defined && sym->is_used)
                 add_warning(messages, "implicit declaration of function", &pos);
         }
@@ -268,11 +271,11 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
                     /* array, struct, union will not be treated as uninitialized */
                     if (!is_array(sym->type) && !is_struct(sym->type))
                         add_warning2(ctx->messages, &node->pos,
-                                "'%s' is not initialized", sym->name);
+                                "uninitialized variable '%s'", sym->name);
 
                 if (!sym->is_defined && sym->is_used)
                     add_error2(ctx->messages, &node->pos,
-                            "'%s' is not defined", sym->name);
+                            "undeclared identifier '%s'", sym->name);
             }
         }
         break;

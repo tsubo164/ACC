@@ -3,9 +3,16 @@
 #include <string.h>
 #include "symbol.h"
 
+/* TODO consider removing this */
 int is_external_var(const struct symbol *sym)
 {
     return is_global_var(sym) && sym->is_extern;
+}
+
+/* TODO consider removing this */
+int is_static(const struct symbol *sym)
+{
+    return sym->is_static;
 }
 
 int is_global_var(const struct symbol *sym)
@@ -117,7 +124,7 @@ static void print_horizonal_line(char c, int n)
 
 void print_symbol_table(const struct symbol_table *table)
 {
-    const int COLUMNS = 87;
+    const int COLUMNS = 88;
     const struct symbol *sym;
 
     print_horizonal_line('-', COLUMNS);
@@ -129,7 +136,7 @@ void print_symbol_table(const struct symbol_table *table)
     printf("%5s | ", "scope");
     printf("%5s| ", "offset");
     printf("%5s | ", "id");
-    printf("%6s | ", "EDRIAU");
+    printf("%7s | ", "ESDRIAU");
     printf("\n");
 
     print_horizonal_line('=', COLUMNS);
@@ -179,6 +186,7 @@ void print_symbol_table(const struct symbol_table *table)
 
         /* flags */
         printf("%c", sym->is_extern      ? 'E' : '.');
+        printf("%c", sym->is_static      ? 'S' : '.');
         printf("%c", sym->is_defined     ? 'D' : '.');
         printf("%c", sym->is_redefined   ? 'R' : '.');
         printf("%c", sym->is_initialized ? 'I' : '.');

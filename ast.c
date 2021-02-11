@@ -114,6 +114,7 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_DECL_ENUMERATOR: return "NOD_DECL_ENUMERATOR";
     case NOD_DECL_TYPEDEF: return "NOD_DECL_TYPEDEF";
     case NOD_DECL_EXTERN: return "NOD_DECL_EXTERN";
+    case NOD_DECL_STATIC: return "NOD_DECL_STATIC";
     case NOD_SPEC_VOID: return "NOD_SPEC_VOID";
     case NOD_SPEC_CHAR: return "NOD_SPEC_CHAR";
     case NOD_SPEC_INT: return "NOD_SPEC_INT";
