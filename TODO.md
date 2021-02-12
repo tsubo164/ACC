@@ -27,6 +27,8 @@
   - new number()
 
 * BUG
+  - static int -> quad
+  - add func name to static int
   - void printf(char *s, ind n) -> infinite loop
   - //typedef struct node Node;
     struct node {

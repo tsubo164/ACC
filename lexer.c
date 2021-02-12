@@ -84,6 +84,8 @@ static void keyword_or_identifier(struct token *tok)
         tok->kind = TOK_EXTERN;
     else if (!strcmp(text, "static"))
         tok->kind = TOK_STATIC;
+    else if (!strcmp(text, "const"))
+        tok->kind = TOK_CONST;
 
     else if (!strcmp(text, "void"))
         tok->kind = TOK_VOID;
@@ -537,6 +539,7 @@ void print_token(const struct token *tok)
     case TOK_TYPEDEF:
     case TOK_EXTERN:
     case TOK_STATIC:
+    case TOK_CONST:
          /* types */
     case TOK_VOID:
     case TOK_CHAR:

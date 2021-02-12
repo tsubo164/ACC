@@ -66,6 +66,7 @@ int main()
         */
     }
     {
+        /* sizeof struct */
         struct point pt;
         int a = 42;
         int *p = &a;
@@ -92,6 +93,7 @@ int main()
         assert(4, sizeof (enum color));
     }
     {
+        /* sizeof typdedef */
         typedef char token_t;
 
         id_t id = 123;
@@ -104,6 +106,11 @@ int main()
         assert(97, tok);
         assert(1, sizeof tok);
         assert(1, sizeof(token_t));
+    }
+    {
+        /* const static */
+        const static int i = 42;
+        assert(42, i);
     }
 
     return 0;

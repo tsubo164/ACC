@@ -1386,6 +1386,30 @@ static struct ast_node *abstract_declarator(struct parser *p)
 }
 
 /*
+ * type_qualifier
+ *     TOK_CONST
+ *     TOK_VOLATILE
+ */
+static struct ast_node *type_qualifier(struct parser *p)
+{
+    struct ast_node *tree = NULL;
+    const struct token *tok = gettok(p);
+
+    switch (tok->kind) {
+
+    case TOK_CONST:
+        tree = new_node_(NOD_QUAL_CONST, tokpos(p));
+        break;
+
+    default:
+        ungettok(p);
+        break;
+    }
+
+    return tree;
+}
+
+/*
  * specifier_qualifier_list
  *     type_specifier specifier_qualifier_list
  *     type_specifier
@@ -1973,15 +1997,37 @@ static struct ast_node *declaration_specifiers(struct parser *p)
     /* this function should return NULL when there is no type spec
      * so decl know we're not parsing a decl anymore and move on to
      * parsing statements. */
-    struct ast_node *stor = storage_class_specifier(p);
-    struct ast_node *spec = type_specifier(p);
-    struct ast_node *tree = NULL;
+    struct ast_node *tree = NULL, *decl = NULL;
+    struct ast_node *list, *stor, *qual, *spec;
 
-    if (!stor && !spec)
+    for (;;) {
+        stor = storage_class_specifier(p);
+        if (stor) {
+            list = new_node_(NOD_LIST, tokpos(p));
+            tree = branch_(list, tree, stor);
+        }
+
+        qual = type_qualifier(p);
+        if (qual) {
+            list = new_node_(NOD_LIST, tokpos(p));
+            tree = branch_(list, tree, qual);
+        }
+
+        spec = type_specifier(p);
+        if (spec) {
+            list = new_node_(NOD_LIST, tokpos(p));
+            tree = branch_(list, tree, spec);
+        }
+
+        if (!stor && !qual && !spec)
+            break;
+    }
+
+    if (!tree)
         return NULL;
 
-    tree = new_node_(NOD_DECL_SPEC, tokpos(p));
-    return branch_(tree, stor, spec);
+    decl = new_node_(NOD_DECL_SPEC, tokpos(p));
+    return branch_(decl, tree, NULL);
 }
 
 /*

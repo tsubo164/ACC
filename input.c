@@ -1,35 +1,28 @@
-void puts(char *s);
-
-typedef int id_t;
-
-//extern int exti;
-int exti = 13;
-
-static int stai = 19;
-
-static int add(int x, int y)
+int count_up()
 {
-    return x + y;
-}
+    struct point {
+        int x, y;
+    } static pt = {0};
 
-static int count_up()
-{
-    static int count = 0;
-    return ++count;
+    pt.x++;
+
+    return pt.x;
 }
 
 int main()
 {
-    id_t id = exti;
+    int static const i = 123;
+    /*
+    struct point {
+        int x, y;
+    } static pt;
 
-    id = add(19, 11);
-    id = stai;
+    pt.x = 123;
+    */
 
-    id = count_up();
-    id = count_up();
-    id = count_up();
-    id = count_up();
-
-    puts("Helleo, world!");
-    return id;
+    count_up();
+    count_up();
+    count_up();
+    count_up();
+    return count_up() + i;
 }

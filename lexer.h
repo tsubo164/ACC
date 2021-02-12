@@ -30,6 +30,7 @@ enum token_kind {
     TOK_TYPEDEF,
     TOK_EXTERN,
     TOK_STATIC,
+    TOK_CONST,
     /* types */
     TOK_VOID,
     TOK_CHAR,
