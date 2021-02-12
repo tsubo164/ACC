@@ -253,12 +253,21 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         }
         break;
 
+    /* TODO add sub_assign, ... */
     case NOD_ASSIGN:
         /* evaluate rvalue first to check a = a + 1; */
         check_tree_(node->r, ctx);
         ctx->is_lvalue = 1;
         check_tree_(node->l, ctx);
         ctx->is_lvalue = 0;
+
+        {
+            /* TODO not work for array lvalue. need to find ident */
+            struct symbol *sym = node->l->sym;
+            if (is_const(node->type))
+                add_error2(ctx->messages, &node->pos,
+                        "cannot assign to variable '%s' with const-qualified", sym->name);
+        }
         return;
 
     case NOD_IDENT:

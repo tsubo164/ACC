@@ -26,6 +26,8 @@ struct data_type {
     struct data_type *ptr_to;
     /* for struct, union, enum tags and typedefs */
     struct symbol *sym;
+
+    char is_const;
 };
 
 extern int get_size(const struct data_type *type);
@@ -40,9 +42,11 @@ extern const char *tag_of(const struct data_type *type);
 extern void set_array_length(struct data_type *type, int len);
 extern void set_struct_size(struct data_type *type, int size);
 extern void set_symbol(struct data_type *type, struct symbol *sym);
+extern void set_const(struct data_type *type, int is_const);
 
 extern struct data_type *promote(struct data_type *t1, struct data_type *t2);
 extern int is_incomplete(const struct data_type *type);
+extern int is_const(const struct data_type *type);
 extern int is_void(const struct data_type *type);
 extern int is_char(const struct data_type *type);
 extern int is_int(const struct data_type *type);

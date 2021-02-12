@@ -141,6 +141,7 @@ struct parser *new_parser()
     p->is_typedef = 0;
     p->is_extern = 0;
     p->is_static = 0;
+    p->is_const = 0;
     p->is_panic_mode = 0;
 
     return p;
@@ -270,6 +271,7 @@ static void define_sym(struct parser *p, struct ast_node *node)
     sym->is_static = p->is_static;
     p->is_extern = 0;
     p->is_static = 0;
+    p->is_const = 0;
     /* << make func */
     sym->pos = node->pos;
 
@@ -1399,6 +1401,7 @@ static struct ast_node *type_qualifier(struct parser *p)
 
     case TOK_CONST:
         tree = new_node_(NOD_QUAL_CONST, tokpos(p));
+        p->is_const = 1;
         break;
 
     default:
@@ -2025,6 +2028,8 @@ static struct ast_node *declaration_specifiers(struct parser *p)
 
     if (!tree)
         return NULL;
+
+    set_const(p->decl_type, p->is_const);
 
     decl = new_node_(NOD_DECL_SPEC, tokpos(p));
     return branch_(decl, tree, NULL);

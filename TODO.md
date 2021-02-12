@@ -6,7 +6,6 @@
   - check args
   - cast
   - char <-> int, negative number literal
-  - const
   - array initializer
   - std stuff FILE, stderro, NULL ...
   - variable arguments
@@ -67,3 +66,4 @@
   - char literal
   - static, extern
   - add func name to static int (added symbol id)
+  - const

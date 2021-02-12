@@ -93,6 +93,11 @@ void set_symbol(struct data_type *type, struct symbol *sym)
     type->sym = sym;
 }
 
+void set_const(struct data_type *type, int is_const)
+{
+    type->is_const = is_const;
+}
+
 struct data_type *promote(struct data_type *t1, struct data_type *t2)
 {
     if (!t1 && !t2)
@@ -117,6 +122,11 @@ int is_incomplete(const struct data_type *type)
     if (is_struct(type) && !type->sym->is_defined)
         return 1;
     return 0;
+}
+
+int is_const(const struct data_type *type)
+{
+    return type->is_const;
 }
 
 int is_void(const struct data_type *type)
@@ -211,27 +221,32 @@ void print_data_type(const struct data_type *type)
     printf("    sym:       %p\n", (void *) type->sym);
 }
 
+static struct data_type *clone(const struct data_type *orig)
+{
+    struct data_type *type = malloc(sizeof(struct data_type));
+    *type = *orig;
+    return type;
+}
+
 struct data_type *type_void()
 {
-    return &VOID_;
+    return clone(&VOID_);
 }
 
 struct data_type *type_char()
 {
-    return &CHAR_;
+    return clone(&CHAR_);
 }
 
 struct data_type *type_int()
 {
-    return &INT_;
+    return clone(&INT_);
 }
 
 struct data_type *type_ptr(struct data_type *base_type)
 {
-    struct data_type *type;
+    struct data_type *type = clone(&PTR_);
 
-    type = malloc(sizeof(struct data_type));
-    *type = PTR_;
     type->ptr_to = base_type;
 
     return type;
@@ -239,12 +254,9 @@ struct data_type *type_ptr(struct data_type *base_type)
 
 struct data_type *type_array(struct data_type *base_type)
 {
-    struct data_type *type;
+    struct data_type *type = clone(&ARRAY_);
 
-    type = malloc(sizeof(struct data_type));
-    *type = ARRAY_;
     type->ptr_to = base_type;
-
     type->byte_size = base_type->byte_size;
     type->alignment = base_type->alignment;
     /* type->array_len will be computed in later phase */
@@ -254,10 +266,8 @@ struct data_type *type_array(struct data_type *base_type)
 
 struct data_type *type_struct(const char *tag)
 {
-    struct data_type *type;
+    struct data_type *type = clone(&STRUCT_);
 
-    type = malloc(sizeof(struct data_type));
-    *type = STRUCT_;
     type->tag = tag;
 
     return type;
@@ -265,10 +275,8 @@ struct data_type *type_struct(const char *tag)
 
 struct data_type *type_enum(const char *tag)
 {
-    struct data_type *type;
+    struct data_type *type = clone(&ENUM_);
 
-    type = malloc(sizeof(struct data_type));
-    *type = ENUM_;
     type->tag = tag;
 
     return type;
@@ -276,10 +284,8 @@ struct data_type *type_enum(const char *tag)
 
 struct data_type *type_type_name(const char *name, struct symbol *type_name)
 {
-    struct data_type *type;
+    struct data_type *type = clone(&TYPE_NAME_);
 
-    type = malloc(sizeof(struct data_type));
-    *type = TYPE_NAME_;
     type->tag = name;
     type->sym = type_name;
 

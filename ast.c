@@ -131,6 +131,10 @@ const char *node_to_string(const struct ast_node *node)
 static void print_type(const struct data_type *type)
 {
     printf(" ");
+
+    if (is_const(type))
+        printf("const ");
+
     if (is_type_name(type)) {
         printf("%s", type_name_of(type));
     }

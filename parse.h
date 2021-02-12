@@ -26,6 +26,7 @@ struct parser {
     int is_typedef;
     int is_extern;
     int is_static;
+    int is_const;
     int is_panic_mode;
 };
 
