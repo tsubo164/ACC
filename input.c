@@ -1,5 +1,6 @@
 int count_up()
 {
+    /*
     struct point {
         int x, y;
     } static pt = {0};
@@ -7,11 +8,14 @@ int count_up()
     pt.x++;
 
     return pt.x;
+    */
+    int static i = 0;
+    return ++i;
 }
 
 int main()
 {
-    int static const i = 123;
+    int const static i = 123;
     /*
     struct point {
         int x, y;

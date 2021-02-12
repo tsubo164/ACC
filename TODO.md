@@ -28,7 +28,6 @@
 
 * BUG
   - static int -> quad
-  - add func name to static int
   - void printf(char *s, ind n) -> infinite loop
   - //typedef struct node Node;
     struct node {
@@ -67,3 +66,4 @@
   - enum, struct with no tag
   - char literal
   - static, extern
+  - add func name to static int (added symbol id)

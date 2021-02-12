@@ -156,12 +156,13 @@ struct operand addr2(struct operand oper, int disp)
     return o;
 }
 
-/* XXX disp(base) */
-struct operand addr2_pc_rel(struct operand oper, const char *disp)
+/* name(base) */
+struct operand addr2_pc_rel(struct operand oper, const char *name, int label_id)
 {
     struct operand o = oper;
     o.kind = OPR_ADDR;
-    o.string = disp;
+    o.string = name;
+    o.label_id = label_id;
 
     return o;
 }
@@ -256,6 +257,14 @@ static void gen_opecode__(FILE *fp, int tag, const struct opecode *op, int *ncha
     *nchars = len;
 }
 
+static void gen_pc_rel_addr(FILE *fp, const char *name, int label_id)
+{
+    if (label_id > 0)
+        fprintf(fp, "_%s_%d", name, label_id);
+    else
+        fprintf(fp, "_%s", name);
+}
+
 static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
 {
     switch (oper->kind) {
@@ -274,8 +283,8 @@ static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
     case OPR_ADDR:
         if (att_syntax) {
             if (oper->string) {
-                /* XXX */
-                fprintf(fp, "_%s(%%%s)", oper->string, reg(oper, tag));
+                gen_pc_rel_addr(fp, oper->string, oper->label_id);
+                fprintf(fp, "(%%%s)", reg(oper, tag));
             } else
             if (oper->disp != 0) {
                 fprintf(fp, "%+d(%%%s)", oper->disp, reg(oper, tag));
@@ -573,7 +582,8 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
     sym = node->sym;
 
     if (is_global_var(sym)) {
-        code3__(fp, node, MOV_, addr2_pc_rel(RIP, sym->name), RAX);
+        const int id = is_static(sym) ? sym->id : -1;
+        code3__(fp, node, MOV_, addr2_pc_rel(RIP, sym->name, id), RAX);
     }
     else if (is_enumerator(sym)) {
         code3__(fp, node, MOV_, imme(get_mem_offset(node)), A_);
@@ -599,7 +609,8 @@ static void gen_ident_lvalue(FILE *fp, const struct ast_node *node)
     sym = node->sym;
 
     if (is_global_var(sym)) {
-        code3__(fp, node, LEA_, addr2_pc_rel(RIP, sym->name), RAX);
+        const int id = is_static(sym) ? sym->id : -1;
+        code3__(fp, node, LEA_, addr2_pc_rel(RIP, sym->name, id), RAX);
     } else {
         code3__(fp, node, MOV_, BP_, RAX);
         code3__(fp, node, SUB_, imme(get_mem_offset(node)), RAX);
@@ -1200,9 +1211,16 @@ static void gen_global_vars(FILE *fp, const struct ast_node *node)
             const int tag = data_tag_(sym->type);
             const char *szname = data_spec_table[tag].sizename;
 
-            if (!is_static(sym))
-                fprintf(fp, "    .global _%s\n", sym->name);
-            fprintf(fp, "_%s:\n", sym->name);
+            int id = sym->id;
+
+            if (!is_static(sym)) {
+                id = -1;
+                fprintf(fp, "    .global ");
+                gen_pc_rel_addr(fp, sym->name, id);
+                fprintf(fp, "\n");
+            }
+            gen_pc_rel_addr(fp, sym->name, id);
+            fprintf(fp, ":\n");
             fprintf(fp, "    .%s %d\n\n", szname, val);
         }
 

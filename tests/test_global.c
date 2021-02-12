@@ -19,6 +19,13 @@ static int count_up()
     return ++count;
 }
 
+/* static local variable with the same name */
+static int count_up2()
+{
+    static int count = 0;
+    return ++count;
+}
+
 int main()
 {
     {
@@ -55,6 +62,15 @@ int main()
         assert(4, count_up());
         assert(5, count_up());
         assert(6, count_up());
+    }
+    {
+        /* static local variable with the same name */
+        assert(1, count_up2());
+        assert(2, count_up2());
+        assert(3, count_up2());
+        assert(4, count_up2());
+        assert(5, count_up2());
+        assert(6, count_up2());
     }
 
     return 0;
