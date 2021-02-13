@@ -1872,19 +1872,15 @@ static struct ast_node *declarator(struct parser *p)
  */
 static struct ast_node *initializer(struct parser *p)
 {
-    struct ast_node *tree = NULL;
-    const struct token *tok = gettok(p);
-
-    switch (tok->kind) {
-
-    case '{':
-        tree = initializer_list(p);
+    /* ',' at the end of list is handled by initializer_list */
+    if (consume(p, '{')) {
+        struct ast_node *tree, *list;
+        list = initializer_list(p);
         expect(p, '}');
-        /* ',' at the end of list is handled by initializer_list */
-        return tree;
 
-    default:
-        ungettok(p);
+        tree = new_node_(NOD_INIT_LIST, tokpos(p));
+        return branch_(tree, list, NULL);
+    } else {
         return assignment_expression(p);
     }
 }
@@ -1920,7 +1916,7 @@ static struct ast_node *init_declarator(struct parser *p)
     tree->l = declarator(p);
 
     if (consume(p, '='))
-        tree->r = initializer_list(p);
+        tree->r = initializer(p);
 
     return typed_(tree);
 }

@@ -223,6 +223,32 @@ static int find_case_value(struct ast_node *node)
     return 0;
 }
 
+void check_init_(struct ast_node *node, struct tree_context *ctx,
+        const struct data_type *type)
+{
+    if (!node)
+        return;
+
+    switch (node->kind) {
+
+    case NOD_LIST:
+        check_init_(node->l, ctx, type);
+
+        if (!is_compatible(type, node->r->type))
+            add_error2(ctx->messages, &node->pos,
+                    "initializing '%s' with an expression of incompatible type '%s'",
+                    type_name_of(type), type_name_of(node->r->type));
+        break;
+
+    case NOD_INIT_LIST:
+        check_init_(node->l, ctx, underlying(type));
+        break;
+
+    default:
+        break;
+    }
+}
+
 static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 {
     /* TODO remove this */
@@ -239,6 +265,8 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         check_tree_(node->l, ctx);
         ctx->has_init = 0;
         check_tree_(node->r, ctx);
+
+        check_init_(node->r, ctx, node->type);
         return;
 
     case NOD_DECL_IDENT:

@@ -45,6 +45,8 @@ int get_array_length(const struct data_type *type)
 
 struct data_type *underlying(const struct data_type *type)
 {
+    if (!type)
+        return NULL;
     return type->ptr_to;
 }
 
@@ -111,6 +113,15 @@ struct data_type *promote(struct data_type *t1, struct data_type *t2)
         return t1;
     else
         return t2;
+}
+
+int is_compatible(const struct data_type *t1, const struct data_type *t2)
+{
+    if (!t1 || !t2)
+        return 0;
+    if (t1->kind == t2->kind)
+        return 1;
+    return 0;
 }
 
 int is_incomplete(const struct data_type *type)

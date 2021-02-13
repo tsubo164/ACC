@@ -8,6 +8,7 @@
 enum ast_node_kind {
     /* list */
     NOD_LIST,
+    NOD_INIT_LIST,
     NOD_COMPOUND,
     /* statement */
     NOD_BREAK,

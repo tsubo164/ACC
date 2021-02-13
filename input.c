@@ -1,10 +1,10 @@
 int main()
 {
-    int const static i = 123;
+    int a[2] = {5, 37, "foo"};
+    //int a[2] = {5, 37, 19};
+    int i = 111;
 
-    //const char *name = "foo bar";
+    a[1] = 19;
 
-    i = 9;
-
-    return i;
+    return a[1] + i;
 }
