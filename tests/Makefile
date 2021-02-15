@@ -3,7 +3,7 @@ CC = cc
 RM = rm -f
 
 files   := \
-		test_0002 test_0007 \
+		test_0002 \
 		test_arith test_array test_enum test_global test_goto test_for \
 		test_incdec test_pointer test_string test_struct test_switch test_type \
 		test_while

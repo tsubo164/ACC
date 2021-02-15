@@ -1,8 +1,18 @@
 int assert(int expected, int actual);
 
-int add(int x, int y)
+/* initialization for local and global variables */
+int X = 8;
+char Y;
+
+int num()
 {
-    return x + y;
+    /* returns 8 */
+    return X;
+}
+
+int add(int X, int Y)
+{
+    return X + Y;
 }
 
 int x;
@@ -28,6 +38,13 @@ static int count_up2()
 
 int main()
 {
+    {
+        char a = 31;
+        int b = 3 + a;
+
+        assert(34, b);
+        assert(42, b + num() + Y);
+    }
     {
         /* global variables and pointer */
         int a;
