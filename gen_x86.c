@@ -644,7 +644,7 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
         break;
 
     default:
-        gen_comment(fp, "this is not a lvalue");
+        gen_comment(fp, "not an lvalue");
         break;
     }
 }
@@ -738,6 +738,87 @@ static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_s
 
     gen_switch_table(fp, node->l, switch_scope);
     gen_switch_table(fp, node->r, switch_scope);
+}
+
+static void gen_init_array(FILE *fp, const struct ast_node *node,
+        const struct ast_node *ident, const struct data_type *type)
+{
+    static int index = 0;
+
+    if (!node)
+        return;
+
+    switch (node->kind) {
+
+    case NOD_LIST:
+        gen_init_array(fp, node->l, ident, type);
+
+        gen_comment(fp, "init array element");
+
+        /* ident */
+        gen_lvalue(fp, ident);
+        {
+            /* array element */
+            const int offset = (index++) * get_size(type);
+            code3__(fp, ident, ADD_, imme(offset), A_);
+        }
+        code2__(fp, ident, PUSH_, RAX);
+
+        /* init expr */
+        gen_code(fp, node->r);
+
+        /* assign */
+        code2__(fp, node, POP_,  RDX);
+        code3__(fp, node, MOV_, A_, addr1(RDX));
+        break;
+
+    case NOD_INIT_LIST:
+        {
+            const int tmp = index;
+            index = 0;
+            gen_init_array(fp, node->l, ident, underlying(type));
+            index = tmp;
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
+static void gen_init_single(FILE *fp, const struct ast_node *node,
+        const struct ast_node *ident)
+{
+    /* ident */
+    gen_lvalue(fp, ident);
+    code2__(fp, ident, PUSH_, RAX);
+
+    /* init expr */
+    gen_code(fp, node);
+
+    /* assign */
+    code2__(fp, ident, POP_,  RDX);
+    code3__(fp, ident, MOV_, A_, addr1(RDX));
+}
+
+static void gen_initializer(FILE *fp, const struct ast_node *node)
+{
+    const struct ast_node *ident;
+
+    if (!node || !node->r || node->kind != NOD_DECL_INIT)
+        return;
+
+    /* find lvalue ident */
+    ident = find_node(node->l, NOD_DECL_IDENT);
+
+    if (ident && is_local_var(ident->sym)) {
+        gen_comment(fp, "local var init");
+
+        if (is_array(ident->type))
+            gen_init_array(fp, node->r, ident, ident->type);
+        else
+            gen_init_single(fp, node->r, ident);
+    }
 }
 
 static void gen_code(FILE *fp, const struct ast_node *node)
@@ -906,32 +987,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_DECL_INIT:
-        if (node->r) {
-            const struct ast_node *ident;
-            const struct symbol *sym;
-
-            ident = find_node(node->l, NOD_DECL_IDENT);
-
-            /* TODO struct {} may not have ident. IR won't need this if statement */
-            if (!ident)
-                return;
-
-            sym = ident->sym;
-
-            if (is_local_var(sym)) {
-                gen_comment(fp, "local var init");
-                /* ident */
-                gen_lvalue(fp, ident);
-                code2__(fp, ident, PUSH_, RAX);
-
-                /* init expr */
-                gen_code(fp, node->r);
-
-                /* assign */
-                code2__(fp, node, POP_,  RDX);
-                code3__(fp, node, MOV_, A_, addr1(RDX));
-            }
-        }
+        gen_initializer(fp, node);
         break;
 
     case NOD_STRUCT_REF:

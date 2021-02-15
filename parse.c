@@ -648,7 +648,7 @@ static struct ast_node *cast_expression(struct parser *p)
  */
 static struct ast_node *unary_expression(struct parser *p)
 {
-    struct ast_node *tree = NULL;
+    struct ast_node *tree = NULL, *num = NULL;
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
@@ -657,21 +657,22 @@ static struct ast_node *unary_expression(struct parser *p)
         return cast_expression(p);
 
     case '-':
-        /* TODO tree = new_number(-1); */
-        tree = new_node(NOD_NUM, NULL, NULL);
-        tree->ival = -1;
-        tree = new_node(NOD_MUL, tree, cast_expression(p));
-        return tree;
+        num = new_node_(NOD_NUM, tokpos(p));
+        num->ival = -1;
+        tree = new_node_(NOD_MUL, tokpos(p));
+        return branch_(tree, num, cast_expression(p));
 
     case '*':
         tree = new_node_(NOD_DEREF, tokpos(p));
         return branch_(tree, cast_expression(p), NULL);
 
     case '&':
-        return new_node(NOD_ADDR, cast_expression(p), NULL);
+        tree = new_node_(NOD_ADDR, tokpos(p));
+        return branch_(tree, cast_expression(p), NULL);
 
     case '!':
-        return new_node(NOD_NOT, cast_expression(p), NULL);
+        tree = new_node_(NOD_NOT, tokpos(p));
+        return branch_(tree, cast_expression(p), NULL);
 
     case TOK_INC:
         tree = new_node_(NOD_PREINC, tokpos(p));

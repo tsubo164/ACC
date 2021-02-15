@@ -23,7 +23,6 @@
   - lexer error
 
 * IMPLEMENTATION
-  - new number()
 
 * BUG
   - static int -> quad
@@ -67,3 +66,4 @@
   - static, extern
   - add func name to static int (added symbol id)
   - const
+  - new number() (not needed)
