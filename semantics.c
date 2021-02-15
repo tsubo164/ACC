@@ -197,7 +197,8 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
 
 struct tree_context {
     struct message_list *messages;
-    struct symbol *func_sym;
+    const struct symbol *func_sym;
+    const struct symbol *var_sym;
     int loop_depth;
     int switch_depth;
     int enum_value;
@@ -223,9 +224,11 @@ static int find_case_value(struct ast_node *node)
     return 0;
 }
 
-void check_init_(struct ast_node *node, struct tree_context *ctx,
+static void check_init_(struct ast_node *node, struct tree_context *ctx,
         const struct data_type *type)
 {
+    static int element_count = 0;
+
     if (!node)
         return;
 
@@ -234,6 +237,10 @@ void check_init_(struct ast_node *node, struct tree_context *ctx,
     case NOD_LIST:
         check_init_(node->l, ctx, type);
 
+        if (++element_count > get_array_length(ctx->var_sym->type))
+            add_error2(ctx->messages, &node->pos,
+                    "excess elements in array initializer");
+
         if (!is_compatible(type, node->r->type))
             add_error2(ctx->messages, &node->pos,
                     "initializing '%s' with an expression of incompatible type '%s'",
@@ -241,7 +248,12 @@ void check_init_(struct ast_node *node, struct tree_context *ctx,
         break;
 
     case NOD_INIT_LIST:
-        check_init_(node->l, ctx, underlying(type));
+        {
+            const int tmp = element_count;
+            element_count = 0;
+            check_init_(node->l, ctx, underlying(type));
+            element_count = tmp;
+        }
         break;
 
     default:
@@ -261,18 +273,23 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
     /* declaration */
     case NOD_DECL_INIT:
+        ctx->var_sym = NULL;
+
         ctx->has_init = node->r ? 1 : 0;
         check_tree_(node->l, ctx);
         ctx->has_init = 0;
         check_tree_(node->r, ctx);
 
         check_init_(node->r, ctx, node->type);
+        ctx->var_sym = NULL;
         return;
 
     case NOD_DECL_IDENT:
         node->sym->is_initialized = ctx->has_init;
         if (node->sym->kind == SYM_FUNC)
             ctx->func_sym = node->sym;
+        if (node->sym->kind == SYM_VAR)
+            ctx->var_sym = node->sym;
 
         if (is_incomplete(node->sym->type) &&
                 (is_local_var(node->sym) || is_global_var(node->sym))) {

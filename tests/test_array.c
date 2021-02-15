@@ -56,6 +56,18 @@ int main()
         assert(13, a[2][1].x);
         assert(31, a[2][1].y);
     }
+    {
+        int a[8] = {5, 37, 19};
+
+        assert(5, a[0]);
+        assert(37, a[1]);
+        assert(19, a[2]);
+        assert(0, a[3]);
+        assert(0, a[4]);
+        assert(0, a[5]);
+        assert(0, a[6]);
+        assert(0, a[7]);
+    }
 
     return 0;
 }

@@ -775,8 +775,21 @@ static void gen_init_array(FILE *fp, const struct ast_node *node,
     case NOD_INIT_LIST:
         {
             const int tmp = index;
+            int i;
             index = 0;
             gen_init_array(fp, node->l, ident, underlying(type));
+
+            for (i = index; i < get_array_length(type); i++) {
+                const int offset = i * get_size(underlying(type));
+                /* ident */
+                gen_lvalue(fp, ident);
+                /* array element */
+                code3__(fp, ident, ADD_, imme(offset), A_);
+                /* assign zero */
+                code3__(fp, node, MOV_, imme(0), addr1(RAX));
+            }
+            gen_comment(fp, "end of init array");
+
             index = tmp;
         }
         break;
