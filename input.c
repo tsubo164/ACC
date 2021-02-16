@@ -1,19 +1,9 @@
-/*
-int i;
-static int *p;
-struct vec {
-    int x, y;
-} v;
-*/
-
 int main()
 {
-    //int a[2] = {5, 37, "foo"};
-    int a[3] = {5, 37, 19};
-    //int i = 111;
+    int a[] = {5, 37, 19, 23, -1};
+    //int a[2][3] = {{11, 22, 33}, {44, 55, 66}};
 
-    //a[1] = 19;
-
-    //return i;
-    return a[2];// + i;
+    return a[4];
+    return sizeof(a);//a[3];
+    //return a[1][2];
 }

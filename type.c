@@ -4,12 +4,14 @@
 #include "type.h"
 #include "symbol.h"
 
+#define UNKNOWN_ARRAY_LENGTH -1
+
 /*                                                    Sz Al Ln Ul    Sy  */
 static struct data_type VOID_    = {DATA_TYPE_VOID,   1, 4, 1, NULL, NULL};
 static struct data_type CHAR_    = {DATA_TYPE_CHAR,   1, 4, 1, NULL, NULL};
 static struct data_type INT_     = {DATA_TYPE_INT,    4, 4, 1, NULL, NULL};
 static struct data_type PTR_     = {DATA_TYPE_PTR,    8, 8, 1, NULL, NULL};
-static struct data_type ARRAY_   = {DATA_TYPE_ARRAY,  0, 0, 0, NULL, NULL};
+static struct data_type ARRAY_   = {DATA_TYPE_ARRAY,  0, 0, UNKNOWN_ARRAY_LENGTH, NULL, NULL};
 static struct data_type STRUCT_  = {DATA_TYPE_STRUCT, 0, 4, 1, NULL, NULL};
 static struct data_type ENUM_    = {DATA_TYPE_ENUM,   4, 4, 1, NULL, NULL};
 static struct data_type TYPE_NAME_ = {DATA_TYPE_TYPE_NAME, 0, 4, 1, NULL, NULL};
@@ -113,6 +115,11 @@ struct data_type *promote(struct data_type *t1, struct data_type *t2)
         return t1;
     else
         return t2;
+}
+
+int has_unkown_array_length(const struct data_type *type)
+{
+    return get_array_length(type) == UNKNOWN_ARRAY_LENGTH;
 }
 
 int is_compatible(const struct data_type *t1, const struct data_type *t2)

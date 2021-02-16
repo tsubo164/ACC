@@ -1777,6 +1777,7 @@ static struct ast_node *param_decl_list(struct parser *p)
 
 /*
  * array
+ *     '[' ']'
  *     '[' constant_expression ']'
  *     array '[' constant_expression ']'
  */
@@ -1787,7 +1788,8 @@ static struct ast_node *array(struct parser *p)
 
     if (consume(p, '[')) {
         tree = new_node_(NOD_SPEC_ARRAY, tokpos(p));
-        expr = constant_expression(p);
+        if (!nexttok(p, ']'))
+            expr = constant_expression(p);
         expect(p, ']');
 
         tree = branch_(tree, expr, array(p));

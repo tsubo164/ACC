@@ -225,7 +225,7 @@ static int find_case_value(struct ast_node *node)
 }
 
 static void check_init_(struct ast_node *node, struct tree_context *ctx,
-        const struct data_type *type)
+        struct data_type *type)
 {
     static int element_count = 0;
 
@@ -237,7 +237,9 @@ static void check_init_(struct ast_node *node, struct tree_context *ctx,
     case NOD_LIST:
         check_init_(node->l, ctx, type);
 
-        if (++element_count > get_array_length(ctx->var_sym->type))
+        element_count++;
+        if (element_count > get_array_length(ctx->var_sym->type) &&
+            has_unkown_array_length(type))
             add_error2(ctx->messages, &node->pos,
                     "excess elements in array initializer");
 
@@ -251,7 +253,11 @@ static void check_init_(struct ast_node *node, struct tree_context *ctx,
         {
             const int tmp = element_count;
             element_count = 0;
+
             check_init_(node->l, ctx, underlying(type));
+            if (has_unkown_array_length(type))
+                set_array_length(type, element_count);
+
             element_count = tmp;
         }
         break;

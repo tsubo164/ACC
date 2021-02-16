@@ -45,6 +45,7 @@ extern void set_symbol(struct data_type *type, struct symbol *sym);
 extern void set_const(struct data_type *type, int is_const);
 
 extern struct data_type *promote(struct data_type *t1, struct data_type *t2);
+extern int has_unkown_array_length(const struct data_type *type);
 extern int is_compatible(const struct data_type *t1, const struct data_type *t2);
 extern int is_incomplete(const struct data_type *type);
 extern int is_const(const struct data_type *type);

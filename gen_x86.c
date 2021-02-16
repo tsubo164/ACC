@@ -799,7 +799,7 @@ static void gen_init_array(FILE *fp, const struct ast_node *node,
     }
 }
 
-static void gen_init_single(FILE *fp, const struct ast_node *node,
+static void gen_init_scalar(FILE *fp, const struct ast_node *node,
         const struct ast_node *ident)
 {
     /* ident */
@@ -830,7 +830,7 @@ static void gen_initializer(FILE *fp, const struct ast_node *node)
         if (is_array(ident->type))
             gen_init_array(fp, node->r, ident, ident->type);
         else
-            gen_init_single(fp, node->r, ident);
+            gen_init_scalar(fp, node->r, ident);
     }
 }
 
