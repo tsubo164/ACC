@@ -744,6 +744,7 @@ static void gen_init_array(FILE *fp, const struct ast_node *node,
         const struct ast_node *ident, const struct data_type *type)
 {
     static int index = 0;
+    static int base = 0;
 
     if (!node)
         return;
@@ -753,34 +754,42 @@ static void gen_init_array(FILE *fp, const struct ast_node *node,
     case NOD_LIST:
         gen_init_array(fp, node->l, ident, type);
 
-        gen_comment(fp, "init array element");
+        if (is_array(type)) {
+            gen_init_array(fp, node->r, ident, type);
+            index++;
+        }else {
+            gen_comment(fp, "init array element");
 
-        /* ident */
-        gen_lvalue(fp, ident);
-        {
-            /* array element */
-            const int offset = (index++) * get_size(type);
-            code3__(fp, ident, ADD_, imme(offset), A_);
+            /* ident */
+            gen_lvalue(fp, ident);
+            {
+                /* array element */
+                const int offset = base + (index++) * get_size(type);
+                code3__(fp, ident, ADD_, imme(offset), A_);
+            }
+            code2__(fp, ident, PUSH_, RAX);
+
+            /* init expr */
+            gen_code(fp, node->r);
+
+            /* assign */
+            code2__(fp, node, POP_,  RDX);
+            code3__(fp, node, MOV_, A_, addr1(RDX));
         }
-        code2__(fp, ident, PUSH_, RAX);
-
-        /* init expr */
-        gen_code(fp, node->r);
-
-        /* assign */
-        code2__(fp, node, POP_,  RDX);
-        code3__(fp, node, MOV_, A_, addr1(RDX));
         break;
 
     case NOD_INIT_LIST:
         {
             const int tmp = index;
             int i;
+
+            base = index * get_size(type);
             index = 0;
+
             gen_init_array(fp, node->l, ident, underlying(type));
 
             for (i = index; i < get_array_length(type); i++) {
-                const int offset = i * get_size(underlying(type));
+                const int offset = base + i * get_size(underlying(type));
                 /* ident */
                 gen_lvalue(fp, ident);
                 /* array element */

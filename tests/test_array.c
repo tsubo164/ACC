@@ -91,6 +91,16 @@ int main()
 
         assert(16,  sizeof a);
     }
+    {
+        /* array initializer with multi-dimension */
+        int a[2][2] = {{11, 22}, {44, 55}};
+
+        assert(16, sizeof a);
+        assert(11, a[0][0]);
+        assert(22, a[0][1]);
+        assert(44, a[1][0]);
+        assert(55, a[1][1]);
+    }
 
     return 0;
 }

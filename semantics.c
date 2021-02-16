@@ -244,9 +244,10 @@ static void check_init_(struct ast_node *node, struct tree_context *ctx,
                     "excess elements in array initializer");
 
         if (!is_compatible(type, node->r->type))
-            add_error2(ctx->messages, &node->pos,
-                    "initializing '%s' with an expression of incompatible type '%s'",
-                    type_name_of(type), type_name_of(node->r->type));
+            if (!is_array(type))
+                add_error2(ctx->messages, &node->pos,
+                        "initializing '%s' with an expression of incompatible type '%s'",
+                        type_name_of(type), type_name_of(node->r->type));
         break;
 
     case NOD_INIT_LIST:
