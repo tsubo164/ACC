@@ -740,14 +740,40 @@ static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_s
     gen_switch_table(fp, node->r, switch_scope);
 }
 
+static void gen_init_scalar(FILE *fp, const struct ast_node *expr,
+        const struct ast_node *ident, int offset)
+{
+    gen_comment(fp, "init scalar element");
+
+    /* ident */
+    gen_lvalue(fp, ident);
+    if (offset > 0)
+        code3__(fp, ident, ADD_, imme(offset), A_);
+    code2__(fp, ident, PUSH_, RAX);
+
+    if (expr) {
+        /* init expr */
+        gen_code(fp, expr);
+        /* assign expr */
+        code2__(fp, ident, POP_,  RDX);
+        code3__(fp, ident, MOV_, A_, addr1(RDX));
+    } else {
+        /* assign zero */
+        code2__(fp, ident, POP_,  RDX);
+        code3__(fp, ident, MOV_, imme(0), addr1(RAX));
+    }
+}
+
 static void gen_init_array(FILE *fp, const struct ast_node *node,
         const struct ast_node *ident, const struct data_type *type)
 {
-    static int index = 0;
     static int base = 0;
+    int index = 0;
 
     if (!node)
         return;
+
+    index = node->ival;
 
     switch (node->kind) {
 
@@ -756,71 +782,31 @@ static void gen_init_array(FILE *fp, const struct ast_node *node,
 
         if (is_array(type)) {
             gen_init_array(fp, node->r, ident, type);
-            index++;
         }else {
-            gen_comment(fp, "init array element");
-
-            /* ident */
-            gen_lvalue(fp, ident);
-            {
-                /* array element */
-                const int offset = base + (index++) * get_size(type);
-                code3__(fp, ident, ADD_, imme(offset), A_);
-            }
-            code2__(fp, ident, PUSH_, RAX);
-
-            /* init expr */
-            gen_code(fp, node->r);
-
-            /* assign */
-            code2__(fp, node, POP_,  RDX);
-            code3__(fp, node, MOV_, A_, addr1(RDX));
+            const int offset = base + index * get_size(type);
+            gen_init_scalar(fp, node->r, ident, offset);
         }
         break;
 
     case NOD_INIT_LIST:
         {
-            const int tmp = index;
+            const int list_count = node->l->ival + 1;
             int i;
 
             base = index * get_size(type);
-            index = 0;
-
             gen_init_array(fp, node->l, ident, underlying(type));
 
-            for (i = index; i < get_array_length(type); i++) {
+            for (i = list_count; i < get_array_length(type); i++) {
                 const int offset = base + i * get_size(underlying(type));
-                /* ident */
-                gen_lvalue(fp, ident);
-                /* array element */
-                code3__(fp, ident, ADD_, imme(offset), A_);
-                /* assign zero */
-                code3__(fp, node, MOV_, imme(0), addr1(RAX));
+                gen_init_scalar(fp, NULL, ident, offset);
             }
             gen_comment(fp, "end of init array");
-
-            index = tmp;
         }
         break;
 
     default:
         break;
     }
-}
-
-static void gen_init_scalar(FILE *fp, const struct ast_node *node,
-        const struct ast_node *ident)
-{
-    /* ident */
-    gen_lvalue(fp, ident);
-    code2__(fp, ident, PUSH_, RAX);
-
-    /* init expr */
-    gen_code(fp, node);
-
-    /* assign */
-    code2__(fp, ident, POP_,  RDX);
-    code3__(fp, ident, MOV_, A_, addr1(RDX));
 }
 
 static void gen_initializer(FILE *fp, const struct ast_node *node)
@@ -839,7 +825,7 @@ static void gen_initializer(FILE *fp, const struct ast_node *node)
         if (is_array(ident->type))
             gen_init_array(fp, node->r, ident, ident->type);
         else
-            gen_init_scalar(fp, node->r, ident);
+            gen_init_scalar(fp, node->r, ident, 0);
     }
 }
 
