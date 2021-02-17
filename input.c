@@ -5,6 +5,6 @@ int main()
     //int a[4] = {11, 22};
 
     //return sizeof(a);//a[3];
-    return a[2][0];
+    return a[1][1];
     //return sizeof a;
 }

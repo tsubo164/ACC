@@ -766,20 +766,20 @@ static void gen_init_scalar(FILE *fp, const struct ast_node *expr,
 
 /* TODO may be better to create init table first to check if the initializers are
  * specified or not by looking it up during initialization. */
-static void gen_zero_array(FILE *fp, const struct ast_node *node,
-        const struct ast_node *ident, const struct data_type *type,
-        int base, int start, int end)
+static void gen_zero_array(FILE *fp, const struct ast_node *ident,
+        const struct data_type *type, int base, int start, int end)
 {
     int i;
 
     for (i = start; i < end; i++) {
-        const int offset = base + i * get_size(underlying(type));
+        const int offset = base + i * get_size(type);
 
-        if (is_array(underlying(type))) {
-            const int start = 0;
-            const int end = get_array_length(underlying(type));
+        if (is_array(type)) {
+            const int base_ = offset;
+            const int start_ = 0;
+            const int end_ = get_array_length(type);
 
-            gen_zero_array(fp, node, ident, underlying(type), offset, start, end);
+            gen_zero_array(fp, ident, underlying(type), base_, start_, end_);
         } else {
             gen_init_scalar(fp, NULL, ident, offset);
         }
@@ -824,7 +824,7 @@ static void gen_init_array(FILE *fp, const struct ast_node *node,
                 /* initialize unspecified elements */
                 const int start = node->l->ival + 1;
                 const int end = get_array_length(type);
-                gen_zero_array(fp, node, ident, type, base, start, end);
+                gen_zero_array(fp, ident, underlying(type), base, start, end);
             }
         }
         break;
