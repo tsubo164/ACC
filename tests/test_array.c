@@ -101,6 +101,18 @@ int main()
         assert(44, a[1][0]);
         assert(55, a[1][1]);
     }
+    {
+        /* multi-dimensional array initializer with less than specified size */
+        int a[3][2] = {{111, 222}, {444, 555}};
+
+        assert(24, sizeof a);
+        assert(111, a[0][0]);
+        assert(222, a[0][1]);
+        assert(444, a[1][0]);
+        assert(555, a[1][1]);
+        assert(  0, a[2][0]);
+        assert(  0, a[2][1]);
+    }
 
     return 0;
 }
