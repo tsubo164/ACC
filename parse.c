@@ -279,13 +279,13 @@ static void define_sym(struct parser *p, struct ast_node *node)
     type_from_sym(node);
 }
 
-static void use_sym(struct parser *p, struct ast_node *node)
+static void use_sym(struct parser *p, struct ast_node *ident, int sym_kind)
 {
     struct symbol *sym;
 
-    sym = use_symbol(p->symtab, p->decl_ident, p->decl_kind);
-    node->sym = sym;
-    type_from_sym(node);
+    sym = use_symbol(p->symtab, ident->sval, sym_kind);
+    ident->sym = sym;
+    type_from_sym(ident);
 }
 
 static void use_member_sym(struct parser *p,
@@ -448,7 +448,6 @@ static struct ast_node *identifier(struct parser *p)
 
     tree = new_node_(NOD_IDENT, tokpos(p));
     copy_token_text(p, tree);
-    decl_set_ident(p, tree->sval);
 
     return tree;
 }
@@ -482,10 +481,9 @@ static struct ast_node *primary_expression(struct parser *p)
         ungettok(p);
         tree = identifier(p);
         if (nexttok(p, '('))
-            decl_set_kind(p, SYM_FUNC);
+            use_sym(p, tree, SYM_FUNC);
         else
-            decl_set_kind(p, SYM_VAR);
-        use_sym(p, tree);
+            use_sym(p, tree, SYM_VAR);
         return typed_(tree);
 
     case '(':
@@ -1574,7 +1572,7 @@ static struct ast_node *struct_or_union_specifier(struct parser *p)
 
     if (!consume(p, '{')) {
         /* define an object of struct type */
-        use_sym(p, ident);
+        use_sym(p, ident, SYM_TAG_STRUCT);
         decl_set_type(p, ident->sym->type);
         return tree;
     } else {
@@ -1666,7 +1664,7 @@ static struct ast_node *enum_specifier(struct parser *p)
 
     if (!consume(p, '{')) {
         /* define an object of enum type */
-        use_sym(p, ident);
+        use_sym(p, ident, SYM_TAG_ENUM);
         decl_set_type(p, ident->sym->type);
         return tree;
     } else {
