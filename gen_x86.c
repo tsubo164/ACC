@@ -583,7 +583,14 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
 
     if (is_global_var(sym)) {
         const int id = is_static(sym) ? sym->id : -1;
+        /*
         code3__(fp, node, MOV_, addr2_pc_rel(RIP, sym->name, id), RAX);
+        */
+        if (is_array(node->type)) {
+            code3__(fp, node, LEA_, addr2_pc_rel(RIP, sym->name, id), RAX);
+        } else {
+            code3__(fp, node, MOV_, addr2_pc_rel(RIP, sym->name, id), RAX);
+        }
     }
     else if (is_enumerator(sym)) {
         code3__(fp, node, MOV_, imme(get_mem_offset(node)), A_);
@@ -740,10 +747,10 @@ static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_s
     gen_switch_table(fp, node->r, switch_scope);
 }
 
-static void gen_init_scalar(FILE *fp, const struct ast_node *expr,
-        const struct ast_node *ident, int offset)
+static void gen_init_scalar_local(FILE *fp,
+        const struct ast_node *ident, int offset, const struct ast_node *expr)
 {
-    gen_comment(fp, "init scalar element");
+    gen_comment(fp, "local scalar init");
 
     /* ident */
     gen_lvalue(fp, ident);
@@ -764,9 +771,53 @@ static void gen_init_scalar(FILE *fp, const struct ast_node *expr,
     }
 }
 
+static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
+        const struct ast_node *ident, int offset, const struct ast_node *expr)
+{
+
+    if (offset == 0) {
+        struct symbol *sym = ident->sym;
+        int id = sym->id;
+
+        if (!is_static(sym)) {
+            id = -1;
+            fprintf(fp, "    .global ");
+            gen_pc_rel_addr(fp, sym->name, id);
+            fprintf(fp, "\n");
+        }
+        gen_pc_rel_addr(fp, sym->name, id);
+        fprintf(fp, ":\n");
+    }
+    {
+        int tag;
+        const char *szname;
+        int val;
+
+        if (expr) {
+            tag = data_tag_(type);
+            szname = data_spec_table[tag].sizename;
+            val = expr->ival;
+        } else {
+            tag = data_tag_(type);
+            szname = data_spec_table[tag].sizename;
+            val = 0;
+        }
+        fprintf(fp, "    .%s %d\n", szname, val);
+    }
+}
+
+static void gen_init_scalar(FILE *fp, const struct data_type *type,
+        const struct ast_node *ident, int offset, const struct ast_node *expr)
+{
+    if (is_local_var(ident->sym))
+        gen_init_scalar_local(fp, ident, offset, expr);
+    if (is_global_var(ident->sym) && !is_extern(ident->sym))
+        gen_init_scalar_global(fp, type, ident, offset, expr);
+}
+
 /* TODO may be better to create init table first to check if the initializers are
  * specified or not by looking it up during initialization. */
-static void gen_zero_array(FILE *fp, const struct ast_node *ident,
+static void gen_zero_elements(FILE *fp, const struct ast_node *ident,
         const struct data_type *type, int base, int start, int end)
 {
     int i;
@@ -779,9 +830,9 @@ static void gen_zero_array(FILE *fp, const struct ast_node *ident,
             const int start_ = 0;
             const int end_ = get_array_length(type);
 
-            gen_zero_array(fp, ident, underlying(type), base_, start_, end_);
+            gen_zero_elements(fp, ident, underlying(type), base_, start_, end_);
         } else {
-            gen_init_scalar(fp, NULL, ident, offset);
+            gen_init_scalar(fp, type, ident, offset, NULL);
         }
     }
 }
@@ -806,7 +857,7 @@ static void gen_init_array(FILE *fp, const struct ast_node *node,
             gen_init_array(fp, node->r, ident, type);
         }else {
             const int offset = base + index * get_size(type);
-            gen_init_scalar(fp, node->r, ident, offset);
+            gen_init_scalar(fp, type, ident, offset, node->r);
         }
         break;
 
@@ -819,13 +870,12 @@ static void gen_init_array(FILE *fp, const struct ast_node *node,
             tmp = base;
             gen_init_array(fp, node->l, ident, underlying(type));
             base = tmp;
-
-            {
-                /* initialize unspecified elements */
-                const int start = node->l->ival + 1;
-                const int end = get_array_length(type);
-                gen_zero_array(fp, ident, underlying(type), base, start, end);
-            }
+        }
+        {
+            /* initialize unspecified elements */
+            const int start = node->l->ival + 1;
+            const int end = get_array_length(type);
+            gen_zero_elements(fp, ident, underlying(type), base, start, end);
         }
         break;
 
@@ -850,7 +900,34 @@ static void gen_initializer(FILE *fp, const struct ast_node *node)
         if (is_array(ident->type))
             gen_init_array(fp, node->r, ident, ident->type);
         else
-            gen_init_scalar(fp, node->r, ident, 0);
+            gen_init_scalar(fp, ident->type, ident, 0, node->r);
+    }
+}
+
+static void gen_initializer_global(FILE *fp, const struct ast_node *node)
+{
+    const struct ast_node *ident;
+
+    if (!node || node->kind != NOD_DECL_INIT)
+        return;
+
+    /* find lvalue ident */
+    ident = find_node(node->l, NOD_DECL_IDENT);
+
+    if (ident && is_global_var(ident->sym)) {
+        if (is_array(ident->type)) {
+            if (node->r) {
+                gen_init_array(fp, node->r, ident, ident->type);
+            } else {
+                const int base = 0;
+                const int start = 0;
+                const int end = get_array_length(ident->type);
+                gen_zero_elements(fp, ident, underlying(ident->type), base, start, end);
+            }
+        } else {
+            gen_init_scalar(fp, underlying(ident->type), ident, 0, node->r);
+        }
+        fprintf(fp, "\n");
     }
 }
 
@@ -1282,37 +1359,7 @@ static void gen_global_vars(FILE *fp, const struct ast_node *node)
         return;
 
     if (node->kind == NOD_DECL_INIT) {
-        const struct ast_node *ident;
-        const struct symbol *sym;
-
-        ident = find_node(node, NOD_DECL_IDENT);
-
-        /* TODO struct {} may not have ident. IR won't need this if statement */
-        if (!ident)
-            return;
-
-        sym = ident->sym;
-
-        if (is_global_var(sym) && !is_extern(sym)) {
-            /* TODO need eval instead of find NOD_NUM */
-            const struct ast_node *init = find_node(node, NOD_NUM);
-            const int val = init ? init->ival : 0;
-            const int tag = data_tag_(sym->type);
-            const char *szname = data_spec_table[tag].sizename;
-
-            int id = sym->id;
-
-            if (!is_static(sym)) {
-                id = -1;
-                fprintf(fp, "    .global ");
-                gen_pc_rel_addr(fp, sym->name, id);
-                fprintf(fp, "\n");
-            }
-            gen_pc_rel_addr(fp, sym->name, id);
-            fprintf(fp, ":\n");
-            fprintf(fp, "    .%s %d\n\n", szname, val);
-        }
-
+        gen_initializer_global(fp, node);
         return;
     }
 

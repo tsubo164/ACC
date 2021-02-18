@@ -7,7 +7,6 @@
   - cast
   - char <-> int, negative number literal
   - struct initializer
-  - array initializer
   - std stuff FILE, stderro, NULL ...
   - variable arguments
 
@@ -35,6 +34,7 @@
     };
     -> infinite loop
   - { ...  } } -> infinite loop
+  - return g_a[2]; int i = g_a[0]; -> infinite loop
 
 * DONE
   - ++, --
@@ -68,3 +68,4 @@
   - add func name to static int (added symbol id)
   - const
   - new number() (not needed)
+  - array initializer

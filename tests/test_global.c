@@ -36,6 +36,10 @@ static int count_up2()
     return ++count;
 }
 
+/* multi-dimensional global array initializer with less than specified size */
+int g_a[3] = {11, 22, 44};
+int g_b[3][2] = {{111, 222}, {444, 555}};
+
 int main()
 {
     {
@@ -88,6 +92,23 @@ int main()
         assert(4, count_up2());
         assert(5, count_up2());
         assert(6, count_up2());
+    }
+    {
+        /* global array initializer */
+        assert(12, sizeof g_a);
+        assert(11, g_a[0]);
+        assert(22, g_a[1]);
+        assert(44, g_a[2]);
+    }
+    {
+        /* multi-dimensional global array initializer with less than specified size */
+        assert(24, sizeof g_b);
+        assert(111, g_b[0][0]);
+        assert(222, g_b[0][1]);
+        assert(444, g_b[1][0]);
+        assert(555, g_b[1][1]);
+        assert(  0, g_b[2][0]);
+        assert(  0, g_b[2][1]);
     }
 
     return 0;
