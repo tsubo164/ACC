@@ -6,6 +6,7 @@
   - check args
   - cast
   - char <-> int, negative number literal
+  - struct initializer
   - array initializer
   - std stuff FILE, stderro, NULL ...
   - variable arguments

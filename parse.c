@@ -1561,6 +1561,11 @@ static struct ast_node *struct_or_union(struct parser *p)
     return tree;
 }
 
+/* struct_or_union_specifier
+ *     struct_or_union TK_IDENT '{' struct_declaration_list '}'
+ *     struct_or_union '{' struct_declaration_list '}'
+ *     struct_or_union TK_IDENT
+ */
 static struct ast_node *struct_or_union_specifier(struct parser *p)
 {
     struct ast_node *tree = NULL;
@@ -1819,9 +1824,6 @@ static struct ast_node *direct_declarator(struct parser *p)
     }
 
     tree->l = array(p);
-    /* reset decl ident here as it might be overriden
-     * in constant_expression() in array() */
-    decl_set_ident(p, ident->sval);
 
     if (consume(p, '(')) {
         /* function */
@@ -2027,6 +2029,10 @@ static struct ast_node *declaration_specifiers(struct parser *p)
         return NULL;
 
     set_const(p->decl_type, p->is_const);
+    if (decl_is_typedef(p))
+        decl_set_kind(p, SYM_TYPEDEF);
+    else
+        decl_set_kind(p, SYM_VAR);
 
     decl = new_node_(NOD_DECL_SPEC, tokpos(p));
     return branch_(decl, tree, NULL);
@@ -2049,16 +2055,8 @@ static struct ast_node *declaration(struct parser *p)
     if (!spec)
         return NULL;
 
-    /* need to reset decl here because type spec might contain
-     * other decls such as struct, union or enum */
-    if (decl_is_typedef(p))
-        decl_set_kind(p, SYM_TYPEDEF);
-    else
-        decl_set_kind(p, SYM_VAR);
-
-    tree = NEW_(NOD_DECL);
-    tree->l = spec;
-    tree->r = init_declarator_list(p);
+    tree = new_node_(NOD_DECL, tokpos(p));
+    tree = branch_(tree, spec, init_declarator_list(p));
 
     if (nexttok(p, '{')) {
         /* is func definition */
@@ -2073,7 +2071,6 @@ static struct ast_node *declaration(struct parser *p)
     }
 
     expect(p, ';');
-
     return tree;
 }
 
