@@ -1,13 +1,15 @@
-int g_a[3] = {11, 22, 44};
-
-int x = 123;
-int y;
-
 int main()
 {
+    struct point {
+        int x, y, z;
+    };
+
+    struct point pt = {11, 22, 33};
+
+    return pt.x;
     /*
-    int i = g_a[0];
-    return i;
+    int a[2] = {11, 22};
+
+    return a[0];
     */
-    return x;
 }

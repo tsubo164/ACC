@@ -204,6 +204,9 @@ struct tree_context {
     int enum_value;
     int is_lvalue;
     int has_init;
+
+    const struct symbol *struct_sym;
+    int index;
 };
 
 static int find_case_value(struct ast_node *node)
@@ -274,6 +277,52 @@ static void check_init_(struct ast_node *node, struct tree_context *ctx,
     }
 }
 
+static void check_init_struct_(struct ast_node *node, struct tree_context *ctx)
+{
+    if (!node)
+        return;
+
+    switch (node->kind) {
+
+    case NOD_LIST:
+        check_init_struct_(node->l, ctx);
+        check_init_struct_(node->r, ctx);
+
+        if (ctx->struct_sym && ctx->struct_sym->kind != SYM_MEMBER)
+            add_error2(ctx->messages, &node->pos,
+                    "excess elements in struct initializer");
+
+        if (!is_compatible(ctx->struct_sym->type, node->r->type))
+            if (!is_struct(ctx->struct_sym->type))
+                add_error2(ctx->messages, &node->pos,
+                        "initializing '%s' with an expression of incompatible type '%s'",
+                        type_name_of(ctx->struct_sym->type), type_name_of(node->r->type));
+
+        node->ival = ctx->index++;
+        ctx->struct_sym = ctx->struct_sym->next;
+        break;
+
+    case NOD_INIT_LIST:
+        {
+            const struct tree_context tmp = *ctx;
+
+            ctx->struct_sym = ctx->struct_sym->next->next;
+            ctx->index = 0;
+            check_init_struct_(node->l, ctx);
+
+            *ctx = tmp;
+        }
+        break;
+
+    default:
+        /*
+        printf("=======> [%d] %s: %d\n",
+                ctx->index, ctx->struct_sym->name, node->ival);
+        */
+        break;
+    }
+}
+
 static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 {
     /* TODO remove this */
@@ -293,7 +342,16 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         ctx->has_init = 0;
         check_tree_(node->r, ctx);
 
+        if (!is_struct(node->type)) {
+            check_init_(node->r, ctx, node->type);
+        } else {
+            ctx->struct_sym = node->type->sym;
+            ctx->index = 0;
+            check_init_struct_(node->r, ctx);
+        }
+#if 0
         check_init_(node->r, ctx, node->type);
+#endif
         ctx->var_sym = NULL;
         return;
 

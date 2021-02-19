@@ -1896,6 +1896,9 @@ static struct ast_node *initializer(struct parser *p)
 static struct ast_node *initializer_list(struct parser *p)
 {
     struct ast_node *tree = NULL;
+    /*
+    int i = 0;
+    */
 
     for (;;) {
         struct ast_node *init = initializer(p);
@@ -1906,6 +1909,12 @@ static struct ast_node *initializer_list(struct parser *p)
 
         list = new_node_(NOD_LIST, tokpos(p));
         tree = branch_(list, tree, init);
+    /*
+        tree->ival = i++;
+
+        if (tree->r->kind == NOD_INIT_LIST)
+            tree->r->ival = tree->ival;
+    */
 
         if (!consume(p, ','))
             return tree;
