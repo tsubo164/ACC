@@ -205,7 +205,7 @@ struct tree_context {
     int is_lvalue;
     int has_init;
 
-    const struct symbol *struct_sym;
+    /* for initializers */
     int index;
 };
 
@@ -227,27 +227,20 @@ static int find_case_value(struct ast_node *node)
     return 0;
 }
 
-static void check_init_(struct ast_node *node, struct tree_context *ctx,
+static void check_init_array_(struct ast_node *node, struct tree_context *ctx,
         struct data_type *type)
 {
-    static int index = 0;
-
     if (!node)
         return;
 
     switch (node->kind) {
 
     case NOD_LIST:
-        check_init_(node->l, ctx, type);
-        node->ival = index;
+        check_init_array_(node->l, ctx, type);
+        check_init_array_(node->r, ctx, type);
+        node->ival = ctx->index++;
 
-        if (is_array(type)) {
-            check_init_(node->r, ctx, type);
-            node->r->ival = index;
-        }
-        index++;
-
-        if (index > get_array_length(ctx->var_sym->type) &&
+        if (ctx->index > get_array_length(ctx->var_sym->type) &&
             has_unkown_array_length(type))
             add_error2(ctx->messages, &node->pos,
                     "excess elements in array initializer");
@@ -261,54 +254,13 @@ static void check_init_(struct ast_node *node, struct tree_context *ctx,
 
     case NOD_INIT_LIST:
         {
-            const int tmp = index;
-            index = 0;
-
-            check_init_(node->l, ctx, underlying(type));
-            if (has_unkown_array_length(type))
-                set_array_length(type, index);
-
-            index = tmp;
-        }
-        break;
-
-    default:
-        break;
-    }
-}
-
-static void check_init_struct_(struct ast_node *node, struct tree_context *ctx)
-{
-    if (!node)
-        return;
-
-    switch (node->kind) {
-
-    case NOD_LIST:
-        check_init_struct_(node->l, ctx);
-        check_init_struct_(node->r, ctx);
-
-        if (ctx->struct_sym && ctx->struct_sym->kind != SYM_MEMBER)
-            add_error2(ctx->messages, &node->pos,
-                    "excess elements in struct initializer");
-
-        if (!is_compatible(ctx->struct_sym->type, node->r->type))
-            if (!is_struct(ctx->struct_sym->type))
-                add_error2(ctx->messages, &node->pos,
-                        "initializing '%s' with an expression of incompatible type '%s'",
-                        type_name_of(ctx->struct_sym->type), type_name_of(node->r->type));
-
-        node->ival = ctx->index++;
-        ctx->struct_sym = ctx->struct_sym->next;
-        break;
-
-    case NOD_INIT_LIST:
-        {
             const struct tree_context tmp = *ctx;
-
-            ctx->struct_sym = ctx->struct_sym->next->next;
+            node->ival = ctx->index;
             ctx->index = 0;
-            check_init_struct_(node->l, ctx);
+
+            check_init_array_(node->l, ctx, underlying(type));
+            if (has_unkown_array_length(type))
+                set_array_length(type, ctx->index);
 
             *ctx = tmp;
         }
@@ -318,6 +270,89 @@ static void check_init_struct_(struct ast_node *node, struct tree_context *ctx)
         break;
     }
 }
+
+static void check_init_struct_(struct ast_node *node, struct tree_context *ctx,
+        const struct symbol *struct_sym)
+{
+    static const struct symbol *sym = NULL;
+
+    sym = struct_sym;
+
+    if (!node)
+        return;
+
+    switch (node->kind) {
+
+    case NOD_LIST:
+        check_init_struct_(node->l, ctx, sym);
+        check_init_struct_(node->r, ctx, sym);
+
+        if (sym && sym->kind != SYM_MEMBER)
+            add_error2(ctx->messages, &node->pos,
+                    "excess elements in struct initializer");
+
+        if (!is_compatible(sym->type, node->r->type))
+            if (!is_struct(sym->type))
+                add_error2(ctx->messages, &node->pos,
+                        "initializing '%s' with an expression of incompatible type '%s'",
+                        type_name_of(sym->type), type_name_of(node->r->type));
+
+        node->ival = ctx->index++;
+        sym = sym->next;
+        break;
+
+    case NOD_INIT_LIST:
+        {
+            const struct tree_context tmp = *ctx;
+
+            ctx->index = 0;
+            check_init_struct_(node->l, ctx, sym->next->next);
+
+            *ctx = tmp;
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
+static void check_initializer(struct ast_node *node, struct tree_context *ctx)
+{
+    if (!is_struct(node->type)) {
+        ctx->index = 0;
+        check_init_array_(node->r, ctx, node->type);
+    } else {
+        ctx->index = 0;
+        check_init_struct_(node->r, ctx, symbol_of(node->type));
+    }
+}
+
+/*
+static int count_element(const struct data_type *type)
+{
+    if (is_struct(type)) {
+        struct symbol *sym = symbol_of(type);
+        const int struct_scope = sym->scope_level + 1;
+        int i = 0;
+
+        for (; sym; sym = sym->next) {
+            if (is_member(sym) && sym->scope_level == struct_scope)
+                i += count_element(sym->type);
+            if (sym->kind == SYM_SCOPE_END && sym->scope_level == struct_scope)
+                break;
+        }
+        return i;
+    }
+
+    if (is_array(type)) {
+        const int len = get_array_length(type);
+        return len * count_element(underlying(type));
+    }
+
+    return 1;
+}
+*/
 
 static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 {
@@ -338,13 +373,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         ctx->has_init = 0;
         check_tree_(node->r, ctx);
 
-        if (!is_struct(node->type)) {
-            check_init_(node->r, ctx, node->type);
-        } else {
-            ctx->struct_sym = node->type->sym;
-            ctx->index = 0;
-            check_init_struct_(node->r, ctx);
-        }
+        check_initializer(node, ctx);
 
         ctx->var_sym = NULL;
         return;
@@ -358,7 +387,8 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
         if (is_incomplete(node->sym->type) &&
                 (is_local_var(node->sym) || is_global_var(node->sym))) {
-            add_error(ctx->messages, "variable has incomplete type ''", &pos);
+            add_error2(ctx->messages, &node->pos, "variable has incomplete type '%s'",
+                    type_name_of(node->sym->type));
             return;
         }
         break;
