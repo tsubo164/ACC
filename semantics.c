@@ -315,10 +315,6 @@ static void check_init_struct_(struct ast_node *node, struct tree_context *ctx)
         break;
 
     default:
-        /*
-        printf("=======> [%d] %s: %d\n",
-                ctx->index, ctx->struct_sym->name, node->ival);
-        */
         break;
     }
 }
@@ -349,9 +345,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             ctx->index = 0;
             check_init_struct_(node->r, ctx);
         }
-#if 0
-        check_init_(node->r, ctx, node->type);
-#endif
+
         ctx->var_sym = NULL;
         return;
 

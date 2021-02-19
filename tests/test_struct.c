@@ -164,6 +164,16 @@ int main()
         assert(19, no_tag.y);
         assert(130, no_tag.x + no_tag.y);
     }
+    {
+        /* struct initializer */
+        struct point {
+            int x, y, z;
+        } pt = {11, 22, 33};
+
+        assert(11, pt.x);
+        assert(22, pt.y);
+        assert(33, pt.z);
+    }
 
     return 0;
 }

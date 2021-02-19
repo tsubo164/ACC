@@ -884,6 +884,44 @@ static void gen_init_array(FILE *fp, const struct ast_node *node,
     }
 }
 
+static void gen_init_struct(FILE *fp, const struct ast_node *node,
+        const struct ast_node *ident, const struct symbol *struct_sym)
+{
+    static const struct symbol *sym = NULL;
+    static int base = 0;
+
+    sym = struct_sym;
+
+    if (!node)
+        return;
+
+    switch (node->kind) {
+
+    case NOD_LIST:
+        gen_init_struct(fp, node->l, ident, sym);
+        {
+            const int offset = base + sym->mem_offset;
+            gen_init_scalar(fp, sym->type, ident, offset, node->r);
+        }
+        sym = sym->next;
+        break;
+
+    case NOD_INIT_LIST:
+        {
+            int tmp;
+            base = sym->next->next->mem_offset;
+
+            tmp = base;
+            gen_init_struct(fp, node->l, ident, sym->next->next);
+            base = tmp;
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
 static void gen_initializer(FILE *fp, const struct ast_node *node)
 {
     const struct ast_node *ident;
@@ -899,6 +937,8 @@ static void gen_initializer(FILE *fp, const struct ast_node *node)
 
         if (is_array(ident->type))
             gen_init_array(fp, node->r, ident, ident->type);
+        else if (is_struct(ident->type))
+            gen_init_struct(fp, node->r, ident, ident->type->sym);
         else
             gen_init_scalar(fp, ident->type, ident, 0, node->r);
     }
