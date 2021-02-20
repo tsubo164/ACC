@@ -10,6 +10,10 @@ typedef struct vec {
     int x, y, z;
 } vec;
 
+int add(int x, int y) {
+    return x + y;
+}
+
 int main()
 {
     {
@@ -173,6 +177,31 @@ int main()
         assert(11, pt.x);
         assert(22, pt.y);
         assert(33, pt.z);
+    }
+    {
+        /* struct initializer with less members */
+        struct point {
+            int x, y, z;
+        } pt = {19};
+
+        assert(19, pt.x);
+        assert(0,  pt.y);
+        assert(0,  pt.z);
+    }
+    {
+        /* struct initializer with expressions */
+        enum color {
+            R = 11,
+            G,
+            B
+        };
+        struct point {
+            int x, y, z;
+        } pt = {19, add(40, 2), R + G + B};
+
+        assert(19, pt.x);
+        assert(42,  pt.y);
+        assert(36,  pt.z);
     }
 
     return 0;

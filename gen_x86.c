@@ -747,9 +747,13 @@ static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_s
     gen_switch_table(fp, node->r, switch_scope);
 }
 
-static void gen_init_scalar_local(FILE *fp,
+static void gen_init_scalar_local(FILE *fp, const struct data_type *type,
         const struct ast_node *ident, int offset, const struct ast_node *expr)
 {
+    /* TODO fix */
+    struct ast_node dummy = {0};
+    dummy.type = (struct data_type *) type;
+
     gen_comment(fp, "local scalar init");
 
     /* ident */
@@ -762,12 +766,12 @@ static void gen_init_scalar_local(FILE *fp,
         /* init expr */
         gen_code(fp, expr);
         /* assign expr */
-        code2__(fp, ident, POP_,  RDX);
-        code3__(fp, ident, MOV_, A_, addr1(RDX));
+        code2__(fp, &dummy, POP_,  RDX);
+        code3__(fp, &dummy, MOV_, A_, addr1(RDX));
     } else {
         /* assign zero */
-        code2__(fp, ident, POP_,  RDX);
-        code3__(fp, ident, MOV_, imme(0), addr1(RAX));
+        code2__(fp, &dummy, POP_,  RDX);
+        code3__(fp, &dummy, MOV_, imme(0), addr1(RAX));
     }
 }
 
@@ -810,7 +814,7 @@ static void gen_init_scalar(FILE *fp, const struct data_type *type,
         const struct ast_node *ident, int offset, const struct ast_node *expr)
 {
     if (is_local_var(ident->sym))
-        gen_init_scalar_local(fp, ident, offset, expr);
+        gen_init_scalar_local(fp, type, ident, offset, expr);
     if (is_global_var(ident->sym) && !is_extern(ident->sym))
         gen_init_scalar_global(fp, type, ident, offset, expr);
 }
@@ -833,6 +837,34 @@ static void gen_zero_elements(FILE *fp, const struct ast_node *ident,
             gen_zero_elements(fp, ident, underlying(type), base_, start_, end_);
         } else {
             gen_init_scalar(fp, type, ident, offset, NULL);
+        }
+    }
+}
+
+/* TODO may be better to create init table first to check if the initializers are
+ * specified or not by looking it up during initialization. */
+static void gen_zero_members(FILE *fp, const struct ast_node *ident,
+        int base, const struct symbol *start)
+{
+    const struct symbol *sym = start;
+    const int scope = start->scope_level;
+
+    for (sym = start; sym; sym = sym->next) {
+        const int offset = base + sym->mem_offset;
+
+        if (sym->kind == SYM_SCOPE_END && sym->scope_level == scope)
+            break;
+
+        if (/*is_array(type)*/0) {
+            /*
+            const int base_ = offset;
+            const int start_ = 0;
+            const int end_ = get_array_length(type);
+
+            gen_zero_elements(fp, ident, underlying(type), base_, start_, end_);
+            */
+        } else {
+            gen_init_scalar(fp, sym->type, ident, offset, NULL);
         }
     }
 }
@@ -914,6 +946,11 @@ static void gen_init_struct(FILE *fp, const struct ast_node *node,
             tmp = base;
             gen_init_struct(fp, node->l, ident, sym->next->next);
             base = tmp;
+        }
+        {
+            /* initialize unspecified elements */
+            const struct symbol *start = sym;
+            gen_zero_members(fp, ident, base, start);
         }
         break;
 
