@@ -328,32 +328,6 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
     }
 }
 
-/*
-static int count_element(const struct data_type *type)
-{
-    if (is_struct(type)) {
-        struct symbol *sym = symbol_of(type);
-        const int struct_scope = sym->scope_level + 1;
-        int i = 0;
-
-        for (; sym; sym = sym->next) {
-            if (is_member(sym) && sym->scope_level == struct_scope)
-                i += count_element(sym->type);
-            if (sym->kind == SYM_SCOPE_END && sym->scope_level == struct_scope)
-                break;
-        }
-        return i;
-    }
-
-    if (is_array(type)) {
-        const int len = get_array_length(type);
-        return len * count_element(underlying(type));
-    }
-
-    return 1;
-}
-*/
-
 static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 {
     /* TODO remove this */

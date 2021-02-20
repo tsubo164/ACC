@@ -959,6 +959,60 @@ static void gen_init_struct(FILE *fp, const struct ast_node *node,
     }
 }
 
+#if 0
+struct context {
+    struct ast_node *n;
+};
+
+static void setup_init_struct(const struct ast_node *node, struct context *ctx)
+{
+    if (!node)
+        return;
+
+    switch (node->kind) {
+
+    case NOD_LIST:
+        setup_init_struct(node->l, ctx);
+        ctx->n->r = node->r;
+        ctx->n = ctx->n->l;
+        printf("node: %d\n", node->r->ival);
+        break;
+
+    case NOD_INIT_LIST:
+        setup_init_struct(node->l, ctx);
+        break;
+
+    default:
+        break;
+    }
+}
+
+#include <stdlib.h>
+static int count_element(const struct data_type *type)
+{
+    if (is_struct(type)) {
+        struct symbol *sym = symbol_of(type);
+        const int struct_scope = sym->scope_level + 1;
+        int i = 0;
+
+        for (; sym; sym = sym->next) {
+            if (is_member(sym) && sym->scope_level == struct_scope)
+                i += count_element(sym->type);
+            if (sym->kind == SYM_SCOPE_END && sym->scope_level == struct_scope)
+                break;
+        }
+        return i;
+    }
+
+    if (is_array(type)) {
+        const int len = get_array_length(type);
+        return len * count_element(underlying(type));
+    }
+
+    return 1;
+}
+#endif
+
 static void gen_initializer(FILE *fp, const struct ast_node *node)
 {
     const struct ast_node *ident;
@@ -979,6 +1033,48 @@ static void gen_initializer(FILE *fp, const struct ast_node *node)
         else
             gen_init_scalar(fp, ident->type, ident, 0, node->r);
     }
+#if 0
+    if (ident && is_local_var(ident->sym)) {
+        int count = count_element(ident->type);
+        struct ast_node *head = NULL;
+        /*
+        struct ast_node *n = NULL;
+        */
+        int i;
+        /*
+        printf("    ****** %5s => element count: %d\n", ident->sym->name, count);
+        */
+        for (i = 0; i < count; i++) {
+            head = new_ast_node(NOD_LIST, head, NULL);
+            head->ival = i;
+        }
+        /*
+        for (n = head; n; n = n->l) {
+            printf("----------> n: %d\n", n->ival);
+        }
+        for (n = head; n->l;) {
+            struct ast_node *kill = n;
+            n = n->l;
+
+            printf("freeing ----------> n: %d\n", n->ival);
+            free(kill);
+        }
+        */
+        {
+            struct context ctx = {0};
+            ctx.n = head;
+            setup_init_struct(node->r, &ctx);
+        }
+        /*
+        for (n = head; n; n = n->l) {
+            if (n->r)
+                printf("**** n: %d\n", n->r->ival);
+            else
+                printf("**** n: 0 (no initializer)\n");
+        }
+        */
+    }
+#endif
 }
 
 static void gen_initializer_global(FILE *fp, const struct ast_node *node)
