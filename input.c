@@ -4,12 +4,15 @@ int foo() {
 
 int main()
 {
-    /*
     struct point {
         int x, y, z;
-    } pt = {11};
+        struct foo {
+            int a, b;
+        } f;
+    } pt = {{11, 12, 13}, {1, 2}};
 
-    return pt.y;
+    return pt.x;
+    /*
     */
 
     /*
@@ -25,9 +28,9 @@ int main()
 
     return a[0][1];
     */
+    /*
     int a[3] = {111, 29, 17};
 
     return a[0];
-    /*
     */
 }
