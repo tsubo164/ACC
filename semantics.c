@@ -280,9 +280,8 @@ static void check_init_array_(struct ast_node *node, struct tree_context *ctx)
     }
 }
 
-/*
 static void check_initializer2(struct ast_node *node, struct tree_context *ctx);
-*/
+
 static void check_init_struct_(struct ast_node *node, struct tree_context *ctx)
 {
     if (!node)
@@ -297,15 +296,16 @@ static void check_init_struct_(struct ast_node *node, struct tree_context *ctx)
         {
             const struct symbol *sym = ctx->struct_sym;
 
-            if (sym && sym->kind != SYM_MEMBER)
+            if (sym && sym->kind != SYM_MEMBER) {
                 add_error2(ctx->messages, &node->pos,
                         "excess elements in struct initializer");
-
-            if (!is_compatible(sym->type, node->r->type))
+            } else
+            if (!is_compatible(sym->type, node->r->type)) {
                 if (!is_struct(sym->type))
                     add_error2(ctx->messages, &node->pos,
                             "initializing '%s' with an expression of incompatible type '%s'",
                             type_name_of(sym->type), type_name_of(node->r->type));
+            }
         }
 
         node->ival = ctx->index++;
@@ -314,18 +314,7 @@ static void check_init_struct_(struct ast_node *node, struct tree_context *ctx)
         break;
 
     case NOD_INIT_LIST:
-        /*
-        check_initializer2(node->l, ctx);
-        */
-        {
-            const struct tree_context tmp = *ctx;
-
-            ctx->index = 0;
-            ctx->struct_sym = ctx->struct_sym->next->next;
-            check_init_struct_(node->l, ctx);
-
-            *ctx = tmp;
-        }
+            check_initializer2(node, ctx);
         break;
 
     default:
@@ -340,48 +329,25 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
         ctx->lval_type = node->type;
         check_init_array_(node->r, ctx);
     } else {
-        ctx->index = 0;
-        ctx->struct_sym = symbol_of(node->type);
-        check_init_struct_(node->r, ctx);
     }
 }
 
-#if 0
 static void check_initializer2(struct ast_node *node, struct tree_context *ctx)
 {
-    printf("-----------------\n");
-    print_data_type(ctx->lval_type);
+    if (!node)
+        return;
 
     if (!is_struct(ctx->lval_type)) {
-        /*
-        ctx->index = 0;
-        ctx->lval_type = node->type;
-        check_init_array_(node->r, ctx);
-        */
-    } else {
-        /*
+    } else if(is_struct(ctx->lval_type)) {
         struct tree_context new_ctx = *ctx;
 
         new_ctx.index = 0;
-        new_ctx.struct_sym = symbol_of(new_ctx.lval_type)->next->next;
-        check_init_struct_(node->l, &new_ctx);
-        */
-        /*
-        ctx->index = 0;
-        ctx->struct_sym = symbol_of(node->type);
-        check_init_struct_(node->r, ctx);
-        */
-        {
-            struct tree_context new_ctx = *ctx;
+        new_ctx.struct_sym = new_ctx.struct_sym->next->next;
+        new_ctx.lval_type = new_ctx.struct_sym->type;
 
-            new_ctx.index = 0;
-            new_ctx.struct_sym = new_ctx.struct_sym->next->next;
-            new_ctx.lval_type = new_ctx.struct_sym->type;
-            check_init_struct_(node, &new_ctx);
-        }
+        check_init_struct_(node->l, &new_ctx);
     }
 }
-#endif
 
 static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 {
@@ -404,11 +370,10 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
         check_initializer(node, ctx);
 
-#if 0
+        ctx->index = 0;
         ctx->struct_sym = symbol_of(node->l->type);
         ctx->lval_type = node->l->type;
         check_initializer2(node->r, ctx);
-#endif
 
         ctx->var_sym = NULL;
         return;

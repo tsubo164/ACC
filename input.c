@@ -1,17 +1,24 @@
 int foo() {
     return 42;
 }
+/*
+*/
 
 int main()
 {
+    /*
     struct point {
         int x, y, z;
         struct foo {
             int a, b;
         } f;
     } pt = {{11, 12, 13}, {1, 2}};
+    */
+    struct point {
+        int x, y, z;
+    } pt = {11, 3};
 
-    return pt.x;
+    return pt.y;
     /*
     */
 
