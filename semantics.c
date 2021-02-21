@@ -198,7 +198,6 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
 struct tree_context {
     struct message_list *messages;
     const struct symbol *func_sym;
-    const struct symbol *var_sym;
     int loop_depth;
     int switch_depth;
     int enum_value;
@@ -208,6 +207,7 @@ struct tree_context {
     /* for initializers */
     const struct symbol *struct_sym;
     struct data_type *lval_type;
+    int array_length;
     int index;
 };
 
@@ -229,7 +229,23 @@ static int find_case_value(struct ast_node *node)
     return 0;
 }
 
-static void check_init_array_(struct ast_node *node, struct tree_context *ctx)
+static int count_initializers(struct ast_node *node, struct tree_context *ctx)
+{
+    struct ast_node *n;
+    int count = 0;
+
+    if (!node)
+        return 0;
+
+    for (n = node; n; n = n->l)
+        if (n->kind == NOD_LIST)
+            count++;
+    return count;
+}
+
+static void check_initializer(struct ast_node *node, struct tree_context *ctx);
+
+static void check_init_array_element(struct ast_node *node, struct tree_context *ctx)
 {
     if (!node)
         return;
@@ -237,42 +253,29 @@ static void check_init_array_(struct ast_node *node, struct tree_context *ctx)
     switch (node->kind) {
 
     case NOD_LIST:
-        check_init_array_(node->l, ctx);
-        check_init_array_(node->r, ctx);
+        check_init_array_element(node->l, ctx);
+        check_init_array_element(node->r, ctx);
         node->ival = ctx->index++;
 
         {
             struct data_type *type = ctx->lval_type;
 
-            if (ctx->index > get_array_length(ctx->var_sym->type) &&
-                has_unkown_array_length(type))
+            if (ctx->index > ctx->array_length) {
                 add_error2(ctx->messages, &node->pos,
                         "excess elements in array initializer");
-
-            if (!is_compatible(type, node->r->type))
+            }
+            else if (!is_compatible(type, node->r->type)) {
                 if (!is_array(type))
                     add_error2(ctx->messages, &node->pos,
                             "initializing '%s' with an expression of incompatible type '%s'",
                             type_name_of(type), type_name_of(node->r->type));
+            }
         }
 
         break;
 
     case NOD_INIT_LIST:
-        {
-            const struct tree_context tmp = *ctx;
-            struct data_type *parent_type = ctx->lval_type;
-            node->ival = ctx->index;
-            ctx->index = 0;
-
-            ctx->lval_type = underlying(ctx->lval_type);
-            check_init_array_(node->l, ctx);
-
-            if (has_unkown_array_length(parent_type))
-                set_array_length(parent_type, ctx->index);
-
-            *ctx = tmp;
-        }
+        check_initializer(node, ctx);
         break;
 
     default:
@@ -280,9 +283,7 @@ static void check_init_array_(struct ast_node *node, struct tree_context *ctx)
     }
 }
 
-static void check_initializer2(struct ast_node *node, struct tree_context *ctx);
-
-static void check_init_struct_(struct ast_node *node, struct tree_context *ctx)
+static void check_init_struct_member(struct ast_node *node, struct tree_context *ctx)
 {
     if (!node)
         return;
@@ -290,8 +291,8 @@ static void check_init_struct_(struct ast_node *node, struct tree_context *ctx)
     switch (node->kind) {
 
     case NOD_LIST:
-        check_init_struct_(node->l, ctx);
-        check_init_struct_(node->r, ctx);
+        check_init_struct_member(node->l, ctx);
+        check_init_struct_member(node->r, ctx);
 
         {
             const struct symbol *sym = ctx->struct_sym;
@@ -299,8 +300,8 @@ static void check_init_struct_(struct ast_node *node, struct tree_context *ctx)
             if (sym && sym->kind != SYM_MEMBER) {
                 add_error2(ctx->messages, &node->pos,
                         "excess elements in struct initializer");
-            } else
-            if (!is_compatible(sym->type, node->r->type)) {
+            }
+            else if (!is_compatible(sym->type, node->r->type)) {
                 if (!is_struct(sym->type))
                     add_error2(ctx->messages, &node->pos,
                             "initializing '%s' with an expression of incompatible type '%s'",
@@ -314,7 +315,7 @@ static void check_init_struct_(struct ast_node *node, struct tree_context *ctx)
         break;
 
     case NOD_INIT_LIST:
-            check_initializer2(node, ctx);
+        check_initializer(node, ctx);
         break;
 
     default:
@@ -324,28 +325,33 @@ static void check_init_struct_(struct ast_node *node, struct tree_context *ctx)
 
 static void check_initializer(struct ast_node *node, struct tree_context *ctx)
 {
-    if (!is_struct(node->type)) {
-        ctx->index = 0;
-        ctx->lval_type = node->type;
-        check_init_array_(node->r, ctx);
-    } else {
-    }
-}
-
-static void check_initializer2(struct ast_node *node, struct tree_context *ctx)
-{
     if (!node)
         return;
 
-    if (!is_struct(ctx->lval_type)) {
-    } else if(is_struct(ctx->lval_type)) {
+    if (is_array(ctx->lval_type)) {
+        struct tree_context new_ctx = *ctx;
+
+        if (has_unkown_array_length(ctx->lval_type)) {
+            const int count = count_initializers(node, ctx);
+            set_array_length(ctx->lval_type, count);
+        }
+
+        /* TODO consider removing node->ival */
+        node->ival = new_ctx.index;
+        new_ctx.index = 0;
+        new_ctx.array_length = get_array_length(ctx->lval_type);
+        new_ctx.lval_type = underlying(new_ctx.lval_type);
+
+        check_init_array_element(node->l, &new_ctx);
+    }
+    else if(is_struct(ctx->lval_type)) {
         struct tree_context new_ctx = *ctx;
 
         new_ctx.index = 0;
         new_ctx.struct_sym = new_ctx.struct_sym->next->next;
         new_ctx.lval_type = new_ctx.struct_sym->type;
 
-        check_init_struct_(node->l, &new_ctx);
+        check_init_struct_member(node->l, &new_ctx);
     }
 }
 
@@ -361,29 +367,21 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
     /* declaration */
     case NOD_DECL_INIT:
-        ctx->var_sym = NULL;
-
         ctx->has_init = node->r ? 1 : 0;
         check_tree_(node->l, ctx);
         ctx->has_init = 0;
         check_tree_(node->r, ctx);
 
-        check_initializer(node, ctx);
-
         ctx->index = 0;
         ctx->struct_sym = symbol_of(node->l->type);
         ctx->lval_type = node->l->type;
-        check_initializer2(node->r, ctx);
-
-        ctx->var_sym = NULL;
+        check_initializer(node->r, ctx);
         return;
 
     case NOD_DECL_IDENT:
         node->sym->is_initialized = ctx->has_init;
         if (node->sym->kind == SYM_FUNC)
             ctx->func_sym = node->sym;
-        if (node->sym->kind == SYM_VAR)
-            ctx->var_sym = node->sym;
 
         if (is_incomplete(node->sym->type) &&
                 (is_local_var(node->sym) || is_global_var(node->sym))) {

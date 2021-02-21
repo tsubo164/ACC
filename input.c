@@ -14,12 +14,12 @@ int main()
         } f;
     } pt = {{11, 12, 13}, {1, 2}};
     */
+    /*
     struct point {
         int x, y, z;
     } pt = {11, 3};
 
     return pt.y;
-    /*
     */
 
     /*
@@ -31,13 +31,20 @@ int main()
     int a[2][3] = {{0, 1, 2}, {3, 4, 5}};
 
     return pt.y + a[0][0];
-    int a[2][2] = {{11, 22}, {33, 44}};
+    int a[][2] = {{11, 22}, {33, 44}};
 
     return a[0][1];
     */
     /*
     int a[3] = {111, 29, 17};
-
+    */
+    int a[] = {15, 37, 19, 23};
     return a[0];
+    /*
+    struct point {
+        int x, y;
+    } line[3] = {{1, 1}, {2, 2}, {3, 3}};
+
+    return line[0].y;
     */
 }
