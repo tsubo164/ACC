@@ -1932,18 +1932,23 @@ static struct ast_node *init_declarator(struct parser *p)
 static struct ast_node *init_declarator_list(struct parser *p)
 {
     struct ast_node *tree = NULL;
+    struct data_type *spec = p->decl_type;
 
     for (;;) {
         struct ast_node *init = init_declarator(p);
 
         if (!init)
-            return tree;
+            break;
 
+        decl_set_type(p, spec);
         tree = new_node(NOD_LIST, tree, init);
 
         if (!consume(p, ','))
-            return tree;
+            break;
     }
+
+    decl_set_type(p, spec);
+    return tree;
 }
 
 /*

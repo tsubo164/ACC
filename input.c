@@ -1,11 +1,14 @@
+/*
 int foo() {
     return 42;
 }
-/*
 */
 
 int main()
 {
+    int *p = 0, i = 0;
+
+    return i;
     /*
     struct point {
         int x, y, z;
@@ -17,7 +20,7 @@ int main()
     /*
     struct point {
         int x, y, z;
-    } pt = {11, 3};
+    } pt = {11, 12, 14};
 
     return pt.y;
     */
@@ -41,10 +44,10 @@ int main()
     return a[0];
     */
     /*
-    */
     struct point {
         int x, y;
     } line[3] = {{1, 2}, {3, 4}, {5, 6}};
 
     return line[0].y;
+    */
 }

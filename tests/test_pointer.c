@@ -112,6 +112,35 @@ int main()
         ***ppp = **pp + 18;
         assert(42, **pp);
     }
+    {
+        /* multiple init declarators */
+        int *p, i = 0;
+
+        p = &i;
+        *p = 42;
+
+        assert(42, i);
+        assert(42, *p);
+        assert(4, sizeof i);
+        assert(8, sizeof p);
+    }
+    {
+        /* multiple init declarators */
+        int a[3], i = 42, *p = 0;
+
+        p = a;
+        a[0] = 11;
+        a[1] = 21;
+        a[2] = 31;
+
+        assert(11, a[0]);
+        assert(21, a[1]);
+        assert(31, a[2]);
+        assert(11, *p);
+        assert(12, sizeof a);
+        assert(4, sizeof i);
+        assert(8, sizeof p);
+    }
 
     return 0;
 }
