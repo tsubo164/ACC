@@ -3,13 +3,20 @@ int foo() {
     return 42;
 }
 */
+struct point {
+    int x, y;
+    char z;
+} pt = {11, 59, 91};
+
+int a = 123;
 
 int main()
 {
+    return pt.y;
+    /*
     int *p = 0, i = 0;
 
     return i;
-    /*
     struct point {
         int x, y, z;
         struct foo {
