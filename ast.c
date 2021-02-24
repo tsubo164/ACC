@@ -186,6 +186,13 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         printf(TERMINAL_DECORATION_RESET);
         printf(TERMINAL_COLOR_RESET);
     }
+    else if (tree->kind == NOD_INIT) {
+        printf(TERMINAL_COLOR_YELLOW);
+        printf(TERMINAL_DECORATION_BOLD);
+            printf("%s", node_to_string(tree));
+        printf(TERMINAL_DECORATION_RESET);
+        printf(TERMINAL_COLOR_RESET);
+    }
     else {
         printf("%s", node_to_string(tree));
     }

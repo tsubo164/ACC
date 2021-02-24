@@ -1876,18 +1876,18 @@ static struct ast_node *declarator(struct parser *p)
 static struct ast_node *initializer(struct parser *p)
 {
     /* ',' at the end of list is handled by initializer_list */
-    if (consume(p, '{')) {
-        struct ast_node *tree, *list;
-        list = initializer_list(p);
-        expect(p, '}');
+    struct ast_node *tree = NULL;
+    struct ast_node *init;
 
-        tree = new_node_(NOD_INIT_LIST, tokpos(p));
-        return branch_(tree, list, NULL);
+    if (consume(p, '{')) {
+        init = initializer_list(p);
+        expect(p, '}');
     } else {
-        struct ast_node *tree;
-        tree = new_node_(NOD_INIT, tokpos(p));
-        return branch_(tree, NULL, assignment_expression(p));
+        init = assignment_expression(p);
     }
+
+    tree = new_node_(NOD_INIT, tokpos(p));
+    return branch_(tree, NULL, init);
 }
 
 /*
@@ -1898,20 +1898,24 @@ static struct ast_node *initializer(struct parser *p)
 static struct ast_node *initializer_list(struct parser *p)
 {
     struct ast_node *tree = NULL;
+    struct ast_node *init_list;
 
     for (;;) {
         struct ast_node *init = initializer(p);
         struct ast_node *list = NULL;
 
         if (!init)
-            return tree;
+            break;
 
         list = new_node_(NOD_LIST, tokpos(p));
         tree = branch_(list, tree, init);
 
         if (!consume(p, ','))
-            return tree;
+            break;
     }
+
+    init_list = new_node_(NOD_INIT_LIST, tokpos(p));
+    return branch_(init_list, tree, NULL);
 }
 
 static struct ast_node *init_declarator(struct parser *p)

@@ -1039,7 +1039,7 @@ static void gen_initializer_local(FILE *fp, const struct ast_node *node)
         if (is_array(ident->type))
             gen_init_array(fp, node->r, ident, ident->type);
         else if (is_struct(ident->type))
-            gen_init_struct(fp, node->r, ident, symbol_of(ident->type));
+            gen_init_struct(fp, node->r->r /*XXX TMP */, ident, symbol_of(ident->type));
         else
             gen_init_scalar(fp, ident->type, ident, 0, node->r->r /*XXX TMP */);
     }

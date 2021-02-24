@@ -7,27 +7,19 @@ struct point {
     int z;
 } pt = {11, 59, 91};
 
-int a = 123;
 */
-
-int a;
+int a = 123;
 
 int main()
 {
-    {
-        /* struct initializer */
-        struct point {
-            int x, y, z;
-        } pt = {11, 22, 33};
-
-        return pt.z;
-        /*
-        assert(11, pt.x);
-        assert(22, pt.y);
-        assert(33, pt.z);
-        */
-    }
     /*
+        int a[3] = {11, 99, 31};
+
+        return a[0];
+    int a[2][2] = {{11, 22}, {33, 44}};
+
+    return a[0][1];
+
     return pt.y;
     int *p = 0, i = 0;
 
@@ -39,12 +31,12 @@ int main()
         } f;
     } pt = {{11, 12, 13}, {1, 2}};
     */
-    /*
     struct point {
         int x, y, z;
     } pt = {11, 12, 14};
 
-    return pt.y;
+    return pt.z;
+    /*
     */
 
     /*

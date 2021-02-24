@@ -250,7 +250,6 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
     if (!node)
         return;
 
-
     switch (node->kind) {
 
     case NOD_INIT:
@@ -339,6 +338,12 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
 {
     if (!node)
         return;
+
+    /* TODO TMP */
+    if (node->kind == NOD_INIT) {
+        check_initializer(node->r, ctx);
+        return;
+    }
 
     if (is_array(ctx->lval_type)) {
         struct tree_context new_ctx = *ctx;
