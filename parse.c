@@ -144,6 +144,8 @@ struct parser *new_parser()
     p->is_const = 0;
     p->is_panic_mode = 0;
 
+    p->init_type = NULL;
+
     return p;
 }
 
@@ -710,6 +712,7 @@ static struct ast_node *unary_expression(struct parser *p)
 static struct ast_node *multiplicative_expression(struct parser *p)
 {
     struct ast_node *tree = unary_expression(p);
+    struct ast_node *expr = NULL;
 
     for (;;) {
         const struct token *tok = gettok(p);
@@ -717,11 +720,13 @@ static struct ast_node *multiplicative_expression(struct parser *p)
         switch (tok->kind) {
 
         case '*':
-            tree = new_node(NOD_MUL, tree, unary_expression(p));
+            expr = new_node_(NOD_MUL, tokpos(p));
+            tree = branch_(expr, tree, unary_expression(p));
             break;
 
         case '/':
-            tree = new_node(NOD_DIV, tree, unary_expression(p));
+            expr = new_node_(NOD_DIV, tokpos(p));
+            tree = branch_(expr, tree, unary_expression(p));
             break;
 
         default:
@@ -740,6 +745,7 @@ static struct ast_node *multiplicative_expression(struct parser *p)
 static struct ast_node *additive_expression(struct parser *p)
 {
     struct ast_node *tree = multiplicative_expression(p);
+    struct ast_node *expr = NULL;
 
     for (;;) {
         const struct token *tok = gettok(p);
@@ -747,12 +753,13 @@ static struct ast_node *additive_expression(struct parser *p)
         switch (tok->kind) {
 
         case '+':
-            tree = new_node(NOD_ADD, tree, multiplicative_expression(p));
-            typed_(tree);
+            expr = new_node_(NOD_ADD, tokpos(p));
+            tree = branch_(expr, tree, multiplicative_expression(p));
             break;
 
         case '-':
-            tree = new_node(NOD_SUB, tree, multiplicative_expression(p));
+            expr = new_node_(NOD_SUB, tokpos(p));
+            tree = branch_(expr, tree, multiplicative_expression(p));
             break;
 
         default:
@@ -1880,14 +1887,20 @@ static struct ast_node *initializer(struct parser *p)
     struct ast_node *init;
 
     if (consume(p, '{')) {
+        struct data_type *tmp = p->init_type;
+        p->init_type = underlying(p->init_type);
         init = initializer_list(p);
+        p->init_type = tmp;
         expect(p, '}');
     } else {
         init = assignment_expression(p);
     }
 
     tree = new_node_(NOD_INIT, tokpos(p));
-    return branch_(tree, NULL, init);
+    tree = branch_(tree, NULL, init);
+    /* TODO better way to avoid override type */
+    type_set(tree, p->init_type);
+    return tree;
 }
 
 /*
@@ -1924,8 +1937,11 @@ static struct ast_node *init_declarator(struct parser *p)
 
     tree->l = declarator(p);
 
-    if (consume(p, '='))
+    if (consume(p, '=')) {
+        p->init_type = p->decl_type;
         tree->r = initializer(p);
+        p->init_type = NULL;
+    }
 
     return typed_(tree);
 }

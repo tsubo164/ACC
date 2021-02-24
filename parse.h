@@ -28,6 +28,9 @@ struct parser {
     int is_static;
     int is_const;
     int is_panic_mode;
+
+    /* for initializer */
+    struct data_type *init_type;
 };
 
 extern struct parser *new_parser();
