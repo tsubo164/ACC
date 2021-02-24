@@ -883,7 +883,7 @@ static void gen_init_array(FILE *fp, const struct ast_node *node,
 
     switch (node->kind) {
 
-    case NOD_LIST:
+    case NOD_INIT:
         gen_init_array(fp, node->l, ident, type);
 
         if (is_array(type)) {
@@ -912,6 +912,11 @@ static void gen_init_array(FILE *fp, const struct ast_node *node,
         }
         break;
 
+    case NOD_LIST:
+        gen_init_array(fp, node->l, ident, type);
+        gen_init_array(fp, node->r, ident, type);
+        break;
+
     default:
         break;
     }
@@ -930,7 +935,7 @@ static void gen_init_struct(FILE *fp, const struct ast_node *node,
 
     switch (node->kind) {
 
-    case NOD_LIST:
+    case NOD_INIT:
         gen_init_struct(fp, node->l, ident, sym);
         {
             const int offset = base + sym->mem_offset;
@@ -953,6 +958,11 @@ static void gen_init_struct(FILE *fp, const struct ast_node *node,
             const struct symbol *start = sym;
             gen_zero_members(fp, ident, base, start);
         }
+        break;
+
+    case NOD_LIST:
+        gen_init_struct(fp, node->l, ident, sym);
+        gen_init_struct(fp, node->r, ident, sym);
         break;
 
     default:
@@ -1013,7 +1023,7 @@ static int count_element(const struct data_type *type)
 }
 #endif
 
-static void gen_initializer(FILE *fp, const struct ast_node *node)
+static void gen_initializer_local(FILE *fp, const struct ast_node *node)
 {
     const struct ast_node *ident;
 
@@ -1031,7 +1041,7 @@ static void gen_initializer(FILE *fp, const struct ast_node *node)
         else if (is_struct(ident->type))
             gen_init_struct(fp, node->r, ident, symbol_of(ident->type));
         else
-            gen_init_scalar(fp, ident->type, ident, 0, node->r);
+            gen_init_scalar(fp, ident->type, ident, 0, node->r->r /*XXX TMP */);
     }
 #if 0
     if (ident && is_local_var(ident->sym)) {
@@ -1208,7 +1218,8 @@ static void gen_initializer_global(FILE *fp, const struct ast_node *node)
             }
         }
         else {
-            gen_init_scalar(fp, underlying(ident->type), ident, 0, node->r);
+            struct ast_node *expr = node->r ? node->r->r : NULL;
+            gen_init_scalar(fp, ident->type, ident, 0, expr /*XXX TMP */);
         }
         fprintf(fp, "\n");
     }
@@ -1380,7 +1391,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_DECL_INIT:
-        gen_initializer(fp, node);
+        gen_initializer_local(fp, node);
         break;
 
     case NOD_STRUCT_REF:

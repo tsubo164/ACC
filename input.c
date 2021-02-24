@@ -2,18 +2,33 @@
 int foo() {
     return 42;
 }
-*/
 struct point {
     int x, y;
-    char z;
+    int z;
 } pt = {11, 59, 91};
 
 int a = 123;
+*/
+
+int a;
 
 int main()
 {
-    return pt.y;
+    {
+        /* struct initializer */
+        struct point {
+            int x, y, z;
+        } pt = {11, 22, 33};
+
+        return pt.z;
+        /*
+        assert(11, pt.x);
+        assert(22, pt.y);
+        assert(33, pt.z);
+        */
+    }
     /*
+    return pt.y;
     int *p = 0, i = 0;
 
     return i;

@@ -250,12 +250,13 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
     if (!node)
         return;
 
+
     switch (node->kind) {
 
-    case NOD_LIST:
+    case NOD_INIT:
         check_init_array_element(node->l, ctx);
         check_init_array_element(node->r, ctx);
-        node->ival = ctx->index++;
+        node->ival = ctx->index;
 
         {
             struct data_type *type = ctx->lval_type;
@@ -278,6 +279,12 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
         check_initializer(node, ctx);
         break;
 
+    case NOD_LIST:
+        check_init_array_element(node->l, ctx);
+        check_init_array_element(node->r, ctx);
+        node->ival = ctx->index++;
+        break;
+
     default:
         break;
     }
@@ -290,7 +297,7 @@ static void check_init_struct_member(struct ast_node *node, struct tree_context 
 
     switch (node->kind) {
 
-    case NOD_LIST:
+    case NOD_INIT:
         check_init_struct_member(node->l, ctx);
         check_init_struct_member(node->r, ctx);
 
@@ -309,13 +316,18 @@ static void check_init_struct_member(struct ast_node *node, struct tree_context 
             }
         }
 
-        node->ival = ctx->index++;
         ctx->struct_sym = ctx->struct_sym->next;
         ctx->lval_type = ctx->struct_sym->type;
         break;
 
     case NOD_INIT_LIST:
         check_initializer(node, ctx);
+        break;
+
+    case NOD_LIST:
+        check_init_struct_member(node->l, ctx);
+        check_init_struct_member(node->r, ctx);
+        node->ival = ctx->index++;
         break;
 
     default:

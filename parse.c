@@ -1884,7 +1884,9 @@ static struct ast_node *initializer(struct parser *p)
         tree = new_node_(NOD_INIT_LIST, tokpos(p));
         return branch_(tree, list, NULL);
     } else {
-        return assignment_expression(p);
+        struct ast_node *tree;
+        tree = new_node_(NOD_INIT, tokpos(p));
+        return branch_(tree, NULL, assignment_expression(p));
     }
 }
 
