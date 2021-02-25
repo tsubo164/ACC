@@ -204,11 +204,15 @@ struct tree_context {
     int is_lvalue;
     int has_init;
 
-    /* for initializers */
+    /* for old initializers */
     const struct symbol *struct_sym;
     struct data_type *lval_type;
     int array_length;
     int index;
+    /* for initializers */
+    struct symbol *ident_sym;
+    int byte_base;
+    int byte_offset;
 };
 
 static int find_case_value(struct ast_node *node)
@@ -371,6 +375,54 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
 
         check_init_struct_member(node->l, &new_ctx);
     }
+}
+
+static void check_initializer2(struct ast_node *node, struct tree_context *ctx)
+{
+    if (!node)
+        return;
+
+    if (is_array(node->type)) {
+    }
+    else if(is_struct(node->type)) {
+    }
+    else {
+    }
+}
+
+static void check_init_(struct ast_node *node, struct tree_context *ctx)
+{
+    if (!node)
+        return;
+
+    switch (node->kind) {
+
+    case NOD_DECL_INIT:
+        check_init_(node->l, ctx);
+        /*
+        check_init_(node->r, ctx);
+        */
+        check_initializer2(node->r, ctx);
+        ctx->ident_sym = NULL;
+        return;
+
+    case NOD_DECL_IDENT:
+        ctx->ident_sym = node->sym;
+        return;
+
+        /*
+    case NOD_INIT:
+        if (ctx->ident_sym)
+            node->sym = ctx->ident_sym;
+        return;
+        */
+
+    default:
+        break;;
+    }
+
+    check_init_(node->l, ctx);
+    check_init_(node->r, ctx);
 }
 
 static void check_tree_(struct ast_node *node, struct tree_context *ctx)
@@ -578,6 +630,13 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
     check_tree_(node->r, ctx);
 }
 
+static void check_initializer__(struct ast_node *tree, struct message_list *messages)
+{
+    struct tree_context ctx = {0};
+    ctx.messages = messages;
+    check_init_(tree, &ctx);
+}
+
 static void check_tree_semantics(struct ast_node *tree, struct message_list *messages)
 {
     struct tree_context ctx = {0};
@@ -591,7 +650,11 @@ int semantic_analysis(struct ast_node *tree,
     check_tree_semantics(tree, messages);
     check_symbol_usage(table, messages);
 
+    /* needs to be called after enum values and array sizes are solved */
     add_symbol_size(table);
+
+    /* needs to be called after type sizes are solved */
+    check_initializer__(tree, messages);
 
     return 0;
 }

@@ -8,16 +8,15 @@ struct point {
 } pt = {11, 59, 91};
 
 */
-//int a = 123;
 //int b[3] = {11, 99, 31};
-enum { R, G, B};
+//enum { R, G, B};
 
 int main()
 {
+    /*
         int a[3] = {11, 99, 31};
 
         return a[0];
-    /*
     int a[2][2] = {{11, 22}, {33, 44}};
 
     return a[0][1];
@@ -32,8 +31,9 @@ int main()
             int a, b;
         } f;
     } pt = {{11, 12, 13}, {1, 2}};
-    return a;
     */
+    int a = 123;
+    return a;
     /*
     struct point {
         int x, y, z;
