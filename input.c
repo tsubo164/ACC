@@ -10,6 +10,7 @@ struct point {
 */
 //int b[3] = {11, 99, 31};
 //enum { R, G, B};
+int x = 99;
 
 int main()
 {
@@ -33,7 +34,7 @@ int main()
     } pt = {{11, 12, 13}, {1, 2}};
     */
     int a = 123;
-    return a;
+    return x;
     /*
     struct point {
         int x, y, z;

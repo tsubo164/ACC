@@ -1000,6 +1000,13 @@ struct memory_byte {
     int is_head;
 };
 
+struct memory_data {
+    struct memory_byte *bytes;
+    int size;
+
+    struct ast_node zero_int;
+};
+
 /*
 static void assign_init_struct_(struct memory_byte *bytes,
         const struct data_type *type, const struct ast_node *init)
@@ -1042,6 +1049,30 @@ static void assign_init_struct_(struct memory_byte *bytes,
         break;
     }
 }
+
+static int count_element(const struct data_type *type)
+{
+    if (is_struct(type)) {
+        struct symbol *sym = symbol_of(type);
+        const int struct_scope = sym->scope_level + 1;
+        int i = 0;
+
+        for (; sym; sym = sym->next) {
+            if (is_member(sym) && sym->scope_level == struct_scope)
+                i += count_element(sym->type);
+            if (sym->kind == SYM_SCOPE_END && sym->scope_level == struct_scope)
+                break;
+        }
+        return i;
+    }
+
+    if (is_array(type)) {
+        const int len = get_array_length(type);
+        return len * count_element(underlying(type));
+    }
+
+    return 1;
+}
 */
 
 static void print_memory(struct memory_byte *bytes, const struct data_type *type)
@@ -1069,6 +1100,12 @@ static void clear_memory(struct memory_byte *bytes, const struct data_type *type
         }
     }
 }
+
+/*
+static void init_memory_data(struct memory_data *data, const struct ast_node *ident)
+{
+}
+*/
 
 static void assign_init_(struct memory_byte *bytes,
         const struct data_type *type, const struct ast_node *init)
@@ -1110,10 +1147,25 @@ static void assign_init_(struct memory_byte *bytes,
     }
 }
 
-#if 0
-static void gen_memory_byte(FILE *fp, const struct memory_byte *bytes, int size)
+static void gen_memory_byte(FILE *fp, const struct ast_node *ident,
+        const struct memory_byte *bytes, int size)
 {
     int i;
+
+    {
+        struct symbol *sym = ident->sym;
+        int id = sym->id;
+
+        if (!is_static(sym)) {
+            id = -1;
+            fprintf(fp, "    .global ");
+            gen_pc_rel_addr(fp, sym->name, id);
+            fprintf(fp, "\n");
+        }
+        gen_pc_rel_addr(fp, sym->name, id);
+        fprintf(fp, ":\n");
+    }
+
     for (i = 0; i < size; i++) {
         const struct memory_byte *byte = &bytes[i];
 
@@ -1137,23 +1189,31 @@ static void gen_memory_byte(FILE *fp, const struct memory_byte *bytes, int size)
                 break;
             }
         }
-    }
-}
-
-static void gen_memory_byte_local(FILE *fp, const struct memory_byte *bytes, int size)
-{
-    int i;
-    for (i = 0; i < size; i++) {
-        const struct memory_byte *byte = &bytes[i];
-
-        if (byte->init) {
-            /*
-            gen_init_scalar(stdout, type, ident, offset, byte->init->r);
-            */
+        else {
+                fprintf(fp, "    .long 0\n");
         }
+        /*
+        {
+            int tag;
+            const char *szname;
+            int val;
+
+            if (byte->init) {
+                tag = data_tag_(byte->init->type);
+                szname = data_spec_table[tag].sizename;
+                val = byte->init->r->ival;
+            } else {
+                tag = data_tag_(byte->init->type);
+                szname = data_spec_table[tag].sizename;
+                val = 0;
+            }
+            fprintf(fp, "    .%s %d\n", szname, val);
+        }
+        */
     }
+
+    fprintf(fp, "\n");
 }
-#endif
 
 static void gen_initializer2(FILE *fp,
         const struct ast_node *ident, const struct ast_node *init)
@@ -1168,7 +1228,8 @@ static void gen_initializer2(FILE *fp,
     if (0)
         print_memory(bytes, ident->type);
 
-    if (is_global_var(ident->sym)) {
+    if (is_global_var(ident->sym) && !is_extern(ident->sym)) {
+        gen_memory_byte(fp, ident, bytes, sz);
     }
     else if (is_local_var(ident->sym)) {
         int i;
@@ -1221,10 +1282,36 @@ static void gen_initializer_global(FILE *fp, const struct ast_node *node)
             }
         }
         else {
+#if 0
             struct ast_node *expr = node->r ? node->r->r : NULL;
             gen_init_scalar(fp, ident->type, ident, 0, expr /*XXX TMP */);
+#endif
         }
         fprintf(fp, "\n");
+    }
+}
+
+static void gen_initializer_global2(FILE *fp, const struct ast_node *node)
+{
+    const struct ast_node *ident;
+
+    if (!node || node->kind != NOD_DECL_INIT)
+        return;
+
+    /* find lvalue ident */
+    ident = find_node(node->l, NOD_DECL_IDENT);
+
+    if (ident && is_global_var(ident->sym)) {
+        if (is_array(ident->type)) {
+        }
+        else if (is_struct(ident->type)) {
+        }
+        else {
+            gen_initializer2(fp, ident, node->r);
+        }
+        /*
+        fprintf(fp, "\n");
+        */
     }
 }
 
@@ -1680,6 +1767,7 @@ static void gen_global_vars(FILE *fp, const struct ast_node *node)
 
     if (node->kind == NOD_DECL_INIT) {
         gen_initializer_global(fp, node);
+        gen_initializer_global2(fp, node);
         return;
     }
 
