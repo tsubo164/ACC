@@ -996,15 +996,20 @@ static void gen_initializer_local(FILE *fp, const struct ast_node *node)
 
 struct memory_byte {
     const struct ast_node *init;
+    const struct data_type *type;
     int is_written;
-    int is_head;
+    int written_size;
 };
 
-struct memory_data {
+struct object_byte {
     struct memory_byte *bytes;
     int size;
 
+    struct symbol *sym;
+    struct data_type *type;
     struct ast_node zero_int;
+    int base;
+    int cur;
 };
 
 /*
@@ -1075,85 +1080,132 @@ static int count_element(const struct data_type *type)
 }
 */
 
+/*
 static void print_memory(struct memory_byte *bytes, const struct data_type *type)
 {
     const int size = get_size(type);
     int i;
     for (i = 0; i < size; i++) {
-        printf("    memory [%04d] is_written: %d is_head: %d init: %p\n",
+        printf("    memory [%04d] is_written: %d written_size: %d init: %p\n",
                 i,
                 bytes[i].is_written,
-                bytes[i].is_head,
+                bytes[i].written_size,
                 (void *) bytes[i].init);
     }
 }
+*/
 
-static void clear_memory(struct memory_byte *bytes, const struct data_type *type)
+static void print_object(struct object_byte *obj)
 {
-    {
+    int i;
+
+    for (i = 0; i < obj->size; i++) {
+        printf("    [%04d] is_written: %d written_size: %d init: %p\n",
+                i,
+                obj->bytes[i].is_written,
+                obj->bytes[i].written_size,
+                (void *) obj->bytes[i].init);
+    }
+}
+
+static void zero_clear_bytes(struct memory_byte *bytes, const struct data_type *type)
+{
+    if (is_array(type)) {
+        const int len = get_array_length(type);
+        const int elem_size = get_size(underlying(type));
+        int i;
+
+        for (i = 0; i < len; i++) {
+            const base = elem_size * i;
+
+            zero_clear_bytes(bytes + base, underlying(type));
+        }
+    }
+    else {
         /* scalar */
         const int size = get_size(type);
         int i;
         for (i = 0; i < size; i++) {
             bytes[i].is_written = 1;
-            bytes[i].is_head = (i == 0) ? 1 : 0;
+            bytes[i].written_size = (i == 0) ? size : 0;
+            bytes[i].type = type;
         }
     }
 }
 
-/*
-static void init_memory_data(struct memory_data *data, const struct ast_node *ident)
+static void init_object_byte(struct object_byte *obj, const struct ast_node *ident)
 {
+    const size = get_size(ident->type);
+
+    obj->bytes = (struct memory_byte *) calloc(size, sizeof(struct memory_byte));
+    obj->size = size;
+    obj->sym = ident->sym;
+    obj->type = ident->type;
+
+    zero_clear_bytes(obj->bytes, obj->sym->type);
 }
-*/
 
-static void assign_init_(struct memory_byte *bytes,
-        const struct data_type *type, const struct ast_node *init)
+static void free_object_byte(struct object_byte *obj)
 {
+    struct object_byte o = {0};
+    free(obj->bytes);
+    *obj = o;
+}
 
-    if (!init)
+static void assign_init(struct memory_byte *base,
+        const struct data_type *type, const struct ast_node *node)
+{
+    if (!node)
         return;
 
-    switch (init->kind) {
+    switch (node->kind) {
 
     case NOD_INIT:
-        assign_init_(bytes, type, init->l);
-        assign_init_(bytes, type, init->r);
         {
-            const int base = init->ival;
-            const int offset = 0;
-            const int index = base + offset;
-            const int size = get_size(init->type);
-            int i;
+            /* move cursor by designator */
+            /* get index from node->r */
+            const int offset = node->ival;
+            const int size = get_size(type);
+            const int index = offset * size;
 
-            bytes[index].init = init;
-
-            for (i = 0; i < size; i++)
-                bytes[index + i].is_written = 1;
+            assign_init(base, type, node->l);
+            assign_init(base + index, type, node->r);
         }
         break;
 
     case NOD_INIT_LIST:
-        assign_init_(bytes, type, init->l);
+        /* dive into subtype */
+        assign_init(base, underlying(type), node->l);
         break;
 
     case NOD_LIST:
-        assign_init_(bytes, type, init->l);
-        assign_init_(bytes, type, init->r);
+        /* pass to the next initializer */
+        assign_init(base, type, node->l);
+        assign_init(base, type, node->r);
         break;
 
     default:
+        {
+            /* assign initializer to byte */
+            const int size = get_size(type);
+            int i;
+
+            base->init = node;
+            base->type = type;
+
+            for (i = 0; i < size; i++)
+                base[i].is_written = 1;
+        }
         break;
     }
 }
 
-static void gen_memory_byte(FILE *fp, const struct ast_node *ident,
-        const struct memory_byte *bytes, int size)
+static void gen_object_byte(FILE *fp, const struct object_byte *obj)
 {
     int i;
 
     {
-        struct symbol *sym = ident->sym;
+        struct symbol *sym = obj->sym;
         int id = sym->id;
 
         if (!is_static(sym)) {
@@ -1166,50 +1218,31 @@ static void gen_memory_byte(FILE *fp, const struct ast_node *ident,
         fprintf(fp, ":\n");
     }
 
-    for (i = 0; i < size; i++) {
-        const struct memory_byte *byte = &bytes[i];
+    for (i = 0; i < obj->size; i++) {
+        const struct memory_byte *byte = &obj->bytes[i];
 
         if (!byte->is_written) {
             fprintf(fp, "    .zero 1\n");
             continue;
         }
 
-        if (byte->init) {
-            const int objsize = get_size(byte->init->type);
+        if (byte->written_size > 0) {
+            const int objsize = get_size(byte->type);
+            const int val = byte->init ? byte->init->ival : 0;
+
             switch (objsize) {
             case 1:
-                fprintf(fp, "    .byte %d\n", byte->init->r->ival);
+                fprintf(fp, "    .byte %d\n", val);
                 break;
 
             case 4:
-                fprintf(fp, "    .long %d\n", byte->init->r->ival);
+                fprintf(fp, "    .long %d\n", val);
                 break;
 
             default:
                 break;
             }
         }
-        else {
-                fprintf(fp, "    .long 0\n");
-        }
-        /*
-        {
-            int tag;
-            const char *szname;
-            int val;
-
-            if (byte->init) {
-                tag = data_tag_(byte->init->type);
-                szname = data_spec_table[tag].sizename;
-                val = byte->init->r->ival;
-            } else {
-                tag = data_tag_(byte->init->type);
-                szname = data_spec_table[tag].sizename;
-                val = 0;
-            }
-            fprintf(fp, "    .%s %d\n", szname, val);
-        }
-        */
     }
 
     fprintf(fp, "\n");
@@ -1218,31 +1251,30 @@ static void gen_memory_byte(FILE *fp, const struct ast_node *ident,
 static void gen_initializer2(FILE *fp,
         const struct ast_node *ident, const struct ast_node *init)
 {
-    struct memory_byte *bytes = NULL;
-    const int sz = get_size(ident->type);
+    struct object_byte obj = {0};
 
-    bytes = (struct memory_byte *) calloc(sz, sizeof(struct memory_byte));
+    init_object_byte(&obj, ident);
+    assign_init(obj.bytes, ident->type, init);
 
-    clear_memory(bytes, ident->type);
-    assign_init_(bytes, ident->type, init);
     if (0)
-        print_memory(bytes, ident->type);
+        print_object(&obj);
 
     if (is_global_var(ident->sym) && !is_extern(ident->sym)) {
-        gen_memory_byte(fp, ident, bytes, sz);
+        gen_object_byte(fp, &obj);
     }
     else if (is_local_var(ident->sym)) {
         int i;
-        for (i = 0; i < sz; i++) {
-            const struct memory_byte *byte = &bytes[i];
+
+        for (i = 0; i < obj.size; i++) {
+            const struct memory_byte *byte = &obj.bytes[i];
 
             if (byte->init) {
-                gen_init_scalar(fp, byte->init->type, ident, 0, byte->init->r);
+                gen_init_scalar(fp, byte->type, ident, 0, byte->init);
             }
         }
     }
 
-    free(bytes);
+    free_object_byte(&obj);
 }
 
 static void gen_initializer_global(FILE *fp, const struct ast_node *node)
@@ -1265,6 +1297,7 @@ static void gen_initializer_global(FILE *fp, const struct ast_node *node)
                 const int end = get_array_length(ident->type);
                 gen_zero_elements(fp, ident, underlying(ident->type), base, start, end);
             }
+        fprintf(fp, "\n");
         }
         /* XXX old initializer doesn't support global struct initialization */
         else if (is_struct(ident->type)) {
@@ -1287,7 +1320,9 @@ static void gen_initializer_global(FILE *fp, const struct ast_node *node)
             gen_init_scalar(fp, ident->type, ident, 0, expr /*XXX TMP */);
 #endif
         }
+        /*
         fprintf(fp, "\n");
+        */
     }
 }
 
@@ -1309,9 +1344,6 @@ static void gen_initializer_global2(FILE *fp, const struct ast_node *node)
         else {
             gen_initializer2(fp, ident, node->r);
         }
-        /*
-        fprintf(fp, "\n");
-        */
     }
 }
 
@@ -1326,6 +1358,9 @@ static void gen_initializer_local2(FILE *fp, const struct ast_node *node)
 
     if (ident && is_local_var(ident->sym)) {
         if (is_array(ident->type)) {
+            /*
+            gen_initializer2(fp, ident, node->r);
+            */
         }
         else if (is_struct(ident->type)) {
         }
