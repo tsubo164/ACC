@@ -983,9 +983,12 @@ static void gen_initializer_local(FILE *fp, const struct ast_node *node)
     if (ident && is_local_var(ident->sym)) {
         gen_comment(fp, "local var init");
 
+#if 0
         if (is_array(ident->type))
             gen_init_array(fp, node->r, ident, ident->type);
-        else if (is_struct(ident->type))
+        else
+#endif
+        if (is_struct(ident->type))
             gen_init_struct(fp, node->r->r /*XXX TMP */, ident, symbol_of(ident->type));
 #if 0
         else
@@ -1077,21 +1080,6 @@ static int count_element(const struct data_type *type)
     }
 
     return 1;
-}
-*/
-
-/*
-static void print_memory(struct memory_byte *bytes, const struct data_type *type)
-{
-    const int size = get_size(type);
-    int i;
-    for (i = 0; i < size; i++) {
-        printf("    memory [%04d] is_written: %d written_size: %d init: %p\n",
-                i,
-                bytes[i].is_written,
-                bytes[i].written_size,
-                (void *) bytes[i].init);
-    }
 }
 */
 
@@ -1268,9 +1256,8 @@ static void gen_initializer2(FILE *fp,
         for (i = 0; i < obj.size; i++) {
             const struct memory_byte *byte = &obj.bytes[i];
 
-            if (byte->init) {
-                gen_init_scalar(fp, byte->type, ident, 0, byte->init);
-            }
+            if (byte->written_size > 0)
+                gen_init_scalar(fp, byte->type, ident, i, byte->init);
         }
     }
 
@@ -1358,9 +1345,7 @@ static void gen_initializer_local2(FILE *fp, const struct ast_node *node)
 
     if (ident && is_local_var(ident->sym)) {
         if (is_array(ident->type)) {
-            /*
             gen_initializer2(fp, ident, node->r);
-            */
         }
         else if (is_struct(ident->type)) {
         }
@@ -1538,8 +1523,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_DECL_INIT:
         gen_initializer_local(fp, node);
         gen_initializer_local2(fp, node);
-        /*
-        */
         break;
 
     case NOD_STRUCT_REF:
