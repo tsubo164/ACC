@@ -254,6 +254,7 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
     if (!node)
         return;
 
+#if 0
     switch (node->kind) {
 
     case NOD_INIT:
@@ -262,7 +263,6 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
         node->ival = ctx->index;
 
         {
-#if 0
             struct data_type *type = ctx->lval_type;
 
             if (ctx->index > ctx->array_length) {
@@ -275,7 +275,6 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
                             "initializing '%s' with an expression of incompatible type '%s'",
                             type_name_of(type), type_name_of(node->r->type));
             }
-#endif
         }
 
         break;
@@ -293,6 +292,7 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
     default:
         break;
     }
+#endif
 }
 
 static void check_init_struct_member(struct ast_node *node, struct tree_context *ctx)

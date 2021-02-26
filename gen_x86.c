@@ -1276,6 +1276,7 @@ static void gen_initializer_global(FILE *fp, const struct ast_node *node)
 
     if (ident && is_global_var(ident->sym)) {
         if (is_array(ident->type)) {
+#if 0
             if (node->r) {
                 gen_init_array(fp, node->r, ident, ident->type);
             } else {
@@ -1285,6 +1286,7 @@ static void gen_initializer_global(FILE *fp, const struct ast_node *node)
                 gen_zero_elements(fp, ident, underlying(ident->type), base, start, end);
             }
         fprintf(fp, "\n");
+#endif
         }
         /* XXX old initializer doesn't support global struct initialization */
         else if (is_struct(ident->type)) {
@@ -1325,6 +1327,7 @@ static void gen_initializer_global2(FILE *fp, const struct ast_node *node)
 
     if (ident && is_global_var(ident->sym)) {
         if (is_array(ident->type)) {
+            gen_initializer2(fp, ident, node->r);
         }
         else if (is_struct(ident->type)) {
         }

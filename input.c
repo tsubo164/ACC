@@ -8,8 +8,9 @@ struct point {
 } pt = {11, 59, 91};
 
 */
-//int b[3] = {11, 99, 31};
+int a[3] = {11, 99, 91};
 //enum { R, G, B};
+static int b[2][2] = {{11, 22}, {33, 44}};
 /*
 int x = 99;
 int y;
@@ -20,9 +21,11 @@ int main()
     /*
     int a = 13;
     return a + x;
-    */
         int a[3] = {11, 99, 34};
+        int b[3] = {11, 99, 34};
+    */
 
+        return b[1][1];
         return a[2];
     /*
     int a[2][2] = {{11, 22}, {33, 44}};
