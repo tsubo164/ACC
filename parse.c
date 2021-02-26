@@ -1888,9 +1888,12 @@ static struct ast_node *initializer(struct parser *p)
 
     if (consume(p, '{')) {
         struct data_type *tmp = p->init_type;
+
         p->init_type = underlying(p->init_type);
         init = initializer_list(p);
         p->init_type = tmp;
+
+        type_set(init, p->init_type);
         expect(p, '}');
     } else {
         init = assignment_expression(p);

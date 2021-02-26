@@ -21,9 +21,9 @@ int main()
     int a = 13;
     return a + x;
     */
-        int a[2] = {11, 99, 31};
+        int a[3] = {11, 99, 34};
 
-        return a[1];
+        return a[2];
     /*
     int a[2][2] = {{11, 22}, {33, 44}};
 

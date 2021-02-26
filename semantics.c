@@ -262,6 +262,7 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
         node->ival = ctx->index;
 
         {
+#if 0
             struct data_type *type = ctx->lval_type;
 
             if (ctx->index > ctx->array_length) {
@@ -274,6 +275,7 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
                             "initializing '%s' with an expression of incompatible type '%s'",
                             type_name_of(type), type_name_of(node->r->type));
             }
+#endif
         }
 
         break;
@@ -377,16 +379,67 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
     }
 }
 
+static void check_initializer2(struct ast_node *node, struct tree_context *ctx);
+
+static void check_init_array_element2(struct ast_node *node, struct tree_context *ctx)
+{
+    if (!node)
+        return;
+
+    switch (node->kind) {
+
+    case NOD_INIT:
+        check_init_array_element2(node->l, ctx);
+        check_initializer2(node->r, ctx);
+        node->ival = ctx->index++;
+
+        {
+            struct data_type *type = node->type;
+
+            if (ctx->index > ctx->array_length) {
+                add_error2(ctx->messages, &node->pos,
+                        "excess elements in array initializer");
+            }
+            else if (!is_compatible(type, node->r->type)) {
+                if (!is_array(type) && !is_struct(type))
+                    add_error2(ctx->messages, &node->pos,
+                            "initializing '%s' with an expression of incompatible type '%s'",
+                            type_name_of(type), type_name_of(node->r->type));
+            }
+        }
+
+        break;
+
+    case NOD_INIT_LIST:
+        check_init_array_element2(node->l, ctx);
+        break;
+
+    case NOD_LIST:
+        check_init_array_element2(node->l, ctx);
+        check_init_array_element2(node->r, ctx);
+        break;
+
+    default:
+        break;
+    }
+}
+
 static void check_initializer2(struct ast_node *node, struct tree_context *ctx)
 {
     if (!node)
         return;
 
     if (is_array(node->type)) {
+        struct tree_context new_ctx = *ctx;
+
+        new_ctx.index = 0;
+        new_ctx.array_length = get_array_length(ctx->lval_type);
+        check_init_array_element2(node, &new_ctx);
     }
     else if(is_struct(node->type)) {
     }
     else {
+        /* scalar value */
     }
 }
 
@@ -399,23 +452,21 @@ static void check_init_(struct ast_node *node, struct tree_context *ctx)
 
     case NOD_DECL_INIT:
         check_init_(node->l, ctx);
-        /*
         check_init_(node->r, ctx);
-        */
+
+        ctx->index = 0;
+        ctx->lval_type = node->l->type;
         check_initializer2(node->r, ctx);
+        /*
         ctx->ident_sym = NULL;
+        */
         return;
 
     case NOD_DECL_IDENT:
-        ctx->ident_sym = node->sym;
-        return;
-
         /*
-    case NOD_INIT:
-        if (ctx->ident_sym)
-            node->sym = ctx->ident_sym;
-        return;
+        ctx->ident_sym = node->sym;
         */
+        return;
 
     default:
         break;;
