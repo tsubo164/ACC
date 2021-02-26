@@ -26,11 +26,12 @@ int main()
 
         return b[1][1];
         return a[2];
+    int c = 'x';
     */
     int a[2][2] = {{11, 22}, {33, 44}};
-    /*
 
-    return a[0][1];
+    return a[1][0];
+    /*
     */
 
     /*
@@ -49,6 +50,7 @@ int main()
     int a = 123;
     return x;
     */
+        /*
     struct point {
         //int x, y, z;
         int x;
@@ -57,6 +59,7 @@ int main()
     } pt = {11, 12, 14};
 
     return pt.z;
+        */
 
     /*
     struct point {
