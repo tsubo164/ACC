@@ -145,6 +145,7 @@ struct parser *new_parser()
     p->is_panic_mode = 0;
 
     p->init_type = NULL;
+    p->init_sym = NULL;
 
     return p;
 }
@@ -1887,13 +1888,7 @@ static struct ast_node *initializer(struct parser *p)
     struct ast_node *init;
 
     if (consume(p, '{')) {
-        struct data_type *tmp = p->init_type;
-
-        p->init_type = underlying(p->init_type);
         init = initializer_list(p);
-        p->init_type = tmp;
-
-        type_set(init, p->init_type);
         expect(p, '}');
     } else {
         init = assignment_expression(p);
@@ -1904,6 +1899,26 @@ static struct ast_node *initializer(struct parser *p)
     /* TODO better way to avoid override type */
     type_set(tree, p->init_type);
     return tree;
+}
+
+/* TODO TMP this may be improved by adding index for array as well.
+ * consider adding types, symbols and index at the same place */
+static struct data_type *init_next_subtype(struct parser *p)
+{
+    struct data_type *type = p->init_type;
+
+    if (is_array(type))
+        return underlying(type);
+    else
+    if (is_struct(type)) {
+        if (p->init_sym->kind == SYM_TAG_STRUCT)
+            p->init_sym = p->init_sym->next->next;
+        else
+            p->init_sym = p->init_sym->next;
+        return p->init_sym->type;
+    }
+    else
+        return type;
 }
 
 /*
@@ -1917,8 +1932,12 @@ static struct ast_node *initializer_list(struct parser *p)
     struct ast_node *init_list;
 
     for (;;) {
-        struct ast_node *init = initializer(p);
-        struct ast_node *list = NULL;
+        struct ast_node *init = NULL, *list = NULL;
+        struct data_type *tmp = p->init_type;
+
+        p->init_type = init_next_subtype(p);
+        init = initializer(p);
+        p->init_type = tmp;
 
         if (!init)
             break;
@@ -1931,7 +1950,10 @@ static struct ast_node *initializer_list(struct parser *p)
     }
 
     init_list = new_node_(NOD_INIT_LIST, tokpos(p));
-    return branch_(init_list, tree, NULL);
+    init_list = branch_(init_list, tree, NULL);
+    /* TODO better way to avoid override type */
+    type_set(init_list, p->init_type);
+    return init_list;
 }
 
 static struct ast_node *init_declarator(struct parser *p)
@@ -1942,8 +1964,12 @@ static struct ast_node *init_declarator(struct parser *p)
 
     if (consume(p, '=')) {
         p->init_type = p->decl_type;
+        p->init_sym = symbol_of(p->init_type);
+
         tree->r = initializer(p);
+
         p->init_type = NULL;
+        p->init_sym = NULL;
     }
 
     return typed_(tree);
