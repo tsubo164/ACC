@@ -399,6 +399,9 @@ static void check_init_array_element2(struct ast_node *node, struct tree_context
         node->ival = ctx->index++;
         */
         node->ival = get_size(node->type) * ctx->index++;
+        /*
+        printf("--- len %d, index %d\n", ctx->array_length, ctx->index);
+        */
 
         {
             struct data_type *type = node->type;
@@ -513,7 +516,10 @@ static void check_initializer2(struct ast_node *node, struct tree_context *ctx)
 
         new_ctx.index = 0;
         /* TODO need lval_type? */
+        /*
         new_ctx.array_length = get_array_length(ctx->lval_type);
+        */
+        new_ctx.array_length = get_array_length(node->type);
         check_init_array_element2(node, &new_ctx);
     }
     else if(is_struct(node->type)) {

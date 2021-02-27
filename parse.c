@@ -1911,10 +1911,30 @@ static struct data_type *init_next_subtype(struct parser *p)
         return underlying(type);
     else
     if (is_struct(type)) {
+#if 0
         if (p->init_sym->kind == SYM_TAG_STRUCT)
             p->init_sym = p->init_sym->next->next;
         else
             p->init_sym = p->init_sym->next;
+        return p->init_sym->type;
+#endif
+        struct symbol *sym = symbol_of(type);
+        p->init_sym = sym->next->next;
+        return p->init_sym->type;
+    }
+    else
+        return type;
+}
+
+static struct data_type *init_nexttype(struct parser *p, const struct data_type *parent)
+{
+    struct data_type *type = p->init_type;
+
+    if (is_array(parent))
+        return type;
+    else
+    if (is_struct(parent)) {
+        p->init_sym = p->init_sym->next;
         return p->init_sym->type;
     }
     else
@@ -1931,16 +1951,17 @@ static struct ast_node *initializer_list(struct parser *p)
     struct ast_node *tree = NULL;
     struct ast_node *init_list;
 
+        struct data_type *tmp = p->init_type;
+        p->init_type = init_next_subtype(p);
+
     for (;;) {
         struct ast_node *init = NULL, *list = NULL;
-        struct data_type *tmp = p->init_type;
-
-        p->init_type = init_next_subtype(p);
         init = initializer(p);
-        p->init_type = tmp;
 
         if (!init)
             break;
+
+        p->init_type = init_nexttype(p, tmp);
 
         list = new_node_(NOD_LIST, tokpos(p));
         tree = branch_(list, tree, init);
@@ -1948,6 +1969,8 @@ static struct ast_node *initializer_list(struct parser *p)
         if (!consume(p, ','))
             break;
     }
+
+        p->init_type = tmp;
 
     init_list = new_node_(NOD_INIT_LIST, tokpos(p));
     init_list = branch_(init_list, tree, NULL);

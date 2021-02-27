@@ -19,6 +19,13 @@ struct point {
     int x, y, z;
 } g_pt = {11, 59, 91};
 
+struct point g_line[2] = {{11, 59, 91}, {77}};
+
+struct name {
+    int first[4];
+    int last[4];
+} g_someone = {{1, 2}, {11, 22}};
+
 int x;
 int z;
 
@@ -120,6 +127,30 @@ int main()
         assert(11, g_pt.x);
         assert(59, g_pt.y);
         assert(91, g_pt.z);
+    }
+    {
+        /* global initializer for array of struct */
+        assert(24, sizeof g_line);
+        assert(11, g_line[0].x);
+        assert(59, g_line[0].y);
+        assert(91, g_line[0].z);
+        assert(77, g_line[1].x);
+        assert( 0, g_line[1].y);
+        assert( 0, g_line[1].z);
+    }
+    {
+        /* global initializer for struct with array members */
+        /*
+        assert(32, sizeof g_someone);
+        assert(1, g_someone.first[0]);
+        assert(2, g_someone.first[1]);
+        assert(0, g_someone.first[2]);
+        assert(0, g_someone.first[3]);
+        assert(77, g_someone.last[0]);
+        assert(77, g_someone.last[1]);
+        assert( 0, g_someone.last[2]);
+        assert( 0, g_someone.last[3]);
+        */
     }
 
     return 0;

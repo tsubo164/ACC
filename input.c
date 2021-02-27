@@ -2,11 +2,17 @@
 int foo() {
     return 42;
 }
-*/
 struct point {
-    int x, y;
+    int x;
+    int y;
     int z;
 } pt[2] = {{11, 59, 91}, {1, 2, 3}};
+*/
+
+struct name {
+    int first[4];
+    int last[4];
+} me = {{1, 2}, {11, 22}};
 
 /*
 struct point {
@@ -27,6 +33,7 @@ int main()
 {
     return 0;
     /*
+    return pt[0].z;
     int a = 13;
     return a + x;
         int a[3] = {11, 99, 34};
