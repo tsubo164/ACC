@@ -1368,6 +1368,7 @@ static void gen_initializer_global2(FILE *fp, const struct ast_node *node)
             gen_initializer2(fp, ident, node->r);
         }
         else if (is_struct(ident->type)) {
+            gen_initializer2(fp, ident, node->r);
         }
         else {
             gen_initializer2(fp, ident, node->r);

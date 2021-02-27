@@ -15,6 +15,10 @@ int add(int X, int Y)
     return X + Y;
 }
 
+struct point {
+    int x, y, z;
+} g_pt = {11, 59, 91};
+
 int x;
 int z;
 
@@ -109,6 +113,13 @@ int main()
         assert(555, g_b[1][1]);
         assert(  0, g_b[2][0]);
         assert(  0, g_b[2][1]);
+    }
+    {
+        /* global struct initializer */
+        assert(12, sizeof g_pt);
+        assert(11, g_pt.x);
+        assert(59, g_pt.y);
+        assert(91, g_pt.z);
     }
 
     return 0;
