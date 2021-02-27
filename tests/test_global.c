@@ -140,17 +140,15 @@ int main()
     }
     {
         /* global initializer for struct with array members */
-        /*
         assert(32, sizeof g_someone);
         assert(1, g_someone.first[0]);
         assert(2, g_someone.first[1]);
         assert(0, g_someone.first[2]);
         assert(0, g_someone.first[3]);
-        assert(77, g_someone.last[0]);
-        assert(77, g_someone.last[1]);
+        assert(11, g_someone.last[0]);
+        assert(22, g_someone.last[1]);
         assert( 0, g_someone.last[2]);
         assert( 0, g_someone.last[3]);
-        */
     }
 
     return 0;

@@ -31,7 +31,7 @@ int y;
 
 int main()
 {
-    return 0;
+    return me.last[1];
     /*
     return pt[0].z;
     int a = 13;

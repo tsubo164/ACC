@@ -625,7 +625,7 @@ static void gen_ident_lvalue(FILE *fp, const struct ast_node *node)
     }
 }
 
-static void gen_lvalue(FILE *fp, const struct ast_node *node)
+static void gen_address(FILE *fp, const struct ast_node *node)
 {
     if (node == NULL) {
         return;
@@ -646,7 +646,7 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
     case NOD_STRUCT_REF:
         {
             const int disp = get_mem_offset(node->r);
-            gen_lvalue(fp, node->l);
+            gen_address(fp, node->l);
             code3__(fp, node, ADD_, imme(disp), RAX);
         }
         break;
@@ -657,13 +657,20 @@ static void gen_lvalue(FILE *fp, const struct ast_node *node)
     }
 }
 
+static void gen_load(FILE *fp, const struct ast_node *node)
+{
+    /* array objects cannot be loaded in registers, and converted to pointers */
+    if (!is_array(node->type))
+        code3__(fp, node, MOV_, addr1(RAX), A_);
+}
+
 static void gen_preincdec(FILE *fp, const struct ast_node *node, struct opecode op)
 {
     int sz = 1;
     if (is_pointer(node->type))
         sz = get_size(underlying(node->type));
 
-    gen_lvalue(fp, node->l);
+    gen_address(fp, node->l);
     code3__(fp, node, op, imme(sz), addr1(RAX));
     code3__(fp, node, MOV_, addr1(RAX), A_);
 }
@@ -674,7 +681,7 @@ static void gen_postincdec(FILE *fp, const struct ast_node *node, struct opecode
     if (is_pointer(node->type))
         sz = get_size(underlying(node->type));
 
-    gen_lvalue(fp, node->l);
+    gen_address(fp, node->l);
     code3__(fp, node, MOV_, RAX, RDX);
     code3__(fp, node, MOV_, addr1(RAX), A_);
     code3__(fp, node, op, imme(sz), addr1(RDX));
@@ -758,7 +765,7 @@ static void gen_init_scalar_local(FILE *fp, const struct data_type *type,
     gen_comment(fp, "local scalar init");
 
     /* ident */
-    gen_lvalue(fp, ident);
+    gen_address(fp, ident);
     if (offset > 0)
         code3__(fp, ident, ADD_, imme(offset), A_);
     code2__(fp, ident, PUSH_, RAX);
@@ -1573,8 +1580,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_STRUCT_REF:
-        gen_lvalue(fp, node);
+        gen_address(fp, node);
+#if 0
         code3__(fp, node, MOV_, addr1(RAX), A_);
+#endif
+        gen_load(fp, node);
         break;
 
     case NOD_CALL:
@@ -1599,7 +1609,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_ASSIGN:
         gen_comment(fp, "assign");
-        gen_lvalue(fp, node->l);
+        gen_address(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
         code2__(fp, node, POP_,  RDX);
@@ -1608,7 +1618,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_ADD_ASSIGN:
         gen_comment(fp, "add-assign");
-        gen_lvalue(fp, node->l);
+        gen_address(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
         code2__(fp, node, POP_,  RDX);
@@ -1618,7 +1628,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_SUB_ASSIGN:
         gen_comment(fp, "sub-assign");
-        gen_lvalue(fp, node->l);
+        gen_address(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
         code2__(fp, node, POP_,  RDX);
@@ -1628,7 +1638,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_MUL_ASSIGN:
         gen_comment(fp, "mul-assign");
-        gen_lvalue(fp, node->l);
+        gen_address(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
         code2__(fp, node, POP_,  RDX);
@@ -1638,7 +1648,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_DIV_ASSIGN:
         gen_comment(fp, "div-assign");
-        gen_lvalue(fp, node->l);
+        gen_address(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
         code3__(fp, node, MOV_, A_, DI_);
@@ -1650,14 +1660,17 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_ADDR:
-        gen_lvalue(fp, node->l);
+        gen_address(fp, node->l);
         break;
 
     case NOD_DEREF:
         gen_code(fp, node->l);
+#if 0
         /* array objects cannot be loaded in registers, and converted to pointers */
         if (!is_array(node->type))
             code3__(fp, node, MOV_, addr1(RAX), A_);
+#endif
+        gen_load(fp, node);
         break;
 
     case NOD_NUM:
