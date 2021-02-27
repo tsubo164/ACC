@@ -822,6 +822,7 @@ static void gen_init_scalar(FILE *fp, const struct data_type *type,
 
 /* TODO may be better to create init table first to check if the initializers are
  * specified or not by looking it up during initialization. */
+#if 0
 static void gen_zero_elements(FILE *fp, const struct ast_node *ident,
         const struct data_type *type, int base, int start, int end)
 {
@@ -869,7 +870,9 @@ static void gen_zero_members(FILE *fp, const struct ast_node *ident,
         }
     }
 }
+#endif
 
+#if 0
 static void gen_init_array(FILE *fp, const struct ast_node *node,
         const struct ast_node *ident, const struct data_type *type)
 {
@@ -969,7 +972,9 @@ static void gen_init_struct(FILE *fp, const struct ast_node *node,
         break;
     }
 }
+#endif
 
+#if 0
 static void gen_initializer_local(FILE *fp, const struct ast_node *node)
 {
     const struct ast_node *ident;
@@ -988,14 +993,17 @@ static void gen_initializer_local(FILE *fp, const struct ast_node *node)
             gen_init_array(fp, node->r, ident, ident->type);
         else
 #endif
+#if 0
         if (is_struct(ident->type))
             gen_init_struct(fp, node->r->r /*XXX TMP */, ident, symbol_of(ident->type));
+#endif
 #if 0
         else
             gen_init_scalar(fp, ident->type, ident, 0, node->r->r /*XXX TMP */);
 #endif
     }
 }
+#endif
 
 struct memory_byte {
     const struct ast_node *init;
@@ -1109,6 +1117,18 @@ static void zero_clear_bytes(struct memory_byte *bytes, const struct data_type *
             zero_clear_bytes(bytes + base, underlying(type));
         }
     }
+    else if (is_struct(type)) {
+        const struct symbol *sym;
+        const int struct_scope = type->sym->scope_level + 1;
+
+        for (sym = type->sym; sym; sym = sym->next) {
+            if (sym->kind == SYM_MEMBER && sym->scope_level == struct_scope)
+                zero_clear_bytes(bytes + sym->mem_offset, sym->type);
+
+            if (sym->kind == SYM_SCOPE_END && sym->scope_level == struct_scope)
+                break;
+        }
+    }
     else {
         /* scalar */
         const int size = get_size(type);
@@ -1151,6 +1171,7 @@ static void assign_init(struct memory_byte *base,
     case NOD_INIT:
         {
             /* move cursor by designator */
+#if 0
             /* get index from node->r */
             const int offset = node->ival;
             const int size = get_size(type);
@@ -1158,12 +1179,23 @@ static void assign_init(struct memory_byte *base,
 
             assign_init(base, type, node->l);
             assign_init(base + index, type, node->r);
+#endif
+            const int offset = node->ival;
+
+            assign_init(base, type, node->l);
+            /*
+            assign_init(base + offset, type, node->r);
+            */
+        assign_init(base + offset, underlying(type), node->r);
         }
         break;
 
     case NOD_INIT_LIST:
         /* dive into subtype */
+            /*
         assign_init(base, underlying(type), node->l);
+            */
+        assign_init(base, type, node->l);
         break;
 
     case NOD_LIST:
@@ -1175,11 +1207,17 @@ static void assign_init(struct memory_byte *base,
     default:
         {
             /* assign initializer to byte */
+            /*
             const int size = get_size(type);
+            const int size = get_size(base->type);
+            */
+            const int size = base->written_size;
             int i;
 
             base->init = node;
+            /*
             base->type = type;
+            */
 
             for (i = 0; i < size; i++)
                 base[i].is_written = 1;
@@ -1351,6 +1389,9 @@ static void gen_initializer_local2(FILE *fp, const struct ast_node *node)
             gen_initializer2(fp, ident, node->r);
         }
         else if (is_struct(ident->type)) {
+            gen_initializer2(fp, ident, node->r);
+            /*
+            */
         }
         else {
             gen_initializer2(fp, ident, node->r);
@@ -1524,7 +1565,9 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_DECL_INIT:
+#if 0
         gen_initializer_local(fp, node);
+#endif
         gen_initializer_local2(fp, node);
         break;
 
