@@ -9,18 +9,18 @@ struct point {
 } pt[2] = {{11, 59, 91}, {1, 2, 3}};
 */
 
+/*
 struct name {
     int first[4];
     int last[4];
 } me = {{1, 2}, {11, 22}};
 
-/*
 struct point {
     int x, y;
     int z;
 } pt = {11, 59, 91};
 
-int a[3] = {11, 99, 91};
+int a[5] = {11, 99, 91};
 */
 //enum { R, G, B};
 /*
@@ -28,11 +28,19 @@ static int b[2][2] = {{11, 22}, {33, 44}};
 int x = 99;
 int y;
 */
+enum {
+    R = 3, G, B
+};
 
 int main()
 {
-    return me.last[1];
+    int i = 22;
+    int a[G + i];
+
+        return a[1];
     /*
+        int a[10] = {15, 37, 19, 23};
+    return me.last[1];
     return pt[0].z;
     int a = 13;
     return a + x;
@@ -43,11 +51,11 @@ int main()
         return a[2];
     int c = 'x';
     int a[2][2] = {{11, 22}, {33, 44}};
+
+    return a[1][0];
     */
 
     /*
-    return a[1][0];
-
     return pt.y;
     */
     /*

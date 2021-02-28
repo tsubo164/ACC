@@ -10,6 +10,7 @@
   - variable arguments
 
 * OPTIONAL
+  - initializer index, enum index, invisible nodes in parser
   - use registers r10 r11
   - function prototype
   - unsigned
@@ -22,6 +23,7 @@
   - lexer error
 
 * IMPLEMENTATION
+  - symbol functions for struct 
 
 * BUG
   - static int -> quad
