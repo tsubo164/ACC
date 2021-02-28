@@ -24,10 +24,10 @@ int a[5] = {11, 99, 91};
 */
 //enum { R, G, B};
 /*
+*/
 static int b[2][2] = {{11, 22}, {33, 44}};
 int x = 99;
 int y;
-*/
 enum {
     R = 3, G, B
 };
@@ -35,7 +35,7 @@ enum {
 int main()
 {
     int i = 22;
-    int a[G + i];
+    int a[G];
 
         return a[1];
     /*

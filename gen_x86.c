@@ -584,9 +584,6 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
 
     if (is_global_var(sym)) {
         const int id = is_static(sym) ? sym->id : -1;
-        /*
-        code3__(fp, node, MOV_, addr2_pc_rel(RIP, sym->name, id), RAX);
-        */
         if (is_array(node->type)) {
             code3__(fp, node, LEA_, addr2_pc_rel(RIP, sym->name, id), RAX);
         } else {
@@ -627,9 +624,8 @@ static void gen_ident_lvalue(FILE *fp, const struct ast_node *node)
 
 static void gen_address(FILE *fp, const struct ast_node *node)
 {
-    if (node == NULL) {
+    if (node == NULL)
         return;
-    }
 
     switch (node->kind) {
 
@@ -660,8 +656,9 @@ static void gen_address(FILE *fp, const struct ast_node *node)
 static void gen_load(FILE *fp, const struct ast_node *node)
 {
     /* array objects cannot be loaded in registers, and converted to pointers */
-    if (!is_array(node->type))
-        code3__(fp, node, MOV_, addr1(RAX), A_);
+    if (is_array(node->type))
+        return;
+    code3__(fp, node, MOV_, addr1(RAX), A_);
 }
 
 static void gen_preincdec(FILE *fp, const struct ast_node *node, struct opecode op)
@@ -783,235 +780,6 @@ static void gen_init_scalar_local(FILE *fp, const struct data_type *type,
     }
 }
 
-static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
-        const struct ast_node *ident, int offset, const struct ast_node *expr)
-{
-
-    if (offset == 0) {
-        struct symbol *sym = ident->sym;
-        int id = sym->id;
-
-        if (!is_static(sym)) {
-            id = -1;
-            fprintf(fp, "    .global ");
-            gen_pc_rel_addr(fp, sym->name, id);
-            fprintf(fp, "\n");
-        }
-        gen_pc_rel_addr(fp, sym->name, id);
-        fprintf(fp, ":\n");
-    }
-    {
-        int tag;
-        const char *szname;
-        int val;
-
-        if (expr) {
-            tag = data_tag_(type);
-            szname = data_spec_table[tag].sizename;
-            val = expr->ival;
-        } else {
-            tag = data_tag_(type);
-            szname = data_spec_table[tag].sizename;
-            val = 0;
-        }
-        fprintf(fp, "    .%s %d\n", szname, val);
-    }
-}
-
-static void gen_init_scalar(FILE *fp, const struct data_type *type,
-        const struct ast_node *ident, int offset, const struct ast_node *expr)
-{
-    if (is_local_var(ident->sym))
-        gen_init_scalar_local(fp, type, ident, offset, expr);
-    if (is_global_var(ident->sym) && !is_extern(ident->sym))
-        gen_init_scalar_global(fp, type, ident, offset, expr);
-}
-
-/* TODO may be better to create init table first to check if the initializers are
- * specified or not by looking it up during initialization. */
-#if 0
-static void gen_zero_elements(FILE *fp, const struct ast_node *ident,
-        const struct data_type *type, int base, int start, int end)
-{
-    int i;
-
-    for (i = start; i < end; i++) {
-        const int offset = base + i * get_size(type);
-
-        if (is_array(type)) {
-            const int base_ = offset;
-            const int start_ = 0;
-            const int end_ = get_array_length(type);
-
-            gen_zero_elements(fp, ident, underlying(type), base_, start_, end_);
-        } else {
-            gen_init_scalar(fp, type, ident, offset, NULL);
-        }
-    }
-}
-
-/* TODO may be better to create init table first to check if the initializers are
- * specified or not by looking it up during initialization. */
-static void gen_zero_members(FILE *fp, const struct ast_node *ident,
-        int base, const struct symbol *start)
-{
-    const struct symbol *sym = start;
-    const int scope = start->scope_level;
-
-    for (sym = start; sym; sym = sym->next) {
-        const int offset = base + sym->mem_offset;
-
-        if (sym->kind == SYM_SCOPE_END && sym->scope_level == scope)
-            break;
-
-        if (/*is_array(type)*/0) {
-            /*
-            const int base_ = offset;
-            const int start_ = 0;
-            const int end_ = get_array_length(type);
-
-            gen_zero_elements(fp, ident, underlying(type), base_, start_, end_);
-            */
-        } else {
-            gen_init_scalar(fp, sym->type, ident, offset, NULL);
-        }
-    }
-}
-#endif
-
-#if 0
-static void gen_init_array(FILE *fp, const struct ast_node *node,
-        const struct ast_node *ident, const struct data_type *type)
-{
-    static int base = 0;
-    int index = 0;
-
-    if (!node)
-        return;
-
-    index = node->ival;
-
-    switch (node->kind) {
-
-    case NOD_INIT:
-        gen_init_array(fp, node->l, ident, type);
-
-        if (is_array(type)) {
-            gen_init_array(fp, node->r, ident, type);
-        }else {
-            const int offset = base + index * get_size(type);
-            gen_init_scalar(fp, type, ident, offset, node->r);
-        }
-        break;
-
-    case NOD_INIT_LIST:
-        {
-            int tmp;
-
-            base = index * get_size(type);
-
-            tmp = base;
-            gen_init_array(fp, node->l, ident, underlying(type));
-            base = tmp;
-        }
-        {
-            /* initialize unspecified elements */
-            const int start = node->l->ival + 1;
-            const int end = get_array_length(type);
-            gen_zero_elements(fp, ident, underlying(type), base, start, end);
-        }
-        break;
-
-    case NOD_LIST:
-        gen_init_array(fp, node->l, ident, type);
-        gen_init_array(fp, node->r, ident, type);
-        break;
-
-    default:
-        break;
-    }
-}
-
-static void gen_init_struct(FILE *fp, const struct ast_node *node,
-        const struct ast_node *ident, const struct symbol *struct_sym)
-{
-    static const struct symbol *sym = NULL;
-    static int base = 0;
-
-    sym = struct_sym;
-
-    if (!node)
-        return;
-
-    switch (node->kind) {
-
-    case NOD_INIT:
-        gen_init_struct(fp, node->l, ident, sym);
-        {
-            const int offset = base + sym->mem_offset;
-            gen_init_scalar(fp, sym->type, ident, offset, node->r);
-        }
-        sym = sym->next;
-        break;
-
-    case NOD_INIT_LIST:
-        {
-            int tmp;
-            base = sym->next->next->mem_offset;
-
-            tmp = base;
-            gen_init_struct(fp, node->l, ident, sym->next->next);
-            base = tmp;
-        }
-        {
-            /* initialize unspecified elements */
-            const struct symbol *start = sym;
-            gen_zero_members(fp, ident, base, start);
-        }
-        break;
-
-    case NOD_LIST:
-        gen_init_struct(fp, node->l, ident, sym);
-        gen_init_struct(fp, node->r, ident, sym);
-        break;
-
-    default:
-        break;
-    }
-}
-#endif
-
-#if 0
-static void gen_initializer_local(FILE *fp, const struct ast_node *node)
-{
-    const struct ast_node *ident;
-
-    if (!node || !node->r || node->kind != NOD_DECL_INIT)
-        return;
-
-    /* find lvalue ident */
-    ident = find_node(node->l, NOD_DECL_IDENT);
-
-    if (ident && is_local_var(ident->sym)) {
-        gen_comment(fp, "local var init");
-
-#if 0
-        if (is_array(ident->type))
-            gen_init_array(fp, node->r, ident, ident->type);
-        else
-#endif
-#if 0
-        if (is_struct(ident->type))
-            gen_init_struct(fp, node->r->r /*XXX TMP */, ident, symbol_of(ident->type));
-#endif
-#if 0
-        else
-            gen_init_scalar(fp, ident->type, ident, 0, node->r->r /*XXX TMP */);
-#endif
-    }
-}
-#endif
-
 struct memory_byte {
     const struct ast_node *init;
     const struct data_type *type;
@@ -1021,82 +789,9 @@ struct memory_byte {
 
 struct object_byte {
     struct memory_byte *bytes;
-    int size;
-
     struct symbol *sym;
-    struct data_type *type;
-    struct ast_node zero_int;
-    int base;
-    int cur;
+    int size;
 };
-
-/*
-static void assign_init_struct_(struct memory_byte *bytes,
-        const struct data_type *type, const struct ast_node *init)
-{
-    static struct symbol *member = NULL;
-
-    if (!init)
-        return;
-
-    switch (init->kind) {
-
-    case NOD_LIST:
-        assign_init_struct_(bytes, type, init->l);
-        {
-            const int base = 0;
-            const int offset = member->mem_offset;
-            const int index = base + offset;
-            const int size = get_size(member->type);
-            int i;
-
-            bytes[index].init = init->r;
-
-            for (i = 0; i < size; i++)
-                bytes[index + i].is_written = 1;
-
-        }
-        member = member->next;
-
-        break;
-
-    case NOD_INIT_LIST:
-        {
-            struct symbol *struct_sym = symbol_of(type);
-            member = struct_sym->next->next;
-        }
-        assign_init_struct_(bytes, type, init->l);
-        break;
-
-    default:
-        break;
-    }
-}
-
-static int count_element(const struct data_type *type)
-{
-    if (is_struct(type)) {
-        struct symbol *sym = symbol_of(type);
-        const int struct_scope = sym->scope_level + 1;
-        int i = 0;
-
-        for (; sym; sym = sym->next) {
-            if (is_member(sym) && sym->scope_level == struct_scope)
-                i += count_element(sym->type);
-            if (sym->kind == SYM_SCOPE_END && sym->scope_level == struct_scope)
-                break;
-        }
-        return i;
-    }
-
-    if (is_array(type)) {
-        const int len = get_array_length(type);
-        return len * count_element(underlying(type));
-    }
-
-    return 1;
-}
-*/
 
 static void print_object(struct object_byte *obj)
 {
@@ -1155,7 +850,6 @@ static void init_object_byte(struct object_byte *obj, const struct ast_node *ide
     obj->bytes = (struct memory_byte *) calloc(size, sizeof(struct memory_byte));
     obj->size = size;
     obj->sym = ident->sym;
-    obj->type = ident->type;
 
     zero_clear_bytes(obj->bytes, obj->sym->type);
 }
@@ -1178,30 +872,15 @@ static void assign_init(struct memory_byte *base,
     case NOD_INIT:
         {
             /* move cursor by designator */
-#if 0
-            /* get index from node->r */
-            const int offset = node->ival;
-            const int size = get_size(type);
-            const int index = offset * size;
-
-            assign_init(base, type, node->l);
-            assign_init(base + index, type, node->r);
-#endif
             const int offset = node->ival;
 
             assign_init(base, type, node->l);
-            /*
-            assign_init(base + offset, type, node->r);
-            */
-        assign_init(base + offset, underlying(type), node->r);
+            assign_init(base + offset, underlying(type), node->r);
         }
         break;
 
     case NOD_INIT_LIST:
         /* dive into subtype */
-            /*
-        assign_init(base, underlying(type), node->l);
-            */
         assign_init(base, type, node->l);
         break;
 
@@ -1214,17 +893,10 @@ static void assign_init(struct memory_byte *base,
     default:
         {
             /* assign initializer to byte */
-            /*
-            const int size = get_size(type);
-            const int size = get_size(base->type);
-            */
             const int size = base->written_size;
             int i;
 
             base->init = node;
-            /*
-            base->type = type;
-            */
 
             for (i = 0; i < size; i++)
                 base[i].is_written = 1;
@@ -1255,33 +927,24 @@ static void gen_object_byte(FILE *fp, const struct object_byte *obj)
         const struct memory_byte *byte = &obj->bytes[i];
 
         if (!byte->is_written) {
+            /* TODO count skipping bytes */
             fprintf(fp, "    .zero 1\n");
             continue;
         }
 
         if (byte->written_size > 0) {
-            const int objsize = get_size(byte->type);
             const int val = byte->init ? byte->init->ival : 0;
+            const int tag = data_tag_(byte->type);
+            const char *szname = data_spec_table[tag].sizename;
 
-            switch (objsize) {
-            case 1:
-                fprintf(fp, "    .byte %d\n", val);
-                break;
-
-            case 4:
-                fprintf(fp, "    .long %d\n", val);
-                break;
-
-            default:
-                break;
-            }
+            fprintf(fp, "    .%s %d\n", szname, val);
         }
     }
 
     fprintf(fp, "\n");
 }
 
-static void gen_initializer2(FILE *fp,
+static void gen_initializer(FILE *fp,
         const struct ast_node *ident, const struct ast_node *init)
 {
     struct object_byte obj = {0};
@@ -1302,7 +965,7 @@ static void gen_initializer2(FILE *fp,
             const struct memory_byte *byte = &obj.bytes[i];
 
             if (byte->written_size > 0)
-                gen_init_scalar(fp, byte->type, ident, i, byte->init);
+                gen_init_scalar_local(fp, byte->type, ident, i, byte->init);
         }
     }
 
@@ -1316,74 +979,13 @@ static void gen_initializer_global(FILE *fp, const struct ast_node *node)
     if (!node || node->kind != NOD_DECL_INIT)
         return;
 
-    /* find lvalue ident */
     ident = find_node(node->l, NOD_DECL_IDENT);
 
-    if (ident && is_global_var(ident->sym)) {
-        if (is_array(ident->type)) {
-#if 0
-            if (node->r) {
-                gen_init_array(fp, node->r, ident, ident->type);
-            } else {
-                const int base = 0;
-                const int start = 0;
-                const int end = get_array_length(ident->type);
-                gen_zero_elements(fp, ident, underlying(ident->type), base, start, end);
-            }
-        fprintf(fp, "\n");
-#endif
-        }
-        /* XXX old initializer doesn't support global struct initialization */
-        else if (is_struct(ident->type)) {
-            if (node->r) {
-                /*
-                gen_init_scalar(fp, underlying(ident->type), ident, 0, node->r);
-                */
-            } else {
-                /*
-                const int base = 0;
-                const int start = 0;
-                const int end = get_array_length(ident->type);
-                gen_zero_elements(fp, ident, underlying(ident->type), base, start, end);
-                */
-            }
-        }
-        else {
-#if 0
-            struct ast_node *expr = node->r ? node->r->r : NULL;
-            gen_init_scalar(fp, ident->type, ident, 0, expr /*XXX TMP */);
-#endif
-        }
-        /*
-        fprintf(fp, "\n");
-        */
-    }
+    if (ident && is_global_var(ident->sym))
+        gen_initializer(fp, ident, node->r);
 }
 
-static void gen_initializer_global2(FILE *fp, const struct ast_node *node)
-{
-    const struct ast_node *ident;
-
-    if (!node || node->kind != NOD_DECL_INIT)
-        return;
-
-    /* find lvalue ident */
-    ident = find_node(node->l, NOD_DECL_IDENT);
-
-    if (ident && is_global_var(ident->sym)) {
-        if (is_array(ident->type)) {
-            gen_initializer2(fp, ident, node->r);
-        }
-        else if (is_struct(ident->type)) {
-            gen_initializer2(fp, ident, node->r);
-        }
-        else {
-            gen_initializer2(fp, ident, node->r);
-        }
-    }
-}
-
-static void gen_initializer_local2(FILE *fp, const struct ast_node *node)
+static void gen_initializer_local(FILE *fp, const struct ast_node *node)
 {
     const struct ast_node *ident;
 
@@ -1392,19 +994,8 @@ static void gen_initializer_local2(FILE *fp, const struct ast_node *node)
 
     ident = find_node(node->l, NOD_DECL_IDENT);
 
-    if (ident && is_local_var(ident->sym)) {
-        if (is_array(ident->type)) {
-            gen_initializer2(fp, ident, node->r);
-        }
-        else if (is_struct(ident->type)) {
-            gen_initializer2(fp, ident, node->r);
-            /*
-            */
-        }
-        else {
-            gen_initializer2(fp, ident, node->r);
-        }
-    }
+    if (ident && is_local_var(ident->sym))
+        gen_initializer(fp, ident, node->r);
 }
 
 static void gen_code(FILE *fp, const struct ast_node *node)
@@ -1573,17 +1164,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_DECL_INIT:
-#if 0
         gen_initializer_local(fp, node);
-#endif
-        gen_initializer_local2(fp, node);
         break;
 
     case NOD_STRUCT_REF:
         gen_address(fp, node);
-#if 0
-        code3__(fp, node, MOV_, addr1(RAX), A_);
-#endif
         gen_load(fp, node);
         break;
 
@@ -1665,11 +1250,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_DEREF:
         gen_code(fp, node->l);
-#if 0
-        /* array objects cannot be loaded in registers, and converted to pointers */
-        if (!is_array(node->type))
-            code3__(fp, node, MOV_, addr1(RAX), A_);
-#endif
         gen_load(fp, node);
         break;
 
@@ -1845,7 +1425,6 @@ static void gen_global_vars(FILE *fp, const struct ast_node *node)
 
     if (node->kind == NOD_DECL_INIT) {
         gen_initializer_global(fp, node);
-        gen_initializer_global2(fp, node);
         return;
     }
 
