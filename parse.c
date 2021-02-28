@@ -542,17 +542,7 @@ static struct ast_node *argument_expression_list(struct parser *p)
     }
 }
 
-/*
- * postfix_expression
- *     primary_expression
- *     postfix_expression '.' TOK_IDENT
- *     postfix_expression '[' expression ']'
- *     postfix_expression '(' argument_expression_list ')'
- *     postfix_expression TOK_INC
- *     postfix_expression TOK_DEC
- */
-/*
-static struct ast_node *struct_ref_(struct parser *p, struct ast_node *strc)
+static struct ast_node *struct_ref(struct parser *p, struct ast_node *strc)
 {
     struct ast_node *member = NULL, *ref = NULL;
     member = identifier(p);
@@ -562,37 +552,36 @@ static struct ast_node *struct_ref_(struct parser *p, struct ast_node *strc)
     ref = new_node_(NOD_STRUCT_REF, tokpos(p));
     return branch_(ref, strc, member);
 }
-*/
+
+/*
+ * postfix_expression
+ *     primary_expression
+ *     postfix_expression '.' TOK_IDENT
+ *     postfix_expression '[' expression ']'
+ *     postfix_expression '(' argument_expression_list ')'
+ *     postfix_expression TOK_INC
+ *     postfix_expression TOK_DEC
+ */
 static struct ast_node *postfix_expression(struct parser *p)
 {
     struct ast_node *tree = primary_expression(p);
 
     for (;;) {
-        struct ast_node *member = NULL, *deref = NULL, *ref = NULL;
+        struct ast_node *deref = NULL, *add = NULL;
         struct ast_node *call = NULL, *args = NULL, *incdec = NULL;
         const struct token *tok = gettok(p);
 
         switch (tok->kind) {
 
         case '.':
-            member = identifier(p);
-            use_member_sym(p, tree->type, member);
-            typed_(member);
-
-            ref = new_node_(NOD_STRUCT_REF, tokpos(p));
-            tree = branch_(ref, tree, member);
+            tree = struct_ref(p, tree);
             break;
 
         case TOK_POINTER:
             deref = new_node_(NOD_DEREF, tokpos(p));
             tree = branch_(deref, tree, NULL);
 
-            member = identifier(p);
-            use_member_sym(p, tree->type, member);
-            typed_(member);
-
-            ref = new_node_(NOD_STRUCT_REF, tokpos(p));
-            tree = branch_(ref, tree, member);
+            tree = struct_ref(p, tree);
             break;
 
         case '(':
@@ -604,11 +593,11 @@ static struct ast_node *postfix_expression(struct parser *p)
             break;
 
         case '[':
-            tree = new_node(NOD_ADD, tree, expression(p));
-            typed_(tree);
+            add = new_node_(NOD_ADD, tokpos(p));
+            tree = branch_(add, tree, expression(p));
             expect(p, ']');
-            tree = new_node(NOD_DEREF, tree, NULL);
-            type_set(tree, underlying(tree->l->type));
+            deref = new_node_(NOD_DEREF, tokpos(p));
+            tree = branch_(deref, tree, NULL);
             break;
 
         case TOK_INC:
@@ -1896,49 +1885,45 @@ static struct ast_node *initializer(struct parser *p)
 
     tree = new_node_(NOD_INIT, tokpos(p));
     tree = branch_(tree, NULL, init);
-    /* TODO better way to avoid override type */
     type_set(tree, p->init_type);
+
     return tree;
 }
 
-/* TODO TMP this may be improved by adding index for array as well.
- * consider adding types, symbols and index at the same place */
-static struct data_type *init_next_subtype(struct parser *p)
+/* TODO consider adding types, symbols and index at the same place */
+static struct data_type *initializer_child_type(struct parser *p,
+        struct data_type *parent)
 {
-    struct data_type *type = p->init_type;
+    struct data_type *type = parent;
 
-    if (is_array(type))
+    if (is_array(type)) {
         return underlying(type);
-    else
-    if (is_struct(type)) {
-#if 0
-        if (p->init_sym->kind == SYM_TAG_STRUCT)
-            p->init_sym = p->init_sym->next->next;
-        else
-            p->init_sym = p->init_sym->next;
-        return p->init_sym->type;
-#endif
+    }
+    else if (is_struct(type)) {
         struct symbol *sym = symbol_of(type);
         p->init_sym = sym->next->next;
         return p->init_sym->type;
     }
-    else
+    else {
         return type;
+    }
 }
 
-static struct data_type *init_nexttype(struct parser *p, const struct data_type *parent)
+static struct data_type *initializer_next_type(struct parser *p,
+        struct data_type *parent)
 {
     struct data_type *type = p->init_type;
 
-    if (is_array(parent))
+    if (is_array(parent)) {
         return type;
-    else
-    if (is_struct(parent)) {
+    }
+    else if (is_struct(parent)) {
         p->init_sym = p->init_sym->next;
         return p->init_sym->type;
     }
-    else
+    else {
         return type;
+    }
 }
 
 /*
@@ -1951,8 +1936,8 @@ static struct ast_node *initializer_list(struct parser *p)
     struct ast_node *tree = NULL;
     struct ast_node *init_list;
 
-        struct data_type *tmp = p->init_type;
-        p->init_type = init_next_subtype(p);
+    struct data_type *parent = p->init_type;
+    p->init_type = initializer_child_type(p, parent);
 
     for (;;) {
         struct ast_node *init = NULL, *list = NULL;
@@ -1961,7 +1946,7 @@ static struct ast_node *initializer_list(struct parser *p)
         if (!init)
             break;
 
-        p->init_type = init_nexttype(p, tmp);
+        p->init_type = initializer_next_type(p, parent);
 
         list = new_node_(NOD_LIST, tokpos(p));
         tree = branch_(list, tree, init);
@@ -1970,12 +1955,12 @@ static struct ast_node *initializer_list(struct parser *p)
             break;
     }
 
-        p->init_type = tmp;
+    p->init_type = parent;
 
     init_list = new_node_(NOD_INIT_LIST, tokpos(p));
     init_list = branch_(init_list, tree, NULL);
-    /* TODO better way to avoid override type */
     type_set(init_list, p->init_type);
+
     return init_list;
 }
 
