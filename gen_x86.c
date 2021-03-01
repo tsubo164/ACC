@@ -1437,7 +1437,7 @@ static void gen_string_literal(FILE *fp, const struct symbol_table *table)
     struct symbol *sym;
 
     for (sym = table->head; sym; sym = sym->next) {
-        if (sym->kind == SYM_STRING) {
+        if (is_string_literal(sym)) {
             fprintf(fp, "_L.str.%d:\n", sym->id);
             fprintf(fp, "    .asciz \"%s\"\n\n", sym->name);
         }

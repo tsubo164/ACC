@@ -39,14 +39,19 @@ int is_local_var(const struct symbol *sym)
         return 0;
 }
 
+int is_func(const struct symbol *sym)
+{
+    return sym->kind == SYM_FUNC;
+}
+
 int is_param(const struct symbol *sym)
 {
     return sym->kind == SYM_PARAM;
 }
 
-int is_func(const struct symbol *sym)
+int is_struct_tag(const struct symbol *sym)
 {
-    return sym->kind == SYM_FUNC;
+    return sym->kind == SYM_TAG_STRUCT;
 }
 
 int is_member(const struct symbol *sym)
@@ -54,14 +59,34 @@ int is_member(const struct symbol *sym)
     return sym->kind == SYM_MEMBER;
 }
 
+int is_enum_tag(const struct symbol *sym)
+{
+    return sym->kind == SYM_TAG_ENUM;
+}
+
 int is_enumerator(const struct symbol *sym)
 {
     return sym->kind == SYM_ENUMERATOR;
 }
 
+int is_case(const struct symbol *sym)
+{
+    return sym->kind == SYM_CASE;
+}
+
 int is_label(const struct symbol *sym)
 {
     return sym->kind == SYM_LABEL;
+}
+
+int is_typedef(const struct symbol *sym)
+{
+    return sym->kind == SYM_TYPEDEF;
+}
+
+int is_string_literal(const struct symbol *sym)
+{
+    return sym->kind == SYM_STRING;
 }
 
 struct symbol_table *new_symbol_table()

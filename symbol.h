@@ -58,11 +58,16 @@ extern int is_extern(const struct symbol *sym);
 extern int is_static(const struct symbol *sym);
 extern int is_global_var(const struct symbol *sym);
 extern int is_local_var(const struct symbol *sym);
-extern int is_param(const struct symbol *sym);
 extern int is_func(const struct symbol *sym);
+extern int is_param(const struct symbol *sym);
+extern int is_struct_tag(const struct symbol *sym);
 extern int is_member(const struct symbol *sym);
+extern int is_enum_tag(const struct symbol *sym);
 extern int is_enumerator(const struct symbol *sym);
+extern int is_case(const struct symbol *sym);
 extern int is_label(const struct symbol *sym);
+extern int is_typedef(const struct symbol *sym);
+extern int is_string_literal(const struct symbol *sym);
 extern const char *symbol_to_string(const struct symbol *sym);
 
 /* symbol table */

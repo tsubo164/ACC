@@ -113,13 +113,13 @@ static void compute_func_size(struct symbol_table *table, struct symbol *func)
             sym->mem_offset = total_offset;
         }
 
-        if (sym->kind == SYM_TAG_STRUCT)
+        if (is_struct_tag(sym))
             compute_struct_size(table, sym);
 
-        if (sym->kind == SYM_TAG_ENUM)
+        if (is_enum_tag(sym))
             compute_enum_size(table, sym);
 
-        if (sym->kind == SYM_TYPEDEF)
+        if (is_typedef(sym))
             compute_type_name_size(table, sym);
 
         if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1)
@@ -134,16 +134,16 @@ static void add_symbol_size(struct symbol_table *table)
     struct symbol *sym;
 
     for (sym = table->head; sym; sym = sym->next) {
-        if (sym->kind == SYM_FUNC)
+        if (is_func(sym))
             compute_func_size(table, sym);
 
-        if (sym->kind == SYM_TAG_STRUCT)
+        if (is_struct_tag(sym))
             compute_struct_size(table, sym);
 
-        if (sym->kind == SYM_TAG_ENUM)
+        if (is_enum_tag(sym))
             compute_enum_size(table, sym);
 
-        if (sym->kind == SYM_TYPEDEF)
+        if (is_typedef(sym))
             compute_type_name_size(table, sym);
     }
 }
@@ -430,7 +430,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
     case NOD_DECL_IDENT:
         node->sym->is_initialized = ctx->has_init;
-        if (node->sym->kind == SYM_FUNC)
+        if (is_func(node->sym))
             ctx->func_sym = node->sym;
 
         if (is_incomplete(node->sym->type) &&
