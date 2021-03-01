@@ -256,6 +256,13 @@ static struct ast_node *branch_(struct ast_node *node,
     return typed_(node);
 }
 
+static struct ast_node *new_node_num(int num, const struct position *pos)
+{
+    struct ast_node *node = new_node_(NOD_NUM, pos);
+    node->ival = num;
+    return node;
+}
+
 /* decl context */
 static void define_sym(struct parser *p, struct ast_node *node)
 {
@@ -1055,6 +1062,9 @@ static struct ast_node *for_statement(struct parser *p)
     expect(p, '(');
     pre  = expression_statement(p);
     cond = expression_statement(p);
+    if (!cond)
+        cond = new_node_num(1, tokpos(p));
+
     if (!nexttok(p, ')'))
         post = expression(p);
     expect(p, ')');

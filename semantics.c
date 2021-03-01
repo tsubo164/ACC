@@ -541,13 +541,6 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         ctx->loop_depth--;
         return;
 
-    case NOD_FOR_PRE_COND:
-        if (!node->r) {
-            node->r = new_ast_node(NOD_NUM, NULL, NULL);
-            node->r->ival = 1;
-        }
-        break;
-
     /* switch */
     case NOD_SWITCH:
         ctx->switch_depth++;
