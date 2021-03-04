@@ -23,6 +23,9 @@ struct parser {
     const char * decl_ident;
     struct data_type *decl_type;
 
+    /* for enum */
+    int enum_value;
+
     int is_typedef;
     int is_extern;
     int is_static;

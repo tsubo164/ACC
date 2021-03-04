@@ -138,6 +138,8 @@ struct parser *new_parser()
     p->decl_ident = NULL;
     p->decl_type = NULL;
 
+    p->enum_value = 0;
+
     p->is_typedef = 0;
     p->is_extern = 0;
     p->is_static = 0;
@@ -261,6 +263,52 @@ static struct ast_node *new_node_num(int num, const struct position *pos)
     struct ast_node *node = new_node_(NOD_NUM, pos);
     node->ival = num;
     return node;
+}
+
+static int eval_const_expr(const struct ast_node *node, struct parser *p)
+{
+    int l, r;
+
+    if (!node)
+        return 0;
+
+    switch (node->kind) {
+
+    case NOD_ADD:
+        l = eval_const_expr(node->l, p);
+        r = eval_const_expr(node->r, p);
+        return l + r;
+
+    case NOD_SUB:
+        l = eval_const_expr(node->l, p);
+        r = eval_const_expr(node->r, p);
+        return l - r;
+
+    case NOD_MUL:
+        l = eval_const_expr(node->l, p);
+        r = eval_const_expr(node->r, p);
+        return l * r;
+
+    case NOD_DIV:
+        l = eval_const_expr(node->l, p);
+        r = eval_const_expr(node->r, p);
+        return l / r;
+
+    case NOD_NUM:
+        return node->ival;
+
+    case NOD_DECL_IDENT:
+    case NOD_IDENT:
+        if (node->sym->kind != SYM_ENUMERATOR) {
+            add_error2(p->msg, &node->pos, "expression is not a constant expression");
+            return 0;
+        }
+        return node->sym->mem_offset;
+
+    default:
+        add_error2(p->msg, &node->pos, "expression is not a constant expression");
+        return 0;
+    }
 }
 
 /* decl context */
@@ -1004,7 +1052,10 @@ static struct ast_node *constant_expression(struct parser *p)
         return NULL;
 
     tree = new_node_(NOD_CONST_EXPR, tokpos(p));
-    return branch_(tree, expr, NULL);
+    tree = branch_(tree, expr, NULL);
+    tree->ival = eval_const_expr(expr, p);
+
+    return tree;
 }
 
 /*
@@ -1628,9 +1679,12 @@ static struct ast_node *enumerator(struct parser *p)
     decl_set_type(p, type_int());
     define_sym(p, ident);
 
-    if (consume(p, '='))
+    if (consume(p, '=')) {
         tree->r = constant_expression(p);
+        p->enum_value = tree->r->ival;
+    }
 
+    ident->sym->mem_offset = p->enum_value++;
     return tree;
 }
 
@@ -1642,6 +1696,8 @@ static struct ast_node *enumerator(struct parser *p)
 static struct ast_node *enumerator_list(struct parser *p)
 {
     struct ast_node *tree = NULL;
+
+    p->enum_value = 0;
 
     for (;;) {
         struct ast_node *enu = enumerator(p);

@@ -1,10 +1,10 @@
+enum {
+    R = 3,
+    G,
+    B
+};
+
 int main()
 {
-    int i = 0;
-
-    for (;;)
-        if (++i == 5)
-            break;
-
-    return i;
+    return B;
 }

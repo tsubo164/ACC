@@ -4,52 +4,6 @@
 #include "message.h"
 #include "ast.h"
 
-static int eval_(const struct ast_node *node, struct message_list *messages)
-{
-    int l, r;
-
-    if (!node)
-        return 0;
-
-    switch (node->kind) {
-
-    case NOD_ADD:
-        l = eval_(node->l, messages);
-        r = eval_(node->r, messages);
-        return l + r;
-
-    case NOD_SUB:
-        l = eval_(node->l, messages);
-        r = eval_(node->r, messages);
-        return l - r;
-
-    case NOD_MUL:
-        l = eval_(node->l, messages);
-        r = eval_(node->r, messages);
-        return l * r;
-
-    case NOD_DIV:
-        l = eval_(node->l, messages);
-        r = eval_(node->r, messages);
-        return l / r;
-
-    case NOD_NUM:
-        return node->ival;
-
-    case NOD_DECL_IDENT:
-    case NOD_IDENT:
-        if (node->sym->kind != SYM_ENUMERATOR) {
-            add_error2(messages, &node->pos, "expression is not a constant expression");
-            return 0;
-        }
-        return node->sym->mem_offset;
-
-    default:
-        add_error2(messages, &node->pos, "expression is not a constant expression");
-        return 0;
-    }
-}
-
 static int align_to(int pos, int align)
 {
     return ((pos + align - 1) / align) * align;
@@ -198,7 +152,6 @@ struct tree_context {
     const struct symbol *func_sym;
     int loop_depth;
     int switch_depth;
-    int enum_value;
     int is_lvalue;
     int has_init;
 
@@ -489,20 +442,6 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         check_tree_(node->r, ctx);
         return;
 
-    /* enum */
-    case NOD_SPEC_ENUM:
-        ctx->enum_value = 0;
-        break;
-
-    case NOD_DECL_ENUMERATOR:
-        check_tree_(node->l, ctx);
-        check_tree_(node->r, ctx);
-        if (node->r)
-            ctx->enum_value = node->r->ival;
-        node->l->sym->mem_offset = ctx->enum_value;
-        ctx->enum_value++;
-        return;
-
     /* struct */
     case NOD_STRUCT_REF:
         check_tree_(node->l, ctx);
@@ -587,10 +526,6 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         break;
 
     /* constant */
-    case NOD_CONST_EXPR:
-        node->ival = eval_(node->l, ctx->messages);
-        break;
-
     case NOD_SIZEOF:
         node->ival = get_size(node->l->type);
         break;
