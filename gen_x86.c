@@ -741,7 +741,7 @@ static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_s
         return;
 
     case NOD_DEFAULT:
-        code2__(fp, node, JE_,  label(switch_scope, jump_id(node)));
+        code2__(fp, node, JMP_,  label(switch_scope, jump_id(node)));
         return;
 
     default:

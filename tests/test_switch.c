@@ -64,6 +64,23 @@ int main()
         assert(61, a);
         assert(100, b);
     }
+    {
+        /* default case */
+        int a = 42;
+
+        switch (3) {
+        case 19:
+            a = 3;
+            break;
+        case 23:
+            a = 4;
+            break;
+        default:
+            break;
+        }
+
+        assert(42, a);
+    }
 
     return 0;
 }

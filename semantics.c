@@ -462,7 +462,13 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
     case NOD_CASE:
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
+        /*
+        printf("case value: %d => ", node->sym->mem_offset);
+        */
         node->sym->mem_offset = node->l->ival;
+        /*
+        printf("%d\n", node->sym->mem_offset);
+        */
         if (find_case_value(node))
             add_error(ctx->messages, "duplicate case value", &pos);
         return;

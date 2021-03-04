@@ -1299,6 +1299,7 @@ static struct ast_node *case_statement(struct parser *p)
 
     tree = new_node(NOD_CASE, expr, NULL);
     define_case(p, tree, SYM_CASE);
+    tree->sym->mem_offset = expr->ival;
 
     tree->r = statement(p);
     return tree;

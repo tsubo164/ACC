@@ -1,7 +1,20 @@
 int main()
 {
-    int a [] = {1, 9};
-    int b = 13;
+    int a = 42;
 
-    return a[1];
+    switch (3) {
+
+    case 19:
+        a = 3;
+        break;
+
+    case 23:
+        a = 4;
+        break;
+
+    default:
+        break;
+    }
+
+    return a;
 }
