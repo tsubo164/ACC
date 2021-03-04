@@ -1861,6 +1861,9 @@ static struct ast_node *array(struct parser *p)
         tree = branch_(tree, expr, array(p));
         decl_set_type(p, type_array(p->decl_type));
         type_set(tree, p->decl_type);
+
+        if (expr)
+            set_array_length(p->decl_type, expr->ival);
     }
 
     return tree;
@@ -2001,6 +2004,7 @@ static struct ast_node *initializer_list(struct parser *p)
 {
     struct ast_node *tree = NULL;
     struct ast_node *init_list;
+    int count = 0;
 
     struct data_type *parent = p->init_type;
     p->init_type = initializer_child_type(p, parent);
@@ -2016,6 +2020,7 @@ static struct ast_node *initializer_list(struct parser *p)
 
         list = new_node_(NOD_LIST, tokpos(p));
         tree = branch_(list, tree, init);
+        count++;
 
         if (!consume(p, ','))
             break;
@@ -2026,6 +2031,9 @@ static struct ast_node *initializer_list(struct parser *p)
     init_list = new_node_(NOD_INIT_LIST, tokpos(p));
     init_list = branch_(init_list, tree, NULL);
     type_set(init_list, p->init_type);
+
+    if (has_unkown_array_length(p->init_type))
+        set_array_length(p->init_type, count);
 
     return init_list;
 }

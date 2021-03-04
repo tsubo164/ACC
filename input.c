@@ -1,10 +1,7 @@
-enum {
-    R = 3,
-    G,
-    B
-};
-
 int main()
 {
-    return B;
+    int a [] = {1, 9};
+    int b = 13;
+
+    return a[1];
 }

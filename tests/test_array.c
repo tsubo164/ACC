@@ -1,10 +1,20 @@
 int assert(int expected, int actual);
 
-/* array index access */
+/* no specified length array at the beginning of function */
+int test_single_array()
+{
+    int a[] = {345, 41, 399};
+
+    assert(12, sizeof a);
+    assert(345, a[0]);
+    assert(41,  a[1]);
+    assert(399, a[2]);
+}
+
 int main()
 {
     {
-        /* basic array */
+        /* array index access */
         int a[4];
 
         a[0] = 3;
@@ -112,6 +122,9 @@ int main()
         assert(555, a[1][1]);
         assert(  0, a[2][0]);
         assert(  0, a[2][1]);
+    }
+    {
+        test_single_array();
     }
 
     return 0;

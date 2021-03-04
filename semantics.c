@@ -291,20 +291,6 @@ static int get_struct_member_count(const struct data_type *type)
     return 0;
 }
 
-static int count_initializers(struct ast_node *node, struct tree_context *ctx)
-{
-    struct ast_node *n;
-    int count = 0;
-
-    if (!node)
-        return 0;
-
-    for (n = node; n; n = n->l)
-        if (n->kind == NOD_LIST)
-            count++;
-    return count;
-}
-
 static void check_initializer(struct ast_node *node, struct tree_context *ctx)
 {
     if (!node)
@@ -312,13 +298,6 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
 
     if (is_array(node->type)) {
         struct tree_context new_ctx = *ctx;
-
-        if (has_unkown_array_length(node->type)) {
-            /* the first node comes in here should be NOD_INIT
-             * thus node->r is NOD_INIT_LIST */
-            const int count = count_initializers(node->r, ctx);
-            set_array_length(node->type, count);
-        }
 
         new_ctx.index = 0;
         new_ctx.array_length = get_array_length(node->type);
@@ -433,14 +412,6 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             }
         }
         break;
-
-    /* array */
-    case NOD_SPEC_ARRAY:
-        check_tree_(node->l, ctx);
-        if (node->l)
-            set_array_length(node->type, node->l->ival);
-        check_tree_(node->r, ctx);
-        return;
 
     /* struct */
     case NOD_STRUCT_REF:
