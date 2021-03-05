@@ -354,11 +354,15 @@ static void use_member_sym(struct parser *p,
     node->sym = use_struct_member_symbol(p->symtab, symbol_of(struct_type), member_name);
 }
 
-static void define_case(struct parser *p, struct ast_node *node, int kind)
+static void define_case(struct parser *p, struct ast_node *node, int kind, int case_value)
 {
     struct symbol *sym;
 
-    sym = define_case_symbol(p->symtab, kind);
+    sym = define_case_symbol(p->symtab, kind, case_value);
+    /* TODO come up with better place to put this or even
+     * consider removing pos from sym */
+    sym->pos = node->pos;
+
     node->sym = sym;
 }
 
@@ -1292,14 +1296,21 @@ static struct ast_node *case_statement(struct parser *p)
 {
     struct ast_node *tree = NULL;
     struct ast_node *expr = NULL;
+    struct position nextpos;
 
     expect(p, TOK_CASE);
+    {
+        /* get the position of the next of case token */
+        const struct token *tok = gettok(p);
+        nextpos = tok->pos;
+        ungettok(p);
+    }
     expr = constant_expression(p);
     expect(p, ':');
 
-    tree = new_node(NOD_CASE, expr, NULL);
-    define_case(p, tree, SYM_CASE);
-    tree->sym->mem_offset = expr->ival;
+    tree = new_node_(NOD_CASE, &nextpos);
+    tree = branch_(tree, expr, NULL);
+    define_case(p, tree, SYM_CASE, expr->ival);
 
     tree->r = statement(p);
     return tree;
@@ -1312,12 +1323,13 @@ static struct ast_node *case_statement(struct parser *p)
 static struct ast_node *default_statement(struct parser *p)
 {
     struct ast_node *tree = NULL;
+    const int no_case_value = 0;
 
     expect(p, TOK_DEFAULT);
     expect(p, ':');
 
     tree = new_node(NOD_DEFAULT, NULL, NULL);
-    define_case(p, tree, SYM_DEFAULT);
+    define_case(p, tree, SYM_DEFAULT, no_case_value);
 
     tree->l = statement(p);
     return tree;

@@ -85,7 +85,7 @@ struct symbol *use_struct_member_symbol(struct symbol_table *table,
         struct symbol *strct, const char *member);
 
 /* case symobl */
-extern struct symbol *define_case_symbol(struct symbol_table *table, int kind);
+extern struct symbol *define_case_symbol(struct symbol_table *table, int kind, int case_value);
 
 /* label symobl */
 extern struct symbol *define_label_symbol(struct symbol_table *table, const char *label);

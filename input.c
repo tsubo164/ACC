@@ -1,3 +1,7 @@
+enum {
+    E = 2
+};
+
 int main()
 {
     int a = 42;
@@ -8,7 +12,7 @@ int main()
         a = 3;
         break;
 
-    case 23:
+    case E + 1:
         a = 4;
         break;
 

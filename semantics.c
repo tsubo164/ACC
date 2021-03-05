@@ -136,6 +136,10 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
             if (!sym->is_defined && sym->is_used)
                 add_warning(messages, "implicit declaration of function", &pos);
         }
+        else if (is_case(sym)) {
+            if (sym->is_redefined)
+                add_error2(messages, &sym->pos, "duplicate case value '%d'", sym->mem_offset);
+        }
         else if (is_label(sym)) {
             if (sym->is_redefined)
                 add_error(messages, "redefinition of label ''", &pos);
@@ -161,24 +165,6 @@ struct tree_context {
     int elem_count;
     int index;
 };
-
-static int find_case_value(struct ast_node *node)
-{
-    const struct symbol *sym = node->sym;
-    const int val = node->l->ival;
-    const int lv = node->sym->scope_level;
-
-    /* search from sym->prev */
-    for (sym = sym->prev; sym; sym = sym->prev) {
-        if (sym->kind == SYM_CASE &&
-                sym->mem_offset == val && sym->scope_level == lv)
-            return 1;
-
-        if (sym->kind == SYM_SWITCH_BEGIN && sym->scope_level == lv)
-            break;
-    }
-    return 0;
-}
 
 static void check_initializer(struct ast_node *node, struct tree_context *ctx);
 
@@ -457,20 +443,6 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
         ctx->switch_depth--;
-        return;
-
-    case NOD_CASE:
-        check_tree_(node->l, ctx);
-        check_tree_(node->r, ctx);
-        /*
-        printf("case value: %d => ", node->sym->mem_offset);
-        */
-        node->sym->mem_offset = node->l->ival;
-        /*
-        printf("%d\n", node->sym->mem_offset);
-        */
-        if (find_case_value(node))
-            add_error(ctx->messages, "duplicate case value", &pos);
         return;
 
     /* function */

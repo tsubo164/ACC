@@ -435,19 +435,37 @@ struct symbol *use_struct_member_symbol(struct symbol_table *table,
     return sym;
 }
 
-struct symbol *define_case_symbol(struct symbol_table *table, int kind)
+struct symbol *define_case_symbol(struct symbol_table *table, int kind, int case_value)
 {
-    struct symbol *sym;
+    struct symbol *sym, *case_sym;
+    const int cur_swt = table->current_switch_level;
 
     if (kind != SYM_CASE && kind != SYM_DEFAULT)
         return NULL;
 
-    sym = push_symbol(table, NULL, kind, NULL);
+    for (sym = table->tail; sym; sym = sym->prev) {
+        if (sym->kind == SYM_CASE && sym->scope_level == cur_swt &&
+                sym->mem_offset == case_value) {
+            sym->is_redefined = 1;
+            return sym;
+        }
 
-    sym->scope_level = table->current_switch_level;
-    sym->is_defined = 1;
+        if (sym->kind == SYM_DEFAULT && sym->scope_level == cur_swt) {
+            sym->is_redefined = 1;
+            return sym;
+        }
 
-    return sym;
+        if (sym->kind == SYM_SWITCH_BEGIN && sym->scope_level == cur_swt)
+            break;
+    }
+
+    case_sym = push_symbol(table, NULL, kind, NULL);
+
+    case_sym->scope_level = cur_swt;
+    case_sym->is_defined = 1;
+    case_sym->mem_offset = case_value;
+
+    return case_sym;
 }
 
 struct symbol *define_label_symbol(struct symbol_table *table, const char *label)
