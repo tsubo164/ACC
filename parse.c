@@ -1296,19 +1296,19 @@ static struct ast_node *case_statement(struct parser *p)
 {
     struct ast_node *tree = NULL;
     struct ast_node *expr = NULL;
-    struct position nextpos;
+    struct position valpos;
 
     expect(p, TOK_CASE);
     {
-        /* get the position of the next of case token */
+        /* get the position of the case value */
         const struct token *tok = gettok(p);
-        nextpos = tok->pos;
+        valpos = tok->pos;
         ungettok(p);
     }
     expr = constant_expression(p);
     expect(p, ':');
 
-    tree = new_node_(NOD_CASE, &nextpos);
+    tree = new_node_(NOD_CASE, &valpos);
     tree = branch_(tree, expr, NULL);
     define_case(p, tree, SYM_CASE, expr->ival);
 
@@ -1323,12 +1323,18 @@ static struct ast_node *case_statement(struct parser *p)
 static struct ast_node *default_statement(struct parser *p)
 {
     struct ast_node *tree = NULL;
+    struct position defpos;
     const int no_case_value = 0;
 
     expect(p, TOK_DEFAULT);
+    {
+        /* get the position of default */
+        defpos = *tokpos(p);
+    }
     expect(p, ':');
 
-    tree = new_node(NOD_DEFAULT, NULL, NULL);
+    tree = new_node_(NOD_DEFAULT, &defpos);
+    tree = branch_(tree, NULL, NULL);
     define_case(p, tree, SYM_DEFAULT, no_case_value);
 
     tree->l = statement(p);

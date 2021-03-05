@@ -65,6 +65,7 @@ extern int is_member(const struct symbol *sym);
 extern int is_enum_tag(const struct symbol *sym);
 extern int is_enumerator(const struct symbol *sym);
 extern int is_case(const struct symbol *sym);
+extern int is_default(const struct symbol *sym);
 extern int is_label(const struct symbol *sym);
 extern int is_typedef(const struct symbol *sym);
 extern int is_string_literal(const struct symbol *sym);

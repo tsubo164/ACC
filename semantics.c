@@ -140,6 +140,10 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
             if (sym->is_redefined)
                 add_error2(messages, &sym->pos, "duplicate case value '%d'", sym->mem_offset);
         }
+        else if (is_default(sym)) {
+            if (sym->is_redefined)
+                add_error2(messages, &sym->pos, "multiple default labels in one switch");
+        }
         else if (is_label(sym)) {
             if (sym->is_redefined)
                 add_error(messages, "redefinition of label ''", &pos);

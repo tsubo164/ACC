@@ -74,6 +74,11 @@ int is_case(const struct symbol *sym)
     return sym->kind == SYM_CASE;
 }
 
+int is_default(const struct symbol *sym)
+{
+    return sym->kind == SYM_DEFAULT;
+}
+
 int is_label(const struct symbol *sym)
 {
     return sym->kind == SYM_LABEL;
