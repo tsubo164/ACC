@@ -1607,16 +1607,20 @@ static struct ast_node *struct_declaration(struct parser *p)
 static struct ast_node *struct_declaration_list(struct parser *p)
 {
     struct ast_node *tree = NULL;
+    struct data_type *tmp = p->decl_type;
 
     for (;;) {
         struct ast_node *decl = struct_declaration(p);
 
         if (!decl)
-            return tree;
+            break;
 
         tree = new_node(NOD_LIST, tree, decl);
         expect(p, ';');
     }
+
+    p->decl_type = tmp;
+    return tree;
 }
 
 static struct ast_node *struct_or_union(struct parser *p)
@@ -1668,11 +1672,6 @@ static struct ast_node *struct_or_union_specifier(struct parser *p)
     end_scope(p);
 
     expect(p, '}');
-
-    /* pops struct type as struct declarations (members)
-     * override decl type in their contexts */
-    decl_set_type(p, ident->sym->type);
-
     return tree;
 }
 
