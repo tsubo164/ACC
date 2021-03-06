@@ -3,20 +3,21 @@
 #include <string.h>
 #include "symbol.h"
 
-/* TODO consider removing this */
 int is_extern(const struct symbol *sym)
 {
-    return sym->is_extern;
+    return sym && sym->is_extern;
 }
 
-/* TODO consider removing this */
 int is_static(const struct symbol *sym)
 {
-    return sym->is_static;
+    return sym && sym->is_static;
 }
 
 int is_global_var(const struct symbol *sym)
 {
+    if (!sym)
+        return 0;
+
     if (sym->kind == SYM_VAR &&
         sym->scope_level == 0)
         return 1;
@@ -31,6 +32,9 @@ int is_global_var(const struct symbol *sym)
 
 int is_local_var(const struct symbol *sym)
 {
+    if (!sym)
+        return 0;
+
     if (sym->kind == SYM_VAR &&
         sym->scope_level > 0 &&
         !sym->is_static)
@@ -41,57 +45,57 @@ int is_local_var(const struct symbol *sym)
 
 int is_func(const struct symbol *sym)
 {
-    return sym->kind == SYM_FUNC;
+    return sym && sym->kind == SYM_FUNC;
 }
 
 int is_param(const struct symbol *sym)
 {
-    return sym->kind == SYM_PARAM;
+    return sym && sym->kind == SYM_PARAM;
 }
 
 int is_struct_tag(const struct symbol *sym)
 {
-    return sym->kind == SYM_TAG_STRUCT;
+    return sym && sym->kind == SYM_TAG_STRUCT;
 }
 
 int is_member(const struct symbol *sym)
 {
-    return sym->kind == SYM_MEMBER;
+    return sym && sym->kind == SYM_MEMBER;
 }
 
 int is_enum_tag(const struct symbol *sym)
 {
-    return sym->kind == SYM_TAG_ENUM;
+    return sym && sym->kind == SYM_TAG_ENUM;
 }
 
 int is_enumerator(const struct symbol *sym)
 {
-    return sym->kind == SYM_ENUMERATOR;
+    return sym && sym->kind == SYM_ENUMERATOR;
 }
 
 int is_case(const struct symbol *sym)
 {
-    return sym->kind == SYM_CASE;
+    return sym && sym->kind == SYM_CASE;
 }
 
 int is_default(const struct symbol *sym)
 {
-    return sym->kind == SYM_DEFAULT;
+    return sym && sym->kind == SYM_DEFAULT;
 }
 
 int is_label(const struct symbol *sym)
 {
-    return sym->kind == SYM_LABEL;
+    return sym && sym->kind == SYM_LABEL;
 }
 
 int is_typedef(const struct symbol *sym)
 {
-    return sym->kind == SYM_TYPEDEF;
+    return sym && sym->kind == SYM_TYPEDEF;
 }
 
 int is_string_literal(const struct symbol *sym)
 {
-    return sym->kind == SYM_STRING;
+    return sym && sym->kind == SYM_STRING;
 }
 
 struct symbol_table *new_symbol_table()
@@ -531,7 +535,7 @@ struct symbol *find_type_name_symbol(struct symbol_table *table, const char *nam
 {
     struct symbol *sym = lookup(table, name, SYM_TYPEDEF);
 
-    if (sym && sym->kind == SYM_TYPEDEF)
+    if (is_typedef(sym))
         return sym;
 
     return NULL;
