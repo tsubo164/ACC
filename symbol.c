@@ -368,6 +368,8 @@ struct symbol *define_symbol(struct symbol_table *table,
 
     if (is_defined_at(sym, curr_scope)) {
         if (is_incomplete(sym->type)) {
+            /* the incoming type is discarded then
+             * the found incomplete type will be used instead */
             defined_type = sym->type;
         } else {
             sym->is_redefined = 1;
@@ -577,4 +579,58 @@ int symbol_switch_end(struct symbol_table *table)
     table->current_switch_level--;
 
     return table->current_switch_level;
+}
+
+static int align_to(int pos, int align)
+{
+    return ((pos + align - 1) / align) * align;
+}
+
+static int is_member_of(const struct symbol *member, const struct symbol *struct_tag)
+{
+    /* inside of struct is one level upper than struct scope */
+    if (!member || !struct_tag)
+        return 0;
+
+    return is_member(member) &&
+        member->scope_level == struct_tag->scope_level + 1;
+}
+
+static int is_struct_end_of(const struct symbol *member, const struct symbol *struct_tag)
+{
+    /* inside of struct is one level upper than struct scope */
+    if (!member || !struct_tag)
+        return 0;
+
+    return member->kind == SYM_SCOPE_END &&
+        member->scope_level == struct_tag->scope_level + 1;
+}
+
+void compute_struct_size(struct symbol_table *table, struct symbol *strc)
+{
+    struct symbol *sym;
+    int total_offset = 0;
+    int struct_size = 0;
+
+    if (is_incomplete(strc->type))
+        return;
+
+    for (sym = strc; sym; sym = sym->next) {
+        if (is_member_of(sym, strc)) {
+            const int size  = get_size(sym->type);
+            const int align = get_alignment(sym->type);
+
+            total_offset = align_to(total_offset, align);
+            sym->mem_offset = total_offset;
+            total_offset += size;
+        }
+
+        if (is_struct_end_of(sym, strc))
+            break;
+    }
+
+    struct_size = align_to(total_offset, get_alignment(strc->type));
+
+    set_struct_size(strc->type, struct_size);
+    strc->mem_offset = struct_size;
 }

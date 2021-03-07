@@ -1672,6 +1672,8 @@ static struct ast_node *struct_or_union_specifier(struct parser *p)
     end_scope(p);
 
     expect(p, '}');
+    compute_struct_size(p->symtab, ident->type->sym);
+
     return tree;
 }
 

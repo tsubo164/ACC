@@ -104,4 +104,7 @@ extern int symbol_scope_end(struct symbol_table *table);
 extern int symbol_switch_begin(struct symbol_table *table);
 extern int symbol_switch_end(struct symbol_table *table);
 
+/* sizes */
+extern void compute_struct_size(struct symbol_table *table, struct symbol *strc);
+
 #endif /* _H */

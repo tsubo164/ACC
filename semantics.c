@@ -19,8 +19,7 @@ static void compute_enum_size(struct symbol_table *table, struct symbol *enm)
     enm->mem_offset = get_size(enm->type);
 }
 
-/* TODO this might be good to go to symbol.c */
-static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
+static void compute_struct_size_(struct symbol_table *table, struct symbol *strc)
 {
     struct symbol *sym;
     int total_offset = 0;
@@ -28,8 +27,7 @@ static void compute_struct_size(struct symbol_table *table, struct symbol *strc)
     /* inside of struct is one level upper than struct scope */
     const int struct_scope = strc->scope_level + 1;
 
-    /* incomplete struct type */
-    if (!strc->is_defined)
+    if (is_incomplete(strc->type))
         return;
 
     for (sym = strc; sym; sym = sym->next) {
@@ -68,7 +66,7 @@ static void compute_func_size(struct symbol_table *table, struct symbol *func)
         }
 
         if (is_struct_tag(sym))
-            compute_struct_size(table, sym);
+            compute_struct_size_(table, sym);
 
         if (is_enum_tag(sym))
             compute_enum_size(table, sym);
@@ -92,7 +90,7 @@ static void add_symbol_size(struct symbol_table *table)
             compute_func_size(table, sym);
 
         if (is_struct_tag(sym))
-            compute_struct_size(table, sym);
+            compute_struct_size_(table, sym);
 
         if (is_enum_tag(sym))
             compute_enum_size(table, sym);
