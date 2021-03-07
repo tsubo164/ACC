@@ -1,5 +1,10 @@
+enum color {
+    R, G, B
+};
+
 int main()
 {
+    {
         /* nested struct pointer with typedef */
         typedef struct node Node;
 
@@ -24,8 +29,7 @@ int main()
         assert(999, n0.next->next->id);
         assert(999, n1.next->id);
         */
-    {
     }
 
-    return 0;
+    return B;
 }

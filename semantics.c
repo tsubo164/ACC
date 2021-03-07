@@ -14,7 +14,7 @@ static void compute_type_name_size(struct symbol_table *table, struct symbol *ty
     type_name->mem_offset = get_size(type_name->type);
 }
 
-static void compute_enum_size(struct symbol_table *table, struct symbol *enm)
+static void compute_enum_size_(struct symbol_table *table, struct symbol *enm)
 {
     enm->mem_offset = get_size(enm->type);
 }
@@ -69,7 +69,7 @@ static void compute_func_size(struct symbol_table *table, struct symbol *func)
             compute_struct_size_(table, sym);
 
         if (is_enum_tag(sym))
-            compute_enum_size(table, sym);
+            compute_enum_size_(table, sym);
 
         if (is_typedef(sym))
             compute_type_name_size(table, sym);
@@ -93,7 +93,7 @@ static void add_symbol_size(struct symbol_table *table)
             compute_struct_size_(table, sym);
 
         if (is_enum_tag(sym))
-            compute_enum_size(table, sym);
+            compute_enum_size_(table, sym);
 
         if (is_typedef(sym))
             compute_type_name_size(table, sym);

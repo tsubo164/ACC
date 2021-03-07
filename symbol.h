@@ -105,6 +105,7 @@ extern int symbol_switch_begin(struct symbol_table *table);
 extern int symbol_switch_end(struct symbol_table *table);
 
 /* sizes */
-extern void compute_struct_size(struct symbol_table *table, struct symbol *strc);
+extern void compute_struct_size(struct symbol *strc);
+extern void compute_enum_size(struct symbol *enm);
 
 #endif /* _H */

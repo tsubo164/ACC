@@ -606,7 +606,7 @@ static int is_struct_end_of(const struct symbol *member, const struct symbol *st
         member->scope_level == struct_tag->scope_level + 1;
 }
 
-void compute_struct_size(struct symbol_table *table, struct symbol *strc)
+void compute_struct_size(struct symbol *strc)
 {
     struct symbol *sym;
     int total_offset = 0;
@@ -633,4 +633,9 @@ void compute_struct_size(struct symbol_table *table, struct symbol *strc)
 
     set_struct_size(strc->type, struct_size);
     strc->mem_offset = struct_size;
+}
+
+void compute_enum_size(struct symbol *enm)
+{
+    enm->mem_offset = get_size(enm->type);
 }
