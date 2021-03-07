@@ -1924,7 +1924,7 @@ static struct ast_node *direct_declarator(struct parser *p)
         tree = fn;
         expect(p, ')');
     } else {
-        /* variable, parameter, member, */
+        /* variable, parameter, member, typedef */
         define_sym(p, ident);
     }
 

@@ -639,3 +639,8 @@ void compute_enum_size(struct symbol *enm)
 {
     enm->mem_offset = get_size(enm->type);
 }
+
+void compute_type_name_size(struct symbol *type_name)
+{
+    type_name->mem_offset = get_size(type_name->type);
+}

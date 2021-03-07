@@ -9,7 +9,7 @@ static int align_to(int pos, int align)
     return ((pos + align - 1) / align) * align;
 }
 
-static void compute_type_name_size(struct symbol_table *table, struct symbol *type_name)
+static void compute_type_name_size_(struct symbol_table *table, struct symbol *type_name)
 {
     type_name->mem_offset = get_size(type_name->type);
 }
@@ -72,7 +72,7 @@ static void compute_func_size(struct symbol_table *table, struct symbol *func)
             compute_enum_size_(table, sym);
 
         if (is_typedef(sym))
-            compute_type_name_size(table, sym);
+            compute_type_name_size_(table, sym);
 
         if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1)
             break;
@@ -96,7 +96,7 @@ static void add_symbol_size(struct symbol_table *table)
             compute_enum_size_(table, sym);
 
         if (is_typedef(sym))
-            compute_type_name_size(table, sym);
+            compute_type_name_size_(table, sym);
     }
 }
 
