@@ -380,11 +380,6 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             add_error(ctx->messages, "function '' should return a value", &pos);
         break;
 
-    /* constant */
-    case NOD_SIZEOF:
-        node->ival = get_size(node->l->type);
-        break;
-
     default:
         break;;
     }

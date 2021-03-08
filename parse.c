@@ -295,6 +295,7 @@ static int eval_const_expr(const struct ast_node *node, struct parser *p)
         r = eval_const_expr(node->r, p);
         return l / r;
 
+    case NOD_SIZEOF:
     case NOD_NUM:
         return node->ival;
 
@@ -707,8 +708,7 @@ static struct ast_node *unary_expression(struct parser *p)
         return cast_expression(p);
 
     case '-':
-        num = new_node_(NOD_NUM, tokpos(p));
-        num->ival = -1;
+        num = new_node_num(-1, tokpos(p));
         tree = new_node_(NOD_MUL, tokpos(p));
         return branch_(tree, num, cast_expression(p));
 
@@ -738,14 +738,18 @@ static struct ast_node *unary_expression(struct parser *p)
             if (tname) {
                 tree = new_node_(NOD_SIZEOF, tokpos(p));
                 expect(p, ')');
-                return branch_(tree, tname, NULL);
+                tree = branch_(tree, tname, NULL);
+                tree->ival = get_size(tree->l->type);
+                return tree;
             } else {
-                /* unget '(' */
+                /* unget '(' then try sizeof expression */
                 ungettok(p);
             }
         }
         tree = new_node_(NOD_SIZEOF, tokpos(p));
-        return branch_(tree, unary_expression(p), NULL);
+        tree = branch_(tree, unary_expression(p), NULL);
+        tree->ival = get_size(tree->l->type);
+        return tree;
 
     default:
         ungettok(p);

@@ -126,6 +126,20 @@ int main()
     {
         test_single_array();
     }
+    {
+        /* array length with sizeof expression */
+        int a[sizeof(int) + 4] = {0, 1, 2, 3};
+
+        assert(32, sizeof a);
+        assert(0, a[0]);
+        assert(1, a[1]);
+        assert(2, a[2]);
+        assert(3, a[3]);
+        assert(0, a[4]);
+        assert(0, a[5]);
+        assert(0, a[6]);
+        assert(0, a[7]);
+    }
 
     return 0;
 }
