@@ -586,6 +586,28 @@ static int align_to(int pos, int align)
     return ((pos + align - 1) / align) * align;
 }
 
+void compute_func_size(struct symbol *func)
+{
+    struct symbol *sym;
+    int total_offset = 0;
+
+    for (sym = func; sym; sym = sym->next) {
+        if (is_param(sym) || is_local_var(sym)) {
+            const int size  = get_size(sym->type);
+            const int align = get_alignment(sym->type);
+
+            total_offset = align_to(total_offset, align);
+            total_offset += size;
+            sym->mem_offset = total_offset;
+        }
+
+        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1)
+            break;
+    }
+
+    func->mem_offset = align_to(total_offset, 16);
+}
+
 static int is_member_of(const struct symbol *member, const struct symbol *struct_tag)
 {
     /* inside of struct is one level upper than struct scope */

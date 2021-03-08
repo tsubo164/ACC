@@ -6,6 +6,8 @@ typedef struct point {
     int x, y;
 } Point;
 
+int add(int x, int y);
+
 int main()
 {
         /* nested struct pointer with typedef */
@@ -14,7 +16,9 @@ int main()
         struct node {
             int id;
             Node *next;
-        };
+        } *tree;
+
+        int a[4];
 
         /*
         Node n0, n1, n2;
@@ -36,4 +40,9 @@ int main()
     }
 
     return sizeof Point;
+}
+
+int add(int x, int y)
+{
+    return x + y;
 }

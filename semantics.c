@@ -4,102 +4,6 @@
 #include "message.h"
 #include "ast.h"
 
-static int align_to(int pos, int align)
-{
-    return ((pos + align - 1) / align) * align;
-}
-
-static void compute_type_name_size_(struct symbol_table *table, struct symbol *type_name)
-{
-    type_name->mem_offset = get_size(type_name->type);
-}
-
-static void compute_enum_size_(struct symbol_table *table, struct symbol *enm)
-{
-    enm->mem_offset = get_size(enm->type);
-}
-
-static void compute_struct_size_(struct symbol_table *table, struct symbol *strc)
-{
-    struct symbol *sym;
-    int total_offset = 0;
-    int struct_size = 0;
-    /* inside of struct is one level upper than struct scope */
-    const int struct_scope = strc->scope_level + 1;
-
-    if (is_incomplete(strc->type))
-        return;
-
-    for (sym = strc; sym; sym = sym->next) {
-        if (sym->kind == SYM_MEMBER) {
-            const int size  = get_size(sym->type);
-            const int align = get_alignment(sym->type);
-
-            total_offset = align_to(total_offset, align);
-            sym->mem_offset = total_offset;
-            total_offset += size;
-        }
-
-        if (sym->kind == SYM_SCOPE_END && sym->scope_level == struct_scope)
-            break;
-    }
-
-    struct_size = align_to(total_offset, get_alignment(strc->type));
-
-    set_struct_size(strc->type, struct_size);
-    strc->mem_offset = struct_size;
-}
-
-static void compute_func_size(struct symbol_table *table, struct symbol *func)
-{
-    struct symbol *sym;
-    int total_offset = 0;
-
-    for (sym = func; sym; sym = sym->next) {
-        if (is_param(sym) || is_local_var(sym)) {
-            const int size  = get_size(sym->type);
-            const int align = get_alignment(sym->type);
-
-            total_offset = align_to(total_offset, align);
-            total_offset += size;
-            sym->mem_offset = total_offset;
-        }
-
-        if (is_struct_tag(sym))
-            compute_struct_size_(table, sym);
-
-        if (is_enum_tag(sym))
-            compute_enum_size_(table, sym);
-
-        if (is_typedef(sym))
-            compute_type_name_size_(table, sym);
-
-        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1)
-            break;
-    }
-
-    func->mem_offset = align_to(total_offset, 16);
-}
-
-static void add_symbol_size(struct symbol_table *table)
-{
-    struct symbol *sym;
-
-    for (sym = table->head; sym; sym = sym->next) {
-        if (is_func(sym))
-            compute_func_size(table, sym);
-
-        if (is_struct_tag(sym))
-            compute_struct_size_(table, sym);
-
-        if (is_enum_tag(sym))
-            compute_enum_size_(table, sym);
-
-        if (is_typedef(sym))
-            compute_type_name_size_(table, sym);
-    }
-}
-
 static int check_symbol_usage(struct symbol_table *table, struct message_list *messages)
 {
     struct symbol *sym;
@@ -508,9 +412,6 @@ int semantic_analysis(struct ast_node *tree,
 {
     check_tree_semantics(tree, messages);
     check_symbol_usage(table, messages);
-
-    /* needs to be called after enum values and array sizes are solved */
-    add_symbol_size(table);
 
     /* needs to be called after type sizes are solved */
     check_initializer_semantics(tree, messages);

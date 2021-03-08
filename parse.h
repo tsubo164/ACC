@@ -25,6 +25,8 @@ struct parser {
 
     /* for enum */
     int enum_value;
+    /* for function */
+    struct symbol *func_sym;
 
     int is_typedef;
     int is_extern;

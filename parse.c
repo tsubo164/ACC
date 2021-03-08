@@ -139,6 +139,7 @@ struct parser *new_parser()
     p->decl_type = NULL;
 
     p->enum_value = 0;
+    p->func_sym = NULL;
 
     p->is_typedef = 0;
     p->is_extern = 0;
@@ -1917,6 +1918,7 @@ static struct ast_node *direct_declarator(struct parser *p)
         struct ast_node *fn = NEW_(NOD_DECL_FUNC);
         decl_set_kind(p, SYM_FUNC);
         define_sym(p, ident);
+        p->func_sym = ident->sym;
 
         begin_scope(p);
         fn->l = tree;
@@ -2223,10 +2225,13 @@ static struct ast_node *declaration(struct parser *p)
         tree = new_node(NOD_FUNC_DEF, tree, stmt);
         use_label(p, stmt);
         end_scope(p);
+        compute_func_size(p->func_sym);
+        p->func_sym = NULL;
         return tree;
     } else if (decl_is_func(p)) {
         /* is func prototype */
         end_scope(p);
+        p->func_sym = NULL;
     }
 
     expect(p, ';');
