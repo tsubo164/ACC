@@ -203,6 +203,17 @@ int main()
         assert(42,  pt.y);
         assert(36,  pt.z);
     }
+    {
+        /* size of struct with internal struct members */
+        struct foo {
+            int a;
+            struct bar {
+                int b;
+            } b;
+        };
+
+        assert(8, sizeof (struct foo));
+    }
 
     return 0;
 }
