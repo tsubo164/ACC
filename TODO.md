@@ -27,9 +27,6 @@
 
 * BUG
   - function prototype and definition in the same source
-  - not an error for 'sizeof typename'
-  - static int -> quad
-  - void printf(char *s, ind n) -> infinite loop
   - //typedef struct node Node;
     struct node {
         int id;
@@ -73,3 +70,6 @@
   - new number() (not needed)
   - array initializer
   - struct initializer
+  - not an error for 'sizeof typename'
+  - void printf(char *s, ind n) -> infinite loop
+  - static int -> quad

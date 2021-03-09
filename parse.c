@@ -103,6 +103,7 @@ static void expect(struct parser *p, enum token_kind query)
 {
     const struct token *tok = gettok(p);
 
+    /* TODO improve error recovery. may not need is_panic_mode */
     if (p->is_panic_mode) {
         /* ignore errors until synced */
         if (tok->kind == query || tok->kind == TOK_EOF)
@@ -117,6 +118,17 @@ static void expect(struct parser *p, enum token_kind query)
         sprintf(buf, "expected token '%c'", query);
         msg = insert_string(p->lex.strtab, buf);
         syntax_error(p, msg);
+
+        for (;;) {
+            tok = gettok(p);
+            if (tok->kind == ';' ||
+                tok->kind == '(' ||
+                tok->kind == ')' ||
+                tok->kind == '{' ||
+                tok->kind == '}' ||
+                tok->kind == TOK_EOF)
+                break;
+        }
     }
 }
 
