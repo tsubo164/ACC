@@ -2036,7 +2036,6 @@ static int initializer_byte_offset(struct parser *p,
 static struct ast_node *initializer_list(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    struct ast_node *init_list;
     int count = 0;
 
     struct data_type *parent = p->init_type;
@@ -2062,10 +2061,6 @@ static struct ast_node *initializer_list(struct parser *p)
     }
 
     p->init_type = parent;
-
-    init_list = new_node_(NOD_INIT_LIST, tokpos(p));
-    tree = branch_(init_list, tree, NULL);
-    type_set(tree, p->init_type);
 
     if (has_unkown_array_length(p->init_type))
         set_array_length(p->init_type, count);

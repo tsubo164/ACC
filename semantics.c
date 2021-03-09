@@ -102,10 +102,6 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
         }
         break;
 
-    case NOD_INIT_LIST:
-        check_init_array_element(node->l, ctx);
-        break;
-
     case NOD_LIST:
         check_init_array_element(node->l, ctx);
         check_init_array_element(node->r, ctx);
@@ -144,10 +140,6 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
         }
 
         ctx->struct_sym = ctx->struct_sym->next;
-        break;
-
-    case NOD_INIT_LIST:
-        check_init_struct_members(node->l, ctx);
         break;
 
     case NOD_LIST:

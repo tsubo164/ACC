@@ -879,11 +879,6 @@ static void assign_init(struct memory_byte *base,
         }
         break;
 
-    case NOD_INIT_LIST:
-        /* dive into subtype */
-        assign_init(base, type, node->l);
-        break;
-
     case NOD_LIST:
         /* pass to the next initializer */
         assign_init(base, type, node->l);

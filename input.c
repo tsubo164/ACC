@@ -9,5 +9,5 @@ int main()
         int x, y;
     } line[2] = {{11, 22}, {33, 44}};
 
-    return line[1].x;
+    return line[1].x + sizeof(line);
 }
