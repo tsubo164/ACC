@@ -85,8 +85,6 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
         check_init_array_element(node->l, ctx);
         check_initializer(node->r, ctx);
 
-        node->ival = get_size(node->type) * ctx->index++;
-
         {
             struct data_type *type = node->type;
 
@@ -145,7 +143,6 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
             }
         }
 
-        node->ival = ctx->struct_sym->mem_offset;
         ctx->struct_sym = ctx->struct_sym->next;
         break;
 

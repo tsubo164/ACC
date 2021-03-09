@@ -1986,40 +1986,46 @@ static struct ast_node *initializer(struct parser *p)
     return tree;
 }
 
-/* TODO consider adding types, symbols and index at the same place */
 static struct data_type *initializer_child_type(struct parser *p,
         struct data_type *parent)
 {
-    struct data_type *type = parent;
-
-    if (is_array(type)) {
-        return underlying(type);
+    if (is_array(parent)) {
+        return underlying(parent);
     }
-    else if (is_struct(type)) {
-        struct symbol *sym = symbol_of(type);
+    else if (is_struct(parent)) {
+        struct symbol *sym = symbol_of(parent);
         p->init_sym = sym->next->next;
         return p->init_sym->type;
     }
     else {
-        return type;
+        return parent;
     }
 }
 
 static struct data_type *initializer_next_type(struct parser *p,
         struct data_type *parent)
 {
-    struct data_type *type = p->init_type;
-
     if (is_array(parent)) {
-        return type;
+        return p->init_type;
     }
     else if (is_struct(parent)) {
         p->init_sym = p->init_sym->next;
         return p->init_sym->type;
     }
     else {
-        return type;
+        return p->init_type;
     }
+}
+
+static int initializer_byte_offset(struct parser *p,
+        struct data_type *parent, int index)
+{
+    if (is_array(parent))
+        return get_size(p->init_type) * index;
+    else if (is_struct(parent))
+        return p->init_sym->mem_offset;
+    else
+        return 0;
 }
 
 /*
@@ -2043,11 +2049,13 @@ static struct ast_node *initializer_list(struct parser *p)
         if (!init)
             break;
 
+        /* byte offset from the beginning of the list */
+        init->ival = initializer_byte_offset(p, parent, count);
         p->init_type = initializer_next_type(p, parent);
+        count++;
 
         list = new_node_(NOD_LIST, tokpos(p));
         tree = branch_(list, tree, init);
-        count++;
 
         if (!consume(p, ','))
             break;
@@ -2056,13 +2064,13 @@ static struct ast_node *initializer_list(struct parser *p)
     p->init_type = parent;
 
     init_list = new_node_(NOD_INIT_LIST, tokpos(p));
-    init_list = branch_(init_list, tree, NULL);
-    type_set(init_list, p->init_type);
+    tree = branch_(init_list, tree, NULL);
+    type_set(tree, p->init_type);
 
     if (has_unkown_array_length(p->init_type))
         set_array_length(p->init_type, count);
 
-    return init_list;
+    return tree;
 }
 
 static struct ast_node *init_declarator(struct parser *p)

@@ -1,21 +1,13 @@
-int add(int x, int y);
-
 int main()
 {
-    struct foo {
-        int a;
-        struct bar {
-            int b;
-        } b;
-    } f;
+    /*
+    int a[2][2] = {{11, 22}, {33, 44}};
 
-    int a = sizeof 2 + 1;
-    int b[sizeof(int)] = {0, 1, 2, 3};
+    return a[0][1];
+    */
+    struct point {
+        int x, y;
+    } line[2] = {{11, 22}, {33, 44}};
 
-    return sizeof (struct foo) + b[3];
-}
-
-int add(int x, int y)
-{
-    return x + y;
+    return line[1].x;
 }
