@@ -104,21 +104,19 @@ static void expect(struct parser *p, enum token_kind query)
     const struct token *tok = gettok(p);
 
     if (p->is_panic_mode) {
-        if (tok->kind == query || tok->kind == TOK_EOF) {
+        /* ignore errors until synced */
+        if (tok->kind == query || tok->kind == TOK_EOF)
             p->is_panic_mode = 0;
-        }
-    } else {
-        if (tok->kind == query)
-            return;
+        return;
+    }
 
-        {
-            char buf[1024] = {'\0'};
-            const char *msg = NULL;
-            /* TODO improve error message */
-            sprintf(buf, "expected token '%c' here", query);
-            msg = insert_string(p->lex.strtab, buf);
-            syntax_error(p, msg);
-        }
+    if (tok->kind != query) {
+        char buf[64] = {'\0'};
+        const char *msg = NULL;
+        /* TODO improve error message */
+        sprintf(buf, "expected token '%c'", query);
+        msg = insert_string(p->lex.strtab, buf);
+        syntax_error(p, msg);
     }
 }
 
@@ -556,8 +554,7 @@ static struct ast_node *primary_expression(struct parser *p)
         return tree;
 
     default:
-        ungettok(p);
-        syntax_error(p, "not an expression");
+        syntax_error(p, "expected expression");
         return NULL;
     }
 }
@@ -746,9 +743,11 @@ static struct ast_node *unary_expression(struct parser *p)
                 ungettok(p);
             }
         }
+
         tree = new_node_(NOD_SIZEOF, tokpos(p));
         tree = branch_(tree, unary_expression(p), NULL);
-        tree->ival = get_size(tree->l->type);
+        tree->ival = tree->l ? get_size(tree->l->type) : 0;
+
         return tree;
 
     default:
