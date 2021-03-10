@@ -102,6 +102,9 @@ static int compile(const char *filename, const struct option *opt)
         goto finalize;
     }
 
+    parser->lex.head = pp->text->buf;
+    parser->lex.next = pp->text->buf;
+
     /* ------------------------- */
     tree = parse(parser);
     semantic_analysis(tree, symtab, messages);

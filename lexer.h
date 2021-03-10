@@ -67,6 +67,9 @@ struct token {
 };
 
 struct lexer {
+    const char *head;
+    const char *next;
+
     FILE *file;
     long file_pos;
     struct string_table *strtab;

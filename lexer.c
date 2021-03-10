@@ -5,20 +5,18 @@
 
 static int readc(struct lexer *l)
 {
-    const int c = fgetc(l->file);
+    const int c = *l->next++;
 
-    if (c == EOF)
-        return c;
+    if (c == '\0')
+        return EOF;
 
-    if (l->currc == '\n') {
+    if (c == '\n') {
         l->pos.y++;
-        l->pos.x = 1;
+        l->pos.x = 0;
     } else {
         l->pos.x++;
         l->prevx = l->pos.x;
     }
-    l->prevc = l->currc;
-    l->currc = c;
 
     return c;
 }
@@ -31,9 +29,9 @@ static void unreadc(struct lexer *l, int c)
     } else {
         l->pos.x--;
     }
-    l->currc = l->prevc;
 
-    ungetc(c, l->file);
+    if (l->next != l->head)
+        l->next--;
 }
 
 static long get_file_pos(struct lexer *l)
@@ -129,6 +127,9 @@ long token_file_pos(const struct token *tok)
 
 void lexer_init(struct lexer *lex)
 {
+    lex->head = NULL;
+    lex->next = NULL;
+
     lex->file = NULL;
     lex->file_pos = 0L;
 
@@ -657,6 +658,6 @@ static void directive(struct lexer *l)
 
     read_char(l, '\n');
 
-    l->pos.y = num - 1;
+    l->pos.y = num;
     l->pos.filename = make_text(l, path);
 }
