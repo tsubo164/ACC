@@ -57,26 +57,17 @@ enum token_kind {
 
 struct token {
     int kind;
-    /* TODO rename this member */
     int value;
     const char *text;
-
     struct position pos;
-
-    long file_pos;
 };
 
 struct lexer {
+    struct string_table *strtab;
     const char *head;
     const char *next;
 
-    FILE *file;
-    long file_pos;
-    struct string_table *strtab;
-
     struct position pos;
-    int currc;
-    int prevc;
     int prevx;
 };
 

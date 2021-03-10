@@ -34,11 +34,6 @@ static void unreadc(struct lexer *l, int c)
         l->next--;
 }
 
-static long get_file_pos(struct lexer *l)
-{
-    return ftell(l->file);
-}
-
 static void keyword_or_identifier(struct token *tok)
 {
     const char *text = tok->text;
@@ -114,28 +109,18 @@ void token_init(struct token *tok)
 {
     tok->kind = TOK_UNKNOWN;
     tok->value = 0;
-    tok->file_pos = 0L;
     tok->text = NULL;
 
     init_position(&tok->pos);
 }
 
-long token_file_pos(const struct token *tok)
-{
-    return tok->file_pos;
-}
-
 void lexer_init(struct lexer *lex)
 {
+    lex->strtab = NULL;
     lex->head = NULL;
     lex->next = NULL;
 
-    lex->file = NULL;
-    lex->file_pos = 0L;
-
     init_position(&lex->pos);
-    lex->currc = '\0';
-    lex->prevc = '\0';
     lex->prevx = 0;
 }
 
@@ -144,17 +129,13 @@ enum token_kind lex_get_token(struct lexer *l, struct token *tok)
     static char textbuf[1024] = {'\0'};
     char *buf;
     int c = '\0';
-    long tok_pos;
 
     token_init(tok);
-
     textbuf[0] = '\0';
     buf = textbuf;
 
 state_initial:
     c = readc(l);
-    tok_pos = get_file_pos(l);
-
     tok->pos = l->pos;
 
     switch (c) {
@@ -503,7 +484,6 @@ state_block_comment:
     }
 
 state_final:
-    tok->file_pos = tok_pos;
     return tok->kind;
 }
 

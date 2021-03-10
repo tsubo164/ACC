@@ -89,7 +89,6 @@ static int compile(const char *filename, const struct option *opt)
     messages->strtab = strtab;
 
     parser = new_parser();
-    parser->lex.file = fp;
     parser->lex.strtab = strtab;
     parser->symtab = symtab;
     parser->msg = messages;
@@ -133,7 +132,7 @@ static int compile(const char *filename, const struct option *opt)
     make_output_filename(filename, output);
     fp = fopen(output, "w");
     if (!fp) {
-        return -1;
+        exit(EXIT_FAILURE);
     }
     gen_x86(fp, tree, symtab);
 
