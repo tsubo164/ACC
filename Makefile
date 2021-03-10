@@ -41,6 +41,9 @@ run_cc:
 tree: $(target)
 	./$(target) --print-tree input.c
 
+pp: $(target)
+	./$(target) --print-preprocess input.c
+
 test: $(target)
 	@$(MAKE) --no-print-directory -C tests $@
 

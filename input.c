@@ -3,6 +3,10 @@
 
 # 42 "foo.h"
 
+/*
+#include "input.h"
+*/
+
 int main()
 {
     int a = 29;

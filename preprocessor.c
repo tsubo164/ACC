@@ -309,6 +309,16 @@ static void endif_line(struct preprocessor *pp)
     new_line(pp);
 }
 
+static void non_directive(struct preprocessor *pp)
+{
+    for (;;) {
+        const int c = readc(pp);
+        writec(pp, c);
+        if (c == '\n')
+            break;
+    }
+}
+
 static void directive_line(struct preprocessor *pp)
 {
     static char direc[128] = {'\0'};
@@ -321,6 +331,11 @@ static void directive_line(struct preprocessor *pp)
         if_part(pp);
     else if (!strcmp(direc, "endif"))
         endif_line(pp);
+    else {
+        writes(pp, "# ");
+        writes(pp, direc);
+        non_directive(pp);
+    }
 }
 
 static void text_lines(struct preprocessor *pp)
