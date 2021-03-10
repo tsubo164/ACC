@@ -110,6 +110,8 @@ static void init_position(struct position *pos)
     pos->filename = NULL;
 }
 
+static void directive(struct lexer *l);
+
 void token_init(struct token *tok)
 {
     tok->kind = TOK_UNKNOWN;
@@ -358,6 +360,10 @@ state_initial:
         tok->kind = TOK_EOF;
         goto state_final;
 
+    case '#':
+        directive(l);
+        goto state_initial;
+
     /* unknown */
     default:
         tok->kind = TOK_UNKNOWN;
@@ -575,4 +581,82 @@ void print_token(const struct token *tok)
         break;
     }
     printf("\"%s\"\n", s);
+}
+
+static void read_spaces(struct lexer *l)
+{
+    for (;;) {
+        const int c = readc(l);
+        if (c == ' '  ||
+            c == '\t' ||
+            c == '\v' ||
+            c == '\f') {
+            continue;
+        } else {
+            unreadc(l, c);
+            break;
+        }
+    }
+}
+
+static void read_char(struct lexer *l, int expected)
+{
+    const int c = readc(l);
+    if (c != expected) {
+        /* error */
+    }
+}
+
+static int read_number(struct lexer *l)
+{
+    int num = 0;
+
+    for (;;) {
+        const int c = readc(l);
+        if (isdigit(c))
+            num = num * 10 + c - '0';
+        else
+            break;
+    }
+
+    return num;
+}
+
+static void read_filepath(struct lexer *l, char *path)
+{
+    char *buf = path;
+
+    for (;;) {
+        const int c = readc(l);
+        if (isalnum(c) || c == '_' || c == '-' || c == '.') {
+            *buf++ = c;
+        } else {
+            *buf = '\0';
+            unreadc(l, c);
+            break;
+        }
+    }
+}
+
+static void directive(struct lexer *l)
+{
+    static char path[256] = {'\0'};
+    int num = 0;
+
+    read_spaces(l);
+
+    num = read_number(l);
+
+    read_spaces(l);
+
+    read_char(l, '"');
+    read_filepath(l, path);
+    read_char(l, '"');
+
+    read_spaces(l);
+
+    read_char(l, '\n');
+
+    l->pos.y = num - 1;
+    l->pos.filename = make_text(l, path);
 }

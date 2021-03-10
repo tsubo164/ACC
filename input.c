@@ -1,14 +1,13 @@
-int foo(int x)
-{
-    return x;
-}
-/*
-*/
+
+
+
+# 42 "foo.h"
 
 int main()
 {
-static int b = 213;
-    int a = sizeof(int);
+    int a = 29;
+
+    int b;
 
     return a;
 }
