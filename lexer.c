@@ -622,7 +622,7 @@ static int read_number(struct lexer *l)
     return num;
 }
 
-static void read_filepath(struct lexer *l, char *path)
+static void read_file_path(struct lexer *l, char *path)
 {
     char *buf = path;
 
@@ -650,7 +650,7 @@ static void directive(struct lexer *l)
     read_spaces(l);
 
     read_char(l, '"');
-    read_filepath(l, path);
+    read_file_path(l, path);
     read_char(l, '"');
 
     read_spaces(l);
