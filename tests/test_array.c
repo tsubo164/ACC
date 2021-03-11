@@ -1,4 +1,4 @@
-int assert(int expected, int actual);
+#include "test.h"
 
 /* no specified length array at the beginning of function */
 int test_single_array()

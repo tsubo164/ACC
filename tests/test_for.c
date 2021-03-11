@@ -1,4 +1,4 @@
-int assert(int expected, int actual);
+#include "test.h"
 
 int main()
 {

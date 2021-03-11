@@ -1,4 +1,4 @@
-int assert(int expected, int actual);
+#include "test.h"
 
 /* initialization for local and global variables */
 int X = 8;

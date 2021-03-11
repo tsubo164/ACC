@@ -30,6 +30,7 @@ struct symbol {
     int scope_level;
     int mem_offset;
     int id;
+    /* TODO consider removing this by checking all symbols in tree nodes */
     struct position pos;
 
     struct symbol *next;

@@ -35,6 +35,7 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
             if (sym->is_defined && !sym->is_used && is_static(sym))
                 add_warning2(messages, &sym->pos, "unused function '%s'", sym->name);
 
+            /* TODO consider removing this by checking all symbols in tree nodes */
             if (!sym->is_defined && sym->is_used && !is_extern(sym))
                 add_warning2(messages, &sym->pos,
                         "implicit declaration of function '%s'", sym->name);

@@ -1,5 +1,4 @@
 * TODO
-  - include
   - define
   - struct arg
   - struct assign
@@ -12,7 +11,6 @@
 * OPTIONAL
   - initializer index, enum index, invisible nodes in parser
   - use registers r10 r11
-  - function prototype
   - unsigned
   - short, long
   - bit shift <<, >>
@@ -26,7 +24,6 @@
   - symbol functions for struct 
 
 * BUG
-  - function prototype and definition in the same source
   - //typedef struct node Node;
     struct node {
         int id;
@@ -73,3 +70,6 @@
   - not an error for 'sizeof typename'
   - void printf(char *s, ind n) -> infinite loop
   - static int -> quad
+  - include
+  - function prototype and definition in the same source
+  - function prototype

@@ -1,6 +1,8 @@
 int printf(char *s, int a, int b);
 int exit(int code);
 
+#include "test.h"
+
 /* for external global variable tests */
 int g_count = 0;
 
