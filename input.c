@@ -1,12 +1,9 @@
-
-
-
-#include "input.h"
-
+struct point
+;
 
 int main()
 {
-    int b;
+    int a;
 
-    return b;
+    return 0;
 }

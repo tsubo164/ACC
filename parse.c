@@ -1658,7 +1658,8 @@ static struct ast_node *struct_or_union(struct parser *p)
     return tree;
 }
 
-/* struct_or_union_specifier
+/*
+ * struct_or_union_specifier
  *     struct_or_union TK_IDENT '{' struct_declaration_list '}'
  *     struct_or_union '{' struct_declaration_list '}'
  *     struct_or_union TK_IDENT
@@ -1931,6 +1932,7 @@ static struct ast_node *direct_declarator(struct parser *p)
     if (consume(p, '(')) {
         /* function */
         struct ast_node *fn = NEW_(NOD_DECL_FUNC);
+        p->is_extern = 1;
         decl_set_kind(p, SYM_FUNC);
         define_sym(p, ident);
         p->func_sym = ident->sym;
@@ -2247,7 +2249,8 @@ static struct ast_node *declaration(struct parser *p)
         p->func_sym = NULL;
         return tree;
     } else if (decl_is_func(p)) {
-        /* is func prototype */
+        /* is func prototype. unflag its definition */
+        p->func_sym->is_defined = 0;
         end_scope(p);
         p->func_sym = NULL;
     }

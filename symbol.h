@@ -59,6 +59,7 @@ extern int is_static(const struct symbol *sym);
 extern int is_global_var(const struct symbol *sym);
 extern int is_local_var(const struct symbol *sym);
 extern int is_func(const struct symbol *sym);
+extern int is_func_prototype(const struct symbol *sym);
 extern int is_param(const struct symbol *sym);
 extern int is_struct_tag(const struct symbol *sym);
 extern int is_member(const struct symbol *sym);

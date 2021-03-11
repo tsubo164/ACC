@@ -48,6 +48,11 @@ int is_func(const struct symbol *sym)
     return sym && sym->kind == SYM_FUNC;
 }
 
+int is_func_prototype(const struct symbol *sym)
+{
+    return sym && sym->kind == SYM_FUNC && !sym->is_defined;
+}
+
 int is_param(const struct symbol *sym)
 {
     return sym && sym->kind == SYM_PARAM;
@@ -366,7 +371,10 @@ struct symbol *define_symbol(struct symbol_table *table,
     const int curr_scope = table->current_scope_level;
     struct data_type *defined_type = type;
 
-    if (is_defined_at(sym, curr_scope)) {
+    if (is_func_prototype(sym)) {
+        /* ignores function prototypes */
+    }
+    else if (is_defined_at(sym, curr_scope)) {
         if (is_incomplete(sym->type)) {
             /* the incoming type is discarded then
              * the found incomplete type will be used instead */
