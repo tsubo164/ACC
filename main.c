@@ -76,12 +76,6 @@ static int compile(const char *filename, const struct option *opt)
     FILE *fp = NULL;
     char output[256] = {'\0'};
 
-    fp = fopen(filename, "r");
-    if (!fp) {
-        printf("acc: error: no input files\n");
-        return -1;
-    }
-
     pp = new_preprocessor();
     strtab = new_string_table();
     symtab = new_symbol_table();
@@ -117,16 +111,12 @@ static int compile(const char *filename, const struct option *opt)
 
     /* ------------------------- */
     if (messages->warning_count > 0)
-        print_warning_messages(fp, filename, messages);
+        print_warning_messages(messages);
 
     if (messages->error_count > 0) {
-        print_error_messages(fp, filename, messages);
-
-        fclose(fp);
+        print_error_messages(messages);
         exit(EXIT_FAILURE);
     }
-
-    fclose(fp);
 
     /* ------------------------- */
     make_output_filename(filename, output);

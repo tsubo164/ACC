@@ -34,9 +34,7 @@ extern void add_warning2(struct message_list *list, const struct position *pos,
 extern void add_error2(struct message_list *list, const struct position *pos,
         const char *msg, ...);
 
-extern void print_warning_messages(FILE *fp, const char *filename,
-        const struct message_list *list);
-extern void print_error_messages(FILE *fp, const char *filename,
-        const struct message_list *list);
+extern void print_warning_messages(const struct message_list *list);
+extern void print_error_messages(const struct message_list *list);
 
 #endif /* _H */

@@ -1,12 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-/* TODO remove this */
-#include <string.h>
 #include "message.h"
-
-#define MEM_ALLOC(type) ((type *) malloc(sizeof(type)))
-#define MEM_FREE(ptr) free(ptr)
 
 #define TERMINAL_COLOR_BLACK   "\x1b[30m"
 #define TERMINAL_COLOR_RED     "\x1b[31m"
@@ -21,122 +16,48 @@
 #define TERMINAL_DECORATION_BOLD    "\x1b[1m"
 #define TERMINAL_DECORATION_RESET   "\x1b[0m"
 
-static void print_message(FILE *fp, const char *filename,
-        const struct message *msg, const char *msg_type)
+enum {
+    WARNING,
+    ERROR
+};
+
+static void print_message(const struct message *msg, int msg_type)
 {
-    const long target_pos = msg->file_pos;
-    int found_target_location = 0;
-    int err_col, err_row;
-    int x = 0, y = 0; /* scanning pos row and column */
-    int c = '\0';
-    char line[1024] = {'\0'};
+    const char *err_filepath = msg->pos.filename;
+    const int err_col = msg->pos.x;
+    const int err_row = msg->pos.y;
 
-    fseek(fp, 0L, SEEK_SET);
-
-    for (;;) {
-        c = fgetc(fp);
-
-        if (ftell(fp) == target_pos) {
-            found_target_location = 1;
-            err_col = x + 1; /* x starts with 0 */
-            err_row = y + 1;
-        }
-
-        if (c == '\n' || c == EOF) {
-            if (found_target_location) {
-                line[x] = '\0';
-                break;
-            } else {
-                y++;
-                x = 0;
-                line[x] = '\0';
-            }
-        } else {
-            line[x++] = c;
-        }
-    }
-
-    fprintf(stderr, TERMINAL_DECORATION_BOLD);
-        fprintf(stderr, "%s:", filename);
-        fprintf(stderr, "%d:%d: ", err_row, err_col);
-        fprintf(stderr, TERMINAL_COLOR_RED);
-            fprintf(stderr, "%s: ", msg_type);
-        fprintf(stderr, TERMINAL_COLOR_RESET);
-        fprintf(stderr, "%s\n", msg->str);
-    fprintf(stderr, TERMINAL_DECORATION_RESET);
-
-    fprintf(stderr, "%s\n", line);
-    fprintf(stderr, "%*s", err_col - 1, ""); /* nspaces = col - 1 */
-
-    fprintf(stderr, TERMINAL_DECORATION_BOLD);
-    fprintf(stderr, TERMINAL_COLOR_GREEN);
-        fprintf(stderr, "%c\n", '^');
-    fprintf(stderr, TERMINAL_COLOR_RESET);
-    fprintf(stderr, TERMINAL_DECORATION_RESET);
-}
-
-static void print_message2(FILE *fp, const char *filename,
-        const struct message *msg, const char *msg_type)
-{
-    /*
-    const long target_pos = msg->file_pos;
-    int found_target_location = 0;
-    */
-    int err_col = 0, err_row = 0;
-#if 0
-    int x = 0, y = 0; /* scanning pos row and column */
-    int c = '\0';
-    char line[1024] = {'\0'};
-#endif
-    err_col = msg->pos.x,
-    err_row = msg->pos.y;
-
-    if (!strcmp(msg_type, "error")) {
+    if (msg_type == ERROR) {
         fprintf(stderr, TERMINAL_DECORATION_BOLD);
-            fprintf(stderr, "%s:", filename);
+            fprintf(stderr, "%s:", err_filepath);
             fprintf(stderr, "%d:%d: ", err_row, err_col);
             fprintf(stderr, TERMINAL_COLOR_RED);
-                fprintf(stderr, "%s: ", msg_type);
+                fprintf(stderr, "%s: ", "error");
             fprintf(stderr, TERMINAL_COLOR_RESET);
             fprintf(stderr, "%s\n", msg->str);
         fprintf(stderr, TERMINAL_DECORATION_RESET);
     }
-    if (!strcmp(msg_type, "warning")) {
+    if (msg_type == WARNING) {
         fprintf(stderr, TERMINAL_DECORATION_BOLD);
-            fprintf(stderr, "%s:", filename);
+            fprintf(stderr, "%s:", err_filepath);
             fprintf(stderr, "%d:%d: ", err_row, err_col);
             fprintf(stderr, TERMINAL_COLOR_MAGENTA);
-                fprintf(stderr, "%s: ", msg_type);
+                fprintf(stderr, "%s: ", "warning");
             fprintf(stderr, TERMINAL_COLOR_RESET);
             fprintf(stderr, "%s\n", msg->str);
         fprintf(stderr, TERMINAL_DECORATION_RESET);
     }
-
-#if 0
-    fprintf(stderr, "%s\n", line);
-    fprintf(stderr, "%*s", err_col - 1, ""); /* nspaces = col - 1 */
-
-    fprintf(stderr, TERMINAL_DECORATION_BOLD);
-    fprintf(stderr, TERMINAL_COLOR_GREEN);
-        fprintf(stderr, "%c\n", '^');
-    fprintf(stderr, TERMINAL_COLOR_RESET);
-    fprintf(stderr, TERMINAL_DECORATION_RESET);
-#endif
 }
 
-static void print_message_array(FILE *fp, const char *filename,
-        const struct message *msg_array, const char *msg_type)
+static void print_message_array(const struct message *msg_array, int msg_type)
 {
     int i;
 
     for (i = 0; i < MAX_MESSAGE_COUNT; i++) {
         const struct message *msg = &msg_array[i];
 
-        if (msg->str) {
-            if (0)
-                print_message(fp, filename, msg, msg_type);
-            print_message2(fp, filename, msg, msg_type);
-        }
+        if (msg->str)
+            print_message(msg, msg_type);
     }
 }
 
@@ -148,7 +69,7 @@ static void init_message(struct message *msg)
 
 struct message_list *new_message_list()
 {
-    struct message_list *list = MEM_ALLOC(struct message_list);
+    struct message_list *list = malloc(sizeof(struct message_list));
     int i;
 
     for (i = 0; i < MAX_MESSAGE_COUNT; i++) {
@@ -165,7 +86,7 @@ struct message_list *new_message_list()
 
 void free_message_list(struct message_list *list)
 {
-    MEM_FREE(list);
+    free(list);
 }
 
 void add_warning(struct message_list *list, const char *msg, const struct position *pos)
@@ -242,14 +163,12 @@ void add_error2(struct message_list *list, const struct position *pos,
     va_end(va);
 }
 
-void print_warning_messages(FILE *fp, const char *filename,
-        const struct message_list *list)
+void print_warning_messages(const struct message_list *list)
 {
-    print_message_array(fp, filename, list->warnings, "warning");
+    print_message_array(list->warnings, WARNING);
 }
 
-void print_error_messages(FILE *fp, const char *filename,
-        const struct message_list *list)
+void print_error_messages(const struct message_list *list)
 {
-    print_message_array(fp, filename, list->errors, "error");
+    print_message_array(list->errors, ERROR);
 }
