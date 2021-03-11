@@ -21,6 +21,54 @@ enum {
     ERROR
 };
 
+static void print_line(const char *filepath, int row, int col)
+{
+    FILE *fp;
+    int x = 0, y = 1;
+
+    fp = fopen(filepath, "r");
+    if (!fp) {
+        /* error */
+        return;
+    }
+
+    for (;;) {
+        int c;
+
+        if (y == row)
+            break;
+
+        c = fgetc(fp);
+
+        if (c == EOF)
+            break;
+
+        if (c == '\n')
+            y++;
+    }
+
+    for (;;) {
+        const int c = fgetc(fp);
+        fprintf(stderr, "%c", c);
+
+        if (c == '\n' || c == EOF)
+            break;
+    }
+
+    for (x = 0; x < col - 1; x++) {
+        fprintf(stderr, " ");
+    }
+
+    fprintf(stderr, TERMINAL_DECORATION_BOLD);
+        fprintf(stderr, TERMINAL_COLOR_GREEN);
+            fprintf(stderr, "^");
+        fprintf(stderr, TERMINAL_COLOR_RESET);
+    fprintf(stderr, TERMINAL_DECORATION_RESET);
+    fprintf(stderr, "\n");
+
+    fclose(fp);
+}
+
 static void print_message(const struct message *msg, int msg_type)
 {
     const char *err_filepath = msg->pos.filename;
@@ -47,6 +95,7 @@ static void print_message(const struct message *msg, int msg_type)
             fprintf(stderr, "%s\n", msg->str);
         fprintf(stderr, TERMINAL_DECORATION_RESET);
     }
+    print_line(err_filepath, err_row, err_col);
 }
 
 static void print_message_array(const struct message *msg_array, int msg_type)

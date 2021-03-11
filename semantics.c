@@ -285,7 +285,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
                     /* array, struct, union will not be treated as uninitialized */
                     if (!is_array(sym->type) && !is_struct(sym->type))
                         add_warning2(ctx->messages, &node->pos,
-                                "uninitialized variable '%s'", sym->name);
+                                "variable '%s' is uninitialized when used here", sym->name);
 
                 if (!sym->is_defined && sym->is_used)
                     add_error2(ctx->messages, &node->pos,
