@@ -12,10 +12,11 @@ static int readc(struct lexer *l)
 
     if (c == '\n') {
         l->pos.y++;
+        l->prevx = l->pos.x;
         l->pos.x = 0;
     } else {
-        l->pos.x++;
         l->prevx = l->pos.x;
+        l->pos.x++;
     }
 
     return c;
@@ -23,8 +24,11 @@ static int readc(struct lexer *l)
 
 static void unreadc(struct lexer *l, int c)
 {
-    if (l->pos.x == 1) {
-        l->pos.y = l->pos.y == 1 ? l->pos.y == 1 : l->pos.y--;
+    if (l->pos.x == 0) {
+        if (l->pos.y > 1)
+            l->pos.y--;
+        else
+            l->pos.y = 1;
         l->pos.x = l->prevx;
     } else {
         l->pos.x--;

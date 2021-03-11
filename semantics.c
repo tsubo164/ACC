@@ -18,7 +18,7 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
                 continue;
 
             if (sym->is_redefined)
-                add_error(messages, "redefinition of variable", &pos);
+                add_error2(messages, &sym->pos, "redefinition of '%s'", sym->name);
 
             if (sym->is_defined && !sym->is_used)
                 add_warning2(messages, &sym->pos, "unused variable '%s'", sym->name);
