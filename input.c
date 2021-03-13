@@ -1,9 +1,19 @@
-struct point
-;
-int main()
-{
-    int a;
-    char a;
+/*
+#define SIZE 1024      HOGE \
+    @abc        $$        def
 
-    return 0;
+#define FOO abc  \ xyz
+*/
+
+X        \
+      Y\
+      Z
+       A      B
+
+"stdi\
+o.h"
+
+int main()\
+{
+    return                 0;
 }

@@ -143,7 +143,14 @@ static void write_line_directive(struct preprocessor *pp)
     writes(pp, buf);
 }
 
-static int readc(struct preprocessor *pp)
+/*
+static int peekc(struct preprocessor *pp)
+{
+    const int c = fgetc(pp->fp);
+    ungetc(c, pp->fp);
+    return c;
+}
+static int getc_(struct preprocessor *pp)
 {
     const int c = fgetc(pp->fp);
     pp->col++;
@@ -154,6 +161,46 @@ static int readc(struct preprocessor *pp)
         pp->col = 0;
     }
 
+    return c;
+}
+*/
+
+static void unreadc(struct preprocessor *pp, int c);
+
+    static int escapednl = 0;
+static int readc(struct preprocessor *pp)
+{
+    int c = fgetc(pp->fp);
+    pp->col++;
+
+    if (c == '\n') {
+        pp->row++;
+        pp->colprev = pp->col;
+        pp->col = 0;
+
+        if (escapednl > 0) {
+            escapednl--;
+            ungetc(c, pp->fp);
+        }
+    }
+    else if (c == '\\') {
+        const int c1 = fgetc(pp->fp);
+        pp->col++;
+
+        if (c1 == '\n') {
+            pp->row++;
+            pp->colprev = pp->col;
+            pp->col = 0;
+
+            /* escape nl and read one more char */
+            c = fgetc(pp->fp);
+            pp->col++;
+
+            escapednl++;
+        } else {
+            ungetc(c1, pp->fp);
+        }
+    }
     return c;
 }
 
@@ -169,12 +216,18 @@ static void unreadc(struct preprocessor *pp, int c)
     }
 }
 
+static int is_whitespaces(int c)
+{
+    /* whitespaces other than new line */
+    return c == ' ' || c == '\t' || c == '\v' || c == '\f';
+}
+
 static void whitespaces(struct preprocessor *pp)
 {
     int c;
     for (;;) {
         c = readc(pp);
-        if (c != ' ' && c != '\t' && c != '\v' && c != '\f')
+        if (!is_whitespaces(c))
             break;
     }
     unreadc(pp, c);
@@ -238,6 +291,47 @@ static void token(struct preprocessor *pp, char *buf)
             unreadc(pp, c);
             break;
         }
+    }
+    *p = '\0';
+}
+
+static void token_list(struct preprocessor *pp, char *buf)
+{
+    char *p = buf;
+    char prevc;
+
+    whitespaces(pp);
+
+    for (;;) {
+        const int c = readc(pp);
+
+        if (c == '\n') {
+            unreadc(pp, c);
+            break;
+        }
+
+#if 0
+        if (c == '\\') {
+            const int c1 = readc(pp);
+            if (c1 == '\n')
+                /* not saving '\' */
+                continue;
+            unreadc(pp, c1);
+            *p++ = c;
+        }
+        else
+#endif
+        if (!is_whitespaces(c)) {
+            *p++ = c;
+        }
+        else if (is_whitespaces(prevc)) {
+            /* skip consecutive spaces */
+        }
+        else {
+            /* keep the first space */
+            *p++ = c;
+        }
+        prevc = c;
     }
     *p = '\0';
 }
@@ -309,6 +403,20 @@ static void endif_line(struct preprocessor *pp)
     new_line(pp);
 }
 
+static void define_line(struct preprocessor *pp)
+{
+    static char ident[128] = {'\0'};
+    static char repl[1024] = {'\0'};
+
+    whitespaces(pp);
+    token(pp, ident);
+
+    token_list(pp, repl);
+    new_line(pp);
+
+    printf("#define %s [%s]\n", ident, repl);
+}
+
 static void non_directive(struct preprocessor *pp)
 {
     for (;;) {
@@ -331,6 +439,8 @@ static void directive_line(struct preprocessor *pp)
         if_part(pp);
     else if (!strcmp(direc, "endif"))
         endif_line(pp);
+    else if (0 && !strcmp(direc, "define"))
+        define_line(pp);
     else {
         writes(pp, "# ");
         writes(pp, direc);
