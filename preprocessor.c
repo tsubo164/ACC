@@ -83,14 +83,100 @@ void strbuf_free(struct strbuf *s)
 	}
 }
 
+static unsigned int hash_fn(const char *key)
+{
+    unsigned int h = 0;
+    unsigned const char *p = NULL;
+
+    for (p = (unsigned const char *) key; *p != '\0'; p++)
+        h = PP_MULTIPLIER * h + *p;
+
+    return h % PP_HASH_SIZE;
+}
+
+static struct macro_entry *new_entry(const char *src)
+{
+    struct macro_entry *entry = malloc(sizeof(struct macro_entry));
+    const size_t alloc = strlen(src) + 1;
+    char *dst = malloc(sizeof(char) * alloc);
+
+    strncpy(dst, src, alloc);
+    entry->name = dst;
+    entry->next = NULL;
+
+    return entry;
+}
+
+static void free_entry(struct macro_entry *entry)
+{
+    if (!entry)
+        return;
+
+    free(entry->name);
+    free(entry);
+}
+
+static struct macro_table *new_macro_table()
+{
+    struct macro_table *table = malloc(sizeof(struct macro_table));
+    int i;
+
+    for (i = 0; i < PP_HASH_SIZE; i++)
+        table->entries[i] = NULL;
+
+    return table;
+}
+
+static void free_macro_table(struct macro_table *table)
+{
+    struct macro_entry *entry = NULL;
+    struct macro_entry *kill = NULL;
+    int i;
+
+    if (!table)
+        return;
+
+    for (i = 0; i < PP_HASH_SIZE; i++) {
+        if (!table->entries[i])
+            continue;
+
+        for (entry = table->entries[i]; entry != NULL; ) {
+            kill = entry;
+            entry = entry->next;
+            free_entry(kill);
+        }
+    }
+
+    free(table);
+}
+
+static const char *insert_macro(struct macro_table *table, const char *src)
+{
+    struct macro_entry *entry = NULL;
+    const unsigned int h = hash_fn(src);
+
+    for (entry = table->entries[h]; entry != NULL; entry = entry->next) {
+        if (!strcmp(src, entry->name))
+            return entry->name;
+    }
+
+    entry = new_entry(src);
+
+    entry->next = table->entries[h];
+    table->entries[h] = entry;
+
+    return entry->name;
+}
+
 struct preprocessor *new_preprocessor()
 {
     struct preprocessor *pp;
 
-    pp = (struct preprocessor *) malloc(sizeof(struct preprocessor));
+    pp = malloc(sizeof(struct preprocessor));
 
-    pp->text = (struct strbuf *) malloc(sizeof(struct strbuf));
+    pp->text = malloc(sizeof(struct strbuf));
     strbuf_init(pp->text);
+    pp->mactab = new_macro_table(); 
     pp->filename = NULL;
     pp->y = 1;
     pp->x = 0;
@@ -106,6 +192,7 @@ void free_preprocessor(struct preprocessor *pp)
 
     strbuf_free(pp->text);
     free(pp->text);
+    free_macro_table(pp->mactab);
     free(pp);
 }
 

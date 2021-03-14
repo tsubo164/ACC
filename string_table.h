@@ -11,7 +11,6 @@ struct table_entry {
 
 struct string_table {
     struct table_entry *entries[HASH_SIZE];
-    int current_id;
 };
 
 extern struct string_table *new_string_table();

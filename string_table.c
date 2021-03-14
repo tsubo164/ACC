@@ -16,10 +16,9 @@ static unsigned int hash_fn(const char *key)
 
 static struct table_entry *new_entry(const char *src)
 {
-    struct table_entry *entry =
-        (struct table_entry *) malloc(sizeof(struct table_entry));
+    struct table_entry *entry = malloc(sizeof(struct table_entry));
     const size_t alloc = strlen(src) + 1;
-    char *dst = (char *) malloc(sizeof(char) * alloc);
+    char *dst = malloc(sizeof(char) * alloc);
 
     strncpy(dst, src, alloc);
     entry->str = dst;
@@ -39,8 +38,7 @@ static void free_entry(struct table_entry *entry)
 
 struct string_table *new_string_table()
 {
-    struct string_table *table =
-        (struct string_table *) malloc(sizeof(struct string_table));
+    struct string_table *table = malloc(sizeof(struct string_table));
 
     init_string_table(table);
 
@@ -75,7 +73,6 @@ void init_string_table(struct string_table *table)
     int i;
     for (i = 0; i < HASH_SIZE; i++)
         table->entries[i] = NULL;
-    table->current_id = 0;
 }
 
 const char *insert_string(struct string_table *table, const char *src)
