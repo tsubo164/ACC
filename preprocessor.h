@@ -13,9 +13,9 @@ struct preprocessor {
     FILE *fp;
     struct strbuf *text;
     const char *filename;
-    int row;
-    int col;
-    int colprev;
+    int y;
+    int x;
+    int prevx;
 };
 
 extern struct preprocessor *new_preprocessor();

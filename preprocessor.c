@@ -92,9 +92,9 @@ struct preprocessor *new_preprocessor()
     pp->text = (struct strbuf *) malloc(sizeof(struct strbuf));
     strbuf_init(pp->text);
     pp->filename = NULL;
-    pp->row = 1;
-    pp->col = 0;
-    pp->colprev = 0;
+    pp->y = 1;
+    pp->x = 0;
+    pp->prevx = 0;
 
     return pp;
 }
@@ -113,7 +113,7 @@ static void error_(struct preprocessor *pp, const char *msg)
 {
     fprintf(stderr, TERMINAL_DECORATION_BOLD);
         fprintf(stderr, "%s:", pp->filename);
-        fprintf(stderr, "%d:%d: ", pp->row, pp->col);
+        fprintf(stderr, "%d:%d: ", pp->y, pp->x);
         fprintf(stderr, TERMINAL_COLOR_RED);
             fprintf(stderr, "%s: ", "error");
         fprintf(stderr, TERMINAL_COLOR_RESET);
@@ -139,7 +139,7 @@ static void write_line_directive(struct preprocessor *pp)
 {
     static char buf[256] = {'\0'};
 
-    sprintf(buf, "# %d \"%s\"\n", pp->row, pp->filename);
+    sprintf(buf, "# %d \"%s\"\n", pp->y, pp->filename);
     writes(pp, buf);
 }
 
@@ -153,54 +153,75 @@ static int peekc(struct preprocessor *pp)
 static int getc_(struct preprocessor *pp)
 {
     const int c = fgetc(pp->fp);
-    pp->col++;
+    pp->x++;
 
     if (c == '\n') {
-        pp->row++;
-        pp->colprev = pp->col;
-        pp->col = 0;
+        pp->y++;
+        pp->prevx = pp->x;
+        pp->x = 0;
     }
 
     return c;
 }
-*/
 
 static void unreadc(struct preprocessor *pp, int c);
+*/
 
-    static int escapednl = 0;
+static int is_whitespaces(int c)
+{
+    /* whitespaces other than new line */
+    return c == ' ' || c == '\t' || c == '\v' || c == '\f';
+}
+
 static int readc(struct preprocessor *pp)
 {
-    int c = fgetc(pp->fp);
-    pp->col++;
+    static int escapednl = 0;
+    static int n_ws = 0;
+    static int begin_of_line = 0;
+    int c, c1;
+
+start:
+    c = fgetc(pp->fp);
+    pp->x++;
 
     if (c == '\n') {
-        pp->row++;
-        pp->colprev = pp->col;
-        pp->col = 0;
+        pp->y++;
+        pp->prevx = pp->x;
+        pp->x = 0;
 
         if (escapednl > 0) {
             escapednl--;
             ungetc(c, pp->fp);
         }
+        begin_of_line = 1;
     }
     else if (c == '\\') {
-        const int c1 = fgetc(pp->fp);
-        pp->col++;
+        c1 = fgetc(pp->fp);
+        pp->x++;
 
         if (c1 == '\n') {
-            pp->row++;
-            pp->colprev = pp->col;
-            pp->col = 0;
-
-            /* escape nl and read one more char */
-            c = fgetc(pp->fp);
-            pp->col++;
+            pp->y++;
+            pp->prevx = pp->x;
+            pp->x = 0;
 
             escapednl++;
+            goto start;
         } else {
             ungetc(c1, pp->fp);
+            pp->x--;
         }
     }
+    else if (is_whitespaces(c)) {
+        if (n_ws > 0 && !begin_of_line)
+            goto start;
+        else
+            n_ws++;
+    }
+    else {
+        n_ws = 0;
+        begin_of_line = 0;
+    }
+
     return c;
 }
 
@@ -208,18 +229,12 @@ static void unreadc(struct preprocessor *pp, int c)
 {
     ungetc(c, pp->fp);
     if (c == '\n') {
-        pp->row--;
-        pp->col = pp->colprev;
+        pp->y--;
+        pp->x = pp->prevx;
     }
     else {
-        pp->col--;
+        pp->x--;
     }
-}
-
-static int is_whitespaces(int c)
-{
-    /* whitespaces other than new line */
-    return c == ' ' || c == '\t' || c == '\v' || c == '\f';
 }
 
 static void whitespaces(struct preprocessor *pp)
@@ -489,8 +504,8 @@ int preprocess_text(struct preprocessor *pp, const char *filename)
 
     {
         struct preprocessor new_pp = *pp;
-        new_pp.row = 1;
-        new_pp.col = 0;
+        new_pp.y = 1;
+        new_pp.x = 0;
         new_pp.filename = filename;
         new_pp.fp = fp;
 
