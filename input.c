@@ -1,8 +1,13 @@
-/*
 #define SIZE 1024      HOGE \
     @abc        $$        def
 
 #define FOO abc  \ xyz
+#define BAR abc          "HOGE   world"
+BAR
+
+#define BUFSIZE 1024
+char buf[BUFSIZE] = {'\0'};
+/*
 */
 
 X        \
@@ -24,4 +29,3 @@ int main()\
 }
 
 int a = x       +            y         + z;
-

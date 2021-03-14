@@ -143,13 +143,6 @@ static void write_line_directive(struct preprocessor *pp)
     writes(pp, buf);
 }
 
-/*
-static int peekc(struct preprocessor *pp)
-{
-    const int c = fgetc(pp->fp);
-    ungetc(c, pp->fp);
-    return c;
-}
 static int getc_(struct preprocessor *pp)
 {
     const int c = fgetc(pp->fp);
@@ -164,68 +157,7 @@ static int getc_(struct preprocessor *pp)
     return c;
 }
 
-static void unreadc(struct preprocessor *pp, int c);
-*/
-
-static int is_whitespaces(int c)
-{
-    /* whitespaces other than new line */
-    return c == ' ' || c == '\t' || c == '\v' || c == '\f';
-}
-
-static int readc(struct preprocessor *pp)
-{
-    static int escapednl = 0;
-    static int n_ws = 0;
-    static int begin_of_line = 0;
-    int c, c1;
-
-start:
-    c = fgetc(pp->fp);
-    pp->x++;
-
-    if (c == '\n') {
-        pp->y++;
-        pp->prevx = pp->x;
-        pp->x = 0;
-
-        if (escapednl > 0) {
-            escapednl--;
-            ungetc(c, pp->fp);
-        }
-        begin_of_line = 1;
-    }
-    else if (c == '\\') {
-        c1 = fgetc(pp->fp);
-        pp->x++;
-
-        if (c1 == '\n') {
-            pp->y++;
-            pp->prevx = pp->x;
-            pp->x = 0;
-
-            escapednl++;
-            goto start;
-        } else {
-            ungetc(c1, pp->fp);
-            pp->x--;
-        }
-    }
-    else if (is_whitespaces(c)) {
-        if (n_ws > 0 && !begin_of_line)
-            goto start;
-        else
-            n_ws++;
-    }
-    else {
-        n_ws = 0;
-        begin_of_line = 0;
-    }
-
-    return c;
-}
-
-static void unreadc(struct preprocessor *pp, int c)
+static void ungetc_(struct preprocessor *pp, int c)
 {
     ungetc(c, pp->fp);
     if (c == '\n') {
@@ -235,6 +167,45 @@ static void unreadc(struct preprocessor *pp, int c)
     else {
         pp->x--;
     }
+}
+
+static int readc(struct preprocessor *pp)
+{
+    static int escapednl = 0;
+    const int c = getc_(pp);
+
+    if (c == '\n') {
+        if (escapednl > 0) {
+            /* pop nl from stack and put the nl back to stream
+             * that was just read. use ungetc as no need to decrease x */
+            escapednl--;
+            ungetc(c, pp->fp);
+        }
+    }
+    else if (c == '\\') {
+        const int c1 = getc_(pp);
+
+        if (c1 == '\n') {
+            /* push nl to stack and read one more char */
+            escapednl++;
+            return readc(pp);
+        } else {
+            ungetc_(pp, c1);
+        }
+    }
+
+    return c;
+}
+
+static void unreadc(struct preprocessor *pp, int c)
+{
+    ungetc_(pp, c);
+}
+
+static int is_whitespaces(int c)
+{
+    /* whitespaces other than new line */
+    return c == ' ' || c == '\t' || c == '\v' || c == '\f';
 }
 
 static void whitespaces(struct preprocessor *pp)
@@ -313,7 +284,6 @@ static void token(struct preprocessor *pp, char *buf)
 static void token_list(struct preprocessor *pp, char *buf)
 {
     char *p = buf;
-    char prevc;
 
     whitespaces(pp);
 
@@ -325,28 +295,7 @@ static void token_list(struct preprocessor *pp, char *buf)
             break;
         }
 
-#if 0
-        if (c == '\\') {
-            const int c1 = readc(pp);
-            if (c1 == '\n')
-                /* not saving '\' */
-                continue;
-            unreadc(pp, c1);
-            *p++ = c;
-        }
-        else
-#endif
-        if (!is_whitespaces(c)) {
-            *p++ = c;
-        }
-        else if (is_whitespaces(prevc)) {
-            /* skip consecutive spaces */
-        }
-        else {
-            /* keep the first space */
-            *p++ = c;
-        }
-        prevc = c;
+        *p++ = c;
     }
     *p = '\0';
 }
@@ -454,7 +403,7 @@ static void directive_line(struct preprocessor *pp)
         if_part(pp);
     else if (!strcmp(direc, "endif"))
         endif_line(pp);
-    else if (0 && !strcmp(direc, "define"))
+    else if (!strcmp(direc, "define"))
         define_line(pp);
     else {
         writes(pp, "# ");
