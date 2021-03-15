@@ -8,9 +8,10 @@
 
 /*                                                    Sz Al Ln Ul    Sy  */
 static struct data_type VOID_    = {DATA_TYPE_VOID,   1, 4, 1, NULL, NULL};
-static struct data_type CHAR_    = {DATA_TYPE_CHAR,   1, 4, 1, NULL, NULL};
-static struct data_type SHORT_   = {DATA_TYPE_SHORT,  2, 4, 1, NULL, NULL};
+static struct data_type CHAR_    = {DATA_TYPE_CHAR,   1, 1, 1, NULL, NULL};
+static struct data_type SHORT_   = {DATA_TYPE_SHORT,  2, 2, 1, NULL, NULL};
 static struct data_type INT_     = {DATA_TYPE_INT,    4, 4, 1, NULL, NULL};
+static struct data_type LONG_    = {DATA_TYPE_LONG,   8, 8, 1, NULL, NULL};
 static struct data_type PTR_     = {DATA_TYPE_PTR,    8, 8, 1, NULL, NULL};
 static struct data_type ARRAY_   = {DATA_TYPE_ARRAY,  0, 0, UNKNOWN_ARRAY_LENGTH, NULL, NULL};
 static struct data_type STRUCT_  = {DATA_TYPE_STRUCT, 0, 4, 1, NULL, NULL};
@@ -168,6 +169,11 @@ int is_int(const struct data_type *type)
     return type && type->kind == DATA_TYPE_INT;
 }
 
+int is_long(const struct data_type *type)
+{
+    return type && type->kind == DATA_TYPE_LONG;
+}
+
 int is_pointer(const struct data_type *type)
 {
     return type && type->kind == DATA_TYPE_PTR;
@@ -217,6 +223,7 @@ const char *type_name_of(const struct data_type *type)
     case DATA_TYPE_CHAR:   return "char";
     case DATA_TYPE_SHORT:  return "short";
     case DATA_TYPE_INT:    return "int";
+    case DATA_TYPE_LONG:   return "long";
     case DATA_TYPE_PTR:    return "ptr";
     case DATA_TYPE_ARRAY:  return "array";
     case DATA_TYPE_STRUCT: return type->tag;
@@ -271,6 +278,11 @@ struct data_type *type_short()
 struct data_type *type_int()
 {
     return clone(&INT_);
+}
+
+struct data_type *type_long()
+{
+    return clone(&LONG_);
 }
 
 struct data_type *type_ptr(struct data_type *base_type)

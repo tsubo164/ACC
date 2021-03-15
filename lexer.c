@@ -92,6 +92,8 @@ static void keyword_or_identifier(struct token *tok)
         tok->kind = TOK_SHORT;
     else if (!strcmp(text, "int"))
         tok->kind = TOK_INT;
+    else if (!strcmp(text, "long"))
+        tok->kind = TOK_LONG;
 
     else
         tok->kind = TOK_IDENT;
@@ -538,6 +540,7 @@ void print_token(const struct token *tok)
     case TOK_CHAR:
     case TOK_SHORT:
     case TOK_INT:
+    case TOK_LONG:
         printf("\"%s\"\n", tok->text);
         return;
 

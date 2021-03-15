@@ -235,7 +235,7 @@ static struct ast_node *typed_(struct ast_node *node)
 
     /* nodes with literal */
     case NOD_NUM:
-        node->type = type_int();
+        node->type = node->ival >> 32 ? type_long() : type_int();
         break;
 
     case NOD_STRING:
@@ -1812,6 +1812,11 @@ static struct ast_node *type_specifier(struct parser *p)
     case TOK_INT:
         tree = NEW_(NOD_SPEC_INT);
         decl_set_type(p, type_int());
+        break;
+
+    case TOK_LONG:
+        tree = NEW_(NOD_SPEC_LONG);
+        decl_set_type(p, type_long());
         break;
 
     case TOK_STRUCT:

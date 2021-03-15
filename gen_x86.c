@@ -380,6 +380,8 @@ static int data_tag_(const struct data_type *type)
         return WORD;
     if (is_int(type))
         return LONG;
+    if (is_long(type))
+        return QUAD;
     if (is_type_name(type))
         return data_tag_(original_const(type));
     return QUAD;

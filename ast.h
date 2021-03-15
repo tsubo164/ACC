@@ -86,6 +86,7 @@ enum ast_node_kind {
     NOD_SPEC_CHAR,
     NOD_SPEC_SHORT,
     NOD_SPEC_INT,
+    NOD_SPEC_LONG,
     NOD_SPEC_POINTER,
     NOD_SPEC_ARRAY,
     NOD_SPEC_STRUCT,
@@ -101,7 +102,7 @@ struct ast_node {
     struct ast_node *l;
     struct ast_node *r;
 
-    int ival;
+    long ival;
     const char *sval;
     struct position pos;
 };

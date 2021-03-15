@@ -36,6 +36,7 @@ enum token_kind {
     TOK_CHAR,
     TOK_SHORT,
     TOK_INT,
+    TOK_LONG,
     /* unary op */
     TOK_INC,
     TOK_DEC,
@@ -58,7 +59,7 @@ enum token_kind {
 
 struct token {
     int kind;
-    int value;
+    long value;
     const char *text;
     struct position pos;
 };

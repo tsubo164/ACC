@@ -121,6 +121,7 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_SPEC_CHAR: return "NOD_SPEC_CHAR";
     case NOD_SPEC_SHORT: return "NOD_SPEC_SHORT";
     case NOD_SPEC_INT: return "NOD_SPEC_INT";
+    case NOD_SPEC_LONG: return "NOD_SPEC_LONG";
     case NOD_SPEC_POINTER: return "NOD_SPEC_POINTER";
     case NOD_SPEC_ARRAY: return "NOD_SPEC_ARRAY";
     case NOD_SPEC_STRUCT: return "NOD_SPEC_STRUCT";
@@ -218,7 +219,7 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
     case NOD_NUM:
         printf(TERMINAL_COLOR_MAGENTA);
         printf(TERMINAL_DECORATION_BOLD);
-            printf(" %d", tree->ival);
+            printf(" %ld", tree->ival);
         printf(TERMINAL_DECORATION_RESET);
         printf(TERMINAL_COLOR_RESET);
         break;
