@@ -6,6 +6,7 @@
 enum data_type_kind {
     DATA_TYPE_VOID,
     DATA_TYPE_CHAR,
+    DATA_TYPE_SHORT,
     DATA_TYPE_INT,
     DATA_TYPE_PTR,
     DATA_TYPE_ARRAY,
@@ -51,6 +52,7 @@ extern int is_incomplete(const struct data_type *type);
 extern int is_const(const struct data_type *type);
 extern int is_void(const struct data_type *type);
 extern int is_char(const struct data_type *type);
+extern int is_short(const struct data_type *type);
 extern int is_int(const struct data_type *type);
 extern int is_pointer(const struct data_type *type);
 extern int is_array(const struct data_type *type);
@@ -63,6 +65,7 @@ extern void print_data_type(const struct data_type *type);
 
 extern struct data_type *type_void();
 extern struct data_type *type_char();
+extern struct data_type *type_short();
 extern struct data_type *type_int();
 extern struct data_type *type_ptr(struct data_type *base_type);
 extern struct data_type *type_array(struct data_type *base_type);

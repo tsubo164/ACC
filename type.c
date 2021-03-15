@@ -9,6 +9,7 @@
 /*                                                    Sz Al Ln Ul    Sy  */
 static struct data_type VOID_    = {DATA_TYPE_VOID,   1, 4, 1, NULL, NULL};
 static struct data_type CHAR_    = {DATA_TYPE_CHAR,   1, 4, 1, NULL, NULL};
+static struct data_type SHORT_   = {DATA_TYPE_SHORT,  2, 4, 1, NULL, NULL};
 static struct data_type INT_     = {DATA_TYPE_INT,    4, 4, 1, NULL, NULL};
 static struct data_type PTR_     = {DATA_TYPE_PTR,    8, 8, 1, NULL, NULL};
 static struct data_type ARRAY_   = {DATA_TYPE_ARRAY,  0, 0, UNKNOWN_ARRAY_LENGTH, NULL, NULL};
@@ -157,6 +158,11 @@ int is_char(const struct data_type *type)
     return type && type->kind == DATA_TYPE_CHAR;
 }
 
+int is_short(const struct data_type *type)
+{
+    return type && type->kind == DATA_TYPE_SHORT;
+}
+
 int is_int(const struct data_type *type)
 {
     return type && type->kind == DATA_TYPE_INT;
@@ -209,6 +215,7 @@ const char *type_name_of(const struct data_type *type)
     switch (type->kind) {
     case DATA_TYPE_VOID:   return "void";
     case DATA_TYPE_CHAR:   return "char";
+    case DATA_TYPE_SHORT:  return "short";
     case DATA_TYPE_INT:    return "int";
     case DATA_TYPE_PTR:    return "ptr";
     case DATA_TYPE_ARRAY:  return "array";
@@ -254,6 +261,11 @@ struct data_type *type_void()
 struct data_type *type_char()
 {
     return clone(&CHAR_);
+}
+
+struct data_type *type_short()
+{
+    return clone(&SHORT_);
 }
 
 struct data_type *type_int()

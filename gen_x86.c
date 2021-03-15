@@ -69,6 +69,7 @@ const struct opecode CALL_  = {"call",  0};
 const struct opecode LEA_   = {"lea",   0};
 const struct opecode RET_   = {"ret",   0};
 const struct opecode MOVSB_ = {"movsb", 1};
+const struct opecode MOVSW_ = {"movsw", 1};
 const struct opecode MOVZB_ = {"movzb", 1};
 
 const struct opecode JE_    = {"je",  0};
@@ -375,6 +376,8 @@ static int data_tag_(const struct data_type *type)
 {
     if (is_char(type))
         return BYTE;
+    if (is_short(type))
+        return WORD;
     if (is_int(type))
         return LONG;
     if (is_type_name(type))
@@ -429,6 +432,10 @@ static void code3__(FILE *fp, const struct ast_node *node,
         switch (tag) {
         case BYTE:
             o0 = MOVSB_;
+            o2 = EAX;
+            break;
+        case WORD:
+            o0 = MOVSW_;
             o2 = EAX;
             break;
         default:

@@ -1804,6 +1804,11 @@ static struct ast_node *type_specifier(struct parser *p)
         decl_set_type(p, type_char());
         break;
 
+    case TOK_SHORT:
+        tree = NEW_(NOD_SPEC_SHORT);
+        decl_set_type(p, type_short());
+        break;
+
     case TOK_INT:
         tree = NEW_(NOD_SPEC_INT);
         decl_set_type(p, type_int());

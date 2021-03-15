@@ -112,6 +112,18 @@ int main()
         const static int i = 42;
         assert(42, i);
     }
+    {
+        /* short int */
+        short s = 4096;
+        char c;
+
+        assert(2, sizeof s);
+        assert(2, sizeof(short));
+        assert(4096, s);
+
+        c = s;
+        assert(0, c);
+    }
 
     return 0;
 }

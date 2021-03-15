@@ -119,6 +119,7 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_QUAL_CONST: return "NOD_QUAL_CONST";
     case NOD_SPEC_VOID: return "NOD_SPEC_VOID";
     case NOD_SPEC_CHAR: return "NOD_SPEC_CHAR";
+    case NOD_SPEC_SHORT: return "NOD_SPEC_SHORT";
     case NOD_SPEC_INT: return "NOD_SPEC_INT";
     case NOD_SPEC_POINTER: return "NOD_SPEC_POINTER";
     case NOD_SPEC_ARRAY: return "NOD_SPEC_ARRAY";
@@ -242,75 +243,4 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
 void print_tree(const struct ast_node *tree)
 {
     print_tree_recursive(tree, 0);
-}
-
-static void print_decl_recursive(const struct ast_node *tree)
-{
-    if (!tree)
-        return;
-
-    switch (tree->kind) {
-
-    case NOD_DECL:
-        printf("declaration: ");
-        break;
-
-    case NOD_DECL_FUNC:
-        printf(" function(");
-        print_decl_recursive(tree->l);
-        printf(") returning");
-        print_decl_recursive(tree->r);
-        return;
-
-    case NOD_SPEC_ARRAY:
-        if (tree->ival > 0)
-            printf(" array %d of", tree->ival);
-        else
-            printf(" array of");
-        break;
-
-    case NOD_SPEC_POINTER:
-        printf(" pointer to");
-        break;
-
-    case NOD_SPEC_VOID:
-        printf(" void");
-        break;
-
-    case NOD_SPEC_CHAR:
-        printf(" char");
-        break;
-
-    case NOD_SPEC_INT:
-        printf(" int");
-        break;
-
-    case NOD_SPEC_STRUCT:
-        printf(" struct %s", tree->sval);
-        break;
-
-    case NOD_SPEC_ENUM:
-        printf(" enum %s", tree->sval);
-        break;
-
-    case NOD_SPEC_TYPE_NAME:
-        printf(" %s", tree->sval);
-        break;
-
-    case NOD_DECL_IDENT:
-        printf("%s is", tree->sval);
-        break;
-
-    default:
-        break;
-    }
-
-    print_decl_recursive(tree->l);
-    print_decl_recursive(tree->r);
-}
-
-void print_decl(const struct ast_node *tree)
-{
-    print_decl_recursive(tree);
-    printf("\n");
 }

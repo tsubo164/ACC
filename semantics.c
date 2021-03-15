@@ -291,7 +291,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
                 if (!sym->is_defined && sym->is_used)
                     add_error2(ctx->messages, &node->pos,
-                            "undeclared identifier '%s'", sym->name);
+                            "use of undeclared identifier '%s'", sym->name);
             }
         }
         break;

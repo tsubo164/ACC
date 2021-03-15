@@ -34,6 +34,7 @@ enum token_kind {
     /* types */
     TOK_VOID,
     TOK_CHAR,
+    TOK_SHORT,
     TOK_INT,
     /* unary op */
     TOK_INC,

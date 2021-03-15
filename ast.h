@@ -84,6 +84,7 @@ enum ast_node_kind {
     /* type specifier */
     NOD_SPEC_VOID,
     NOD_SPEC_CHAR,
+    NOD_SPEC_SHORT,
     NOD_SPEC_INT,
     NOD_SPEC_POINTER,
     NOD_SPEC_ARRAY,
