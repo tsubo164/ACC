@@ -3,10 +3,13 @@
 
 #define FOO abc  \ xyz
 #define BAR abc          "HOGE   world"
-BAR
 
 #define BUFSIZE 1024
 char buf[BUFSIZE] = {'\0'};
+
+#define HOGE
+#define HOGE 23
+int a = HOGE;
 
 X        \
       Y\
@@ -18,8 +21,8 @@ o.h"
 #define A B        C                 D
 A // => 'B C D'
 */
-#define $$ dollar
-$$.$$
+#define $$@ dollar
+$$.$$@
 
 int main()\
 {

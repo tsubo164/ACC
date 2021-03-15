@@ -94,14 +94,15 @@ static unsigned int hash_fn(const char *key)
     return h % PP_HASH_SIZE;
 }
 
-static struct macro_entry *new_entry(const char *src)
+static struct macro_entry *new_entry(const char *name)
 {
     struct macro_entry *entry = malloc(sizeof(struct macro_entry));
-    const size_t alloc = strlen(src) + 1;
+    const size_t alloc = strlen(name) + 1;
     char *dst = malloc(sizeof(char) * alloc);
 
-    strncpy(dst, src, alloc);
+    strncpy(dst, name, alloc);
     entry->name = dst;
+    entry->repl = NULL;
     entry->next = NULL;
 
     return entry;
@@ -113,6 +114,7 @@ static void free_entry(struct macro_entry *entry)
         return;
 
     free(entry->name);
+    free(entry->repl);
     free(entry);
 }
 
@@ -150,22 +152,43 @@ static void free_macro_table(struct macro_table *table)
     free(table);
 }
 
-static const char *insert_macro(struct macro_table *table, const char *src)
+static struct macro_entry *lookup_macro(struct macro_table *table, const char *name)
 {
     struct macro_entry *entry = NULL;
-    const unsigned int h = hash_fn(src);
+    const unsigned int h = hash_fn(name);
 
     for (entry = table->entries[h]; entry != NULL; entry = entry->next) {
-        if (!strcmp(src, entry->name))
-            return entry->name;
+        if (!strcmp(name, entry->name))
+            return entry;
+    }
+    return NULL;
+}
+
+static struct macro_entry *insert_macro(struct macro_table *table, const char *name)
+{
+    struct macro_entry *entry = NULL;
+    const unsigned int h = hash_fn(name);
+
+    for (entry = table->entries[h]; entry != NULL; entry = entry->next) {
+        if (!strcmp(name, entry->name))
+            return entry;
     }
 
-    entry = new_entry(src);
+    entry = new_entry(name);
 
     entry->next = table->entries[h];
     table->entries[h] = entry;
 
-    return entry->name;
+    return entry;
+}
+
+static void add_replacement(struct macro_entry *mac, const char *repl)
+{
+    const size_t alloc = strlen(repl) + 1;
+    char *dst = malloc(sizeof(char) * alloc);
+
+    strncpy(dst, repl, alloc);
+    mac->repl = dst;
 }
 
 struct preprocessor *new_preprocessor()
@@ -295,6 +318,11 @@ static int is_whitespaces(int c)
     return c == ' ' || c == '\t' || c == '\v' || c == '\f';
 }
 
+static int is_macroname(int c)
+{
+    return isalnum(c) || c == '_' || c == '$';
+}
+
 static void whitespaces(struct preprocessor *pp)
 {
     int c;
@@ -358,7 +386,7 @@ static void token(struct preprocessor *pp, char *buf)
 
     for (;;) {
         const int c = readc(pp);
-        if (isalnum(c)) {
+        if (is_macroname(c)) {
             *p++ = c;
         } else {
             unreadc(pp, c);
@@ -459,13 +487,15 @@ static void define_line(struct preprocessor *pp)
     static char ident[128] = {'\0'};
     static char repl[1024] = {'\0'};
 
-    whitespaces(pp);
     token(pp, ident);
 
     token_list(pp, repl);
     new_line(pp);
 
-    printf("#define %s [%s]\n", ident, repl);
+    {
+        struct macro_entry *mac = insert_macro(pp->mactab, ident);
+        add_replacement(mac, repl);
+    }
 }
 
 static void non_directive(struct preprocessor *pp)
@@ -499,6 +529,21 @@ static void directive_line(struct preprocessor *pp)
     }
 }
 
+static void expand(struct preprocessor *pp)
+{
+    static char tok[128] = {'\0'};
+    struct macro_entry *mac;
+
+    token(pp, tok);
+
+    mac = lookup_macro(pp->mactab, tok);
+
+    if (mac && mac->repl)
+        writes(pp, mac->repl);
+    else
+        writes(pp, tok);
+}
+
 static void text_lines(struct preprocessor *pp)
 {
     for (;;) {
@@ -520,6 +565,11 @@ static void text_lines(struct preprocessor *pp)
         }
         else if (c == '#') {
             directive_line(pp);
+            continue;
+        }
+        else if (is_macroname(c)) {
+            unreadc(pp, c);
+            expand(pp);
             continue;
         }
         else if (c == EOF) {

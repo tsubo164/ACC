@@ -1,24 +1,24 @@
 * TODO
-  - define
   - struct arg
   - struct assign
-  - check args
-  - cast
-  - char <-> int, negative number literal
-  - std stuff FILE, stderro, NULL ...
   - variable arguments
-
-* OPTIONAL
-  - initializer index, enum index, invisible nodes in parser
-  - use registers r10 r11
+  - check args
+  - std stuff FILE, stderro, NULL ...
+  - cast
   - unsigned
   - short, long
+
+* OPTIONAL
+  - is_used in parser?
+  - use registers r10 r11
   - bit shift <<, >>
   - bitwise op |, &, ~, ^
   - union
   - control flow check
   - void pointer, void parameter
   - lexer error
+  - char <-> int, negative number literal
+  - initializer index, enum index, invisible nodes in parser
 
 * IMPLEMENTATION
   - symbol functions for struct 
@@ -73,3 +73,4 @@
   - include
   - function prototype and definition in the same source
   - function prototype
+  - define

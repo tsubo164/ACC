@@ -4,8 +4,8 @@ RM = rm -f
 
 files   := \
 		test_arith test_array test_enum test_global test_goto test_for \
-		test_incdec test_local test_pointer test_string test_struct \
-		test_switch test_type test_while
+		test_incdec test_local test_macro test_pointer test_string \
+		test_struct test_switch test_type test_while
 targets := $(files)
 
 .PHONY: all clean test $(targets)
