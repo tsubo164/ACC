@@ -14,11 +14,8 @@ int main()
 {
     long l = 123322243204932;
 
-    //int i = l;
-
-    //printf("%ld\n", l);
-    //foo(l);
-    bar(l);
+    foo(l);
+    //bar(l);
 
     return l;
 }

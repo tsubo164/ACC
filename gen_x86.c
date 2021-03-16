@@ -596,7 +596,7 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
         if (is_array(node->type)) {
             code3__(fp, node, LEA_, addr2_pc_rel(RIP, sym->name, id), RAX);
         } else {
-            code3__(fp, node, MOV_, addr2_pc_rel(RIP, sym->name, id), RAX);
+            code3__(fp, node, MOV_, addr2_pc_rel(RIP, sym->name, id), A_);
         }
     }
     else if (is_enumerator(sym)) {
