@@ -70,6 +70,7 @@ const struct opecode LEA_   = {"lea",   0};
 const struct opecode RET_   = {"ret",   0};
 const struct opecode MOVSB_ = {"movsb", 1};
 const struct opecode MOVSW_ = {"movsw", 1};
+const struct opecode MOVSL_ = {"movsl", 1};
 const struct opecode MOVZB_ = {"movzb", 1};
 
 const struct opecode JE_    = {"je",  0};
@@ -439,6 +440,10 @@ static void code3__(FILE *fp, const struct ast_node *node,
         case WORD:
             o0 = MOVSW_;
             o2 = EAX;
+            break;
+        case LONG:
+            o0 = MOVSL_;
+            o2 = RAX;
             break;
         default:
             break;

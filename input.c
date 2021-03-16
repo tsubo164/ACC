@@ -12,10 +12,20 @@ void bar(long l)
 
 int main()
 {
-    long l = 123322243204932;
+    char c = 'c';
+    int i = -123;
+    long l;
+
+    l = i;
+    printf("l => %ld\n", l);
+
+    i = c;
+    printf("c => %d\n", c);
+
+    i = -111;
+    bar(i);
 
     foo(l);
-    //bar(l);
 
-    return l;
+    return 0;
 }

@@ -124,6 +124,18 @@ int main()
         c = s;
         assert(0, c);
     }
+    {
+        /* signed extensions */
+        char c = -19;
+        int i = -123;
+        long l;
+
+        l = i;
+        assert(-123, l);
+
+        i = c;
+        assert(-19, i);
+    }
 
     return 0;
 }
