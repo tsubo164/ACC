@@ -104,6 +104,11 @@ void set_const(struct data_type *type, int is_const)
     type->is_const = is_const;
 }
 
+void set_unsigned(struct data_type *type, int is_unsigned)
+{
+    type->is_unsigned = is_unsigned;
+}
+
 struct data_type *promote(struct data_type *t1, struct data_type *t2)
 {
     if (!t1 && !t2)
@@ -147,6 +152,11 @@ int is_incomplete(const struct data_type *type)
 int is_const(const struct data_type *type)
 {
     return type->is_const;
+}
+
+int is_unsigned(const struct data_type *type)
+{
+    return type->is_unsigned;
 }
 
 int is_void(const struct data_type *type)
@@ -220,10 +230,10 @@ const char *type_name_of(const struct data_type *type)
 
     switch (type->kind) {
     case DATA_TYPE_VOID:   return "void";
-    case DATA_TYPE_CHAR:   return "char";
-    case DATA_TYPE_SHORT:  return "short";
-    case DATA_TYPE_INT:    return "int";
-    case DATA_TYPE_LONG:   return "long";
+    case DATA_TYPE_CHAR:   return is_unsigned(type) ? "unsigned char" :  "char";
+    case DATA_TYPE_SHORT:  return is_unsigned(type) ? "unsigned short" : "short";
+    case DATA_TYPE_INT:    return is_unsigned(type) ? "unsigned int" :   "int";
+    case DATA_TYPE_LONG:   return is_unsigned(type) ? "unsigned long" :  "long";
     case DATA_TYPE_PTR:    return "ptr";
     case DATA_TYPE_ARRAY:  return "array";
     case DATA_TYPE_STRUCT: return type->tag;

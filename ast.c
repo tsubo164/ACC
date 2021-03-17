@@ -122,6 +122,8 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_SPEC_SHORT: return "NOD_SPEC_SHORT";
     case NOD_SPEC_INT: return "NOD_SPEC_INT";
     case NOD_SPEC_LONG: return "NOD_SPEC_LONG";
+    case NOD_SPEC_SIGNED: return "NOD_SPEC_SIGNED";
+    case NOD_SPEC_UNSIGNED: return "NOD_SPEC_UNSIGNED";
     case NOD_SPEC_POINTER: return "NOD_SPEC_POINTER";
     case NOD_SPEC_ARRAY: return "NOD_SPEC_ARRAY";
     case NOD_SPEC_STRUCT: return "NOD_SPEC_STRUCT";
@@ -137,6 +139,9 @@ static void print_type(const struct data_type *type)
 
     if (is_const(type))
         printf("const ");
+
+    if (is_unsigned(type))
+        printf("unsigned ");
 
     if (is_type_name(type)) {
         printf("%s", type_name_of(type));

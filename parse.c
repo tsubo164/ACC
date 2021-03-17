@@ -155,6 +155,7 @@ struct parser *new_parser()
     p->is_extern = 0;
     p->is_static = 0;
     p->is_const = 0;
+    p->is_unsigned = 0;
     p->is_panic_mode = 0;
 
     p->init_type = NULL;
@@ -342,6 +343,7 @@ static void define_sym(struct parser *p, struct ast_node *node)
     p->is_extern = 0;
     p->is_static = 0;
     p->is_const = 0;
+    p->is_unsigned = 0;
     /* << make func */
     sym->pos = node->pos;
 
@@ -1819,6 +1821,15 @@ static struct ast_node *type_specifier(struct parser *p)
         decl_set_type(p, type_long());
         break;
 
+    case TOK_SIGNED:
+        tree = NEW_(NOD_SPEC_SIGNED);
+        break;
+
+    case TOK_UNSIGNED:
+        tree = NEW_(NOD_SPEC_UNSIGNED);
+        p->is_unsigned = 1;
+        break;
+
     case TOK_STRUCT:
         ungettok(p);
         tree = struct_or_union_specifier(p);
@@ -2220,6 +2231,8 @@ static struct ast_node *declaration_specifiers(struct parser *p)
         return NULL;
 
     set_const(p->decl_type, p->is_const);
+    set_unsigned(p->decl_type, p->is_unsigned);
+
     if (decl_is_typedef(p))
         decl_set_kind(p, SYM_TYPEDEF);
     else

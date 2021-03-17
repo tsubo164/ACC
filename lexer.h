@@ -37,6 +37,8 @@ enum token_kind {
     TOK_SHORT,
     TOK_INT,
     TOK_LONG,
+    TOK_SIGNED,
+    TOK_UNSIGNED,
     /* unary op */
     TOK_INC,
     TOK_DEC,
