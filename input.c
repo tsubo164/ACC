@@ -1,31 +1,13 @@
-#include "input.h"
-
-void foo(int i)
+int add()
 {
-    printf("%d\n", i);
-}
-
-void bar(long l)
-{
-    printf("%ld\n", l);
+    puts("HOGE");
+    return 0;
 }
 
 int main()
 {
-    char c = 'c';
-    int i = -123;
-    long l;
-
-    l = i;
-    printf("l => %ld\n", l);
-
-    i = c;
-    printf("c => %d\n", c);
-
-    i = -111;
-    bar(i);
-
-    foo(l);
+    int ret;
+    ret = add();
 
     return 0;
 }

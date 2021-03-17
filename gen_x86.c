@@ -405,6 +405,10 @@ static void code1__(FILE *fp, const struct ast_node *node,
 static void code2__(FILE *fp, const struct ast_node *node,
         struct opecode op, struct operand oper1)
 {
+    /* because of the return address is already pushed when a fuction starts
+     * the rbp % 0x10 should be 0x08 */
+    static int stack_align = 8;
+
     const struct opecode o0 = op;
     const struct operand o1 = oper1;
     int tag = data_tag_(node->type);
@@ -414,7 +418,18 @@ static void code2__(FILE *fp, const struct ast_node *node,
         !strcmp(op.mnemonic, "pop"))
         tag = QUAD;
 
+    if (!strcmp(op.mnemonic, "push"))
+        stack_align += 8;
+    if (!strcmp(op.mnemonic, "pop"))
+        stack_align -= 8;
+
+    if (!strcmp(op.mnemonic, "call") && stack_align % 16)
+        fprintf(fp, "    push   %%r10 ## alignment\n");
+
     code__(fp, tag, &o0, &o1, NULL);
+
+    if (!strcmp(op.mnemonic, "call") && stack_align % 16)
+        fprintf(fp, "    pop    %%r10 ## alignment\n");
 }
 
 static void code3__(FILE *fp, const struct ast_node *node,
