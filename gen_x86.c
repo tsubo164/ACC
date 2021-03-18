@@ -73,7 +73,6 @@ const struct opecode MOVSW_ = {"movsw", 1};
 const struct opecode MOVSL_ = {"movsl", 1};
 const struct opecode MOVZB_ = {"movzb", 1};
 const struct opecode MOVZW_ = {"movzw", 1};
-const struct opecode MOVZL_ = {"movzl", 1};
 
 const struct opecode JE_    = {"je",  0};
 const struct opecode JNE_   = {"jne", 0};
@@ -459,7 +458,7 @@ static void code3__(FILE *fp, const struct ast_node *node,
             o2 = EAX;
             break;
         case LONG:
-            o0 = is_unsigned(node->type) ? MOVZL_ : MOVSL_;
+            o0 = is_unsigned(node->type) ? MOV_ : MOVSL_;
             o2 = RAX;
             break;
         default:
