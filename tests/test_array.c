@@ -9,6 +9,8 @@ int test_single_array()
     assert(345, a[0]);
     assert(41,  a[1]);
     assert(399, a[2]);
+
+    return 0;
 }
 
 int main()

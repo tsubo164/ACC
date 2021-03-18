@@ -2,18 +2,18 @@
 
 int main()
 {
-    unsigned char uc = -50;
-    /*
-    char uc = -123;
-    if (uc < 0)
-        printf("uc => %d < 0\n", uc);
-    */
-
-    /*
+    puts("=========================");
     {
-        unsigned int ui = 0xFFFFFFFF;
-        printf("ui => %d\n", ui);
+        unsigned char uc = 250;
+        if (uc < 0)
+            printf("uc => %u < 0\n", uc);
     }
-    */
-    return uc;
+    puts("=========================");
+    {
+        char uc = 250;
+        if (uc < 0)
+            printf("uc => %d < 0\n", uc);
+    }
+
+    return 0;
 }

@@ -847,6 +847,7 @@ static struct ast_node *additive_expression(struct parser *p)
 static struct ast_node *relational_expression(struct parser *p)
 {
     struct ast_node *tree = additive_expression(p);
+    struct ast_node *rela = NULL;
 
     for (;;) {
         const struct token *tok = gettok(p);
@@ -854,19 +855,23 @@ static struct ast_node *relational_expression(struct parser *p)
         switch (tok->kind) {
 
         case '<':
-            tree = new_node(NOD_LT, tree, additive_expression(p));
+            rela = new_node_(NOD_LT, tokpos(p));
+            tree = branch_(rela, tree, additive_expression(p));
             break;
 
         case '>':
-            tree = new_node(NOD_GT, tree, additive_expression(p));
+            rela = new_node_(NOD_GT, tokpos(p));
+            tree = branch_(rela, tree, additive_expression(p));
             break;
 
         case TOK_LE:
-            tree = new_node(NOD_LE, tree, additive_expression(p));
+            rela = new_node_(NOD_LE, tokpos(p));
+            tree = branch_(rela, tree, additive_expression(p));
             break;
 
         case TOK_GE:
-            tree = new_node(NOD_GE, tree, additive_expression(p));
+            rela = new_node_(NOD_GE, tokpos(p));
+            tree = branch_(rela, tree, additive_expression(p));
             break;
 
         default:

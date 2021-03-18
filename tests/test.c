@@ -6,13 +6,20 @@ int exit(int code);
 /* for external global variable tests */
 int g_count = 0;
 
-int assert(int expected, int actual)
+void assert(int expected, int actual)
 {
     if (expected != actual) {
         printf("error: expected: %d actual: %d\n", expected, actual);
         exit(1);
     }
-    return 0;
+}
+
+void assertl(long expected, long actual)
+{
+    if (expected != actual) {
+        printf("error: expected: %ld actual: %ld\n", expected, actual);
+        exit(1);
+    }
 }
 
 void set_count(int val)

@@ -72,6 +72,8 @@ const struct opecode MOVSB_ = {"movsb", 1};
 const struct opecode MOVSW_ = {"movsw", 1};
 const struct opecode MOVSL_ = {"movsl", 1};
 const struct opecode MOVZB_ = {"movzb", 1};
+const struct opecode MOVZW_ = {"movzw", 1};
+const struct opecode MOVZL_ = {"movzl", 1};
 
 const struct opecode JE_    = {"je",  0};
 const struct opecode JNE_   = {"jne", 0};
@@ -424,12 +426,12 @@ static void code2__(FILE *fp, const struct ast_node *node,
         stack_align -= 8;
 
     if (!strcmp(op.mnemonic, "call") && stack_align % 16)
-        fprintf(fp, "    push   %%r10 ## alignment\n");
+        fprintf(fp, "    subq   $8, %%rsp ## alignment\n");
 
     code__(fp, tag, &o0, &o1, NULL);
 
     if (!strcmp(op.mnemonic, "call") && stack_align % 16)
-        fprintf(fp, "    pop    %%r10 ## alignment\n");
+        fprintf(fp, "    addq   $8, %%rsp ## alignment\n");
 }
 
 static void code3__(FILE *fp, const struct ast_node *node,
@@ -449,15 +451,15 @@ static void code3__(FILE *fp, const struct ast_node *node,
     {
         switch (tag) {
         case BYTE:
-            o0 = MOVSB_;
+            o0 = is_unsigned(node->type) ? MOVZB_ : MOVSB_;
             o2 = EAX;
             break;
         case WORD:
-            o0 = MOVSW_;
+            o0 = is_unsigned(node->type) ? MOVZW_ : MOVSW_;
             o2 = EAX;
             break;
         case LONG:
-            o0 = MOVSL_;
+            o0 = is_unsigned(node->type) ? MOVZL_ : MOVSL_;
             o2 = RAX;
             break;
         default:

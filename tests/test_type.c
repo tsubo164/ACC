@@ -125,6 +125,14 @@ int main()
         assert(0, c);
     }
     {
+        /* long int */
+        long l = 12321032434;
+
+        assert(8, sizeof l);
+        assert(8, sizeof(long));
+        assertl(12321032434, l);
+    }
+    {
         /* signed extensions */
         char c = -19;
         int i = -123;
@@ -135,6 +143,31 @@ int main()
 
         i = c;
         assert(-19, i);
+    }
+    {
+        /* unsigned char */
+        unsigned char uc = 250;
+        signed char c = 250;
+
+        assert(1, sizeof(uc));
+        assert(250, uc);
+
+        assert(1, sizeof(c));
+        assert(-6, c);
+    }
+    {
+        /* unsigned int */
+        /*
+        unsigned int ui = 4294967295;
+        signed int i = 4294967295;
+
+        assert(4, sizeof(ui));
+        assert(4, sizeof(unsigned int));
+        assert(-1, ui);
+
+        assert(1, sizeof(c));
+        assert(-6, c);
+        */
     }
 
     return 0;

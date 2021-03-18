@@ -5,8 +5,6 @@
   - check args
   - std stuff FILE, stderro, NULL ...
   - cast
-  - unsigned
-  - short, long
 
 * OPTIONAL
   - is_used in parser?
@@ -74,3 +72,5 @@
   - function prototype and definition in the same source
   - function prototype
   - define
+  - unsigned
+  - short, long
