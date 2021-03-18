@@ -1609,15 +1609,16 @@ static struct ast_node *struct_declarator(struct parser *p)
  */
 static struct ast_node *struct_declarator_list(struct parser *p)
 {
-    struct ast_node *tree = NULL;
+    struct ast_node *tree = NULL, *list = NULL;
 
     for (;;) {
-        struct ast_node *sdecl = struct_declarator(p);
+        struct ast_node *decl = struct_declarator(p);
 
-        if (!sdecl)
+        if (!decl)
             return tree;
 
-        tree = new_node(NOD_LIST, tree, sdecl);
+        list = new_node_(NOD_LIST, tokpos(p));
+        tree = branch_(list, tree, decl);
 
         if (!consume(p, ','))
             return tree;
@@ -1626,23 +1627,22 @@ static struct ast_node *struct_declarator_list(struct parser *p)
 
 /*
  * struct_declaration
- *     spec_qual_list struct_declarator_list
+ *     specifier_qualifier_list struct_declarator_list ';'
  */
 static struct ast_node *struct_declaration(struct parser *p)
 {
-    struct ast_node *tree = NULL;
-    struct ast_node *spec = NULL;
+    struct ast_node *tree = NULL, *spec = NULL;
 
-    spec = type_specifier(p);
+    spec = specifier_qualifier_list(p);
     if (!spec)
         return NULL;
 
     decl_set_kind(p, SYM_MEMBER);
 
-    tree = NEW_(NOD_DECL_MEMBER);
-    tree->l = spec;
-    tree->r = struct_declarator_list(p);
+    tree = new_node_(NOD_DECL_MEMBER, tokpos(p));
+    tree = branch_(tree, spec, struct_declarator_list(p));
 
+    expect(p, ';');
     return tree;
 }
 
@@ -1653,7 +1653,7 @@ static struct ast_node *struct_declaration(struct parser *p)
  */
 static struct ast_node *struct_declaration_list(struct parser *p)
 {
-    struct ast_node *tree = NULL;
+    struct ast_node *tree = NULL, *list = NULL;
     struct data_type *tmp = p->decl_type;
 
     for (;;) {
@@ -1662,8 +1662,8 @@ static struct ast_node *struct_declaration_list(struct parser *p)
         if (!decl)
             break;
 
-        tree = new_node(NOD_LIST, tree, decl);
-        expect(p, ';');
+        list = new_node_(NOD_LIST, tokpos(p));
+        tree = branch_(list, tree, decl);
     }
 
     p->decl_type = tmp;

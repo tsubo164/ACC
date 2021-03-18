@@ -2,23 +2,9 @@
 
 int main()
 {
-    puts("=========================");
-    {
-        unsigned char uc = 250;
-        if (uc < 0)
-            printf("uc => %u < 0\n", uc);
-    }
-    puts("=========================");
-    {
-        char uc = 250;
-        if (uc < 0)
-            printf("uc => %d < 0\n", uc);
-    }
-    puts("=========================");
-    {
-        int i = sizeof(unsigned long);
-        printf("size => %d\n", i);
-    }
+    struct foo {
+        const unsigned int ui, uj;
+    } foo = {29, 31};
 
-    return 0;
+    return foo.ui + foo.uj;
 }

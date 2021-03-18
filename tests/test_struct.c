@@ -200,8 +200,8 @@ int main()
         } pt = {19, add(40, 2), R + G + B};
 
         assert(19, pt.x);
-        assert(42,  pt.y);
-        assert(36,  pt.z);
+        assert(42, pt.y);
+        assert(36, pt.z);
     }
     {
         /* size of struct with internal struct members */
@@ -213,6 +213,16 @@ int main()
         };
 
         assert(8, sizeof (struct foo));
+    }
+    {
+        /* struct with unsigned int members */
+        struct foo {
+            const unsigned int i, j;
+        } f = {29, 31};
+
+        assert(8, sizeof (struct foo));
+        assert(29, f.i);
+        assert(31, f.j);
     }
 
     return 0;
