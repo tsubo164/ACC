@@ -1521,7 +1521,31 @@ static struct ast_node *type_qualifier(struct parser *p)
 static struct ast_node *specifier_qualifier_list(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    tree = type_specifier(p);
+    struct ast_node *list, *qual, *spec;
+
+    for (;;) {
+        qual = type_qualifier(p);
+        if (qual) {
+            list = new_node_(NOD_LIST, tokpos(p));
+            tree = branch_(list, tree, qual);
+        }
+
+        spec = type_specifier(p);
+        if (spec) {
+            list = new_node_(NOD_LIST, tokpos(p));
+            tree = branch_(list, tree, spec);
+        }
+
+        if (!qual && !spec)
+            break;
+    }
+
+    if (!tree)
+        return NULL;
+
+    set_const(p->decl_type, p->is_const);
+    set_unsigned(p->decl_type, p->is_unsigned);
+
     return tree;
 }
 

@@ -140,9 +140,6 @@ static void print_type(const struct data_type *type)
     if (is_const(type))
         printf("const ");
 
-    if (is_unsigned(type))
-        printf("unsigned ");
-
     if (is_type_name(type)) {
         printf("%s", type_name_of(type));
     }

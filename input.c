@@ -14,6 +14,11 @@ int main()
         if (uc < 0)
             printf("uc => %d < 0\n", uc);
     }
+    puts("=========================");
+    {
+        int i = sizeof(unsigned long);
+        printf("size => %d\n", i);
+    }
 
     return 0;
 }

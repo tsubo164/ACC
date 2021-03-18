@@ -158,20 +158,14 @@ int main()
     {
         /* unsigned int */
         unsigned int ui = 4294967295;
-        /*
         signed int i = 4294967295;
-        */
 
         assert(4, sizeof(ui));
-        /*
         assert(4, sizeof(unsigned int));
-        */
         assert(-1, ui);
 
-        /*
-        assert(1, sizeof(c));
-        assert(-6, c);
-        */
+        assert(4, sizeof(i));
+        assert(-1, i);
     }
 
     return 0;
