@@ -32,6 +32,7 @@ enum ast_node_kind {
     NOD_MUL_ASSIGN,
     NOD_DIV_ASSIGN,
     NOD_STRUCT_REF,
+    NOD_CAST,
     NOD_ADDR,
     NOD_DEREF,
     NOD_FUNC_DEF,

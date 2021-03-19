@@ -2,9 +2,10 @@
 
 int main()
 {
-    struct foo {
-        const unsigned int ui, uj;
-    } foo = {29, 31};
+    unsigned char uc = 250;
+    char c;
 
-    return foo.ui + foo.uj;
+    c = (long) (char) uc;
+
+    return c;
 }

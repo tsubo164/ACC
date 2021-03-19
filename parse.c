@@ -212,6 +212,10 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = node->l->type;
         break;
 
+    case NOD_CAST:
+        node->type = node->l->type;
+        break;
+
     case NOD_DEREF:
         node->type = underlying(node->l->type);
         if (!node->type)
@@ -696,6 +700,22 @@ static struct ast_node *postfix_expression(struct parser *p)
  */
 static struct ast_node *cast_expression(struct parser *p)
 {
+    struct ast_node *tree = NULL, *tname = NULL;
+
+    if (consume(p, '(')) {
+        tname = type_name(p);
+        if (tname) {
+            expect(p, ')');
+
+            tree = new_node_(NOD_CAST, tokpos(p));
+            return branch_(tree, tname, cast_expression(p));
+        }
+        else {
+            /* unget '(' then try unary_expression */
+            ungettok(p);
+        }
+    }
+
     return unary_expression(p);
 }
 
@@ -772,13 +792,13 @@ static struct ast_node *unary_expression(struct parser *p)
 
 /*
  * multiplicative_expression
- *     unary_expression
- *     multiplicative_expression '*' unary_expression
- *     multiplicative_expression '/' unary_expression
+ *     cast_expression
+ *     multiplicative_expression '*' cast_expression
+ *     multiplicative_expression '/' cast_expression
  */
 static struct ast_node *multiplicative_expression(struct parser *p)
 {
-    struct ast_node *tree = unary_expression(p);
+    struct ast_node *tree = cast_expression(p);
     struct ast_node *expr = NULL;
 
     for (;;) {
@@ -788,12 +808,12 @@ static struct ast_node *multiplicative_expression(struct parser *p)
 
         case '*':
             expr = new_node_(NOD_MUL, tokpos(p));
-            tree = branch_(expr, tree, unary_expression(p));
+            tree = branch_(expr, tree, cast_expression(p));
             break;
 
         case '/':
             expr = new_node_(NOD_DIV, tokpos(p));
-            tree = branch_(expr, tree, unary_expression(p));
+            tree = branch_(expr, tree, cast_expression(p));
             break;
 
         default:
