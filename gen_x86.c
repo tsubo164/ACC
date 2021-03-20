@@ -121,6 +121,7 @@ const struct operand SP_ = {OPR_REG, VARI, SP__};
 
 /* fixed name registers */
 const struct operand AL  = {OPR_REG, BYTE, A__};
+const struct operand AX  = {OPR_REG, WORD, A__};
 const struct operand EAX = {OPR_REG, LONG, A__};
 
 const struct operand RAX = {OPR_REG, QUAD, A__};
@@ -444,6 +445,7 @@ static void code3__(FILE *fp, const struct ast_node *node,
     /* this rule comes from x86-64 machine instructions.
      * it depends on the size of register when loading from memory.
      * it is independent of language data types. */
+    /* TODO move this to gen_load()? */
     if (!strcmp(op.mnemonic, "mov") &&
         oper1.kind == OPR_ADDR &&
         oper2.kind == OPR_REG)
@@ -456,10 +458,6 @@ static void code3__(FILE *fp, const struct ast_node *node,
         case WORD:
             o0 = is_unsigned(node->type) ? MOVZW_ : MOVSW_;
             o2 = EAX;
-            break;
-        case LONG:
-            o0 = is_unsigned(node->type) ? MOV_ : MOVSL_;
-            o2 = RAX;
             break;
         default:
             break;
@@ -780,6 +778,30 @@ static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_s
 
     gen_switch_table(fp, node->l, switch_scope);
     gen_switch_table(fp, node->r, switch_scope);
+}
+
+static void gen_cast(FILE *fp, const struct ast_node *node)
+{
+    struct data_type *to = node->l->type;
+
+    if (is_char(to)) {
+        if (is_unsigned(to))
+            code3__(fp, node, MOVZB_, AL, EAX);
+        else
+            code3__(fp, node, MOVSB_, AL, EAX);
+    }
+    else if (is_short(to)) {
+        if (is_unsigned(to))
+            code3__(fp, node, MOVZW_, AX, EAX);
+        else
+            code3__(fp, node, MOVSW_, AX, EAX);
+    }
+    else if (is_long(to)) {
+        if (is_unsigned(to))
+            code3__(fp, node, MOV_,   EAX, RAX);
+        else
+            code3__(fp, node, MOVSL_, EAX, RAX);
+    }
 }
 
 static void gen_init_scalar_local(FILE *fp, const struct data_type *type,
@@ -1223,6 +1245,15 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
         code2__(fp, node, POP_,  RDX);
+
+        /* TODO make gen_store() */
+        if (is_long(node->type)) {
+            if (is_unsigned(node->type))
+                code3__(fp, node, MOV_, EAX, RAX);
+            else
+                code3__(fp, node, MOVSL_, EAX, RAX);
+        }
+
         code3__(fp, node, MOV_, A_, addr1(RDX));
         break;
 
@@ -1271,6 +1302,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_ADDR:
         gen_address(fp, node->l);
+        break;
+
+    case NOD_CAST:
+        gen_code(fp, node->r);
+        gen_cast(fp, node);
         break;
 
     case NOD_DEREF:

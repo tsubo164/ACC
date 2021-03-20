@@ -2,10 +2,25 @@
 
 int main()
 {
-    unsigned char uc = 250;
     char c;
+    short s;
+    int i;
+    long l;
 
-    c = (long) (char) uc;
+    c = -1;
+    printf("------ %d\n", c);
 
-    return c;
+    c = -2;
+    s = c;
+    printf("------ %d\n", c);
+
+    c = -4;
+    i = c;
+    printf("------ %d\n", i);
+
+    c = -8;
+    l = /*(long)*/ c;
+    printf("------ %ld\n", l);
+
+    return 0;
 }

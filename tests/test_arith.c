@@ -141,6 +141,28 @@ int main()
         assert(1, 0 ? 0 : 1);
         assert(0, 3 ? 0 : 1);
     }
+    {
+        /* usual arithmetic conversion */
+        char c;
+        short s;
+        int i;
+        long l;
+
+        c = -1;
+        assert(-1, c);
+
+        c = -2;
+        s = c;
+        assert(-2, s);
+
+        c = -4;
+        i = c;
+        assert(-4, i);
+
+        c = -8;
+        l = c;
+        assert(-8, l);
+    }
 
     return 0;
 }

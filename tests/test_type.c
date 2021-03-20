@@ -167,6 +167,14 @@ int main()
         assert(4, sizeof(i));
         assert(-1, i);
     }
+    {
+        /* cast */
+        int i = 1030;
+        assert(6, (char) i);
+
+        i = 1223034;
+        assert(-22150, (short) i);
+    }
 
     return 0;
 }
