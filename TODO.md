@@ -4,7 +4,7 @@
   - variable arguments
   - check args
   - std stuff FILE, stderro, NULL ...
-  - cast
+  - % operator
 
 * OPTIONAL
   - is_used in parser?
@@ -74,3 +74,4 @@
   - define
   - unsigned
   - short, long
+  - cast

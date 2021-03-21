@@ -689,6 +689,18 @@ static void gen_load(FILE *fp, const struct ast_node *node)
     code3__(fp, node, MOV_, addr1(RAX), A_);
 }
 
+static void gen_store(FILE *fp, const struct ast_node *node, struct operand addr)
+{
+    if (is_long(node->type)) {
+        if (is_unsigned(node->type))
+            code3__(fp, node, MOV_, EAX, RAX);
+        else
+            code3__(fp, node, MOVSL_, EAX, RAX);
+    }
+
+    code3__(fp, node, MOV_, A_, addr1(addr));
+}
+
 static void gen_preincdec(FILE *fp, const struct ast_node *node, struct opecode op)
 {
     int sz = 1;
@@ -1245,16 +1257,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
         code2__(fp, node, POP_,  RDX);
-
-        /* TODO make gen_store() */
-        if (is_long(node->type)) {
-            if (is_unsigned(node->type))
-                code3__(fp, node, MOV_, EAX, RAX);
-            else
-                code3__(fp, node, MOVSL_, EAX, RAX);
-        }
-
-        code3__(fp, node, MOV_, A_, addr1(RDX));
+        gen_store(fp, node, RDX);
         break;
 
     case NOD_ADD_ASSIGN:
