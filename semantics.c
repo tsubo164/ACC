@@ -62,6 +62,7 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
 struct tree_context {
     struct message_list *messages;
     const struct symbol *func_sym;
+    const struct symbol *next_param_sym;
     int loop_depth;
     int switch_depth;
     int is_lvalue;
@@ -351,6 +352,28 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
         ctx->func_sym = NULL;
+        return;
+
+    case NOD_CALL:
+        check_tree_(node->l, ctx);
+        ctx->next_param_sym = next_param(node->l->sym);
+        check_tree_(node->r, ctx);
+
+        if (is_param(ctx->next_param_sym)) {
+            const struct position *pos = node->r ? &node->r->pos : &node->pos;
+            add_error2(ctx->messages, pos, "too few arguments to function call");
+        }
+        return;
+
+    case NOD_ARG:
+        if (!ctx->next_param_sym) {
+            add_error2(ctx->messages, &node->pos, "too many arguments to function call");
+            return;
+        }
+        ctx->next_param_sym = next_param(ctx->next_param_sym);
+
+        check_tree_(node->l, ctx);
+        check_tree_(node->r, ctx);
         return;
 
     /* break and continue */

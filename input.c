@@ -1,26 +1,33 @@
 #include "input.h"
 
+/*
+int inc(int *i)
+{
+    return ++*i;
+}
+*/
+int foo(void)
+{
+    return 42;
+}
+
+int add(int x, int y, int z)
+{
+    return x + y + z;
+}
+
 int main()
 {
-    char c;
-    short s;
-    int i;
-    long l;
+    int i = add();
+    /*
+    int i = foo();
+    int i = foo(11);
+    int i = add(11, 14);
+    int i = add(11, 14);
+    int i = 13;
 
-    c = -1;
-    printf("------ %d\n", c);
+    i = inc(&i);
+    */
 
-    c = -2;
-    s = c;
-    printf("------ %d\n", c);
-
-    c = -4;
-    i = c;
-    printf("------ %d\n", i);
-
-    c = -8;
-    l = /*(long)*/ c;
-    printf("------ %ld\n", l);
-
-    return 0;
+    return i;
 }

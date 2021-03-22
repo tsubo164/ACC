@@ -74,7 +74,7 @@ extern int is_string_literal(const struct symbol *sym);
 extern const char *symbol_to_string(const struct symbol *sym);
 
 /* symbol table */
-extern struct symbol_table *new_symbol_table();
+extern struct symbol_table *new_symbol_table(void);
 extern void free_symbol_table(struct symbol_table *table);
 extern void print_symbol_table(const struct symbol_table *table);
 
@@ -111,5 +111,8 @@ extern void compute_func_size(struct symbol *func);
 extern void compute_struct_size(struct symbol *strc);
 extern void compute_enum_size(struct symbol *enm);
 extern void compute_type_name_size(struct symbol *type_name);
+
+/* iteration */
+extern const struct symbol *next_param(const struct symbol *sym);
 
 #endif /* _H */

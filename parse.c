@@ -590,10 +590,8 @@ static struct ast_node *argument_expression(struct parser *p)
     if (!asgn)
         return NULL;
 
-    tree = new_node(NOD_ARG, NULL, NULL);
-    tree->l = asgn;
-
-    return tree;
+    tree = new_node_(NOD_ARG, tokpos(p));
+    return branch_(tree, asgn, NULL);
 }
 
 /*
@@ -603,7 +601,7 @@ static struct ast_node *argument_expression(struct parser *p)
  */
 static struct ast_node *argument_expression_list(struct parser *p)
 {
-    struct ast_node *tree = NULL;
+    struct ast_node *tree = NULL, *list = NULL;
 
     for (;;) {
         struct ast_node *arg = argument_expression(p);
@@ -611,7 +609,8 @@ static struct ast_node *argument_expression_list(struct parser *p)
         if (!arg)
             return tree;
 
-        tree = new_node(NOD_LIST, tree, arg);
+        list = new_node_(NOD_LIST, tokpos(p));
+        tree = branch_(list, tree, arg);
 
         if (!consume(p, ','))
             return tree;
@@ -1909,7 +1908,12 @@ static struct ast_node *type_specifier(struct parser *p)
     return tree;
 }
 
-static struct ast_node *param_decl(struct parser *p)
+/* parameter_declaration
+ *     declaration_specifiers declarator
+ *     declaration_specifiers abstract_declarator
+ *     declaration_specifiers
+ */
+static struct ast_node *parameter_declaration(struct parser *p)
 {
     struct ast_node *tree = NULL;
     struct ast_node *spec = NULL;
@@ -1920,29 +1924,27 @@ static struct ast_node *param_decl(struct parser *p)
 
     decl_set_kind(p, SYM_PARAM);
 
-    tree = NEW_(NOD_DECL_PARAM);
-    tree->l = spec;
-    tree->r = declarator(p);
-
-    return tree;
+    tree = new_node_(NOD_DECL_PARAM, tokpos(p));
+    return branch_(tree, spec, declarator(p));
 }
 
 /*
- * param_decl_list
- *     param_decl
- *     param_decl_list ',' param_decl
+ * parameter_list
+ *     parameter_declaration
+ *     parameter_list ',' parameter_declaration
  */
-static struct ast_node *param_decl_list(struct parser *p)
+static struct ast_node *parameter_list(struct parser *p)
 {
-    struct ast_node *tree = NULL;
+    struct ast_node *tree = NULL, *list = NULL;
 
     for (;;) {
-        struct ast_node *param = param_decl(p);
+        struct ast_node *param = parameter_declaration(p);
 
         if (!param)
             return tree;
 
-        tree = new_node(NOD_LIST, tree, param);
+        list = new_node_(NOD_LIST, tokpos(p));
+        tree = branch_(list, tree, param);
 
         if (!consume(p, ','))
             return tree;
@@ -2009,7 +2011,7 @@ static struct ast_node *direct_declarator(struct parser *p)
 
         begin_scope(p);
         fn->l = tree;
-        fn->r = param_decl_list(p);
+        fn->r = parameter_list(p);
         tree = fn;
         expect(p, ')');
     } else {

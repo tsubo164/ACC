@@ -103,7 +103,7 @@ int is_string_literal(const struct symbol *sym)
     return sym && sym->kind == SYM_STRING;
 }
 
-struct symbol_table *new_symbol_table()
+struct symbol_table *new_symbol_table(void)
 {
     struct symbol_table *table;
     table = malloc(sizeof(struct symbol_table));
@@ -673,4 +673,19 @@ void compute_enum_size(struct symbol *enm)
 void compute_type_name_size(struct symbol *type_name)
 {
     type_name->mem_offset = get_size(type_name->type);
+}
+
+const struct symbol *next_param(const struct symbol *sym)
+{
+    const struct symbol *next = NULL;
+
+    if (is_func(sym))
+        next = sym->next->next;
+    else if (is_param(sym))
+        next = sym->next;
+
+    if (is_param(next))
+        return next;
+
+    return NULL;
 }
