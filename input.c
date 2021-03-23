@@ -22,10 +22,10 @@ int bar(long l, int *i)
 }
 
 /*
+*/
 struct point {
     int *x, *y;
 };
-*/
 
 int main()
 {
@@ -42,12 +42,13 @@ int main()
 
     i = inc(&i);
     */
-    int i = 13;
+    //int i = 13;
     //int a = &i;
-    //struct point pt = {1, 2};
+    struct point pt = {1, 112};
 
-    i = bar('a', &i);
+    //i = bar('a', &i);
     //i = bar(&i, 'a');
 
-    return i;
+
+    return 12;
 }

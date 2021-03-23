@@ -1655,7 +1655,9 @@ static struct ast_node *struct_declarator_list(struct parser *p)
     struct ast_node *tree = NULL, *list = NULL;
 
     for (;;) {
+        struct data_type *spec = p->decl_type;
         struct ast_node *decl = struct_declarator(p);
+        decl_set_type(p, spec);
 
         if (!decl)
             return tree;
@@ -2203,24 +2205,22 @@ static struct ast_node *init_declarator(struct parser *p)
  */
 static struct ast_node *init_declarator_list(struct parser *p)
 {
-    struct ast_node *tree = NULL;
-    struct data_type *spec = p->decl_type;
+    struct ast_node *tree = NULL, *list = NULL;
 
     for (;;) {
+        struct data_type *spec = p->decl_type;
         struct ast_node *init = init_declarator(p);
+        decl_set_type(p, spec);
 
         if (!init)
-            break;
+            return tree;
 
-        decl_set_type(p, spec);
-        tree = new_node(NOD_LIST, tree, init);
+        list = new_node_(NOD_LIST, tokpos(p));
+        tree = branch_(list, tree, init);
 
         if (!consume(p, ','))
-            break;
+            return tree;
     }
-
-    decl_set_type(p, spec);
-    return tree;
 }
 
 /*
