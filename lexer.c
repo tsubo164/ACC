@@ -250,6 +250,10 @@ state_initial:
         }
         goto state_final;
 
+    case '%':
+        tok->kind = c;
+        goto state_final;
+
     /* equality */
     case '!':
         c = readc(l);

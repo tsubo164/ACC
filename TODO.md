@@ -4,10 +4,9 @@
   - variable arguments
   - check args
   - std stuff FILE, stderro, NULL ...
-  - % operator
 
 * OPTIONAL
-  - is_used in parser?
+  - set `is_used` in parser => remove `check_symbol_usage()` from semantics
   - use registers r10 r11
   - bit shift <<, >>
   - bitwise op |, &, ~, ^
@@ -29,7 +28,7 @@
     };
     -> infinite loop
   - { ...  } } -> infinite loop
-  - return g_a[2]; int i = g_a[0]; -> infinite loop
+  - `return g_a[2]; int i = g_a[0];` -> infinite loop
 
 * DONE
   - ++, --
@@ -75,3 +74,4 @@
   - unsigned
   - short, long
   - cast
+  - % operator

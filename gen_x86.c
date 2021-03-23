@@ -85,6 +85,7 @@ const struct opecode SETG_  = {"setg",  0};
 const struct opecode SETLE_ = {"setle", 0};
 const struct opecode SETGE_ = {"setge", 0};
 const struct opecode CLTD_  = {"cltd",  0};
+const struct opecode CQTO_  = {"cqto",  0};
 
 enum operand_kind {
     OPR_NONE,
@@ -701,6 +702,17 @@ static void gen_store(FILE *fp, const struct ast_node *node, struct operand addr
     code3__(fp, node, MOV_, A_, addr1(addr));
 }
 
+static void gen_div(FILE *fp, const struct ast_node *node, struct operand divider)
+{
+    /* rax -> rdx:rax */
+    if (is_long(node->type))
+        code1__(fp, node, CQTO_);
+    else
+        code1__(fp, node, CLTD_);
+
+    code2__(fp, node, IDIV_, divider);
+}
+
 static void gen_preincdec(FILE *fp, const struct ast_node *node, struct opecode op)
 {
     int sz = 1;
@@ -1257,7 +1269,19 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
         code2__(fp, node, POP_,  RDX);
-        gen_store(fp, node, RDX);
+
+        /* TODO consider adding cast explicitly */
+        if (0)
+            gen_store(fp, node, RDX);
+
+        if (is_long(node->type) && !is_long(node->r->type)) {
+            if (is_unsigned(node->type))
+                code3__(fp, node, MOV_, EAX, RAX);
+            else
+                code3__(fp, node, MOVSL_, EAX, RAX);
+        }
+
+        code3__(fp, node, MOV_, A_, addr1(RDX));
         break;
 
     case NOD_ADD_ASSIGN:
@@ -1369,6 +1393,16 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2__(fp, node, POP_, RAX);
         code1__(fp, node, CLTD_); /* rax -> rdx:rax */
         code2__(fp, node, IDIV_, DI_);
+        break;
+
+    case NOD_MOD:
+        gen_code(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code3__(fp, node, MOV_, A_, DI_);
+        code2__(fp, node, POP_, RAX);
+        gen_div(fp, node, DI_);
+        code3__(fp, node, MOV_, D_, A_);
         break;
 
     case NOD_NOT:

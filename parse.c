@@ -310,6 +310,11 @@ static int eval_const_expr(const struct ast_node *node, struct parser *p)
         r = eval_const_expr(node->r, p);
         return l / r;
 
+    case NOD_MOD:
+        l = eval_const_expr(node->l, p);
+        r = eval_const_expr(node->r, p);
+        return l % r;
+
     case NOD_SIZEOF:
     case NOD_NUM:
         return node->ival;
@@ -812,6 +817,11 @@ static struct ast_node *multiplicative_expression(struct parser *p)
 
         case '/':
             expr = new_node_(NOD_DIV, tokpos(p));
+            tree = branch_(expr, tree, cast_expression(p));
+            break;
+
+        case '%':
+            expr = new_node_(NOD_MOD, tokpos(p));
             tree = branch_(expr, tree, cast_expression(p));
             break;
 

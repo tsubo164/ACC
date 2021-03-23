@@ -163,6 +163,35 @@ int main()
         l = c;
         assert(-8, l);
     }
+    {
+        /* modulo operator */
+        int a = 12321;
+        char b = 34;
+
+        assert(13, a % b);
+
+        a = -123534;
+        b = 37;
+        assert(-28, a % b);
+    }
+    {
+        /* modulo operator */
+        short a = 1219;
+        unsigned char b = 233;
+
+        assert(54, a % b);
+    }
+    {
+        /* modulo operator */
+        long a = 233334012321;
+        unsigned short b = 2334;
+
+        assert(1503, a % b);
+
+        a = -123534233349;
+        b = 337;
+        assert(-124, a % b);
+    }
 
     return 0;
 }
