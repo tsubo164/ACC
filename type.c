@@ -133,8 +133,12 @@ int is_compatible(const struct data_type *t1, const struct data_type *t2)
 {
     if (!t1 || !t2)
         return 0;
-    if (t1->kind == t2->kind)
+    if (is_integer(t1) && is_integer(t2))
         return 1;
+    if (is_pointer(t1) && is_pointer(t2))
+        return is_compatible(underlying(t1), underlying(t2));
+    if (is_type_name(t1) || is_type_name(t2))
+        return is_compatible(original_const(t1), original_const(t2));
     return 0;
 }
 
@@ -145,6 +149,18 @@ int is_incomplete(const struct data_type *type)
     if (is_enum(type) && !type->sym->is_defined)
         return 1;
     if (is_struct(type) && !type->sym->is_defined)
+        return 1;
+    return 0;
+}
+
+int is_integer(const struct data_type *type)
+{
+    if (is_char(type) ||
+        is_short(type) ||
+        is_int(type) ||
+        is_long(type))
+        return 1;
+    if (is_enum(type))
         return 1;
     return 0;
 }
@@ -234,7 +250,7 @@ const char *type_name_of(const struct data_type *type)
     case DATA_TYPE_SHORT:  return is_unsigned(type) ? "unsigned short" : "short";
     case DATA_TYPE_INT:    return is_unsigned(type) ? "unsigned int" :   "int";
     case DATA_TYPE_LONG:   return is_unsigned(type) ? "unsigned long" :  "long";
-    case DATA_TYPE_PTR:    return "ptr";
+    case DATA_TYPE_PTR:    return "pointer";
     case DATA_TYPE_ARRAY:  return "array";
     case DATA_TYPE_STRUCT: return type->tag;
     case DATA_TYPE_ENUM:   return type->tag;
@@ -295,7 +311,7 @@ struct data_type *type_long()
     return clone(&LONG_);
 }
 
-struct data_type *type_ptr(struct data_type *base_type)
+struct data_type *type_pointer(struct data_type *base_type)
 {
     struct data_type *type = clone(&PTR_);
 

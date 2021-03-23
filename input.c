@@ -5,7 +5,6 @@ int inc(int *i)
 {
     return ++*i;
 }
-*/
 int foo(void)
 {
     return 42;
@@ -15,11 +14,23 @@ int add(int x, int y, int z)
 {
     return x + y + z;
 }
+*/
+
+int bar(long l, int *i)
+{
+    return ++*i + l;
+}
+
+/*
+struct point {
+    int *x, *y;
+};
+*/
 
 int main()
 {
-    int i = add(11, 14, 29);
     /*
+    int i = add(11, 14, 29);
     int i = foo();
     int i = foo(11);
     int i = -27 % 7;
@@ -30,23 +41,13 @@ int main()
     int i = 13;
 
     i = inc(&i);
-        long a;// = 233334012321;
-        //unsigned short b;// = 2334;
-        long b;// = 2334;
-        long c;
-
-        //assert(1503, a % b);
-
-        a = 123534233349;
-        //a = 349;
-        b = 337;
-        //assert(-124, a % b);
-        //
-        c = a % b;
-        //c = a - b;
-
-        //printf("c = %d\n", c);
     */
+    int i = 13;
+    //int a = &i;
+    //struct point pt = {1, 2};
+
+    i = bar('a', &i);
+    //i = bar(&i, 'a');
 
     return i;
 }

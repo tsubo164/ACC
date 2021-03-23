@@ -368,8 +368,15 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
     case NOD_ARG:
         ctx->param_sym = next_param(ctx->param_sym);
+
         if (!ctx->param_sym) {
             add_error2(ctx->messages, &node->pos, "too many arguments to function call");
+            return;
+        }
+        if (!is_compatible(node->type, ctx->param_sym->type)) {
+            add_error2(ctx->messages, &node->pos,
+                    "incompatible conversion from '%s' to '%s'",
+                    type_name_of(node->type), type_name_of(ctx->param_sym->type));
             return;
         }
 

@@ -216,6 +216,10 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = node->l->type;
         break;
 
+    case NOD_ADDR:
+        node->type = type_pointer(node->l->type);
+        break;
+
     case NOD_DEREF:
         node->type = underlying(node->l->type);
         if (!node->type)
@@ -223,6 +227,10 @@ static struct ast_node *typed_(struct ast_node *node)
         break;
 
     case NOD_STRUCT_REF:
+        node->type = node->r->type;
+        break;
+
+    case NOD_COND:
         node->type = node->r->type;
         break;
 
@@ -244,7 +252,7 @@ static struct ast_node *typed_(struct ast_node *node)
         break;
 
     case NOD_STRING:
-        node->type = type_ptr(type_char());
+        node->type = type_pointer(type_char());
         break;
 
     case NOD_SIZEOF:
@@ -958,6 +966,7 @@ static struct ast_node *inclusive_or_expression(struct parser *p)
 static struct ast_node *logical_and_expression(struct parser *p)
 {
     struct ast_node *tree = inclusive_or_expression(p);
+    struct ast_node *logi = NULL;
 
     for (;;) {
         const struct token *tok = gettok(p);
@@ -965,7 +974,8 @@ static struct ast_node *logical_and_expression(struct parser *p)
         switch (tok->kind) {
 
         case TOK_LOGICAL_AND:
-            tree = new_node(NOD_LOGICAL_AND, tree, inclusive_or_expression(p));
+            logi = new_node_(NOD_LOGICAL_AND, tokpos(p));
+            tree = branch_(logi, tree, inclusive_or_expression(p));
             break;
 
         default:
@@ -983,6 +993,7 @@ static struct ast_node *logical_and_expression(struct parser *p)
 static struct ast_node *logical_or_expression(struct parser *p)
 {
     struct ast_node *tree = logical_and_expression(p);
+    struct ast_node *logi = NULL;
 
     for (;;) {
         const struct token *tok = gettok(p);
@@ -990,7 +1001,8 @@ static struct ast_node *logical_or_expression(struct parser *p)
         switch (tok->kind) {
 
         case TOK_LOGICAL_OR:
-            tree = new_node(NOD_LOGICAL_OR, tree, logical_and_expression(p));
+            logi = new_node_(NOD_LOGICAL_OR, tokpos(p));
+            tree = branch_(logi, tree, logical_and_expression(p));
             break;
 
         default:
@@ -1008,11 +1020,10 @@ static struct ast_node *logical_or_expression(struct parser *p)
 static struct ast_node *conditional_expression(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    struct ast_node *then_else = NULL, *then = NULL, *els = NULL;
+    struct ast_node *then_else = NULL, *cond = NULL, *then = NULL, *els = NULL;
     const struct token *tok = NULL;
 
     tree = logical_or_expression(p);
-
     tok = gettok(p);
 
     switch (tok->kind) {
@@ -1022,8 +1033,11 @@ static struct ast_node *conditional_expression(struct parser *p)
         expect(p, ':');
         els  = conditional_expression(p);
 
-        then_else = new_node(NOD_COND_THEN, then, els);
-        tree = new_node(NOD_COND, tree, then_else);
+        then_else = new_node_(NOD_COND_THEN, tokpos(p));
+        then_else = branch_(then_else, then, els);
+
+        cond = new_node_(NOD_COND, tokpos(p));
+        tree = branch_(cond, tree, then_else);
         break;
 
     default:
@@ -2039,7 +2053,7 @@ static struct ast_node *pointer(struct parser *p)
     while (consume(p, '*')) {
         /* we treat as if the first '*' is associated with type specifier */
         tree = new_node(NOD_SPEC_POINTER, tree, NULL);
-        decl_set_type(p, type_ptr(p->decl_type));
+        decl_set_type(p, type_pointer(p->decl_type));
     }
 
     return tree;

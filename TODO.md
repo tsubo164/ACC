@@ -2,7 +2,6 @@
   - struct arg
   - struct assign
   - variable arguments
-  - check args
   - std stuff FILE, stderro, NULL ...
 
 * OPTIONAL
@@ -75,3 +74,4 @@
   - short, long
   - cast
   - % operator
+  - check args

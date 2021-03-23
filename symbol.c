@@ -535,7 +535,7 @@ struct symbol *define_string_symbol(struct symbol_table *table, const char *str)
             return sym;
     }
 
-    str_sym = push_symbol(table, str, SYM_STRING, type_ptr(type_char()));
+    str_sym = push_symbol(table, str, SYM_STRING, type_pointer(type_char()));
     str_sym->is_defined = 1;
 
     return str_sym;
