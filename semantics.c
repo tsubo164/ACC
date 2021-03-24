@@ -77,6 +77,38 @@ struct tree_context {
 
 static void check_initializer(struct ast_node *node, struct tree_context *ctx);
 
+static void check_init_scalar(struct ast_node *node, struct tree_context *ctx)
+{
+    struct data_type *t1, *t2;
+
+    if (!node)
+        return;
+
+    switch (node->kind) {
+
+    case NOD_INIT:
+        t1 = node->type;
+        t2 = node->r->type;
+
+        if (!is_compatible(t1, t2)) {
+            if (!is_array(t1) && !is_struct(t1))
+                add_error2(ctx->messages, &node->pos,
+                        "initializing '%s' with an expression of incompatible type '%s'",
+                        type_name_of(t1), type_name_of(t2));
+        }
+        break;
+
+    case NOD_DECL_INIT:
+        /*
+        check_init_scalar(node->r, ctx);
+        */
+        break;
+
+    default:
+        break;
+    }
+}
+
 static void check_init_array_element(struct ast_node *node, struct tree_context *ctx)
 {
     if (!node)
@@ -88,19 +120,9 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
         check_initializer(node, ctx);
         ctx->index++;
 
-        {
-            struct data_type *type = node->type;
-
-            if (ctx->index > ctx->array_length) {
-                add_error2(ctx->messages, &node->pos,
-                        "excess elements in array initializer");
-            }
-            else if (!is_compatible(type, node->r->type)) {
-                if (!is_array(type) && !is_struct(type))
-                    add_error2(ctx->messages, &node->pos,
-                            "initializing '%s' with an expression of incompatible type '%s'",
-                            type_name_of(type), type_name_of(node->r->type));
-            }
+        if (ctx->index > ctx->array_length) {
+            add_error2(ctx->messages, &node->pos,
+                    "excess elements in array initializer");
         }
         break;
 
@@ -125,19 +147,9 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
         ctx->struct_sym = next_member(ctx->struct_sym);
         check_initializer(node, ctx);
 
-        {
-            struct data_type *type = node->type;
-
-            if (!ctx->struct_sym) {
-                add_error2(ctx->messages, &node->pos,
-                        "excess elements in struct initializer");
-            }
-            else if (!is_compatible(type, node->r->type)) {
-                if (!is_array(type) && !is_struct(type))
-                    add_error2(ctx->messages, &node->pos,
-                            "initializing '%s' with an expression of incompatible type '%s'",
-                            type_name_of(type), type_name_of(node->r->type));
-            }
+        if (!ctx->struct_sym) {
+            add_error2(ctx->messages, &node->pos,
+                    "excess elements in struct initializer");
         }
         break;
 
@@ -194,7 +206,7 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
         check_init_struct_members(node->r, &new_ctx);
     }
     else {
-        /* scalar value */
+        check_init_scalar(node, ctx);
     }
 }
 

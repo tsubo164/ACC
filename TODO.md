@@ -4,6 +4,7 @@
   - variable arguments
   - std stuff FILE, stderro, NULL ...
   - return type check
+  - improve `is_compatible` e.g. ptr = 0, ptr = array, ...
 
 * OPTIONAL
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics
