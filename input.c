@@ -1,5 +1,10 @@
 #include "input.h"
 
+struct vec {
+    int x, y;
+    char c;
+    long l[4];
+} v = {123, 2312, 'a', {1,2}};
 /*
 int inc(int *i)
 {
@@ -54,8 +59,8 @@ int main()
     //int a = &i;
     //struct point pt = {1, 112};
     //struct point pt = {&a, &a, &a};
-    struct point pt = {&a, 12, &a};
-    //struct point pt = {&a, &a};
+    //struct point pt = {&a, 12, &a};
+    struct point pt = {&a, &a};
 
     return *pt.x;
     /*

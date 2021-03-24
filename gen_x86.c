@@ -897,15 +897,9 @@ static void zero_clear_bytes(struct memory_byte *bytes, const struct data_type *
     }
     else if (is_struct(type)) {
         const struct symbol *sym;
-        const int struct_scope = type->sym->scope_level + 1;
 
-        for (sym = type->sym; sym; sym = sym->next) {
-            if (sym->kind == SYM_MEMBER && sym->scope_level == struct_scope)
-                zero_clear_bytes(bytes + sym->mem_offset, sym->type);
-
-            if (sym->kind == SYM_SCOPE_END && sym->scope_level == struct_scope)
-                break;
-        }
+        for (sym = first_member(type->sym); sym; sym = next_member(sym))
+            zero_clear_bytes(bytes + sym->mem_offset, sym->type);
     }
     else {
         /* scalar */
