@@ -85,16 +85,15 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
     switch (node->kind) {
 
     case NOD_INIT:
-        check_init_array_element(node->l, ctx);
-        check_initializer(node->r, ctx);
+        check_initializer(node, ctx);
+        ctx->index++;
 
         {
             struct data_type *type = node->type;
 
             if (ctx->index > ctx->array_length) {
                 add_error2(ctx->messages, &node->pos,
-                        "excess elements in array initializer %d %d",
-                        ctx->index, ctx->array_length);
+                        "excess elements in array initializer");
             }
             else if (!is_compatible(type, node->r->type)) {
                 if (!is_array(type) && !is_struct(type))
@@ -183,7 +182,7 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
         new_ctx.index = 0;
         new_ctx.array_length = get_array_length(node->type);
 
-        check_init_array_element(node, &new_ctx);
+        check_init_array_element(node->r, &new_ctx);
     }
     else if(is_struct(node->type)) {
         struct tree_context new_ctx = *ctx;

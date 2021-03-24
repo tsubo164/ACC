@@ -3,6 +3,7 @@
   - struct assign
   - variable arguments
   - std stuff FILE, stderro, NULL ...
+  - return type check
 
 * OPTIONAL
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics
@@ -14,7 +15,6 @@
   - void pointer, void parameter
   - lexer error
   - char <-> int, negative number literal
-  - initializer index, enum index, invisible nodes in parser
 
 * IMPLEMENTATION
   - symbol functions for struct 
@@ -75,3 +75,4 @@
   - cast
   - % operator
   - check args
+  - initializer index, enum index, invisible nodes in parser

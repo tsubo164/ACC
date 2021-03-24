@@ -14,18 +14,18 @@ int add(int x, int y, int z)
 {
     return x + y + z;
 }
-*/
 
 int bar(long l, int *i)
 {
     return ++*i + l;
 }
+*/
 
 /*
-*/
 struct point {
     int *x, *y;
 };
+*/
 
 int main()
 {
@@ -46,12 +46,14 @@ int main()
     //int a = &i;
     int a = 17;
     //struct point pt = {1, 112};
-    struct point pt = {&a, &a, &a};
+    //struct point pt = {&a, &a, &a};
     //struct point pt = {&a, &a};
 
     //i = bar('a', &i);
     //i = bar(&i, 'a');
+    //int *p[2] = {12, 34};
+    int *p[2] = {&a, 34};
 
 
-    return *pt.x;
+    return *p[1];
 }
