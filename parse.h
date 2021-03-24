@@ -37,7 +37,7 @@ struct parser {
 
     /* for initializer */
     struct data_type *init_type;
-    struct symbol *init_sym;
+    const struct symbol *init_sym;
 };
 
 extern struct parser *new_parser();

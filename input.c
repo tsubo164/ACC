@@ -11,6 +11,7 @@ int foo(void)
 }
 */
 
+/*
 int add(int x, int y, int z)
 {
     return x + y + z;
@@ -20,20 +21,22 @@ int bar(long l, int *i)
 {
     return ++*i + l;
 }
+*/
 
-/*
 struct point {
     int *x, *y;
 };
-*/
 int a = 17;
 
 int main()
 {
+    /*
     int i = add(11, 14, &a, 29);
     int j = bar(&a);
 
     return i + j;
+    */
+
     /*
     int i = foo();
     int i = foo(11);
@@ -46,13 +49,16 @@ int main()
 
     i = inc(&i);
     */
-    /*
+
     //int i = 13;
     //int a = &i;
     //struct point pt = {1, 112};
     //struct point pt = {&a, &a, &a};
     struct point pt = {&a, 12, &a};
+    //struct point pt = {&a, &a};
 
+    return *pt.x;
+    /*
     //i = bar('a', &i);
     //i = bar(&i, 'a');
     //int *p[2] = {12, 34};
