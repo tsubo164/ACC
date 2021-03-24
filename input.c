@@ -47,15 +47,16 @@ int main()
     //int a = &i;
     //struct point pt = {1, 112};
     //struct point pt = {&a, &a, &a};
-    struct point pt = {&a, 12};
+    struct point pt = {&a, 12, &a};
 
     //i = bar('a', &i);
     //i = bar(&i, 'a');
     //int *p[2] = {12, 34};
-    int *p[2] = {&a, 34};
+    //int *p[2] = {&a, 34};
+    int *p[2] = {34, &a, &a};
 
     //int i = &a;
-    int *i = 1;
+    //int *i = 1;
 
 
     return *p[1];

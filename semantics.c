@@ -117,13 +117,14 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
     switch (node->kind) {
 
     case NOD_INIT:
-        check_initializer(node, ctx);
-        ctx->index++;
-
-        if (ctx->index > ctx->array_length) {
+        if (ctx->index >= ctx->array_length) {
             add_error2(ctx->messages, &node->pos,
                     "excess elements in array initializer");
+            break;
         }
+
+        check_initializer(node, ctx);
+        ctx->index++;
         break;
 
     case NOD_LIST:
@@ -145,12 +146,14 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
 
     case NOD_INIT:
         ctx->struct_sym = next_member(ctx->struct_sym);
-        check_initializer(node, ctx);
 
         if (!ctx->struct_sym) {
             add_error2(ctx->messages, &node->pos,
                     "excess elements in struct initializer");
+            break;
         }
+
+        check_initializer(node, ctx);
         break;
 
     case NOD_LIST:
@@ -166,17 +169,11 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
 static int get_struct_member_count(const struct data_type *type)
 {
     if (is_struct(type)) {
-        const struct symbol *sym;
-        const int struct_scope = type->sym->scope_level + 1;
+        const struct symbol *memb;
         int count = 0;
 
-        for (sym = type->sym; sym; sym = sym->next) {
-            if (sym->kind == SYM_MEMBER && sym->scope_level == struct_scope)
+        for (memb = next_member(type->sym); memb; memb = next_member(memb))
                 count++;
-
-            if (sym->kind == SYM_SCOPE_END && sym->scope_level == struct_scope)
-                break;
-        }
 
         return count;
     }
