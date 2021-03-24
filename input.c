@@ -44,11 +44,13 @@ int main()
     */
     //int i = 13;
     //int a = &i;
+    int a = 17;
     struct point pt = {1, 112};
+    //struct point pt = {&a, &a};
 
     //i = bar('a', &i);
     //i = bar(&i, 'a');
 
 
-    return 12;
+    return *pt.x;
 }

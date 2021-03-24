@@ -123,8 +123,7 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
     switch (node->kind) {
 
     case NOD_INIT:
-        check_init_struct_members(node->l, ctx);
-        check_initializer(node->r, ctx);
+        check_initializer(node, ctx);
 
         {
             struct data_type *type = node->type;
@@ -177,7 +176,7 @@ static int get_struct_member_count(const struct data_type *type)
 
 static void check_initializer(struct ast_node *node, struct tree_context *ctx)
 {
-    if (!node)
+    if (!node || !node->r)
         return;
 
     if (is_array(node->type)) {
@@ -195,7 +194,7 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
         new_ctx.elem_count = get_struct_member_count(node->type);
         new_ctx.struct_sym = symbol_of(node->type)->next->next;
 
-        check_init_struct_members(node, &new_ctx);
+        check_init_struct_members(node->r, &new_ctx);
     }
     else {
         /* scalar value */
@@ -215,7 +214,7 @@ static void check_init_(struct ast_node *node, struct tree_context *ctx)
 
         ctx->index = 0;
         ctx->struct_sym = node->l->type->sym;
-        check_initializer(node->r, ctx);
+        check_initializer(node, ctx);
         return;
 
     default:
