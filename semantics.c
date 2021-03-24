@@ -71,7 +71,6 @@ struct tree_context {
     /* for initializers */
     const struct symbol *struct_sym;
     int array_length;
-    int elem_count;
     int index;
 };
 
@@ -145,8 +144,6 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
     switch (node->kind) {
 
     case NOD_INIT:
-        ctx->struct_sym = next_member(ctx->struct_sym);
-
         if (!ctx->struct_sym) {
             add_error2(ctx->messages, &node->pos,
                     "excess elements in struct initializer");
@@ -154,6 +151,7 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
         }
 
         check_initializer(node, ctx);
+        ctx->struct_sym = next_member(ctx->struct_sym);
         break;
 
     case NOD_LIST:
@@ -164,20 +162,6 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
     default:
         break;
     }
-}
-
-static int get_struct_member_count(const struct data_type *type)
-{
-    if (is_struct(type)) {
-        const struct symbol *memb;
-        int count = 0;
-
-        for (memb = next_member(type->sym); memb; memb = next_member(memb))
-                count++;
-
-        return count;
-    }
-    return 0;
 }
 
 static void check_initializer(struct ast_node *node, struct tree_context *ctx)
@@ -197,8 +181,7 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
         struct tree_context new_ctx = *ctx;
 
         new_ctx.index = 0;
-        new_ctx.elem_count = get_struct_member_count(node->type);
-        new_ctx.struct_sym = symbol_of(node->type);
+        new_ctx.struct_sym = first_member(symbol_of(node->type));
 
         check_init_struct_members(node->r, &new_ctx);
     }

@@ -18,7 +18,6 @@
   - char <-> int, negative number literal
 
 * IMPLEMENTATION
-  - symbol functions for struct 
 
 * BUG
   - //typedef struct node Node;
@@ -77,3 +76,4 @@
   - % operator
   - check args
   - initializer index, enum index, invisible nodes in parser
+  - symbol functions for struct 
