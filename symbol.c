@@ -675,17 +675,28 @@ void compute_type_name_size(struct symbol *type_name)
     type_name->mem_offset = get_size(type_name->type);
 }
 
-const struct symbol *next_param(const struct symbol *sym)
+const struct symbol *first_param(const struct symbol *sym)
 {
-    const struct symbol *next = NULL;
+    const struct symbol *param = NULL;
 
     if (is_func(sym))
-        next = sym->next->next;
-    else if (is_param(sym))
-        next = sym->next;
+        param = sym->next->next;
 
-    if (is_param(next))
-        return next;
+    if (is_param(param))
+        return param;
+
+    return NULL;
+}
+
+const struct symbol *next_param(const struct symbol *sym)
+{
+    const struct symbol *param = NULL;
+
+    if (is_param(sym))
+        param = sym->next;
+
+    if (is_param(param))
+        return param;
 
     return NULL;
 }
