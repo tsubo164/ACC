@@ -45,7 +45,8 @@ int main()
     //int i = 13;
     //int a = &i;
     int a = 17;
-    struct point pt = {1, 112};
+    //struct point pt = {1, 112};
+    struct point pt = {&a, &a, &a};
     //struct point pt = {&a, &a};
 
     //i = bar('a', &i);

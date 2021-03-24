@@ -123,13 +123,13 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
     switch (node->kind) {
 
     case NOD_INIT:
+        ctx->struct_sym = next_member(ctx->struct_sym);
         check_initializer(node, ctx);
 
         {
             struct data_type *type = node->type;
-            const struct symbol *sym = ctx->struct_sym;
 
-            if (sym && sym->kind != SYM_MEMBER) {
+            if (!ctx->struct_sym) {
                 add_error2(ctx->messages, &node->pos,
                         "excess elements in struct initializer");
             }
@@ -140,8 +140,6 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
                             type_name_of(type), type_name_of(node->r->type));
             }
         }
-
-        ctx->struct_sym = ctx->struct_sym->next;
         break;
 
     case NOD_LIST:
@@ -192,7 +190,7 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
 
         new_ctx.index = 0;
         new_ctx.elem_count = get_struct_member_count(node->type);
-        new_ctx.struct_sym = symbol_of(node->type)->next->next;
+        new_ctx.struct_sym = symbol_of(node->type);
 
         check_init_struct_members(node->r, &new_ctx);
     }

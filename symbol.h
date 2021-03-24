@@ -114,5 +114,6 @@ extern void compute_type_name_size(struct symbol *type_name);
 
 /* iteration */
 extern const struct symbol *next_param(const struct symbol *sym);
+extern const struct symbol *next_member(const struct symbol *sym);
 
 #endif /* _H */

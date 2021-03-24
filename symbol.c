@@ -689,3 +689,28 @@ const struct symbol *next_param(const struct symbol *sym)
 
     return NULL;
 }
+
+const struct symbol *next_member(const struct symbol *sym)
+{
+    const struct symbol *memb = NULL;
+    int scope = 0;
+
+    if (is_struct_tag(sym)) {
+        scope = sym->scope_level + 1;
+        memb = sym->next->next;
+    }
+    else if (is_member(sym)) {
+        scope = sym->scope_level;
+        memb = sym->next;
+    }
+
+    for (; memb; memb = memb->next) {
+        if (is_member(memb) && memb->scope_level == scope)
+            break;
+
+        if (memb->kind == SYM_SCOPE_END && memb->scope_level == scope)
+            return NULL;
+    }
+
+    return memb;
+}
