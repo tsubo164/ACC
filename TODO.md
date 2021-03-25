@@ -3,7 +3,6 @@
   - struct assign
   - variable arguments
   - std stuff FILE, stderro, NULL ...
-  - return type check
   - improve `is_compatible` e.g. ptr = 0, ptr = array, ...
 
 * OPTIONAL
@@ -15,7 +14,6 @@
   - control flow check
   - void pointer, void parameter
   - lexer error
-  - char <-> int, negative number literal
 
 * IMPLEMENTATION
 
@@ -77,3 +75,5 @@
   - check args
   - initializer index, enum index, invisible nodes in parser
   - symbol functions for struct 
+  - return type check
+  - char <-> int, negative number literal

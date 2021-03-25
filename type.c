@@ -129,6 +129,22 @@ int has_unkown_array_length(const struct data_type *type)
     return get_array_length(type) == UNKNOWN_ARRAY_LENGTH;
 }
 
+static int is_compatible_underlying(const struct data_type *t1, const struct data_type *t2)
+{
+    if (!t1 || !t2)
+        return 0;
+    if ((is_char(t1) && is_char(t2)) ||
+        (is_short(t1) && is_short(t2)) ||
+        (is_int(t1) && is_int(t2)) ||
+        (is_long(t1) && is_long(t2)))
+        return 1;
+    if (is_pointer(t1) && is_pointer(t2))
+        return is_compatible_underlying(underlying(t1), underlying(t2));
+    if (is_type_name(t1) || is_type_name(t2))
+        return is_compatible_underlying(original_const(t1), original_const(t2));
+    return 0;
+}
+
 int is_compatible(const struct data_type *t1, const struct data_type *t2)
 {
     if (!t1 || !t2)
@@ -136,7 +152,7 @@ int is_compatible(const struct data_type *t1, const struct data_type *t2)
     if (is_integer(t1) && is_integer(t2))
         return 1;
     if (is_pointer(t1) && is_pointer(t2))
-        return is_compatible(underlying(t1), underlying(t2));
+        return is_compatible_underlying(underlying(t1), underlying(t2));
     if (is_type_name(t1) || is_type_name(t2))
         return is_compatible(original_const(t1), original_const(t2));
     return 0;

@@ -1280,12 +1280,13 @@ static struct ast_node *return_statement(struct parser *p)
     struct ast_node *expr = NULL;
 
     expect(p, TOK_RETURN);
+    tree = new_node_(NOD_RETURN, tokpos(p));
+
     if (!nexttok(p, ';'))
         expr = expression(p);
     expect(p, ';');
 
-    tree = new_node(NOD_RETURN, expr, NULL);
-    return tree;
+    return branch_(tree, expr, NULL);
 }
 
 /*

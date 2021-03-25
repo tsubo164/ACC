@@ -382,10 +382,17 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         break;
 
     case NOD_RETURN:
-        if (is_void(ctx->func_sym->type) && node->l)
-            add_error(ctx->messages, "function '' should not return a value", &pos);
         if (!is_void(ctx->func_sym->type) && !node->l)
-            add_error(ctx->messages, "function '' should return a value", &pos);
+            add_error2(ctx->messages, &node->pos,
+                    "non-void function '%s' should return a value", ctx->func_sym->name);
+        else if (is_void(ctx->func_sym->type) && node->l)
+            add_error2(ctx->messages, &node->l->pos,
+                    "void function '%s' should not return a value", ctx->func_sym->name);
+
+        else if (node->l && !is_compatible(ctx->func_sym->type, node->l->type))
+            add_error2(ctx->messages, &node->l->pos,
+                    "incompatible conversion from '%s' to '%s'",
+                    type_name_of(node->l->type), type_name_of(ctx->func_sym->type));
         break;
 
     default:
