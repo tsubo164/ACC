@@ -3,9 +3,10 @@
   - struct assign
   - variable arguments
   - std stuff FILE, stderro, NULL ...
-  - improve `is_compatible` e.g. ptr = 0, ptr = array, ...
 
 * OPTIONAL
+  - char[] from string literal
+  - unversal type string for better messages
   - pp needs to adjust pos x when skipping block comment
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics
   - use registers r10 r11
@@ -78,3 +79,4 @@
   - symbol functions for struct 
   - return type check
   - char <-> int, negative number literal
+  - improve `is_compatible` e.g. ptr = 0, ptr = array, ...

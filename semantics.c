@@ -76,6 +76,15 @@ struct tree_context {
 
 static void check_initializer(struct ast_node *node, struct tree_context *ctx);
 
+static int is_null_pointer(struct ast_node *node)
+{
+    if (is_integer(node->type) &&
+        node->kind == NOD_NUM &&
+        node->ival == 0)
+        return 1;
+    return 0;
+}
+
 static void check_init_scalar(struct ast_node *node, struct tree_context *ctx)
 {
     struct data_type *t1, *t2;
@@ -89,12 +98,13 @@ static void check_init_scalar(struct ast_node *node, struct tree_context *ctx)
         t1 = node->type;
         t2 = node->r->type;
 
+        /* zero to null pointer */
+        if (is_pointer(node->type) && is_null_pointer(node->r))
+            return;
+
         if (!is_compatible(t1, t2)) {
             if (!is_array(t1) && !is_struct(t1))
-                /*
                 add_error2(ctx->messages, &node->pos,
-                */
-                add_warning2(ctx->messages, &node->pos,
                         "initializing '%s' with an expression of incompatible type '%s'",
                         type_name_of(t1), type_name_of(t2));
         }
@@ -102,8 +112,6 @@ static void check_init_scalar(struct ast_node *node, struct tree_context *ctx)
 
     case NOD_DECL_INIT:
         check_init_scalar(node->r, ctx);
-        /*
-        */
         break;
 
     default:

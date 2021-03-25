@@ -18,8 +18,9 @@ int main()
 
     int *p = /*(int *)*/ a;
 
-    p = &a;
+    int *q = 0;
     /*
+    p = 0;
     */
     return *(p + 3);
 }
