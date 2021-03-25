@@ -32,7 +32,7 @@ struct preprocessor {
     int prevx;
 };
 
-extern struct preprocessor *new_preprocessor();
+extern struct preprocessor *new_preprocessor(void);
 extern void free_preprocessor(struct preprocessor *pp);
 
 extern int preprocess_text(struct preprocessor *pp, const char *filename);

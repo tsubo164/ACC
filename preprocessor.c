@@ -191,7 +191,7 @@ static void add_replacement(struct macro_entry *mac, const char *repl)
     mac->repl = dst;
 }
 
-struct preprocessor *new_preprocessor()
+struct preprocessor *new_preprocessor(void)
 {
     struct preprocessor *pp;
 
@@ -415,36 +415,47 @@ static void token_list(struct preprocessor *pp, char *buf)
     *p = '\0';
 }
 
+static void read_file_path(struct preprocessor *pp, char *path)
+{
+    char *buf = path;
+
+    for (;;) {
+        const int c = readc(pp);
+        if (isalnum(c) || c == '_' || c == '-' || c == '.' || c == '/') {
+            *buf++ = c;
+        } else {
+            *buf = '\0';
+            unreadc(pp, c);
+            break;
+        }
+    }
+}
+
 static void file_path(struct preprocessor *pp, char *buf)
 {
-    char *p = buf;
     int c, quot;
 
     whitespaces(pp);
 
     c = readc(pp);
-    if (c == '"') {
+    if (c == '"')
         quot = '"';
-    } else if (c == '<') {
+    else if (c == '<')
         quot = '>';
-    } else {
+    else
         goto file_path_error;
-    }
 
-    for (;;) {
-        const int c = readc(pp);
-        if (isalnum(c) || c == '_' || c == '.' || c == '-') {
-            *p++ = c;
-        } else {
-            unreadc(pp, c);
-            break;
-        }
-    }
-    *p = '\0';
+    read_file_path(pp, buf);
 
     c = readc(pp);
     if (c != quot)
         goto file_path_error;
+
+    if (quot == '>') {
+        static char tmp[128] = {'\0'};
+        strcpy(tmp, buf);
+        sprintf(buf, "include/%s", tmp);
+    }
 
     return;
 
@@ -461,7 +472,7 @@ static void const_expression(struct preprocessor *pp)
 
 static void include_line(struct preprocessor *pp)
 {
-    static char filename[128] = {'\0'};
+    static char filename[256] = {'\0'};
 
     file_path(pp, filename);
 

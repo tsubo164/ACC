@@ -629,7 +629,7 @@ static void read_file_path(struct lexer *l, char *path)
 
     for (;;) {
         const int c = readc(l);
-        if (isalnum(c) || c == '_' || c == '-' || c == '.') {
+        if (isalnum(c) || c == '_' || c == '-' || c == '.' || c == '/') {
             *buf++ = c;
         } else {
             *buf = '\0';
