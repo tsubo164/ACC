@@ -6,6 +6,7 @@
   - improve `is_compatible` e.g. ptr = 0, ptr = array, ...
 
 * OPTIONAL
+  - pp needs to adjust pos x when skipping block comment
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics
   - use registers r10 r11
   - bit shift <<, >>

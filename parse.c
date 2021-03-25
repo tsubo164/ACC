@@ -132,7 +132,7 @@ static void expect(struct parser *p, enum token_kind query)
     }
 }
 
-struct parser *new_parser()
+struct parser *new_parser(void)
 {
     struct parser *p = malloc(sizeof(struct parser));
     int i;
@@ -157,6 +157,9 @@ struct parser *new_parser()
     p->is_const = 0;
     p->is_unsigned = 0;
     p->is_panic_mode = 0;
+
+    p->is_sizeof_operand = 0;
+    p->is_addressof_operand = 0;
 
     p->init_type = NULL;
     p->init_sym = NULL;
@@ -213,7 +216,8 @@ static struct ast_node *typed_(struct ast_node *node)
         break;
 
     case NOD_CAST:
-        node->type = node->l->type;
+        if (node->l)
+            node->type = node->l->type;
         break;
 
     case NOD_ADDR:
@@ -339,6 +343,23 @@ static int eval_const_expr(const struct ast_node *node, struct parser *p)
         add_error2(p->msg, &node->pos, "expression is not a constant expression");
         return 0;
     }
+}
+
+static struct ast_node *convert_(struct parser *p, struct ast_node *node)
+{
+    if (!node)
+        return NULL;
+
+    if (is_array(node->type) &&
+        !p->is_sizeof_operand &&
+        !p->is_addressof_operand) {
+        struct ast_node *tree = new_node_(NOD_CAST, tokpos(p));
+        tree = branch_(tree, NULL, node);
+        type_set(tree, type_pointer(underlying(node->type)));
+        return tree;
+    }
+
+    return node;
 }
 
 /* decl context */
@@ -577,7 +598,7 @@ static struct ast_node *primary_expression(struct parser *p)
             use_sym(p, tree, SYM_FUNC);
         else
             use_sym(p, tree, SYM_VAR);
-        return typed_(tree);
+        return convert_(p, typed_(tree));
 
     case '(':
         tree = expression(p);
@@ -760,8 +781,11 @@ static struct ast_node *unary_expression(struct parser *p)
         return branch_(tree, cast_expression(p), NULL);
 
     case '&':
+        p->is_addressof_operand = 1;
         tree = new_node_(NOD_ADDR, tokpos(p));
-        return branch_(tree, cast_expression(p), NULL);
+        tree = branch_(tree, cast_expression(p), NULL);
+        p->is_addressof_operand = 0;
+        return tree;
 
     case '!':
         tree = new_node_(NOD_NOT, tokpos(p));
@@ -789,10 +813,11 @@ static struct ast_node *unary_expression(struct parser *p)
                 ungettok(p);
             }
         }
-
+        p->is_sizeof_operand = 1;
         tree = new_node_(NOD_SIZEOF, tokpos(p));
         tree = branch_(tree, unary_expression(p), NULL);
         tree->ival = tree->l ? get_size(tree->l->type) : 0;
+        p->is_sizeof_operand = 0;
 
         return tree;
 

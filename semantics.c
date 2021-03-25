@@ -91,15 +91,18 @@ static void check_init_scalar(struct ast_node *node, struct tree_context *ctx)
 
         if (!is_compatible(t1, t2)) {
             if (!is_array(t1) && !is_struct(t1))
+                /*
                 add_error2(ctx->messages, &node->pos,
+                */
+                add_warning2(ctx->messages, &node->pos,
                         "initializing '%s' with an expression of incompatible type '%s'",
                         type_name_of(t1), type_name_of(t2));
         }
         break;
 
     case NOD_DECL_INIT:
-        /*
         check_init_scalar(node->r, ctx);
+        /*
         */
         break;
 

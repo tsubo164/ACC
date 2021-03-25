@@ -12,15 +12,14 @@ void bar()
 }
 */
 
-int *baz()
-{
-    int l = 234;
-    return &l;
-}
-
 int main()
 {
-    int i = 42;
+    int a[4] = {11, 22, 33, 44};
 
-    return i;
+    int *p = /*(int *)*/ a;
+
+    p = &a;
+    /*
+    */
+    return *(p + 3);
 }

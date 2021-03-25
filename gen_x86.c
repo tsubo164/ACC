@@ -806,7 +806,12 @@ static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_s
 
 static void gen_cast(FILE *fp, const struct ast_node *node)
 {
-    struct data_type *to = node->l->type;
+    struct data_type *to;
+
+    if (is_pointer(node->type))
+        return;
+
+    to = node->type;
 
     if (is_char(to)) {
         if (is_unsigned(to))
@@ -1354,7 +1359,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2__(fp, node, POP_, RDX);
 
         /* TODO find the best place to handle array subscript */
-        if (is_array(node->l->type)) {
+        if (is_array(node->l->type) || is_pointer(node->l->type)) {
             const int sz = get_size(underlying(node->l->type));
             code3__(fp, node, IMUL_, imme(sz), RAX);
         }

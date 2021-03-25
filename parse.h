@@ -35,12 +35,16 @@ struct parser {
     int is_unsigned;
     int is_panic_mode;
 
+    /* conversion context */
+    int is_sizeof_operand;
+    int is_addressof_operand;
+
     /* for initializer */
     struct data_type *init_type;
     const struct symbol *init_sym;
 };
 
-extern struct parser *new_parser();
+extern struct parser *new_parser(void);
 extern void free_parser(struct parser *p);
 extern struct ast_node *parse(struct parser *p);
 
