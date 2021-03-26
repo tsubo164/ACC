@@ -1,5 +1,7 @@
 #include /* hoge */ <stdio.h>
 
+//#define INPUT_C
+
 #ifndef INPUT_C
 #define INPUT_C
 

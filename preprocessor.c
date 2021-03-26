@@ -24,27 +24,27 @@ void strbuf_free(struct strbuf *s);
 
 void strbuf_init(struct strbuf *s)
 {
-	s->buf = NULL;
-	s->len = 0;
-	s->alloc = 0;
+    s->buf = NULL;
+    s->len = 0;
+    s->alloc = 0;
 }
 
 void strbuf_copy(struct strbuf *s, const char *c)
 {
-	const size_t new_len = strlen(c);
+    const size_t new_len = strlen(c);
 
-	strbuf_grow(s, new_len);
-	strcpy(s->buf, c);
-	s->len = new_len;
+    strbuf_grow(s, new_len);
+    strcpy(s->buf, c);
+    s->len = new_len;
 }
 
 void strbuf_append(struct strbuf *s, const char *c)
 {
     const char *pp;
     char *dst;
-	const size_t new_len = s->len + strlen(c);
+    const size_t new_len = s->len + strlen(c);
 
-	strbuf_grow(s, new_len);
+    strbuf_grow(s, new_len);
 
     pp = c;
     dst = &s->buf[s->len];
@@ -52,35 +52,35 @@ void strbuf_append(struct strbuf *s, const char *c)
         *dst++ = *pp++;
     *dst = '\0';
 
-	s->len = new_len;
+    s->len = new_len;
 }
 
 void strbuf_append_char(struct strbuf *s, char c)
 {
-	const size_t new_len = s->len + 1;
-	strbuf_grow(s, new_len);
+    const size_t new_len = s->len + 1;
+    strbuf_grow(s, new_len);
     s->buf[s->len]  = c;
     s->buf[new_len] = '\0';
-	s->len = new_len;
+    s->len = new_len;
 }
 
 void strbuf_grow(struct strbuf *s, size_t new_len)
 {
     static const size_t INIT_BUF_SIZE = 1024 * 16;
 
-	if (s->alloc < new_len + 1) {
+    if (s->alloc < new_len + 1) {
         const size_t new_alloc = s->alloc == 0 ? INIT_BUF_SIZE : s->alloc * 2;
-		s->buf = (char *) realloc(s->buf, sizeof(char) * new_alloc);
-		s->alloc = new_alloc;
-	}
+        s->buf = (char *) realloc(s->buf, sizeof(char) * new_alloc);
+        s->alloc = new_alloc;
+    }
 }
 
 void strbuf_free(struct strbuf *s)
 {
-	if (s->alloc > 0) {
-		free(s->buf);
-		strbuf_init(s);
-	}
+    if (s->alloc > 0) {
+        free(s->buf);
+        strbuf_init(s);
+    }
 }
 
 static unsigned int hash_fn(const char *key)
@@ -118,7 +118,7 @@ static void free_entry(struct macro_entry *entry)
     free(entry);
 }
 
-static struct macro_table *new_macro_table()
+static struct macro_table *new_macro_table(void)
 {
     struct macro_table *table = malloc(sizeof(struct macro_table));
     int i;
@@ -187,6 +187,8 @@ static void add_replacement(struct macro_entry *mac, const char *repl)
     const size_t alloc = strlen(repl) + 1;
     char *dst = malloc(sizeof(char) * alloc);
 
+    free(mac->repl);
+
     strncpy(dst, repl, alloc);
     mac->repl = dst;
 }
@@ -236,21 +238,26 @@ static void error_(struct preprocessor *pp, const char *msg)
 /* forward declarations */
 static void text_lines(struct preprocessor *pp);
 static void endif_line(struct preprocessor *pp);
+static void whitespaces(struct preprocessor *pp);
+
+static int is_skipping(struct preprocessor *pp)
+{
+    return pp->skip_depth > 0;
+}
 
 static void writec(struct preprocessor *pp, char c)
 {
-    /*
-    if (pp->skip_depth == 0)
-    */
-    strbuf_append_char(pp->text, c);
+    if (!is_skipping(pp) || c == '\n')
+        strbuf_append_char(pp->text, c);
 }
 
 static void writes(struct preprocessor *pp, const char *c)
 {
-    /*
-    if (pp->skip_depth == 0)
-    */
-    strbuf_append(pp->text, c);
+    if (!is_skipping(pp)) {
+        const char *p;
+        for (p = c; *p; p++)
+            strbuf_append_char(pp->text, *p);
+    }
 }
 
 static void write_line_directive(struct preprocessor *pp)
@@ -327,8 +334,6 @@ static void unreadc(struct preprocessor *pp, int c)
 {
     ungetc_(pp, c);
 }
-
-static void whitespaces(struct preprocessor *pp);
 
 static int is_whitespaces(int c)
 {
@@ -531,7 +536,7 @@ static void ifndef_part(struct preprocessor *pp)
     token(pp, ident);
     new_line(pp);
 
-    if (!lookup_macro(pp->mactab, ident))
+    if (lookup_macro(pp->mactab, ident))
         pp->skip_depth++;
 }
 
@@ -547,20 +552,32 @@ static void define_line(struct preprocessor *pp)
 {
     static char ident[128] = {'\0'};
     static char repl[1024] = {'\0'};
+    struct macro_entry *mac = NULL;
 
     token(pp, ident);
 
     token_list(pp, repl);
     new_line(pp);
 
-    {
-        struct macro_entry *mac = insert_macro(pp->mactab, ident);
+    mac = lookup_macro(pp->mactab, ident);
+    if (mac) {
+        if (strcmp(mac->repl, repl)) {
+            /* override */
+            add_replacement(mac, repl);
+            /* TODO generate warning */
+            error_(pp, "'' macro redefined\n");
+        }
+    } else {
+        mac = insert_macro(pp->mactab, ident);
         add_replacement(mac, repl);
     }
 }
 
-static void non_directive(struct preprocessor *pp)
+static void unknown_directive(struct preprocessor *pp, const char *direc)
 {
+    writes(pp, "# ");
+    writes(pp, direc);
+
     for (;;) {
         const int c = readc(pp);
         writec(pp, c);
@@ -575,21 +592,18 @@ static void directive_line(struct preprocessor *pp)
 
     token(pp, direc);
 
-    if (!strcmp(direc, "include"))
+    if (!strcmp(direc, "include") && !is_skipping(pp))
         include_line(pp);
+    else if (!strcmp(direc, "define") && !is_skipping(pp))
+        define_line(pp);
     else if (!strcmp(direc, "if"))
         if_part(pp);
     else if (!strcmp(direc, "ifndef"))
         ifndef_part(pp);
     else if (!strcmp(direc, "endif"))
         endif_line(pp);
-    else if (!strcmp(direc, "define"))
-        define_line(pp);
-    else {
-        writes(pp, "# ");
-        writes(pp, direc);
-        non_directive(pp);
-    }
+    else
+        unknown_directive(pp, direc);
 }
 
 static void expand(struct preprocessor *pp)
