@@ -163,6 +163,12 @@ int is_compatible(const struct data_type *t1, const struct data_type *t2)
     if (is_struct(t1) && is_struct(t2))
         return symbol_of(t1) == symbol_of(t2);
 
+    /* 6.3.2.3 Pointers void * <-> T * */
+    if (is_pointer(t1) && is_pointer(t2) && is_void(underlying(t2)))
+        return 1;
+    if (is_pointer(t1) && is_void(underlying(t1)) && is_pointer(t2))
+        return 1;
+
     if (is_pointer(t1) && is_pointer(t2))
         return is_compatible_underlying(underlying(t1), underlying(t2));
 

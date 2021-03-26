@@ -1,16 +1,14 @@
-#include /* hoge */ <stdio.h>
+#include <stdio.h>
 
-//#define INPUT_C
-
-#ifndef INPUT_C
-#define INPUT_C
+int a = 42;
 
 int main()
 {
-    //int *p = NULL;
-    int a = /* this is a comment */ b;
+    int *p = NULL;
 
-    return a;
+    void *v = p;
+
+    v = &a;
+
+    return *((int *)v);
 }
-
-#endif // _H
