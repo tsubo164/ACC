@@ -115,8 +115,6 @@ static void init_position(struct position *pos)
     pos->filename = NULL;
 }
 
-static void directive(struct lexer *l);
-
 void token_init(struct token *tok)
 {
     tok->kind = TOK_UNKNOWN;
@@ -135,6 +133,9 @@ void lexer_init(struct lexer *lex)
     init_position(&lex->pos);
     lex->prevx = 0;
 }
+
+static void read_line_number(struct lexer *l);
+static void read_column_number(struct lexer *l);
 
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
 {
@@ -359,7 +360,7 @@ state_initial:
         goto state_final;
 
     case '#':
-        directive(l);
+        read_line_number(l);
         goto state_initial;
 
     /* unknown */
@@ -495,6 +496,10 @@ state_block_comment:
         printf("error: unterminated /* comment\n");
         goto state_initial;
 
+    case '#':
+        read_column_number(l);
+        goto state_block_comment;
+
     default:
         goto state_block_comment;
     }
@@ -614,10 +619,12 @@ static int read_number(struct lexer *l)
 
     for (;;) {
         const int c = readc(l);
-        if (isdigit(c))
+        if (isdigit(c)) {
             num = num * 10 + c - '0';
-        else
+        } else {
+            unreadc(l, c);
             break;
+        }
     }
 
     return num;
@@ -639,7 +646,7 @@ static void read_file_path(struct lexer *l, char *path)
     }
 }
 
-static void directive(struct lexer *l)
+static void read_line_number(struct lexer *l)
 {
     static char path[256] = {'\0'};
     int num = 0;
@@ -660,4 +667,10 @@ static void directive(struct lexer *l)
 
     l->pos.y = num;
     l->pos.filename = make_text(l, path);
+}
+
+static void read_column_number(struct lexer *l)
+{
+    const int col = read_number(l);
+    l->pos.x = col;
 }

@@ -2,7 +2,8 @@
 
 int main()
 {
-    int *p = NULL;
+    //int *p = NULL;
+    int a = /* this is a comment */ b;
 
-    return 0;
+    return a;
 }

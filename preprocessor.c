@@ -360,6 +360,8 @@ static void line_comment(struct preprocessor *pp)
 
 static void block_comment(struct preprocessor *pp)
 {
+    const int starty = pp->y;
+
     for (;;) {
         const int c = readc(pp);
 
@@ -375,6 +377,13 @@ static void block_comment(struct preprocessor *pp)
             error_(pp, "unterminated /* comment");
             break;
         }
+    }
+
+    if (pp->y == starty) {
+        char poscomment[32] = {'\0'};
+        int pos = pp->x - 2; /* minus closing 'star and slash' */
+        sprintf(poscomment, "/*#%d*/", pos);
+        writes(pp, poscomment);
     }
 }
 
