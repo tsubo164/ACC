@@ -30,6 +30,8 @@ struct preprocessor {
     int y;
     int x;
     int prevx;
+
+    int skip_depth;
 };
 
 extern struct preprocessor *new_preprocessor(void);

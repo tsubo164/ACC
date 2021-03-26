@@ -1,4 +1,7 @@
-#include <stdio.h>
+#include /* hoge */ <stdio.h>
+
+#ifndef INPUT_C
+#define INPUT_C
 
 int main()
 {
@@ -7,3 +10,5 @@ int main()
 
     return a;
 }
+
+#endif // _H

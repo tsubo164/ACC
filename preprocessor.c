@@ -205,6 +205,8 @@ struct preprocessor *new_preprocessor(void)
     pp->x = 0;
     pp->prevx = 0;
 
+    pp->skip_depth = 0;
+
     return pp;
 }
 
@@ -237,11 +239,17 @@ static void endif_line(struct preprocessor *pp);
 
 static void writec(struct preprocessor *pp, char c)
 {
+    /*
+    if (pp->skip_depth == 0)
+    */
     strbuf_append_char(pp->text, c);
 }
 
 static void writes(struct preprocessor *pp, const char *c)
 {
+    /*
+    if (pp->skip_depth == 0)
+    */
     strbuf_append(pp->text, c);
 }
 
@@ -250,6 +258,14 @@ static void write_line_directive(struct preprocessor *pp)
     static char buf[256] = {'\0'};
 
     sprintf(buf, "# %d \"%s\"\n", pp->y, pp->filename);
+    writes(pp, buf);
+}
+
+static void write_column_comment(struct preprocessor *pp)
+{
+    char buf[32] = {'\0'};
+    const int pos = pp->x - 2; /* minus closing 'star and slash' */
+    sprintf(buf, "/*#%d*/", pos);
     writes(pp, buf);
 }
 
@@ -312,6 +328,8 @@ static void unreadc(struct preprocessor *pp, int c)
     ungetc_(pp, c);
 }
 
+static void whitespaces(struct preprocessor *pp);
+
 static int is_whitespaces(int c)
 {
     /* whitespaces other than new line */
@@ -321,17 +339,6 @@ static int is_whitespaces(int c)
 static int is_macroname(int c)
 {
     return isalnum(c) || c == '_' || c == '$';
-}
-
-static void whitespaces(struct preprocessor *pp)
-{
-    int c;
-    for (;;) {
-        c = readc(pp);
-        if (!is_whitespaces(c))
-            break;
-    }
-    unreadc(pp, c);
 }
 
 static void new_line(struct preprocessor *pp)
@@ -360,8 +367,6 @@ static void line_comment(struct preprocessor *pp)
 
 static void block_comment(struct preprocessor *pp)
 {
-    const int starty = pp->y;
-
     for (;;) {
         const int c = readc(pp);
 
@@ -378,12 +383,34 @@ static void block_comment(struct preprocessor *pp)
             break;
         }
     }
+}
 
-    if (pp->y == starty) {
-        char poscomment[32] = {'\0'};
-        int pos = pp->x - 2; /* minus closing 'star and slash' */
-        sprintf(poscomment, "/*#%d*/", pos);
-        writes(pp, poscomment);
+static void whitespaces(struct preprocessor *pp)
+{
+    for (;;) {
+        const int c = readc(pp);
+
+        if (c == '/') {
+            const int c1 = readc(pp);
+            if (c1 == '*') {
+                block_comment(pp);
+                continue;
+            }
+            else if (c1 == '/') {
+                line_comment(pp);
+                continue;
+            }
+            else {
+                unreadc(pp, c1);
+            }
+            unreadc(pp, c);
+            break;
+        }
+
+        if (!is_whitespaces(c)) {
+            unreadc(pp, c);
+            break;
+        }
     }
 }
 
@@ -497,9 +524,23 @@ static void if_part(struct preprocessor *pp)
     new_line(pp);
 }
 
+static void ifndef_part(struct preprocessor *pp)
+{
+    static char ident[128] = {'\0'};
+
+    token(pp, ident);
+    new_line(pp);
+
+    if (!lookup_macro(pp->mactab, ident))
+        pp->skip_depth++;
+}
+
 static void endif_line(struct preprocessor *pp)
 {
     new_line(pp);
+
+    if (pp->skip_depth)
+        pp->skip_depth--;
 }
 
 static void define_line(struct preprocessor *pp)
@@ -538,6 +579,8 @@ static void directive_line(struct preprocessor *pp)
         include_line(pp);
     else if (!strcmp(direc, "if"))
         if_part(pp);
+    else if (!strcmp(direc, "ifndef"))
+        ifndef_part(pp);
     else if (!strcmp(direc, "endif"))
         endif_line(pp);
     else if (!strcmp(direc, "define"))
@@ -576,7 +619,10 @@ static void text_lines(struct preprocessor *pp)
                 continue;
             }
             else if (c1 == '*') {
+                const int starty = pp->y;
                 block_comment(pp);
+                if (pp->y == starty)
+                    write_column_comment(pp);
                 continue;
             }
             else {
