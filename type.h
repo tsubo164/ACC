@@ -66,14 +66,15 @@ extern int is_struct(const struct data_type *type);
 extern int is_enum(const struct data_type *type);
 extern int is_type_name(const struct data_type *type);
 
+extern void make_type_name(const struct data_type *type, char *buf);
 extern const char *type_name_of(const struct data_type *type);
 extern void print_data_type(const struct data_type *type);
 
-extern struct data_type *type_void();
-extern struct data_type *type_char();
-extern struct data_type *type_short();
-extern struct data_type *type_int();
-extern struct data_type *type_long();
+extern struct data_type *type_void(void);
+extern struct data_type *type_char(void);
+extern struct data_type *type_short(void);
+extern struct data_type *type_int(void);
+extern struct data_type *type_long(void);
 extern struct data_type *type_pointer(struct data_type *base_type);
 extern struct data_type *type_array(struct data_type *base_type);
 extern struct data_type *type_struct(const char *tag);

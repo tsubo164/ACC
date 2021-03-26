@@ -275,6 +275,64 @@ int is_type_name(const struct data_type *type)
     return type->kind == DATA_TYPE_TYPE_NAME;
 }
 
+char *make_type_name_(const struct data_type *type, char *buf)
+{
+    char *p = buf;
+    int n = 0;
+
+    if (!type)
+        return NULL;
+
+    if (is_void(type)) {
+        sprintf(p, "void %n", &n);
+        p += n;
+    }
+    else if (is_char(type)) {
+        sprintf(p, "char %n", &n);
+        p += n;
+    }
+    else if (is_short(type)) {
+        sprintf(p, "short %n", &n);
+        p += n;
+    }
+    else if (is_int(type)) {
+        sprintf(p, "int %n", &n);
+        p += n;
+    }
+    else if (is_long(type)) {
+        sprintf(p, "long %n", &n);
+        p += n;
+    }
+    else if (is_pointer(type)) {
+        p = make_type_name_(underlying(type), p);
+        if (is_array(underlying(type)))
+            sprintf(p, "(*) %n", &n);
+        else
+            sprintf(p, "* %n", &n);
+        p += n;
+    }
+    else if (is_array(type)) {
+        p = make_type_name_(underlying(type), p);
+        sprintf(p, "[%d] %n", get_array_length(type), &n);
+        p += n;
+    }
+    else if (is_struct(type)) {
+        sprintf(p, "struct %s %n", symbol_of(type)->name, &n);
+        p += n;
+    }
+
+    return p;
+}
+
+void make_type_name(const struct data_type *type, char *buf)
+{
+    char *p;
+    p = make_type_name_(type, buf);
+    /* trim trailing space */
+    if (p != buf)
+        *(p-1) = '\0';
+}
+
 const char *type_name_of(const struct data_type *type)
 {
     if (!type)
@@ -322,27 +380,27 @@ static struct data_type *clone(const struct data_type *orig)
     return type;
 }
 
-struct data_type *type_void()
+struct data_type *type_void(void)
 {
     return clone(&VOID_);
 }
 
-struct data_type *type_char()
+struct data_type *type_char(void)
 {
     return clone(&CHAR_);
 }
 
-struct data_type *type_short()
+struct data_type *type_short(void)
 {
     return clone(&SHORT_);
 }
 
-struct data_type *type_int()
+struct data_type *type_int(void)
 {
     return clone(&INT_);
 }
 
-struct data_type *type_long()
+struct data_type *type_long(void)
 {
     return clone(&LONG_);
 }
