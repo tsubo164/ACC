@@ -306,14 +306,14 @@ char *make_type_name_(const struct data_type *type, char *buf)
     else if (is_pointer(type)) {
         p = make_type_name_(underlying(type), p);
         if (is_array(underlying(type)))
-            sprintf(p, "(*) %n", &n);
+            sprintf(p, "(*)%n", &n);
         else
-            sprintf(p, "* %n", &n);
+            sprintf(p, "*%n", &n);
         p += n;
     }
     else if (is_array(type)) {
         p = make_type_name_(underlying(type), p);
-        sprintf(p, "[%d] %n", get_array_length(type), &n);
+        sprintf(p, "[%d]%n", get_array_length(type), &n);
         p += n;
     }
     else if (is_struct(type)) {
@@ -329,7 +329,7 @@ void make_type_name(const struct data_type *type, char *buf)
     char *p;
     p = make_type_name_(type, buf);
     /* trim trailing space */
-    if (p != buf)
+    if (p != buf && *(p-1) == ' ')
         *(p-1) = '\0';
 }
 
