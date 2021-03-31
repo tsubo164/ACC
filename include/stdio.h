@@ -1,7 +1,7 @@
 #ifndef __STDIO_H
 #define __STDIO_H
 
-#define NULL ((void *)0)
+#include <stddef.h>
 
 int printf(char *s, int i);
 int puts(char *s);
