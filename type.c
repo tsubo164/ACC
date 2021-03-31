@@ -373,6 +373,13 @@ void print_data_type(const struct data_type *type)
     printf("    sym:       %p\n", (void *) type->sym);
 }
 
+void copy_data_type(struct data_type *dst, const struct data_type *src)
+{
+    if (!dst || !src || dst == src)
+        return;
+    *dst = *src;
+}
+
 static struct data_type *clone(const struct data_type *orig)
 {
     struct data_type *type = malloc(sizeof(struct data_type));

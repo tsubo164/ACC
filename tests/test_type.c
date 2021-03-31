@@ -175,6 +175,34 @@ int main()
         i = 1223034;
         assert(-22150, (short) i);
     }
+    {
+        /* declarators */
+        int a;
+        short *b, c[3];
+        int (*d)[3];
+        long *e[3];
+        char (f);
+        long (**g[3]);
+        long (*(*h)[3]);
+
+        a = 1;
+        b = 0;
+        c[0] = 0;
+        d = 0;
+        e[0] = 0;
+        f = 0;
+        g[0] = 0;
+        h = 0;
+
+        assert(4, sizeof a);
+        assert(8, sizeof b);
+        assert(6, sizeof c);
+        assert(8, sizeof d);
+        assert(24, sizeof e);
+        assert(1, sizeof f);
+        assert(24, sizeof g);
+        assert(8, sizeof h);
+    }
 
     return 0;
 }

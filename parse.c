@@ -147,7 +147,6 @@ struct parser *new_parser(void)
     p->decl_kind = 0;
     p->decl_ident = NULL;
     p->decl_type = NULL;
-    p->decl_id = NULL;
 
     p->enum_value = 0;
     p->func_sym = NULL;
@@ -2032,18 +2031,28 @@ static struct ast_node *array(struct parser *p)
     return tree;
 }
 
+/*
+ * direct_declarator
+ *     TOK_IDENT
+ *     '(' declarator ')'
+ *     direct_declarator '[' constant_expression ']'
+ *     direct_declarator '[' ']'
+ *     direct_declarator '(' parameter_type_list ')'
+ *     direct_declarator '(' identifier_list ')'
+ *     direct_declarator '(' ')'
+ */
 static struct ast_node *direct_declarator(struct parser *p)
 {
     struct ast_node *tree = NULL;
     struct ast_node *ident = NULL;
-            struct data_type *ph = NULL;
+    struct data_type *placeholder = NULL;
 
     tree = NEW_(NOD_DECL_DIRECT);
 
     if (consume(p, '(')) {
         struct data_type *tmp = p->decl_type;
-        ph = type_void();
-        p->decl_type = ph;
+        placeholder = type_void();
+        p->decl_type = placeholder;
 
         tree->r = declarator(p);
         expect(p, ')');
@@ -2054,15 +2063,10 @@ static struct ast_node *direct_declarator(struct parser *p)
     if (nexttok(p, TOK_IDENT)) {
         ident = decl_identifier(p);
         tree->r = ident;
-        p->decl_id = ident;
-    } else {
-        /* no identifier declared */
-        /*
-        return tree;
-        */
     }
 
-    tree->l = array(p);
+    if (nexttok(p, '['))
+        tree->l = array(p);
 
     if (consume(p, '(')) {
         /* function */
@@ -2080,11 +2084,11 @@ static struct ast_node *direct_declarator(struct parser *p)
     } else {
         /* variable, parameter, member, typedef */
         if (ident)
-        define_sym(p, ident);
+            define_sym(p, ident);
     }
 
-    if (ph)
-        *ph = *p->decl_type;
+    if (placeholder)
+        copy_data_type(placeholder, p->decl_type);
 
     return typed_(tree);
 }
@@ -2224,14 +2228,6 @@ static struct ast_node *init_declarator(struct parser *p)
     struct ast_node *tree = NEW_(NOD_DECL_INIT);
 
     tree->l = declarator(p);
-
-    {
-        /*
-        char buf[64] = {'\0'};
-        make_type_name(p->decl_id->type, buf);
-        printf(">>    %s => '%s'\n", p->decl_id->sym->name, buf);
-        */
-    }
 
     if (consume(p, '=')) {
         p->init_type = p->decl_type;

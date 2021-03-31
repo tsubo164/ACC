@@ -1,8 +1,6 @@
 #ifndef TYPE_H
 #define TYPE_H
 
-#include "string_table.h"
-
 enum data_type_kind {
     DATA_TYPE_VOID,
     DATA_TYPE_CHAR,
@@ -69,6 +67,7 @@ extern int is_type_name(const struct data_type *type);
 extern void make_type_name(const struct data_type *type, char *buf);
 extern const char *type_name_of(const struct data_type *type);
 extern void print_data_type(const struct data_type *type);
+extern void copy_data_type(struct data_type *dst, const struct data_type *src);
 
 extern struct data_type *type_void(void);
 extern struct data_type *type_char(void);
