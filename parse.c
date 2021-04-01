@@ -485,49 +485,14 @@ static int decl_is_func(struct parser *p)
     return p->decl_kind == SYM_FUNC || p->decl_kind == SYM_PARAM;
 }
 
-static void begin_typedef(struct parser *p)
-{
-    p->is_typedef = 1;
-}
-
-static void end_typedef(struct parser *p)
-{
-    p->is_typedef = 0;
-}
-
-static int decl_is_typedef(struct parser *p)
-{
-    return p->is_typedef == 1;
-}
-
-static void begin_extern(struct parser *p)
-{
-    p->is_extern = 1;
-}
-
-static void end_extern(struct parser *p)
-{
-    p->is_extern = 0;
-}
-
-static void begin_static(struct parser *p)
-{
-    p->is_static = 1;
-}
-
-static void end_static(struct parser *p)
-{
-    p->is_static = 0;
-}
-
 static void decl_reset_context(struct parser *p)
 {
     p->decl_kind = 0;
     p->decl_ident = NULL;
     p->decl_type = NULL;
-    end_typedef(p);
-    end_extern(p);
-    end_static(p);
+    p->is_typedef = 0;
+    p->is_extern = 0;
+    p->is_static = 0;
 }
 
 /*
@@ -2300,17 +2265,17 @@ static struct ast_node *storage_class_specifier(struct parser *p)
 
     case TOK_TYPEDEF:
         tree = new_node_(NOD_DECL_TYPEDEF, tokpos(p));
-        begin_typedef(p);
+        p->is_typedef = 1;
         break;
 
     case TOK_EXTERN:
         tree = new_node_(NOD_DECL_EXTERN, tokpos(p));
-        begin_extern(p);
+        p->is_extern = 1;
         break;
 
     case TOK_STATIC:
         tree = new_node_(NOD_DECL_STATIC, tokpos(p));
-        begin_static(p);
+        p->is_static = 1;
         break;
 
     default:
@@ -2372,7 +2337,7 @@ static struct ast_node *declaration_specifiers(struct parser *p)
         p->is_unsigned = 0;
     }
 
-    if (decl_is_typedef(p))
+    if (p->is_typedef == 1)
         decl_set_kind(p, SYM_TYPEDEF);
     else
         decl_set_kind(p, SYM_VAR);
