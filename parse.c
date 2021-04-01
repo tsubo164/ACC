@@ -375,16 +375,12 @@ static void define_sym(struct parser *p, struct ast_node *node)
         decl_type = p->decl_type;
 
     sym = define_symbol(p->symtab, p->decl_ident, p->decl_kind, decl_type);
-    /* >> TODO make func */
+
     if (p->decl_kind != SYM_TAG_STRUCT &&
         p->decl_kind != SYM_TAG_ENUM) {
         sym->is_extern = p->is_extern;
         sym->is_static = p->is_static;
     }
-
-    p->is_const = 0;
-    p->is_unsigned = 0;
-    /* << make func */
     sym->pos = node->pos;
 
     node->sym = sym;
@@ -1614,8 +1610,13 @@ static struct ast_node *specifier_qualifier_list(struct parser *p)
     if (!tree)
         return NULL;
 
-    set_const(p->decl_type, p->is_const);
-    set_unsigned(p->decl_type, p->is_unsigned);
+    if (p->decl_kind != SYM_TAG_STRUCT &&
+        p->decl_kind != SYM_TAG_ENUM) {
+        set_const(p->decl_type, p->is_const);
+        set_unsigned(p->decl_type, p->is_unsigned);
+        p->is_const = 0;
+        p->is_unsigned = 0;
+    }
 
     return tree;
 }
@@ -1728,10 +1729,14 @@ static struct ast_node *struct_declaration_list(struct parser *p)
 {
     struct ast_node *tree = NULL, *list = NULL;
     struct data_type *tmp = p->decl_type;
+    const int decl_kind = p->decl_kind;
     const int is_extern = p->is_extern;
     const int is_static = p->is_static;
+    const int is_const = p->is_const;
+    p->decl_kind = 0;
     p->is_extern = 0;
     p->is_static = 0;
+    p->is_const = 0;
 
     for (;;) {
         struct ast_node *decl = struct_declaration(p);
@@ -1744,8 +1749,10 @@ static struct ast_node *struct_declaration_list(struct parser *p)
     }
 
     p->decl_type = tmp;
+    p->decl_kind = decl_kind;
     p->is_extern = is_extern;
     p->is_static = is_static;
+    p->is_const = is_const;
 
     return tree;
 }
@@ -2293,7 +2300,6 @@ static struct ast_node *storage_class_specifier(struct parser *p)
 
     case TOK_TYPEDEF:
         tree = new_node_(NOD_DECL_TYPEDEF, tokpos(p));
-        decl_set_type(p, type_void());
         begin_typedef(p);
         break;
 
@@ -2358,8 +2364,13 @@ static struct ast_node *declaration_specifiers(struct parser *p)
     if (!tree)
         return NULL;
 
-    set_const(p->decl_type, p->is_const);
-    set_unsigned(p->decl_type, p->is_unsigned);
+    if (p->decl_kind != SYM_TAG_STRUCT &&
+        p->decl_kind != SYM_TAG_ENUM) {
+        set_const(p->decl_type, p->is_const);
+        set_unsigned(p->decl_type, p->is_unsigned);
+        p->is_const = 0;
+        p->is_unsigned = 0;
+    }
 
     if (decl_is_typedef(p))
         decl_set_kind(p, SYM_TYPEDEF);
