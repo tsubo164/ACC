@@ -376,10 +376,12 @@ static void define_sym(struct parser *p, struct ast_node *node)
 
     sym = define_symbol(p->symtab, p->decl_ident, p->decl_kind, decl_type);
     /* >> TODO make func */
-    sym->is_extern = p->is_extern;
-    sym->is_static = p->is_static;
-    p->is_extern = 0;
-    p->is_static = 0;
+    if (p->decl_kind != SYM_TAG_STRUCT &&
+        p->decl_kind != SYM_TAG_ENUM) {
+        sym->is_extern = p->is_extern;
+        sym->is_static = p->is_static;
+    }
+
     p->is_const = 0;
     p->is_unsigned = 0;
     /* << make func */
@@ -1726,6 +1728,10 @@ static struct ast_node *struct_declaration_list(struct parser *p)
 {
     struct ast_node *tree = NULL, *list = NULL;
     struct data_type *tmp = p->decl_type;
+    const int is_extern = p->is_extern;
+    const int is_static = p->is_static;
+    p->is_extern = 0;
+    p->is_static = 0;
 
     for (;;) {
         struct ast_node *decl = struct_declaration(p);
@@ -1738,6 +1744,9 @@ static struct ast_node *struct_declaration_list(struct parser *p)
     }
 
     p->decl_type = tmp;
+    p->is_extern = is_extern;
+    p->is_static = is_static;
+
     return tree;
 }
 
