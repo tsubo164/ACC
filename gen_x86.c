@@ -473,26 +473,6 @@ static void code3__(FILE *fp, const struct ast_node *node,
 /* forward declaration */
 static void gen_code(FILE *fp, const struct ast_node *node);
 
-static int gen_one_param(FILE *fp, const struct ast_node *node, int reg_index)
-{
-    int max_index = 0;
-
-    if (!node)
-        return reg_index;
-
-    max_index = gen_one_param(fp, node->l, reg_index);
-    max_index = gen_one_param(fp, node->r, max_index);
-
-    if (node->kind == NOD_DECL_IDENT) {
-        const int disp = -get_mem_offset(node);
-
-        code3__(fp, node, MOV_, arg(max_index), addr2(RBP, disp));
-        return max_index + 1;
-    } else {
-        return max_index;
-    }
-}
-
 static const struct ast_node *find_node(const struct ast_node *node, int node_kind)
 {
     const struct ast_node *found = NULL;
@@ -516,9 +496,22 @@ static const struct ast_node *find_node(const struct ast_node *node, int node_ki
 
 static void gen_func_param_list(FILE *fp, const struct ast_node *node)
 {
-    const struct ast_node *fdecl;
+    const struct ast_node *fdecl, *func;
+    const struct symbol *sym;
+    int index = 0;
+
     fdecl = find_node(node, NOD_DECL_FUNC);
-    gen_one_param(fp, fdecl->r, 0);
+    func = find_node(fdecl->l, NOD_DECL_IDENT);
+
+    for (sym = first_param(func->sym); sym; sym = next_param(sym)) {
+        const int disp = -1 * sym->mem_offset;
+        /* TODO consider removing dummy by changing node parameter to data_type */
+        struct ast_node dummy = {0};
+        dummy.type = sym->type;
+
+        code3__(fp, &dummy, MOV_, arg(index), addr2(RBP, disp));
+        index++;
+    }
 }
 
 static void gen_func_prologue(FILE *fp, const struct ast_node *node)

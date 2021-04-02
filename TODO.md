@@ -5,6 +5,10 @@
 
 * OPTIONAL
   - char[] from string literal
+  - simplify ast
+    - remove `NOD_SPEC_*` from tree
+    - remove `NOD_DECL_*` from tree
+    - add `struct declaration` to manage decl context and use it as parse param
   - unversal type string for better messages
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics
   - use registers r10 r11

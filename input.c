@@ -1,14 +1,27 @@
-//#include <stdio.h>
-//#include <string.h>
+/*
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+*/
 
-#define HASH_SIZE 1237 /* a prime number */
+struct point {
+    int x, y;
+};
 
-unsigned int dummy(unsigned int x)
+int getx(struct point *p)
 {
-    return x % HASH_SIZE;
+    return p->x;
+}
+
+int sub(int x, int y)
+{
+    return x - y;
 }
 
 int main()
 {
-    return dummy(139);
+    struct point p = {42, 71};
+    int x = 11, y = 3;
+
+    return getx(&p) + sub(x, y);
 }
