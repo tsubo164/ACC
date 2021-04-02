@@ -1,21 +1,14 @@
-#include <stdio.h>
-#include <string.h>
+//#include <stdio.h>
+//#include <string.h>
+
+#define HASH_SIZE 1237 /* a prime number */
+
+unsigned int dummy(unsigned int x)
+{
+    return x % HASH_SIZE;
+}
 
 int main()
 {
-    //typedef int ID;
-    static const struct foo {
-        int a;
-    } f;
-
-    char *s = "hello, world!\n";
-    char *t = "aello, world!\n";
-    /*
-    ID i = 19;
-    return i;
-    */
-    int i = strcmp(s, t);
-    printf("---------> %d\n", i);
-    //f.a = 19;
-    return strcmp(s, t);
+    return dummy(139);
 }

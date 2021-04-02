@@ -61,7 +61,9 @@ const struct opecode MOV_   = {"mov",   1};
 const struct opecode ADD_   = {"add",   1};
 const struct opecode SUB_   = {"sub",   1};
 const struct opecode IMUL_  = {"imul",  1};
+const struct opecode DIV_   = {"div",   1};
 const struct opecode IDIV_  = {"idiv",  1};
+const struct opecode XOR_   = {"xor",   1};
 const struct opecode CMP_   = {"cmp",   1};
 const struct opecode POP_   = {"pop",   0};
 const struct opecode PUSH_  = {"push",  0};
@@ -704,7 +706,14 @@ static void gen_store(FILE *fp, const struct ast_node *node, struct operand addr
 
 static void gen_div(FILE *fp, const struct ast_node *node, struct operand divider)
 {
-    /* rax -> rdx:rax */
+    /* rax -> rdx:rax (zero extend) */
+    if (is_unsigned(node->type)) {
+        code3__(fp, node, XOR_, D_, D_);
+        code2__(fp, node, DIV_, divider);
+        return;
+    }
+
+    /* rax -> rdx:rax (signed extend) */
     if (is_long(node->type))
         code1__(fp, node, CQTO_);
     else
