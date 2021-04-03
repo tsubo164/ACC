@@ -1,3 +1,16 @@
+* SELF COMPILE
+  - [ ] `ast.c`
+  - [ ] `gen_x86.c`
+  - [ ] `lexer.c`
+  - [ ] `main.c`
+  - [ ] `message.c`
+  - [ ] `parse.c`
+  - [ ] `preprocessor.c`
+  - [ ] `semantics.c`
+  - [x] `string_table.c`
+  - [ ] `symbol.c`
+  - [ ] `type.c`
+
 * TODO
   - struct arg
   - struct assign

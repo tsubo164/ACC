@@ -554,7 +554,6 @@ static void gen_func_epilogue(FILE *fp, const struct ast_node *node)
 static void gen_func_call(FILE *fp, const struct ast_node *node)
 {
     static int reg_count = 0;
-    int i;
 
     if (!node)
         return;
@@ -562,15 +561,22 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
     switch (node->kind) {
 
     case NOD_CALL:
-        reg_count = 0;
-        /* push args */
-        gen_func_call(fp, node->r);
-        /* pop args */
-        for (i = 0; i < reg_count; i++)
-            code2__(fp, node, POP_, arg(i));
-        /* call */
-        code2__(fp, node, CALL_, str(node->l->sym->name));
-        return;
+        {
+            int tmp = reg_count;
+            int i;
+
+            reg_count = 0;
+            /* push args */
+            gen_func_call(fp, node->r);
+            /* pop args */
+            for (i = 0; i < reg_count; i++)
+                code2__(fp, node, POP_, arg(i));
+            /* call */
+            code2__(fp, node, CALL_, str(node->l->sym->name));
+
+            reg_count = tmp;
+            return;
+        }
 
     case NOD_ARG:
         /* push args */

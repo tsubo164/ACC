@@ -6,6 +6,22 @@ struct point {
     int y;
 };
 
+int getx(struct point *p)
+{
+    return p->x;
+}
+
+int gety(struct point *p)
+{
+    return p->y;
+}
+
+void add_point(struct point *out, struct point *p, struct point *q)
+{
+    out->x = p->x + q->x;
+    out->y = p->y + q->y;
+}
+
 typedef struct vec {
     int x, y, z;
 } vec;
@@ -223,6 +239,22 @@ int main()
         assert(8, sizeof (struct foo));
         assert(29, f.i);
         assert(31, f.j);
+    }
+    {
+        /* struct pointer for functions */
+        struct point p = {42, 71};
+        struct point q = {13, 49};
+        struct point result;
+
+        /* function calls in function arguments */
+        assert(42, getx(&p));
+        assert(42, p.x);
+        assert(49, gety(&q));
+
+        add_point(&result, &p, &q);
+
+        assert(55, getx(&result));
+        assert(120, gety(&result));
     }
 
     return 0;
