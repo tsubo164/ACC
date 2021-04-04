@@ -256,7 +256,11 @@ static struct ast_node *typed_(struct ast_node *node)
         break;
 
     case NOD_STRING:
-        node->type = type_pointer(type_char());
+        node->type = type_array(type_char());
+        {
+            int len = strlen(node->sval);
+            set_array_length(node->type, len);
+        }
         break;
 
     case NOD_SIZEOF:
@@ -552,7 +556,7 @@ static struct ast_node *primary_expression(struct parser *p)
         tree = new_node_(NOD_STRING, tokpos(p));
         copy_token_text(p, tree);
         define_string(p, tree);
-        return typed_(tree);
+        return convert_(p, typed_(tree));
 
     case TOK_IDENT:
         ungettok(p);

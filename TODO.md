@@ -17,7 +17,6 @@
   - variable arguments
 
 * OPTIONAL
-  - char[] from string literal
   - simplify ast
     - remove `NOD_SPEC_*` from tree
     - remove `NOD_DECL_*` from tree
@@ -97,3 +96,4 @@
   - improve `is_compatible` e.g. ptr = 0, ptr = array, ...
   - std stuff FILE, stderro, NULL ...
   - pp needs to adjust pos x when skipping block comment
+  - char[] from string literal
