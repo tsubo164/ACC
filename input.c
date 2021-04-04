@@ -7,5 +7,5 @@
 int main()
 {
     puts("string!");
-    return sizeof "Hello, world\n";
+    return sizeof "He\nllo, world\n";
 }

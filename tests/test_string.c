@@ -15,6 +15,7 @@ int main()
     {
         /* size of string literal */
         assert(14, sizeof "Hello, world\n");
+        assert(15, sizeof "He\tllo, world\n");
     }
 
     return 0;

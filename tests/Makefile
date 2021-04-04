@@ -13,14 +13,14 @@ all: $(targets)
 
 test: all
 
-$(targets): %: %.c test.o test.h
+$(targets): %: %.c test.o test.h $(ACC)
 	@printf '%-15s ... ' $@.c
 	@$(ACC) $@.c
 	@$(CC) -c -o $@.o $@.s
 	@$(CC) -o $@.out $@.o test.o
 	@./$@.out && echo "\033[0;32mOK\033[0;39m"
 
-test.o: test.c test.h
+test.o: test.c test.h $(ACC)
 	@echo 'compiling test.c ..'
 	@$(ACC) test.c 
 	@$(CC) -c -o test.o test.s

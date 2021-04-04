@@ -137,6 +137,27 @@ void lexer_init(struct lexer *lex)
 static void read_line_number(struct lexer *l);
 static void read_column_number(struct lexer *l);
 
+static int read_escape_sequence(struct lexer *l)
+{
+    const int c = readc(l);
+
+    switch (c) {
+    case '0':  return '\0';
+    case '\\': return '\\';
+    case '\'': return '\'';
+    case 'a':  return '\a';
+    case 'b':  return '\b';
+    case 'f':  return '\f';
+    case 'n':  return '\n';
+    case 'r':  return '\r';
+    case 't':  return '\t';
+    case 'v':  return '\v';
+    default:
+        /* TODO error/warning */
+        return c;
+    }
+}
+
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
 {
     static char textbuf[1024] = {'\0'};
@@ -428,6 +449,10 @@ state_string_literal:
         tok->kind = TOK_STRING_LITERAL;
         goto state_final;
 
+    case '\\':
+        *buf++ = read_escape_sequence(l);
+        goto state_string_literal;
+
     default:
         *buf++ = c;
         goto state_string_literal;
@@ -436,28 +461,12 @@ state_string_literal:
 state_char_literal:
     c = readc(l);
 
-    if (c == '\\') {
-        c = readc(l);
-        switch (c) {
-        case '0':  tok->value = '\0'; break;
-        case '\\': tok->value = '\\'; break;
-        case '\'': tok->value = '\''; break;
-        case 'a':  tok->value = '\a'; break;
-        case 'b':  tok->value = '\b'; break;
-        case 'f':  tok->value = '\f'; break;
-        case 'n':  tok->value = '\n'; break;
-        case 'r':  tok->value = '\r'; break;
-        case 't':  tok->value = '\t'; break;
-        case 'v':  tok->value = '\v'; break;
-        default:
-            /* error */
-            break;
-        }
-        tok->kind = TOK_NUM;
-    } else {
-        tok->kind = TOK_NUM;
+    if (c == '\\')
+        tok->value = read_escape_sequence(l);
+    else
         tok->value = c;
-    }
+    tok->kind = TOK_NUM;
+
     c = readc(l);
     if (c != '\'')
         ;/* error */

@@ -258,7 +258,7 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_STRING:
         node->type = type_array(type_char());
         {
-            int len = strlen(node->sval);
+            int len = strlen(node->sval) + 1;
             set_array_length(node->type, len);
         }
         break;
