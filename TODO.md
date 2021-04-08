@@ -15,6 +15,7 @@
   - struct arg
   - struct assign
   - variable arguments
+  - convert from pointer to int e.g. if (node)
 
 * OPTIONAL
   - simplify ast

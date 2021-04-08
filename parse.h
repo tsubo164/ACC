@@ -38,6 +38,7 @@ struct parser {
     /* conversion context */
     int is_sizeof_operand;
     int is_addressof_operand;
+    int is_array_initializer;
 
     /* for initializer */
     struct data_type *init_type;

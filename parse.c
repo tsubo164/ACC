@@ -160,6 +160,7 @@ struct parser *new_parser(void)
 
     p->is_sizeof_operand = 0;
     p->is_addressof_operand = 0;
+    p->is_array_initializer = 0;
 
     p->init_type = NULL;
     p->init_sym = NULL;
@@ -356,7 +357,9 @@ static struct ast_node *convert_(struct parser *p, struct ast_node *node)
 
     if (is_array(node->type) &&
         !p->is_sizeof_operand &&
-        !p->is_addressof_operand) {
+        !p->is_addressof_operand &&
+        !(p->is_array_initializer && node->kind == NOD_STRING)) {
+
         struct ast_node *tree = new_node_(NOD_CAST, tokpos(p));
         tree = branch_(tree, NULL, node);
         type_set(tree, type_pointer(underlying(node->type)));
@@ -2208,23 +2211,30 @@ static struct ast_node *initializer_list(struct parser *p)
     return tree;
 }
 
+/* init_declarator
+ *     declarator
+ *     declarator '=' initializer
+ */
 static struct ast_node *init_declarator(struct parser *p)
 {
-    struct ast_node *tree = NEW_(NOD_DECL_INIT);
+    struct ast_node *tree = new_node_(NOD_DECL_INIT, tokpos(p));
+    struct ast_node *decl = NULL, *init = NULL;
 
-    tree->l = declarator(p);
+    decl = declarator(p);
 
     if (consume(p, '=')) {
         p->init_type = p->decl_type;
         p->init_sym = symbol_of(p->init_type);
+        p->is_array_initializer = is_array(decl->type);
 
-        tree->r = initializer(p);
+        init = initializer(p);
 
+        p->is_array_initializer = 0;
         p->init_type = NULL;
         p->init_sym = NULL;
     }
 
-    return typed_(tree);
+    return branch_(tree, decl, init);
 }
 
 /*
