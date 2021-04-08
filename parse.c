@@ -2081,22 +2081,33 @@ static struct ast_node *direct_declarator(struct parser *p)
     return typed_(tree);
 }
 
+/* pointer
+ *     '*'
+ *     '*' type_qualifier_list
+ *     '*' pointer
+ *     '*' type_qualifier_list pointer
+ */
 static struct ast_node *pointer(struct parser *p)
 {
-    struct ast_node *tree = NULL;
+    struct ast_node *tree = NULL, *ptr = NULL;
 
     while (consume(p, '*')) {
         /* we treat as if the first '*' is associated with type specifier */
-        tree = new_node(NOD_SPEC_POINTER, tree, NULL);
+        ptr = new_node_(NOD_SPEC_POINTER, tokpos(p));
+        tree = branch_(ptr, tree, NULL);
         decl_set_type(p, type_pointer(p->decl_type));
     }
 
     return tree;
 }
 
+/* declarator
+ *     pointer direct_declarator
+ *     direct_declarator
+ */
 static struct ast_node *declarator(struct parser *p)
 {
-    struct ast_node *tree = NEW_(NOD_DECLARATOR);
+    struct ast_node *tree = new_node_(NOD_DECLARATOR, tokpos(p));
 
     tree->l = pointer(p);
     tree->r = direct_declarator(p);
@@ -2114,14 +2125,16 @@ static struct ast_node *initializer(struct parser *p)
 {
     /* ',' at the end of list is handled by initializer_list */
     struct ast_node *tree = NULL;
-    struct ast_node *init;
+    struct ast_node *init = NULL;
 
+    p->is_array_initializer = is_array(p->init_type);
     if (consume(p, '{')) {
         init = initializer_list(p);
         expect(p, '}');
     } else {
         init = assignment_expression(p);
     }
+    p->is_array_initializer = 0;
 
     tree = new_node_(NOD_INIT, tokpos(p));
     tree = branch_(tree, NULL, init);
@@ -2186,6 +2199,7 @@ static struct ast_node *initializer_list(struct parser *p)
 
     for (;;) {
         struct ast_node *init = NULL, *list = NULL;
+
         init = initializer(p);
 
         if (!init)
@@ -2225,11 +2239,9 @@ static struct ast_node *init_declarator(struct parser *p)
     if (consume(p, '=')) {
         p->init_type = p->decl_type;
         p->init_sym = symbol_of(p->init_type);
-        p->is_array_initializer = is_array(decl->type);
 
         init = initializer(p);
 
-        p->is_array_initializer = 0;
         p->init_type = NULL;
         p->init_sym = NULL;
     }

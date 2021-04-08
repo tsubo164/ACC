@@ -8,6 +8,11 @@ char s[3] = "abc";
 
 char *str = "abc";
 
+struct foo {
+    int i;
+    char s[8];
+} f = {42, "FOO"};
+
 int main()
 {
     /*
@@ -15,5 +20,5 @@ int main()
     short s[] = {11, 22};
     */
 
-    return s[0];
+    return f.i;
 }
