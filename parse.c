@@ -245,6 +245,17 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = node->sym->type;
         break;
 
+    /* logical ops */
+    case NOD_LOGICAL_AND:
+    case NOD_LOGICAL_OR:
+    case NOD_NOT:
+        node->type = promote_type(node->l, node->r);
+        if (is_pointer(node->type))
+            node->type = type_long();
+        else
+            node->type = type_int();
+        break;
+
     /* nodes without type */
     case NOD_DECL:
     case NOD_LIST:

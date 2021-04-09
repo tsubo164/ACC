@@ -192,6 +192,14 @@ int main()
         b = 337;
         assert(-124, a % b);
     }
+    {
+        /* implicit conversion from logical ops with pointer type */
+        int *p = (void *) 0;
+        int a = !p;
+
+        assert(1, a);
+        assert(1, !p && 1);
+    }
 
     return 0;
 }

@@ -15,7 +15,6 @@
   - struct arg
   - struct assign
   - variable arguments
-  - convert from pointer to int e.g. if (node)
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;
@@ -103,3 +102,4 @@
   - std stuff FILE, stderro, NULL ...
   - pp needs to adjust pos x when skipping block comment
   - char[] from string literal
+  - convert from pointer to int e.g. if (node)
