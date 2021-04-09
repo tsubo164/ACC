@@ -983,6 +983,41 @@ static void assign_init(struct memory_byte *base,
     }
 }
 
+static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
+        const struct ast_node *expr)
+{
+    const int tag = data_tag_(type);
+    const char *szname = data_spec_table[tag].sizename;
+
+    if (!expr) {
+        fprintf(fp, "    .%s 0\n", szname);
+        return;
+    }
+
+    switch (expr->kind) {
+
+    case NOD_NUM:
+        fprintf(fp, "    .%s %ld\n", szname, expr->ival);
+        break;
+
+    case NOD_ADDR:
+        {
+            /* TODO make function taking sym */
+            const struct symbol *sym = expr->l->sym;
+            fprintf(fp, "    .%s ", szname);
+            if (is_static(sym))
+                gen_pc_rel_addr(fp, sym->name, sym->id);
+            else
+                gen_pc_rel_addr(fp, sym->name, -1);
+            fprintf(fp, "\n");
+        }
+        break;
+
+    default:
+        break;
+    }
+}
+
 static void gen_object_byte(FILE *fp, const struct object_byte *obj)
 {
     int i;
@@ -991,6 +1026,7 @@ static void gen_object_byte(FILE *fp, const struct object_byte *obj)
         struct symbol *sym = obj->sym;
         int id = sym->id;
 
+        /* TODO make function taking sym */
         if (!is_static(sym)) {
             id = -1;
             fprintf(fp, "    .global ");
@@ -1010,13 +1046,8 @@ static void gen_object_byte(FILE *fp, const struct object_byte *obj)
             continue;
         }
 
-        if (byte->written_size > 0) {
-            const int val = byte->init ? byte->init->ival : 0;
-            const int tag = data_tag_(byte->type);
-            const char *szname = data_spec_table[tag].sizename;
-
-            fprintf(fp, "    .%s %d\n", szname, val);
-        }
+        if (byte->written_size > 0)
+            gen_init_scalar_global(fp, byte->type, byte->init);
     }
 
     fprintf(fp, "\n");

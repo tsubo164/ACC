@@ -18,6 +18,11 @@
   - convert from pointer to int e.g. if (node)
 
 * OPTIONAL
+  - init global var with const expr that has address of global variables;
+    - `int *p = ptr + 1 // legal if global`
+    - `int i = j + 1 // illegal even if global`
+    - `char s[] = "abc"` is not supported
+    - `char *s = "abc"` is not supported
   - simplify ast
     - remove `NOD_SPEC_*` from tree
     - remove `NOD_DECL_*` from tree

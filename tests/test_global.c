@@ -47,6 +47,10 @@ static int count_up2()
     return ++count;
 }
 
+/* initialize with pointer to global variable */
+int ival = 42;
+int *pval = &ival;
+
 /* multi-dimensional global array initializer with less than specified size */
 int g_a[3] = {11, 22, 44};
 int g_b[3][2] = {{111, 222}, {444, 555}};
@@ -149,6 +153,12 @@ int main()
         assert(22, g_someone.last[1]);
         assert( 0, g_someone.last[2]);
         assert( 0, g_someone.last[3]);
+    }
+    {
+        /* initialize with pointer to global variable */
+        assert(4, sizeof ival);
+        assert(8, sizeof pval);
+        assert(42, *pval);
     }
 
     return 0;
