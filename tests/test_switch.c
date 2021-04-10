@@ -81,6 +81,23 @@ int main()
 
         assert(42, a);
     }
+    {
+        /* switch with case value 0 */
+        int a = 0;
+
+        switch (a) {
+        case 0:
+            a = 10;
+            break;
+        case 1:
+            a = 11;
+            break;
+        default:
+            break;
+        }
+
+        assert(10, a);
+    }
 
     return 0;
 }

@@ -469,13 +469,17 @@ struct symbol *define_case_symbol(struct symbol_table *table, int kind, int case
         return NULL;
 
     for (sym = table->tail; sym; sym = sym->prev) {
-        if (sym->kind == SYM_CASE && sym->scope_level == cur_swt &&
-                sym->mem_offset == case_value) {
+        if (is_case(sym) &&
+            kind == SYM_CASE &&
+            sym->scope_level == cur_swt &&
+            sym->mem_offset == case_value) {
             sym->is_redefined = 1;
             return sym;
         }
 
-        if (sym->kind == SYM_DEFAULT && sym->scope_level == cur_swt) {
+        if (is_default(sym) &&
+            kind == SYM_DEFAULT &&
+            sym->scope_level == cur_swt) {
             sym->is_redefined = 1;
             return sym;
         }
