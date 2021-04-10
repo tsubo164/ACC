@@ -249,6 +249,8 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_LOGICAL_AND:
     case NOD_LOGICAL_OR:
     case NOD_NOT:
+    case NOD_EQ:
+    case NOD_NE:
         node->type = promote_type(node->l, node->r);
         if (is_pointer(node->type))
             node->type = type_long();
@@ -938,6 +940,7 @@ static struct ast_node *relational_expression(struct parser *p)
 static struct ast_node *equality_expression(struct parser *p)
 {
     struct ast_node *tree = relational_expression(p);
+    struct ast_node *equa = NULL;
 
     for (;;) {
         const struct token *tok = gettok(p);
@@ -945,11 +948,13 @@ static struct ast_node *equality_expression(struct parser *p)
         switch (tok->kind) {
 
         case TOK_EQ:
-            tree = new_node(NOD_EQ, tree, relational_expression(p));
+            equa = new_node_(NOD_EQ, tokpos(p));
+            tree = branch_(equa, tree, relational_expression(p));
             break;
 
         case TOK_NE:
-            tree = new_node(NOD_NE, tree, relational_expression(p));
+            equa = new_node_(NOD_NE, tokpos(p));
+            tree = branch_(equa, tree, relational_expression(p));
             break;
 
         default:

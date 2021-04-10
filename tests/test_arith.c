@@ -12,6 +12,11 @@ int add(int x, int y)
     return x + y;
 }
 
+int ptrcmp(int *x, int *y)
+{
+    return x == y;
+}
+
 int main()
 {
     {
@@ -199,6 +204,16 @@ int main()
 
         assert(1, a);
         assert(1, !p && 1);
+    }
+    {
+        /* convert equality of two pointers to int */
+        int a = 1321;
+        int *p = &a;
+        int *q = &a;
+
+        assert(1, ptrcmp(p, q));
+        assert(1321, *p);
+        assert(1321, *q);
     }
 
     return 0;
