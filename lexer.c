@@ -203,8 +203,23 @@ state_initial:
 
     /* access */
     case '.':
-        tok->kind = c;
-        goto state_final;
+        {
+            const int c2 = readc(l);
+            if (c2 == '.') {
+                const int c3 = readc(l);
+                if (c3 == '.') {
+                    tok->kind = TOK_ELLIPSIS;
+                    goto state_final;
+                } else {
+                    unreadc(l, c3);
+                }
+                unreadc(l, c2);
+            } else {
+                unreadc(l, c2);
+            }
+            tok->kind = '.';
+            goto state_final;
+        }
 
     /* arithmetic */
     case '+':
@@ -567,17 +582,15 @@ void print_token(const struct token *tok)
     case TOK_UNSIGNED:
         printf("\"%s\"\n", tok->text);
         return;
-
     default:
         break;
     }
 
     switch (tok->kind) {
-
-         /* unary op */
+        /* unary op */
     case TOK_INC: s = "++"; break;
     case TOK_DEC: s = "--"; break;
-         /* bin op */
+        /* bin op */
     case TOK_LE: s = "<="; break;
     case TOK_GE: s = ">="; break;
     case TOK_EQ: s = "=="; break;
@@ -585,13 +598,15 @@ void print_token(const struct token *tok)
     case TOK_LOGICAL_OR: s = "||"; break;
     case TOK_LOGICAL_AND: s = "&&"; break;
     case TOK_POINTER: s = "->"; break;
-         /* assignment op */
+        /* assignment op */
     case TOK_ADD_ASSIGN: s = "+="; break;
     case TOK_SUB_ASSIGN: s = "+="; break;
     case TOK_MUL_ASSIGN: s = "+="; break;
     case TOK_DIV_ASSIGN: s = "+="; break;
+        /* ellipsis */
+    case TOK_ELLIPSIS: s = "..."; break;
+        /* ---- */
     case TOK_EOF: s = "EOF"; break;
-
     default:
         break;
     }

@@ -3,7 +3,7 @@
 
 #include <stddef.h>
 
-int printf(char *s, int i);
-int puts(char *s);
+int printf(const char *format, ...);
+int puts(const char *s);
 
 #endif /* __STDIO_H */

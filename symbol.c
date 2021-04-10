@@ -98,6 +98,11 @@ int is_typedef(const struct symbol *sym)
     return sym && sym->kind == SYM_TYPEDEF;
 }
 
+int is_ellipsis(const struct symbol *sym)
+{
+    return sym && sym->kind == SYM_ELLIPSIS;
+}
+
 int is_string_literal(const struct symbol *sym)
 {
     return sym && sym->kind == SYM_STRING;
@@ -155,6 +160,7 @@ const char *symbol_to_string(const struct symbol *sym)
     case SYM_TAG_STRUCT: return "SYM_TAG_STRUCT";
     case SYM_TAG_ENUM: return "SYM_TAG_ENUM";
     case SYM_TYPEDEF: return "SYM_TYPEDEF";
+    case SYM_ELLIPSIS: return "SYM_ELLIPSIS";
     default: return "**unknown**";
     }
 }
@@ -551,6 +557,11 @@ struct symbol *find_type_name_symbol(struct symbol_table *table, const char *nam
     return NULL;
 }
 
+struct symbol *define_ellipsis_symbol(struct symbol_table *table)
+{
+    return push_symbol(table, "...", SYM_ELLIPSIS, type_void());
+}
+
 int symbol_scope_begin(struct symbol_table *table)
 {
     table->current_scope_level++;
@@ -692,10 +703,13 @@ const struct symbol *next_param(const struct symbol *sym)
 {
     const struct symbol *param = NULL;
 
+    if (is_ellipsis(sym))
+        return sym;
+
     if (is_param(sym))
         param = sym->next;
 
-    if (is_param(param))
+    if (is_param(param) || is_ellipsis(param))
         return param;
 
     return NULL;

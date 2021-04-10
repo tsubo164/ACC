@@ -361,7 +361,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             ctx->param_sym = first_param(node->l->sym);
             check_tree_(node->r, ctx);
 
-            if (ctx->param_sym) {
+            if (ctx->param_sym && !is_ellipsis(ctx->param_sym)) {
                 const struct position *pos = node->r ? &node->r->pos : &node->pos;
                 add_error2(ctx->messages, pos, "too few arguments to function call");
             }
@@ -376,7 +376,8 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             return;
         }
 
-        if (!is_compatible(node->type, ctx->param_sym->type)) {
+        if (!is_compatible(node->type, ctx->param_sym->type) &&
+            !is_ellipsis(ctx->param_sym)) {
             add_error2(ctx->messages, &node->pos,
                     "incompatible conversion from '%s' to '%s'",
                     type_name_of(node->type), type_name_of(ctx->param_sym->type));

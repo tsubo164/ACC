@@ -504,10 +504,15 @@ static void gen_func_param_list(FILE *fp, const struct ast_node *node)
     func = find_node(fdecl->l, NOD_DECL_IDENT);
 
     for (sym = first_param(func->sym); sym; sym = next_param(sym)) {
-        const int disp = -1 * sym->mem_offset;
         /* TODO consider removing dummy by changing node parameter to data_type */
         struct ast_node dummy = {0};
+        int disp = 0;
+
+        if (is_ellipsis(sym))
+            break;
+
         dummy.type = sym->type;
+        disp = -1 * sym->mem_offset;
 
         code3__(fp, &dummy, MOV_, arg(index), addr2(RBP, disp));
         index++;

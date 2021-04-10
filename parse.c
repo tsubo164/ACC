@@ -463,6 +463,11 @@ static void define_string(struct parser *p, struct ast_node *node)
     node->sym = sym;
 }
 
+static void define_ellipsis(struct parser *p)
+{
+    define_ellipsis_symbol(p->symtab);
+}
+
 static void begin_scope(struct parser *p)
 {
     symbol_scope_begin(p->symtab);
@@ -2003,6 +2008,29 @@ static struct ast_node *parameter_list(struct parser *p)
 }
 
 /*
+ * parameter_type_list
+ *     parameter_list
+ *     parameter_type_list ',' TOK_ELLIPSIS
+ */
+static struct ast_node *parameter_type_list(struct parser *p)
+{
+    struct ast_node *tree = NULL, *list = NULL, *elli = NULL;
+
+    tree = parameter_list(p);
+
+    if (!consume(p, TOK_ELLIPSIS))
+        return tree;
+
+    define_ellipsis(p);
+
+    elli = new_node_(NOD_SPEC_ELLIPSIS, tokpos(p));
+    list = new_node_(NOD_LIST, tokpos(p));
+    tree = branch_(list, tree, elli);
+
+    return tree;
+}
+
+/*
  * array
  *     '[' ']'
  *     '[' constant_expression ']'
@@ -2077,7 +2105,7 @@ static struct ast_node *direct_declarator(struct parser *p)
 
         begin_scope(p);
         fn->l = tree;
-        fn->r = parameter_list(p);
+        fn->r = parameter_type_list(p);
         tree = fn;
         expect(p, ')');
     } else {

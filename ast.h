@@ -95,7 +95,8 @@ enum ast_node_kind {
     NOD_SPEC_ARRAY,
     NOD_SPEC_STRUCT,
     NOD_SPEC_ENUM,
-    NOD_SPEC_TYPE_NAME
+    NOD_SPEC_TYPE_NAME,
+    NOD_SPEC_ELLIPSIS
 };
 
 struct ast_node {

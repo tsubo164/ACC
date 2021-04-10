@@ -20,7 +20,8 @@ enum symbol_kind {
     SYM_ENUMERATOR,
     SYM_TAG_STRUCT,
     SYM_TAG_ENUM,
-    SYM_TYPEDEF
+    SYM_TYPEDEF,
+    SYM_ELLIPSIS
 };
 
 struct symbol {
@@ -70,6 +71,7 @@ extern int is_case(const struct symbol *sym);
 extern int is_default(const struct symbol *sym);
 extern int is_label(const struct symbol *sym);
 extern int is_typedef(const struct symbol *sym);
+extern int is_ellipsis(const struct symbol *sym);
 extern int is_string_literal(const struct symbol *sym);
 extern const char *symbol_to_string(const struct symbol *sym);
 
@@ -99,6 +101,9 @@ extern struct symbol *define_string_symbol(struct symbol_table *table, const cha
 
 /* type name symobl */
 extern struct symbol *find_type_name_symbol(struct symbol_table *table, const char *name);
+
+/* ellipsis symobl */
+extern struct symbol *define_ellipsis_symbol(struct symbol_table *table);
 
 /* scope symobl */
 extern int symbol_scope_begin(struct symbol_table *table);

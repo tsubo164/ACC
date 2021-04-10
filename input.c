@@ -4,11 +4,22 @@
 */
 #include <stdio.h>
 
+/*
+int foo(int i, int j, ...)
+{
+    return 42;
+}
+*/
+
 int main()
 {
-    int *p = NULL;
+    char *s = "abc";
+    int i = 42;
 
-    int a = !p;
+    printf("%s-%d-%d\n", s, i, i / 2);
 
-    return !p && 1;
+    /*
+    foo(0);
+    */
+    return 21;
 }

@@ -55,6 +55,8 @@ enum token_kind {
     TOK_SUB_ASSIGN,
     TOK_MUL_ASSIGN,
     TOK_DIV_ASSIGN,
+    /* ellipsis */
+    TOK_ELLIPSIS,
     /* ---- */
     TOK_EOF
 };
