@@ -541,7 +541,7 @@ struct symbol *define_string_symbol(struct symbol_table *table, const char *str)
     struct symbol *str_sym = NULL;
 
     for (sym = table->tail; sym; sym = sym->prev) {
-        if (match_name(sym, str))
+        if (match_name(sym, str) && is_string_literal(sym))
             return sym;
     }
 
