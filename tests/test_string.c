@@ -13,7 +13,7 @@ const char *enum_to_str(int kind)
     case A: return "A"; break;
     case B: return "B"; break;
     case C: return "C"; break;
-    default: "NULL"; break;
+    default: break;
     }
     return "NULL";
 }

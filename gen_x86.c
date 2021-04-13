@@ -793,28 +793,46 @@ static int jump_id(const struct ast_node *node)
     return JMP_OFFSET + node->sym->id;
 }
 
-static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_scope)
+static void gen_switch_table_(FILE *fp, const struct ast_node *node, int switch_scope)
 {
     if (!node)
         return;
 
     switch (node->kind) {
 
+    case NOD_SWITCH:
+        /* skip nested switch */
+        return;
+
     case NOD_CASE:
         code3__(fp, node, CMP_, imme(node->l->ival), A_);
         code2__(fp, node, JE_,  label(switch_scope, jump_id(node)));
+        /* check next statement if it is another case statement */
+        gen_switch_table_(fp, node->r, switch_scope);
         return;
 
     case NOD_DEFAULT:
         code2__(fp, node, JMP_,  label(switch_scope, jump_id(node)));
         return;
 
+    case NOD_COMPOUND:
+    case NOD_LIST:
+        gen_switch_table_(fp, node->l, switch_scope);
+        gen_switch_table_(fp, node->r, switch_scope);
+        break;
+
     default:
         break;
     }
+}
 
-    gen_switch_table(fp, node->l, switch_scope);
-    gen_switch_table(fp, node->r, switch_scope);
+static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_scope)
+{
+    gen_comment(fp, "begin jump table");
+    gen_switch_table_(fp, node, switch_scope);
+    /* for switch without default */
+    code2__(fp, node, JMP_, label(switch_scope, JMP_EXIT));
+    gen_comment(fp, "end jump table");
 }
 
 static void gen_cast(FILE *fp, const struct ast_node *node)
@@ -1238,7 +1256,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
         gen_comment(fp, "switch-value");
         gen_code(fp, node->l);
-        gen_switch_table(fp, node, scope.curr);
+        gen_switch_table(fp, node->r, scope.curr);
         gen_code(fp, node->r);
         gen_label(fp, scope.curr, JMP_EXIT);
 

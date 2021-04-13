@@ -117,7 +117,8 @@ struct symbol_table *new_symbol_table(void)
     table->tail = NULL;
     /* 0 means global scope */
     table->current_scope_level = 0;
-    table->current_switch_level = 1000;
+    /* switch scope is independent of current scope */
+    table->current_switch_level = 0;
 
     return table;
 }

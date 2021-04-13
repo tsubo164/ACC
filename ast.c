@@ -222,6 +222,7 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
 
     case NOD_INIT:
     case NOD_NUM:
+    case NOD_CONST_EXPR:
         printf(TERMINAL_COLOR_MAGENTA);
         printf(TERMINAL_DECORATION_BOLD);
             printf(" %ld", tree->ival);

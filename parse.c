@@ -1420,7 +1420,7 @@ static struct ast_node *default_statement(struct parser *p)
     tree = branch_(tree, NULL, NULL);
     define_case(p, tree, SYM_DEFAULT, no_case_value);
 
-    tree->l = statement(p);
+    tree->r = statement(p);
     return tree;
 }
 

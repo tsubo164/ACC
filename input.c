@@ -1,49 +1,36 @@
 /*
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 */
 
-#include <stdio.h>
-
-enum {
-    A,
-    B,
-    C
+enum symbol_kind {
+    SYM_VAR = 8,
+    SYM_FUNC = 9,
+    SYM_PARAM = 10
 };
 
-const char *foo(int kind)
+int namespace_of(int kind)
 {
     switch (kind) {
-    case A: return "A"; break;
-    case B: return "B"; break;
-    case C: return "C"; break;
-    default: "NULL"; break;
+
+    case SYM_VAR:
+    case SYM_FUNC:
+        return 17;
+
+    case SYM_PARAM:
+        switch (kind + 1) {
+        case 10:
+            return 19;
+        }
+        return 77;
+
+    default:
+        return -1;
     }
-    return "NULL";
 }
 
 int main()
 {
-    int kind = 0;
-
-    const char *s = foo(kind);
-    printf("    kind => %s\n", s);
-
-    /*
-    char *s = "abc";
-    int i = 42;
-    printf("%s-%d-%d\n", s, i, i / 2);
-    int a = 0;
-
-    switch (a) {
-    case 0:
-        break;
-    case 1:
-        break;
-    default:
-        break;
-    }
-    */
-
-    return 21;
+    return namespace_of(SYM_PARAM);
 }
