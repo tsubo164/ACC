@@ -203,6 +203,18 @@ int main()
         assert(24, sizeof g);
         assert(8, sizeof h);
     }
+    {
+        /* typedef of array */
+        typedef int Vec3[3];
+
+        Vec3 v0 = {82, 32, 29};
+
+        assert(12, sizeof(Vec3));
+        assert(12, sizeof v0);
+        assert(82, v0[0]);
+        assert(32, v0[1]);
+        assert(29, v0[2]);
+    }
 
     return 0;
 }

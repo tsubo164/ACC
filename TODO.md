@@ -1,5 +1,5 @@
 * SELF COMPILE
-  - [ ] `ast.c`
+  - [x] `ast.c`
   - [ ] `gen_x86.c`
   - [ ] `lexer.c`
   - [ ] `main.c`
@@ -26,6 +26,7 @@
     - remove `NOD_SPEC_*` from tree
     - remove `NOD_DECL_*` from tree
     - add `struct declaration` to manage decl context and use it as parse param
+  - typedef'ed type produces actual type => actual type holds like to typedef sym
   - `data_tag_()` needs to be based on size of type
   - unversal type string for better messages
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics

@@ -1430,7 +1430,7 @@ static struct ast_node *default_statement(struct parser *p)
  */
 static struct ast_node *labeled_statement(struct parser *p)
 {
-    /* this statement is actuallyy for only goto statement
+    /* this statement is actually for only goto statement
      * case and default statements are defined separately */
     struct ast_node *tree = NULL;
     struct ast_node *ident = NULL;

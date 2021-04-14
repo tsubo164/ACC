@@ -22,8 +22,6 @@ int get_size(const struct data_type *type)
 {
     if (is_array(type))
         return get_array_length(type) * get_size(underlying(type));
-    if (is_struct(type))
-        return type->sym->type->byte_size;
     if (is_type_name(type))
         return get_size(original_const(type));
     return type->byte_size;
@@ -31,8 +29,6 @@ int get_size(const struct data_type *type)
 
 int get_alignment(const struct data_type *type)
 {
-    if (is_struct(type))
-        return type->sym->type->alignment;
     if (is_type_name(type))
         return get_alignment(original_const(type));
     return type->alignment;
@@ -40,8 +36,6 @@ int get_alignment(const struct data_type *type)
 
 int get_array_length(const struct data_type *type)
 {
-    if (is_struct(type))
-        return type->sym->type->array_len;
     if (is_type_name(type))
         return get_array_length(original_const(type));
     return type->array_len;
@@ -51,6 +45,8 @@ struct data_type *underlying(const struct data_type *type)
 {
     if (!type)
         return NULL;
+    if (is_type_name(type))
+        return underlying(original_const(type));
     return type->ptr_to;
 }
 
@@ -250,6 +246,8 @@ int is_pointer(const struct data_type *type)
 
 int is_array(const struct data_type *type)
 {
+    if (is_type_name(type))
+        return is_array(original_const(type));
     return type && type->kind == DATA_TYPE_ARRAY;
 }
 
@@ -277,9 +275,7 @@ int is_enum(const struct data_type *type)
 
 int is_type_name(const struct data_type *type)
 {
-    if (!type)
-        return 0;
-    return type->kind == DATA_TYPE_TYPE_NAME;
+    return type && type->kind == DATA_TYPE_TYPE_NAME;
 }
 
 char *make_type_name_(const struct data_type *type, char *buf)
