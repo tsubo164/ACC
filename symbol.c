@@ -123,7 +123,7 @@ struct symbol_table *new_symbol_table(void)
     return table;
 }
 
-void free_list(struct symbol *sym)
+static void free_list(struct symbol *sym)
 {
     if (!sym)
         return;

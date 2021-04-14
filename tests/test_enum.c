@@ -6,6 +6,17 @@ enum color {
     B
 };
 
+enum type {
+    INT,
+    LONG
+};
+
+/* parameter of enum tag */
+int foo (int i, enum type c)
+{
+    return i;
+}
+
 int main()
 {
     assert(0, R);
@@ -86,6 +97,10 @@ int main()
         enum color c = blue;
 
         assert(103, c);
+    }
+    {
+        /* parameter of enum tag */
+        assert(42, foo(42, INT));
     }
 
     return 0;

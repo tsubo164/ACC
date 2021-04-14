@@ -37,6 +37,11 @@ static const char *get_data_directive(int tag)
     return data_spec_table[tag].directive;
 }
 
+static const char *get_data_name(int tag)
+{
+    return data_spec_table[tag].sizename;
+}
+
 /* register tables */
 static const char *A__[]  = {"al",  "ax", "eax", "rax"};
 static const char *B__[]  = {"bl",  "bx", "ebx", "rbx"};
@@ -388,9 +393,24 @@ static int data_tag_(const struct data_type *type)
         return LONG;
     if (is_long(type))
         return QUAD;
+    if (is_enum(type))
+        return LONG;
     if (is_type_name(type))
         return data_tag_(original_const(type));
     return QUAD;
+#if 0
+    const int size = get_size(type);
+
+    switch (size) {
+    case 1: return BYTE;
+    case 2: return WORD;
+    case 4: return LONG;
+    case 8: return QUAD;
+    default:
+        /* TODO error handling */
+        return QUAD;
+    }
+#endif
 }
 
 static int get_mem_offset(const struct ast_node *node)
@@ -1010,7 +1030,7 @@ static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
         const struct ast_node *expr)
 {
     const int tag = data_tag_(type);
-    const char *szname = data_spec_table[tag].sizename;
+    const char *szname = get_data_name(tag);
 
     if (!expr) {
         fprintf(fp, "    .%s 0\n", szname);

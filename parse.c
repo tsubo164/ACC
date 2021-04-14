@@ -308,7 +308,7 @@ static struct ast_node *new_node_num(int num, const struct position *pos)
 {
     struct ast_node *node = new_node_(NOD_NUM, pos);
     node->ival = num;
-    return node;
+    return typed_(node);
 }
 
 static int eval_const_expr(const struct ast_node *node, struct parser *p)

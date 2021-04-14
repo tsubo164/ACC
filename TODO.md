@@ -8,7 +8,7 @@
   - [ ] `preprocessor.c`
   - [ ] `semantics.c`
   - [x] `string_table.c`
-  - [ ] `symbol.c`
+  - [x] `symbol.c`
   - [ ] `type.c`
 
 * TODO
@@ -26,6 +26,7 @@
     - remove `NOD_SPEC_*` from tree
     - remove `NOD_DECL_*` from tree
     - add `struct declaration` to manage decl context and use it as parse param
+  - `data_tag_()` needs to be based on size of type
   - unversal type string for better messages
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics
   - use registers r10 r11
