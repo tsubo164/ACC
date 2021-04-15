@@ -215,6 +215,31 @@ int main()
         assert(32, v0[1]);
         assert(29, v0[2]);
     }
+    {
+        /* typedef of pointer and more */
+        typedef struct Point {
+            int x, y;
+        } Point;
+
+        typedef int Array[3];
+        typedef int Integer;
+        typedef Integer ID;
+        typedef int *Ref;
+        Integer i = 32;
+        Array a = {11, 22, 33};
+        Point p = {99, 88};
+        Ref r = &i;
+
+        assert(12, sizeof(Array));
+        assert(4,  sizeof(Integer));
+        assert(4,  sizeof(ID));
+        assert(8,  sizeof(Ref));
+
+        assert(33, a[2]);
+        assert(32, i);
+        assert(88, p.y);
+        assert(32, *r);
+    }
 
     return 0;
 }

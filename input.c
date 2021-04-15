@@ -4,12 +4,22 @@
 #include <stdio.h>
 */
 
+typedef struct Point {
+    int x, y;
+} Point;
+
 int main()
 {
     typedef int Array[3];
+    typedef int Integer;
+    typedef Integer ID;
+    typedef int *Ref;
+    Integer i = 32;
     Array a = {11, 22, 33};
+    Point p = {99, 88};
+    Ref r = &i;
 
-    return a[2];
+    return a[2] + p.y + i + *r;
 }
 
 /*

@@ -26,6 +26,7 @@ struct data_type {
     struct data_type *ptr_to;
     /* for struct, union, enum tags and typedefs */
     struct symbol *sym;
+    struct symbol *alias;
 
     char is_const;
     char is_unsigned;
@@ -48,6 +49,7 @@ extern void set_unsigned(struct data_type *type, int is_unsigned);
 
 extern struct data_type *promote(struct data_type *t1, struct data_type *t2);
 extern int has_unkown_array_length(const struct data_type *type);
+extern int has_typedef_name(const struct data_type *type);
 extern int is_compatible(const struct data_type *t1, const struct data_type *t2);
 extern int is_incomplete(const struct data_type *type);
 extern int is_integer(const struct data_type *type);

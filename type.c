@@ -16,7 +16,6 @@ static struct data_type PTR_     = {DATA_TYPE_PTR,    8, 8, 1, NULL, NULL};
 static struct data_type ARRAY_   = {DATA_TYPE_ARRAY,  0, 0, UNKNOWN_ARRAY_LENGTH, NULL, NULL};
 static struct data_type STRUCT_  = {DATA_TYPE_STRUCT, 0, 4, 1, NULL, NULL};
 static struct data_type ENUM_    = {DATA_TYPE_ENUM,   4, 4, 1, NULL, NULL};
-static struct data_type TYPE_NAME_ = {DATA_TYPE_TYPE_NAME, 0, 4, 1, NULL, NULL};
 
 int get_size(const struct data_type *type)
 {
@@ -130,6 +129,11 @@ struct data_type *promote(struct data_type *t1, struct data_type *t2)
 int has_unkown_array_length(const struct data_type *type)
 {
     return get_array_length(type) == UNKNOWN_ARRAY_LENGTH;
+}
+
+int has_typedef_name(const struct data_type *type)
+{
+    return type->alias != NULL;
 }
 
 static int is_compatible_underlying(const struct data_type *t1, const struct data_type *t2)
@@ -341,6 +345,9 @@ const char *type_name_of(const struct data_type *type)
     if (!type)
         return "--";
 
+    if (has_typedef_name(type))
+        return type->alias->name;
+
     switch (type->kind) {
     case DATA_TYPE_VOID:   return "void";
     case DATA_TYPE_CHAR:   return is_unsigned(type) ? "unsigned char" :  "char";
@@ -456,10 +463,9 @@ struct data_type *type_enum(const char *tag)
 
 struct data_type *type_type_name(const char *name, struct symbol *type_name)
 {
-    struct data_type *type = clone(&TYPE_NAME_);
+    struct data_type *type = clone(type_name->type);
 
-    type->tag = name;
-    type->sym = type_name;
+    type->alias = type_name;
 
     return type;
 }
