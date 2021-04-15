@@ -395,21 +395,21 @@ struct data_type *type_array(struct data_type *base_type)
     return type;
 }
 
-struct data_type *type_struct(const char *tag)
+struct data_type *type_struct(void)
 {
     struct data_type *type = clone(&STRUCT_);
 
     return type;
 }
 
-struct data_type *type_enum(const char *tag)
+struct data_type *type_enum(void)
 {
     struct data_type *type = clone(&ENUM_);
 
     return type;
 }
 
-struct data_type *type_type_name(const char *name, struct symbol *type_name)
+struct data_type *type_type_name(struct symbol *type_name)
 {
     struct data_type *type = clone(type_name->type);
 

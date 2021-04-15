@@ -404,9 +404,9 @@ struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind
     if (!sym) {
         struct data_type *type;
         if (kind == SYM_TAG_STRUCT)
-            type = type_struct(name);
+            type = type_struct();
         else if (kind == SYM_TAG_ENUM)
-            type = type_enum(name);
+            type = type_enum();
         else
             type = type_int();
         sym = push_symbol(table, name, kind, type);

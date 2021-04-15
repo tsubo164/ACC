@@ -1784,7 +1784,7 @@ static struct ast_node *struct_or_union_specifier(struct parser *p)
         return tree;
     } else {
         /* define a struct type */
-        decl_set_type(p, type_struct(ident->sval));
+        decl_set_type(p, type_struct());
         define_sym(p, ident);
     }
 
@@ -1878,7 +1878,7 @@ static struct ast_node *enum_specifier(struct parser *p)
         return tree;
     } else {
         /* define an enum type */
-        decl_set_type(p, type_enum(ident->sval));
+        decl_set_type(p, type_enum());
         define_sym(p, ident);
     }
 
@@ -1947,7 +1947,7 @@ static struct ast_node *type_specifier(struct parser *p)
 
         if (sym) {
             tree = new_node_(NOD_SPEC_TYPE_NAME, tokpos(p));
-            decl_set_type(p, type_type_name(tok->text, sym));
+            decl_set_type(p, type_type_name(sym));
         } else {
             /* unget identifier */
             ungettok(p);
