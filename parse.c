@@ -386,15 +386,8 @@ static struct ast_node *convert_(struct parser *p, struct ast_node *node)
 static void define_sym(struct parser *p, struct ast_node *node)
 {
     struct symbol *sym;
-    struct data_type *decl_type;
 
-    /* to avoid typedef of typedef, typedef always refers actual type */
-    if (p->decl_kind == SYM_TYPEDEF && is_type_name(p->decl_type))
-        decl_type = original(p->decl_type);
-    else
-        decl_type = p->decl_type;
-
-    sym = define_symbol(p->symtab, p->decl_ident, p->decl_kind, decl_type);
+    sym = define_symbol(p->symtab, p->decl_ident, p->decl_kind, p->decl_type);
 
     if (p->decl_kind != SYM_TAG_STRUCT &&
         p->decl_kind != SYM_TAG_ENUM) {

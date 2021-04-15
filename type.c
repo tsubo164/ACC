@@ -21,22 +21,16 @@ int get_size(const struct data_type *type)
 {
     if (is_array(type))
         return get_array_length(type) * get_size(underlying(type));
-    if (is_type_name(type))
-        return get_size(original_const(type));
     return type->byte_size;
 }
 
 int get_alignment(const struct data_type *type)
 {
-    if (is_type_name(type))
-        return get_alignment(original_const(type));
     return type->alignment;
 }
 
 int get_array_length(const struct data_type *type)
 {
-    if (is_type_name(type))
-        return get_array_length(original_const(type));
     return type->array_len;
 }
 
@@ -44,29 +38,11 @@ struct data_type *underlying(const struct data_type *type)
 {
     if (!type)
         return NULL;
-    if (is_type_name(type))
-        return underlying(original_const(type));
     return type->ptr_to;
-}
-
-struct data_type *original(struct data_type *type)
-{
-    if (is_type_name(type))
-        return type->sym->type;
-    return type;
-}
-
-const struct data_type *original_const(const struct data_type *type)
-{
-    if (is_type_name(type))
-        return type->sym->type;
-    return type;
 }
 
 struct symbol *symbol_of(const struct data_type *type)
 {
-    if (is_type_name(type))
-        return symbol_of(original_const(type));
     return type->sym;
 }
 
@@ -153,9 +129,6 @@ static int is_compatible_underlying(const struct data_type *t1, const struct dat
     if (is_pointer(t1) && is_pointer(t2))
         return is_compatible_underlying(underlying(t1), underlying(t2));
 
-    if (is_type_name(t1) || is_type_name(t2))
-        return is_compatible_underlying(original_const(t1), original_const(t2));
-
     return 0;
 }
 
@@ -178,9 +151,6 @@ int is_compatible(const struct data_type *t1, const struct data_type *t2)
 
     if (is_pointer(t1) && is_pointer(t2))
         return is_compatible_underlying(underlying(t1), underlying(t2));
-
-    if (is_type_name(t1) || is_type_name(t2))
-        return is_compatible(original_const(t1), original_const(t2));
 
     return 0;
 }
@@ -250,8 +220,6 @@ int is_pointer(const struct data_type *type)
 
 int is_array(const struct data_type *type)
 {
-    if (is_type_name(type))
-        return is_array(original_const(type));
     return type && type->kind == DATA_TYPE_ARRAY;
 }
 
@@ -261,8 +229,6 @@ int is_struct(const struct data_type *type)
         return 0;
     if (type->kind == DATA_TYPE_STRUCT)
         return 1;
-    if (is_type_name(type))
-        return is_struct(type->sym->type);
     return 0;
 }
 
@@ -272,14 +238,7 @@ int is_enum(const struct data_type *type)
         return 0;
     if (type->kind == DATA_TYPE_ENUM)
         return 1;
-    if (is_type_name(type))
-        return is_enum(type->sym->type);
     return 0;
-}
-
-int is_type_name(const struct data_type *type)
-{
-    return type && type->kind == DATA_TYPE_TYPE_NAME;
 }
 
 char *make_type_name_(const struct data_type *type, char *buf)
@@ -358,7 +317,6 @@ const char *type_name_of(const struct data_type *type)
     case DATA_TYPE_ARRAY:  return "array";
     case DATA_TYPE_STRUCT: return type->tag;
     case DATA_TYPE_ENUM:   return type->tag;
-    case DATA_TYPE_TYPE_NAME: return type->tag;
     default:               return "unknown";
     }
 }

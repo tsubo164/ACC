@@ -10,8 +10,7 @@ enum data_type_kind {
     DATA_TYPE_PTR,
     DATA_TYPE_ARRAY,
     DATA_TYPE_STRUCT,
-    DATA_TYPE_ENUM,
-    DATA_TYPE_TYPE_NAME
+    DATA_TYPE_ENUM
 };
 
 struct symbol;
@@ -36,8 +35,6 @@ extern int get_size(const struct data_type *type);
 extern int get_alignment(const struct data_type *type);
 extern int get_array_length(const struct data_type *type);
 extern struct data_type *underlying(const struct data_type *type);
-extern struct data_type *original(struct data_type *type);
-extern const struct data_type *original_const(const struct data_type *type);
 extern struct symbol *symbol_of(const struct data_type *type);
 extern const char *tag_of(const struct data_type *type);
 
@@ -64,7 +61,6 @@ extern int is_pointer(const struct data_type *type);
 extern int is_array(const struct data_type *type);
 extern int is_struct(const struct data_type *type);
 extern int is_enum(const struct data_type *type);
-extern int is_type_name(const struct data_type *type);
 
 extern void make_type_name(const struct data_type *type, char *buf);
 extern const char *type_name_of(const struct data_type *type);

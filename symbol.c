@@ -202,9 +202,7 @@ void print_symbol_table(const struct symbol_table *table)
         printf("%-20s | ",  symbol_to_string(sym));
 
         /* type */
-        if (is_type_name(sym->type)) {
-            printf("%-10.10s | ", type_name_of(sym->type));
-        } else if (is_struct(sym->type)) {
+        if (is_struct(sym->type)) {
             const char *tname = type_name_of(sym->type);
             if (tname) {
                 static char buf[128] = {'\0'};

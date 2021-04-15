@@ -395,8 +395,6 @@ static int data_tag_(const struct data_type *type)
         return QUAD;
     if (is_enum(type))
         return LONG;
-    if (is_type_name(type))
-        return data_tag_(original_const(type));
     return QUAD;
 #if 0
     const int size = get_size(type);

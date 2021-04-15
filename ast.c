@@ -143,10 +143,7 @@ static void print_type(const struct data_type *type)
     if (is_const(type))
         printf("const ");
 
-    if (is_type_name(type)) {
-        printf("%s", type_name_of(type));
-    }
-    else if (is_struct(type)) {
+    if (is_struct(type)) {
         printf("struct %s", type_name_of(type));
     }
     else if (is_enum(type)) {
