@@ -46,11 +46,6 @@ struct symbol *symbol_of(const struct data_type *type)
     return type->sym;
 }
 
-const char *tag_of(const struct data_type *type)
-{
-    return type->tag;
-}
-
 void set_array_length(struct data_type *type, int len)
 {
     if (!is_array(type))
@@ -241,7 +236,7 @@ int is_enum(const struct data_type *type)
     return 0;
 }
 
-char *make_type_name_(const struct data_type *type, char *buf)
+static char *make_type_name_(const struct data_type *type, char *buf)
 {
     char *p = buf;
     int n = 0;
@@ -315,8 +310,8 @@ const char *type_name_of(const struct data_type *type)
     case DATA_TYPE_LONG:   return is_unsigned(type) ? "unsigned long" :  "long";
     case DATA_TYPE_PTR:    return "pointer";
     case DATA_TYPE_ARRAY:  return "array";
-    case DATA_TYPE_STRUCT: return type->tag;
-    case DATA_TYPE_ENUM:   return type->tag;
+    case DATA_TYPE_STRUCT: return symbol_of(type)->name;
+    case DATA_TYPE_ENUM:   return symbol_of(type)->name;
     default:               return "unknown";
     }
 }
@@ -336,7 +331,6 @@ void print_data_type(const struct data_type *type)
     printf("    kind:      %d\n", type->kind);
     printf("    byte_size: %d\n", type->byte_size);
     printf("    array_len: %d\n", type->array_len);
-    printf("    tag:       %s\n", type->tag);
     printf("    ptr_to:    %p\n", (void *) type->ptr_to);
     printf("    sym:       %p\n", (void *) type->sym);
 }
@@ -405,16 +399,12 @@ struct data_type *type_struct(const char *tag)
 {
     struct data_type *type = clone(&STRUCT_);
 
-    type->tag = tag;
-
     return type;
 }
 
 struct data_type *type_enum(const char *tag)
 {
     struct data_type *type = clone(&ENUM_);
-
-    type->tag = tag;
 
     return type;
 }

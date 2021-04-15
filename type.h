@@ -20,11 +20,11 @@ struct data_type {
     int byte_size;
     int alignment;
     int array_len;
-    /* TODO may not need this member 'tag' */
-    const char *tag;
     struct data_type *ptr_to;
-    /* for struct, union, enum tags and typedefs */
+
+    /* struct, union, enum tags */
     struct symbol *sym;
+    /* typedefs */
     struct symbol *alias;
 
     char is_const;
@@ -36,7 +36,6 @@ extern int get_alignment(const struct data_type *type);
 extern int get_array_length(const struct data_type *type);
 extern struct data_type *underlying(const struct data_type *type);
 extern struct symbol *symbol_of(const struct data_type *type);
-extern const char *tag_of(const struct data_type *type);
 
 extern void set_array_length(struct data_type *type, int len);
 extern void set_struct_size(struct data_type *type, int size);

@@ -308,13 +308,14 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         }
         if (is_incomplete(node->l->type)) {
             add_error2(ctx->messages, &pos,
-                    "incomplete definition of type 'struct %.32s'", tag_of(node->l->type));
+                    "incomplete definition of type 'struct %.32s'",
+                    type_name_of(node->l->type));
             return;
         }
         if (!node->r->sym->is_defined)
             add_error2(ctx->messages, &node->pos,
                     "no member named '%.32s' in 'struct %.32s'",
-                    node->r->sym->name, tag_of(node->l->type));
+                    node->r->sym->name, type_name_of(node->l->type));
         return;
 
     case NOD_DEREF:
