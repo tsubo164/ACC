@@ -1970,16 +1970,21 @@ static struct ast_node *type_specifier(struct parser *p)
 static struct ast_node *parameter_declaration(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    struct ast_node *spec = NULL;
+    struct ast_node *spec = NULL, *decl = NULL;
 
     spec = declaration_specifiers(p);
     if (!spec)
         return NULL;
 
     decl_set_kind(p, SYM_PARAM);
-
     tree = new_node_(NOD_DECL_PARAM, tokpos(p));
-    return branch_(tree, spec, declarator(p));
+    decl = declarator(p);
+
+    /* 6.7.6.3 A declaration of a parameter as "array of type"
+     * shall be adjusted to "qualified pointer to type" */
+    convert_array_to_pointer(p->decl_type);
+
+    return branch_(tree, spec, decl);
 }
 
 /*

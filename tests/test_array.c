@@ -13,6 +13,18 @@ int test_single_array()
     return 0;
 }
 
+/* parameter type of array of T to pointer to T */
+int array_to_pointer(int a[1])
+{
+    return *a;
+}
+
+/* parameter type of array of array of T to pointer to pointer to T */
+int array_to_pointer2(char a[1][1])
+{
+    return **a;
+}
+
 int main()
 {
     {
@@ -141,6 +153,15 @@ int main()
         assert(0, a[5]);
         assert(0, a[6]);
         assert(0, a[7]);
+    }
+    {
+        /* parameter type of array of T to pointer to T */
+        int a[1] = {9};
+        char *b[] = {"foo"};
+
+        assert(9,   array_to_pointer(a));
+        assert('f', array_to_pointer2(b));
+        assert(102, array_to_pointer2(b));
     }
 
     return 0;

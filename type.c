@@ -334,6 +334,20 @@ void copy_data_type(struct data_type *dst, const struct data_type *src)
     *dst = *src;
 }
 
+void convert_array_to_pointer(struct data_type *type)
+{
+    if (is_array(type)) {
+        struct data_type *base = underlying(type);
+        const int is_const = type->is_const;
+
+        convert_array_to_pointer(base);
+        copy_data_type(type, &POINTER_);
+
+        type->ptr_to = base;
+        type->is_const = is_const;
+    }
+}
+
 static struct data_type *clone(const struct data_type *orig)
 {
     struct data_type *type = malloc(sizeof(struct data_type));
