@@ -7,7 +7,7 @@ enum data_type_kind {
     DATA_TYPE_SHORT,
     DATA_TYPE_INT,
     DATA_TYPE_LONG,
-    DATA_TYPE_PTR,
+    DATA_TYPE_POINTER,
     DATA_TYPE_ARRAY,
     DATA_TYPE_STRUCT,
     DATA_TYPE_ENUM
