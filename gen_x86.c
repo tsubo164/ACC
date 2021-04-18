@@ -425,13 +425,25 @@ static void code1__(FILE *fp, const struct ast_node *node,
     code__(fp, tag, &o0, NULL, NULL);
 }
 
+/* because of the return address is already pushed when a fuction starts
+ * the rbp % 0x10 should be 0x08 */
+static int stack_align = 8;
+static void inc_stack_align(void)
+{
+    stack_align += 8;
+}
+static void dec_stack_align(void)
+{
+    stack_align -= 8;
+}
+static int need_adjust_stack_align(void)
+{
+    return stack_align % 16 != 0;
+}
+
 static void code2__(FILE *fp, const struct ast_node *node,
         struct opecode op, struct operand oper1)
 {
-    /* because of the return address is already pushed when a fuction starts
-     * the rbp % 0x10 should be 0x08 */
-    static int stack_align = 8;
-
     const struct opecode o0 = op;
     const struct operand o1 = oper1;
     int tag = data_tag_(node->type);
@@ -442,17 +454,11 @@ static void code2__(FILE *fp, const struct ast_node *node,
         tag = QUAD;
 
     if (!strcmp(op.mnemonic, "push"))
-        stack_align += 8;
+        inc_stack_align();
     if (!strcmp(op.mnemonic, "pop"))
-        stack_align -= 8;
-
-    if (!strcmp(op.mnemonic, "call") && stack_align % 16)
-        fprintf(fp, "    subq   $8, %%rsp ## alignment\n");
+        dec_stack_align();
 
     code__(fp, tag, &o0, &o1, NULL);
-
-    if (!strcmp(op.mnemonic, "call") && stack_align % 16)
-        fprintf(fp, "    addq   $8, %%rsp ## alignment\n");
 }
 
 static void code3__(FILE *fp, const struct ast_node *node,
@@ -587,8 +593,17 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         {
             int tmp = reg_count;
             int i;
+            int adjust = need_adjust_stack_align();
 
             reg_count = 0;
+
+            /* Need to adjust stack alignment before pushing arguments
+             * as we always want them to be the top of stack for functions
+             * that take more than 6 arguments */
+            /* adjust stack alignment */
+            if (adjust)
+                fprintf(fp, "    subq   $8, %%rsp ## alignment\n");
+
             /* push args */
             gen_func_call(fp, node->r);
             /* pop args */
@@ -596,6 +611,10 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 code2__(fp, node, POP_, arg(i));
             /* call */
             code2__(fp, node, CALL_, str(node->l->sym->name));
+
+            /* adjust stack alignment */
+            if (adjust)
+                fprintf(fp, "    addq   $8, %%rsp ## alignment\n");
 
             reg_count = tmp;
             return;
