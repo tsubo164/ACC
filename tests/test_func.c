@@ -13,6 +13,11 @@ int main()
 
         assert(110, a);
     }
+    {
+        int a = gcc_sum1234_mult_sum5678(1, 2, 3, 4, 5, 6, 7, 8);
+
+        assert(260, a);
+    }
 
     return 0;
 }

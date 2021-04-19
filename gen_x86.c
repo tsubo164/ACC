@@ -604,13 +604,21 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             if (adjust)
                 fprintf(fp, "    subq   $8, %%rsp ## alignment\n");
 
-            /* push args */
+            /* push args to stack */
             gen_func_call(fp, node->r);
-            /* pop args */
-            for (i = 0; i < reg_count; i++)
+            /* pop args to registers (max number is 6) */
+            for (i = 0; i < reg_count; i++) {
+                if (i == 6)
+                    break;
                 code2__(fp, node, POP_, arg(i));
+            }
             /* call */
             code2__(fp, node, CALL_, str(node->l->sym->name));
+
+            /* clean up arguments on stack */
+            if (reg_count - i > 0)
+                fprintf(fp, "    addq   $%d, %%rsp ## remove argument 7 and more\n",
+                        8 * (reg_count - i));
 
             /* adjust stack alignment */
             if (adjust)

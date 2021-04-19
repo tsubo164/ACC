@@ -31,32 +31,19 @@ void foo()
 }
 */
 
-int foo(int a, int b, int c, int d, int e)
+/*
+int sum1234_mult_sum5678(
+        int a1, int a2, int a3, int a4,
+        int a5, int a6, int a7, int a8)
 {
-    return a + b + c + d + e;
+    return
+        (a1 + a2 + a3 + a4) *
+        (a5 + a6 + a7 + a8);
 }
-
-int bar(int a, int b)//, int c)
-{
-    return a + b;// + c;
-}
-int baz(int a)
-{
-    return a;
-}
+*/
 
 int main()
 {
-    //int a = bar(baz(3), 4);
-    //int a = bar(baz(3), 4);
-    //int b = bar(baz(4), 1);//, 3);
-    //int b = bar(4, 1);//, 3);
-    //int b = baz(4);
-    //bar(baz(0), 0);
-    /*
-    int a =
-    */
-        foo(92 + 23 %2, 12 * 3, 4/ 2, 4 % 1, 8 + 3 * 4);
     /*
     foo();
     */
