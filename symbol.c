@@ -612,9 +612,27 @@ void compute_func_size(struct symbol *func)
 {
     struct symbol *sym;
     int total_offset = 0;
+    int param_index = 0;
 
     for (sym = func; sym; sym = sym->next) {
-        if (is_param(sym) || is_local_var(sym)) {
+        if (is_param(sym)) {
+            if (param_index < 6) {
+                const int size  = get_size(sym->type);
+                const int align = get_alignment(sym->type);
+
+                total_offset = align_to(total_offset, align);
+                total_offset += size;
+                sym->mem_offset = total_offset;
+            } else {
+                int stack_count = param_index - 6;
+                /* retrun address and original rbp (8 + 8 = 16) is
+                 * on top of arguments */
+                sym->mem_offset = -(16 + 8 * stack_count);
+            }
+
+            param_index++;
+        }
+        else if (is_local_var(sym)) {
             const int size  = get_size(sym->type);
             const int align = get_alignment(sym->type);
 

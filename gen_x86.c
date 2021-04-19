@@ -300,7 +300,7 @@ static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
                 fprintf(fp, "(%%%s)", reg(oper, tag));
             } else
             if (oper->disp != 0) {
-                fprintf(fp, "%+d(%%%s)", oper->disp, reg(oper, tag));
+                fprintf(fp, "%d(%%%s)", oper->disp, reg(oper, tag));
             } else {
                 fprintf(fp, "(%%%s)", reg(oper, tag));
             }
@@ -540,6 +540,9 @@ static void gen_func_param_list(FILE *fp, const struct ast_node *node)
 
         code3__(fp, &dummy, MOV_, arg(index), addr2(RBP, disp));
         index++;
+
+        if (index == 6)
+            break;
     }
 }
 
