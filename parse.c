@@ -617,19 +617,26 @@ static struct ast_node *argument_expression(struct parser *p)
 static struct ast_node *argument_expression_list(struct parser *p)
 {
     struct ast_node *tree = NULL, *list = NULL;
+    int count = 0;
 
     for (;;) {
         struct ast_node *arg = argument_expression(p);
 
         if (!arg)
-            return tree;
+            break;
 
         list = new_node_(NOD_LIST, tokpos(p));
         tree = branch_(list, tree, arg);
+        count++;
 
         if (!consume(p, ','))
-            return tree;
+            break;
     }
+
+    if (tree)
+        tree->ival = count;
+
+    return tree;
 }
 
 static struct ast_node *struct_ref(struct parser *p, struct ast_node *strc)
@@ -676,8 +683,10 @@ static struct ast_node *postfix_expression(struct parser *p)
 
         case '(':
             call = new_node_(NOD_CALL, tokpos(p));
-            if (!nexttok(p, ')'))
+            if (!nexttok(p, ')')) {
                 args = argument_expression_list(p);
+                call->ival = args ? args->ival : 0;
+            }
             tree = branch_(call, tree, args);
             expect(p, ')');
             break;

@@ -3,6 +3,7 @@
 #include <stdlib.h>
 */
 #include <stdio.h>
+#include <string.h>
 
 /*
 typedef struct {
@@ -31,6 +32,7 @@ void foo()
 }
 */
 
+/*
 int sum1234_mult_sum5678(
         int a1, int a2, int a3, int a4,
         int a5, int a6, int a7, int a8)
@@ -39,12 +41,26 @@ int sum1234_mult_sum5678(
         (a1 + a2 + a3 + a4) *
         (a5 + a6 + a7 + a8);
 }
+*/
+char buf[32];
 
 int main()
 {
     /*
     foo();
     */
+    /*
     printf("    >> %d\n", sum1234_mult_sum5678(1, 2, 3, 4, 5, 6, 7, 8));
+    */
+    int t;
+    printf("(%d, %d, %d, %d, %d, %d, %d, %d\n)\n",
+            1, 2, 3, 4, 5, 6, 7, 8);
+
+    sprintf(buf, "(%d, %d, %d, %d, %d, %d, %d)", 1, 2, 3, 4, 5, 6, 7);
+        t = strcmp(buf, "(1, 2, 3, 4, 5, 6, 7)");
+    printf(" >> %s, %d\n", buf, t);
+    printf("(%d, %d, %d, %d, %d, %d)\n", 1, 2, 3, 4, 5, 6);
+    /*
+    */
     return 13;
 }

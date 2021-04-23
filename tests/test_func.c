@@ -1,5 +1,12 @@
 #include "test.h"
 #include "gcc_func.h"
+/*
+TODO fix infinite loop
+#include "../include/stdio.h"
+#include "../include/string.h"
+*/
+int sprintf(char *str, const char *format, ...);
+int strcmp(const char *s1, const char *s2);
 
 /* function with 8 parameters compiled by acc */
 int sum1234_mult_sum5678(
@@ -34,6 +41,13 @@ int main()
         int a = sum1234_mult_sum5678(1, 2, 3, 4, 5, 6, 7, 8);
 
         assert(260, a);
+    }
+    {
+        /* std var arg function call with 9 parameters */
+        char buf[32] = {'\0'};
+
+        sprintf(buf, "(%d, %d, %d, %d, %d, %d, %d)", 1, 2, 3, 4, 5, 6, 7);
+        assert(0, strcmp(buf, "(1, 2, 3, 4, 5, 6, 7)"));
     }
 
     return 0;

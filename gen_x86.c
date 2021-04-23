@@ -428,17 +428,20 @@ static void code1__(FILE *fp, const struct ast_node *node,
 /* because of the return address is already pushed when a fuction starts
  * the rbp % 0x10 should be 0x08 */
 static int stack_align = 8;
-static void inc_stack_align(void)
+
+static void inc_stack_align(int n)
 {
-    stack_align += 8;
+    stack_align += 8 * n;
 }
-static void dec_stack_align(void)
+
+static void dec_stack_align(int n)
 {
-    stack_align -= 8;
+    stack_align -= 8 * n;
 }
-static int need_adjust_stack_align(void)
+
+static int need_adjust_stack_align(int stack_arg_count)
 {
-    return stack_align % 16 != 0;
+    return (stack_align + 8 * stack_arg_count) % 16 != 0;
 }
 
 static void code2__(FILE *fp, const struct ast_node *node,
@@ -454,9 +457,9 @@ static void code2__(FILE *fp, const struct ast_node *node,
         tag = QUAD;
 
     if (!strcmp(op.mnemonic, "push"))
-        inc_stack_align();
+        inc_stack_align(1);
     if (!strcmp(op.mnemonic, "pop"))
-        dec_stack_align();
+        dec_stack_align(1);
 
     code__(fp, tag, &o0, &o1, NULL);
 }
@@ -585,8 +588,6 @@ static void gen_func_epilogue(FILE *fp, const struct ast_node *node)
 
 static void gen_func_call(FILE *fp, const struct ast_node *node)
 {
-    static int reg_count = 0;
-
     if (!node)
         return;
 
@@ -594,11 +595,10 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
     case NOD_CALL:
         {
-            int tmp = reg_count;
+            const int arg_count = node->ival;
+            const int stack_arg_count = arg_count > 6 ? arg_count - 6 : 0;
+            const int adjust = need_adjust_stack_align(stack_arg_count);
             int i;
-            int adjust = need_adjust_stack_align();
-
-            reg_count = 0;
 
             /* Need to adjust stack alignment before pushing arguments
              * as we always want them to be the top of stack for functions
@@ -610,7 +610,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             /* push args to stack */
             gen_func_call(fp, node->r);
             /* pop args to registers (max number is 6) */
-            for (i = 0; i < reg_count; i++) {
+            for (i = 0; i < arg_count; i++) {
                 if (i == 6)
                     break;
                 code2__(fp, node, POP_, arg(i));
@@ -619,15 +619,16 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             code2__(fp, node, CALL_, str(node->l->sym->name));
 
             /* clean up arguments on stack */
-            if (reg_count - i > 0)
-                fprintf(fp, "    addq   $%d, %%rsp ## remove argument 7 and more\n",
-                        8 * (reg_count - i));
+            if (stack_arg_count > 0) {
+                fprintf(fp, "    addq   $%d, %%rsp ## clean up arguments on stack\n",
+                        8 * stack_arg_count);
+                dec_stack_align(stack_arg_count);
+            }
 
             /* adjust stack alignment */
             if (adjust)
                 fprintf(fp, "    addq   $8, %%rsp ## alignment\n");
 
-            reg_count = tmp;
             return;
         }
 
@@ -635,7 +636,6 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         /* push args */
         gen_code(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
-        reg_count++;
         return;
 
     default:
