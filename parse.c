@@ -2039,6 +2039,9 @@ static struct ast_node *parameter_type_list(struct parser *p)
     list = new_node_(NOD_LIST, tokpos(p));
     tree = branch_(list, tree, elli);
 
+    if (elli)
+        p->func_sym->is_variadic = 1;
+
     return tree;
 }
 

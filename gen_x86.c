@@ -595,6 +595,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
     case NOD_CALL:
         {
+            const struct symbol *func_sym = node->l->sym;
             const int arg_count = node->ival;
             const int stack_arg_count = arg_count > 6 ? arg_count - 6 : 0;
             const int adjust = need_adjust_stack_align(stack_arg_count);
@@ -615,8 +616,13 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                     break;
                 code2__(fp, node, POP_, arg(i));
             }
+
+            /* number of fp */
+            if (is_variadic(func_sym))
+                code3__(fp, node, MOV_, imme(0), EAX);
+
             /* call */
-            code2__(fp, node, CALL_, str(node->l->sym->name));
+            code2__(fp, node, CALL_, str(func_sym->name));
 
             /* clean up arguments on stack */
             if (stack_arg_count > 0) {

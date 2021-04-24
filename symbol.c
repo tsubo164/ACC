@@ -108,6 +108,11 @@ int is_string_literal(const struct symbol *sym)
     return sym && sym->kind == SYM_STRING;
 }
 
+int is_variadic(const struct symbol *sym)
+{
+    return is_func(sym) && sym->is_variadic;
+}
+
 struct symbol_table *new_symbol_table(void)
 {
     struct symbol_table *table;

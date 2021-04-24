@@ -53,7 +53,7 @@ int main()
     printf("    >> %d\n", sum1234_mult_sum5678(1, 2, 3, 4, 5, 6, 7, 8));
     */
     int t;
-    printf("(%d, %d, %d, %d, %d, %d, %d, %d\n)\n",
+    printf("(%d, %d, %d, %d, %d, %d, %d, %d)\n",
             1, 2, 3, 4, 5, 6, 7, 8);
 
     sprintf(buf, "(%d, %d, %d, %d, %d, %d, %d)", 1, 2, 3, 4, 5, 6, 7);
