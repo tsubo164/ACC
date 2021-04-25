@@ -521,16 +521,22 @@ static const struct ast_node *find_node(const struct ast_node *node, int node_ki
     return NULL;
 }
 
-static void gen_func_param_list(FILE *fp, const struct ast_node *node)
+static void gen_func_param_list_variadic_(FILE *fp)
 {
-    const struct ast_node *fdecl, *func;
+    int i;
+    for (i = 0; i < 6; i++) {
+        struct ast_node dummy = {0};
+        const int disp = -8 * (6 - i);
+        code3__(fp, &dummy, MOV_, arg(i), addr2(RBP, disp));
+    }
+}
+
+static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
+{
     const struct symbol *sym;
     int index = 0;
 
-    fdecl = find_node(node, NOD_DECL_FUNC);
-    func = find_node(fdecl->l, NOD_DECL_IDENT);
-
-    for (sym = first_param(func->sym); sym; sym = next_param(sym)) {
+    for (sym = first_param(func_sym); sym; sym = next_param(sym)) {
         /* TODO consider removing dummy by changing node parameter to data_type */
         struct ast_node dummy = {0};
         int disp = 0;
@@ -547,6 +553,19 @@ static void gen_func_param_list(FILE *fp, const struct ast_node *node)
         if (index == 6)
             break;
     }
+}
+
+static void gen_func_param_list(FILE *fp, const struct ast_node *node)
+{
+    const struct ast_node *fdecl, *func;
+
+    fdecl = find_node(node, NOD_DECL_FUNC);
+    func = find_node(fdecl->l, NOD_DECL_IDENT);
+
+    if (is_variadic(func->sym))
+        gen_func_param_list_variadic_(fp);
+    else
+        gen_func_param_list_(fp, func->sym);
 }
 
 static void gen_func_prologue(FILE *fp, const struct ast_node *node)
@@ -619,7 +638,9 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
             /* number of fp */
             if (is_variadic(func_sym))
-                code3__(fp, node, MOV_, imme(0), EAX);
+                fprintf(fp, "    movl   $0, %%eax\n");
+            /* TODO fix mov suffix with imme and eax) */
+            /* code3__(fp, node, MOV_, imme(0), EAX); */
 
             /* call */
             code2__(fp, node, CALL_, str(func_sym->name));

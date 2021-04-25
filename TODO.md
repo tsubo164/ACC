@@ -26,8 +26,8 @@
     - remove `NOD_SPEC_*` from tree
     - remove `NOD_DECL_*` from tree
     - add `struct declaration` to manage decl context and use it as parse param
-  - typedef'ed type produces actual type => actual type holds like to typedef sym
   - `data_tag_()` needs to be based on size of type
+  - `code[123]__()` needs to take `data_type` or tag instead of `ast_node`
   - unversal type string for better messages
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics
   - use registers r10 r11
@@ -35,7 +35,6 @@
   - bitwise op |, &, ~, ^
   - union
   - control flow check
-  - void pointer, void parameter
   - lexer error
 
 * IMPLEMENTATION
@@ -48,6 +47,7 @@
     };
     -> infinite loop
   - { ...  } } -> infinite loop
+  - int foo(); { ...  } -> infinite loop
   - `return g_a[2]; int i = g_a[0];` -> infinite loop
 
 * DONE
@@ -105,3 +105,5 @@
   - pp needs to adjust pos x when skipping block comment
   - char[] from string literal
   - convert from pointer to int e.g. if (node)
+  - void pointer, void parameter
+  - typedef'ed type produces actual type => actual type holds link to typedef sym

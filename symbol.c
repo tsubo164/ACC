@@ -616,28 +616,39 @@ static int align_to(int pos, int align)
 void compute_func_size(struct symbol *func)
 {
     struct symbol *sym;
+    const int variadic = is_variadic(func);
     int total_offset = 0;
     int param_index = 0;
+
+    if (variadic)
+        /* the size of reg_save_area (8 bytes * 6 registers) */
+        total_offset += 48;
 
     for (sym = func; sym; sym = sym->next) {
         if (is_param(sym)) {
             if (param_index < 6) {
-                const int size  = get_size(sym->type);
-                const int align = get_alignment(sym->type);
+                if (variadic) {
+                    /* store to var_list.reg_save_area */
+                    sym->mem_offset = 8 * (6 - param_index);
+                } else {
+                    /* TODO make a funtion */
+                    const int size  = get_size(sym->type);
+                    const int align = get_alignment(sym->type);
 
-                total_offset = align_to(total_offset, align);
-                total_offset += size;
-                sym->mem_offset = total_offset;
+                    total_offset = align_to(total_offset, align);
+                    total_offset += size;
+                    sym->mem_offset = total_offset;
+                }
             } else {
-                int stack_count = param_index - 6;
-                /* retrun address and original rbp (8 + 8 = 16) is
-                 * on top of arguments */
-                sym->mem_offset = -(16 + 8 * stack_count);
+                int stack_index = param_index - 6;
+                /* retrun address and original rbp (8 + 8 = 16 bytes)
+                 * is on top of arguments */
+                sym->mem_offset = -(16 + 8 * stack_index);
             }
-
             param_index++;
         }
         else if (is_local_var(sym)) {
+            /* TODO make a funtion */
             const int size  = get_size(sym->type);
             const int align = get_alignment(sym->type);
 

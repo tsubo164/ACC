@@ -5,6 +5,7 @@ TODO fix infinite loop
 #include "../include/stdio.h"
 #include "../include/string.h"
 */
+int printf(const char *format, ...);
 int sprintf(char *str, const char *format, ...);
 int strcmp(const char *s1, const char *s2);
 
@@ -16,6 +17,24 @@ int sum1234_mult_sum5678(
     return
         (a1 + a2 + a3 + a4) *
         (a5 + a6 + a7 + a8);
+}
+
+typedef struct {
+    unsigned int gp_offset;
+    unsigned int fp_offset;
+    void *overflow_arg_area;
+    void *reg_save_area;
+} va_list[1];
+
+int vsprintf(char *str, const char *format, va_list ap);
+
+int my_sprintf(char *str, const char *format, ...)
+{
+    va_list ap;
+    ap->gp_offset = 8;
+    ap->fp_offset = 48;
+    ap->reg_save_area = &format;
+    return vsprintf(str, format, ap);
 }
 
 int main()
@@ -48,6 +67,14 @@ int main()
 
         sprintf(buf, "(%d, %d, %d, %d, %d, %d, %d)", 1, 2, 3, 4, 5, 6, 7);
         assert(0, strcmp(buf, "(1, 2, 3, 4, 5, 6, 7)"));
+    }
+    {
+        /* my var arg function call with 6 parameters */
+        char buf[32] = {'\0'};
+
+        my_sprintf(buf, "(%d, %d, %d, %d)", 1, 2, 3, 4);
+        assert(0, strcmp(buf, "(1, 2, 3, 4)"));
+        //printf("%s\n", buf);
     }
 
     return 0;
