@@ -673,6 +673,64 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
     }
 }
 
+static void gen_builtin_va_start(FILE *fp)
+{
+    fprintf(fp, "## __builtin_va_start\n");
+    /* pop arguments */
+    fprintf(fp, "    pop    %%rax ## &va_list\n");
+    fprintf(fp, "    pop    %%rdx ## &last\n");
+    /* gp_offset */
+    fprintf(fp, "    leaq   -48(%%rbp), %%rdi ## gp_offset\n");
+    fprintf(fp, "    subq   %%rdi, %%rdx      ## gp_offset\n");
+    fprintf(fp, "    addq   $8, %%rdx         ## gp_offset\n");
+    fprintf(fp, "    movq   %%rdx, (%%rax)    ## gp_offset\n");
+    /* fp_offset */
+    fprintf(fp, "    movl   $48, 4(%%rax)     ## fp_offset\n");
+    /* overflow_arg_area */
+    fprintf(fp, "    leaq   16(%%rbp), %%rdi  ## overflow_arg_area\n");
+    fprintf(fp, "    movq   %%rdi, 8(%%rax)   ## overflow_arg_area\n");
+    /* reg_save_area */
+    fprintf(fp, "    leaq   -48(%%rbp), %%rdi ## reg_save_area\n");
+    fprintf(fp, "    movq   %%rdi, 16(%%rax)  ## reg_save_area\n");
+    fprintf(fp, "## end of __builtin_va_start\n");
+}
+
+static void gen_func_call_builtin(FILE *fp, const struct ast_node *node)
+{
+    if (!node)
+        return;
+
+    switch (node->kind) {
+
+    case NOD_CALL:
+        {
+            const struct symbol *func_sym = node->l->sym;
+
+            /* push args to stack */
+            gen_func_call_builtin(fp, node->r);
+
+            /* call */
+            if (!strcmp(func_sym->name, "__builtin_va_start"))
+                gen_builtin_va_start(fp);
+
+            return;
+        }
+
+    case NOD_ARG:
+        /* push args */
+        gen_code(fp, node->l);
+        /* no count pushes and pops as builtins are not function calls */
+        fprintf(fp, "    push   %%rax\n");
+        return;
+
+    default:
+        /* walk tree from the rightmost arg */
+        gen_func_call_builtin(fp, node->r);
+        gen_func_call_builtin(fp, node->l);
+        return;
+    }
+}
+
 static void gen_comment(FILE *fp, const char *cmt)
 {
     fprintf(fp, "## %s\n", cmt);
@@ -1380,7 +1438,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_CALL:
-        gen_func_call(fp, node);
+        if (is_builtin(node->l->sym))
+            gen_func_call_builtin(fp, node);
+        else
+            gen_func_call(fp, node);
         break;
 
     case NOD_FUNC_DEF:

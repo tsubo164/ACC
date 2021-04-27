@@ -1,7 +1,7 @@
 #include "test.h"
 #include "gcc_func.h"
 /*
-TODO fix infinite loop
+TODO fix infinite loop. make it enable to include std headers from here
 #include "../include/stdio.h"
 #include "../include/string.h"
 */
@@ -25,15 +25,14 @@ typedef struct {
     void *overflow_arg_area;
     void *reg_save_area;
 } va_list[1];
+void __builtin_va_start(va_list ap, void *last);
 
 int vsprintf(char *str, const char *format, va_list ap);
 
 int my_sprintf(char *str, const char *format, ...)
 {
     va_list ap;
-    ap->gp_offset = 8;
-    ap->fp_offset = 48;
-    ap->reg_save_area = &format;
+    __builtin_va_start(ap, &(format));
     return vsprintf(str, format, ap);
 }
 
@@ -74,7 +73,13 @@ int main()
 
         my_sprintf(buf, "(%d, %d, %d, %d)", 1, 2, 3, 4);
         assert(0, strcmp(buf, "(1, 2, 3, 4)"));
-        //printf("%s\n", buf);
+    }
+    {
+        /* my var arg function call with 9 parameters */
+        char buf[32] = {'\0'};
+
+        my_sprintf(buf, "(%d, %d, %d, %d, %d, %d, %d)", 1, 2, 3, 4, 5, 6, 7);
+        assert(0, strcmp(buf, "(1, 2, 3, 4, 5, 6, 7)"));
     }
 
     return 0;

@@ -85,7 +85,7 @@
   - array initializer
   - struct initializer
   - not an error for 'sizeof typename'
-  - void printf(char *s, ind n) -> infinite loop
+  - void `printf(char *s, ind n)` -> infinite loop
   - static int -> quad
   - include
   - function prototype and definition in the same source

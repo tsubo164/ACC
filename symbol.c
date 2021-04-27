@@ -113,6 +113,11 @@ int is_variadic(const struct symbol *sym)
     return is_func(sym) && sym->is_variadic;
 }
 
+int is_builtin(const struct symbol *sym)
+{
+    return sym && sym->is_builtin;
+}
+
 struct symbol_table *new_symbol_table(void)
 {
     struct symbol_table *table;
@@ -255,6 +260,24 @@ void print_symbol_table(const struct symbol_table *table)
     print_horizonal_line('-', COLUMNS);
 }
 
+static int starts_with(const char *str, const char *prefix)
+{
+    const char *s = str, *p = prefix;
+
+    if (!s || !p)
+        return 0;
+
+    while (*p != '\0') {
+        if (*s == '\0')
+            return 0;
+        if (*s != *p)
+            return 0;
+        s++;
+        p++;
+    }
+    return 1;
+}
+
 static struct symbol *new_symbol(int kind, const char *name, struct data_type *type,
         int scope_level)
 {
@@ -268,6 +291,9 @@ static struct symbol *new_symbol(int kind, const char *name, struct data_type *t
     sym->type = type;
     sym->scope_level = scope_level;
     sym->id = next_id++;
+
+    if (starts_with(sym->name, "__builtin_"))
+        sym->is_builtin = 1;
 
     return sym;
 }

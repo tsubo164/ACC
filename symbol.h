@@ -46,6 +46,7 @@ struct symbol {
     char is_assigned;
     char is_used;
     char is_variadic;
+    char is_builtin;
 };
 
 struct symbol_table {
@@ -75,6 +76,7 @@ extern int is_typedef(const struct symbol *sym);
 extern int is_ellipsis(const struct symbol *sym);
 extern int is_string_literal(const struct symbol *sym);
 extern int is_variadic(const struct symbol *sym);
+extern int is_builtin(const struct symbol *sym);
 extern const char *symbol_to_string(const struct symbol *sym);
 
 /* symbol table */
