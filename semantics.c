@@ -244,7 +244,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         return;
 
     case NOD_DECL_IDENT:
-        node->sym->is_initialized = ctx->has_init;
+        node->sym->is_initialized = ctx->has_init || is_global_var(node->sym);
         if (is_func(node->sym))
             ctx->func_sym = node->sym;
 
@@ -282,7 +282,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         {
             struct symbol *sym = node->sym;
 
-            if (is_local_var(sym)) {
+            if (is_local_var(sym) || is_global_var(sym)) {
                 if (sym->is_defined && sym->is_used && !sym->is_initialized)
                     /* array, struct, union will not be treated as uninitialized */
                     if (!is_array(sym->type) && !is_struct(sym->type))

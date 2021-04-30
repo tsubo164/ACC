@@ -103,6 +103,8 @@ static struct macro_entry *new_entry(const char *name)
     strncpy(dst, name, alloc);
     entry->name = dst;
     entry->repl = NULL;
+    entry->is_func = 0;
+    entry->params = NULL;
     entry->next = NULL;
 
     return entry;
@@ -437,6 +439,25 @@ static void token(struct preprocessor *pp, char *buf)
     *p = '\0';
 }
 
+static void argument(struct preprocessor *pp, char *buf)
+{
+    char *p = buf;
+
+    whitespaces(pp);
+
+    for (;;) {
+        const int c = readc(pp);
+        /* TODO push/pop '(', ')' */
+        if (!is_whitespaces(c) && c != ')' && c != ',') {
+            *p++ = c;
+        } else {
+            unreadc(pp, c);
+            break;
+        }
+    }
+    *p = '\0';
+}
+
 static void token_list(struct preprocessor *pp, char *buf)
 {
     char *p = buf;
@@ -554,7 +575,47 @@ static void define_line(struct preprocessor *pp)
     static char repl[1024] = {'\0'};
     struct macro_entry *mac = NULL;
 
+    struct macro_param head = {0};
+    struct macro_param *tail = &head;
+    int is_func = 0;
+
     token(pp, ident);
+
+    {
+        int c = readc(pp);
+
+        if (c == '(') {
+            char param[128] = {'\0'};
+
+            for (;;) {
+                struct macro_param *p = malloc(sizeof(struct macro_param));
+                int len = 0;
+                p->name = NULL;
+                p->arg[0] = '\0';
+                p->next = NULL;
+
+                token(pp, param);
+
+                len = strlen(param);
+                p->name = malloc(sizeof(char) * (len + 1));
+                strcpy(p->name, param);
+                tail->next = p;
+                tail = p;
+
+                whitespaces(pp);
+
+                c = readc(pp);
+                if (c == ')')
+                    break;
+                else if (c == ',')
+                    continue;
+            }
+            is_func = 1;
+
+        } else {
+            unreadc(pp, c);
+        }
+    }
 
     token_list(pp, repl);
     new_line(pp);
@@ -570,6 +631,9 @@ static void define_line(struct preprocessor *pp)
     } else {
         mac = insert_macro(pp->mactab, ident);
         add_replacement(mac, repl);
+
+        mac->is_func = is_func;
+        mac->params = head.next;
     }
 }
 
@@ -614,6 +678,74 @@ static void expand(struct preprocessor *pp)
     token(pp, tok);
 
     mac = lookup_macro(pp->mactab, tok);
+
+    if (mac && mac->is_func) {
+        struct macro_param *p = mac->params;
+        char arg[128] = {'\0'};
+        int c;
+
+        whitespaces(pp);
+
+        c = readc(pp);
+        if (c != '(') {
+            /* error */
+        }
+
+        for (;;) {
+            if (!p) {
+                /* error */
+                break;
+            }
+
+            argument(pp, arg);
+            strcpy(p->arg, arg);
+            p = p->next;
+
+            whitespaces(pp);
+
+            c = readc(pp);
+            if (c == ')')
+                break;
+            else if (c == ',')
+                continue;
+        }
+        {
+            char *p = mac->repl;
+            char name[32] = {'\0'};
+            char *n = name;
+            for (;;) {
+                if (*p == '\0')
+                    break;
+
+                if (isalnum(*p) || *p == '_') {
+                    *n = *p;
+                    n++;
+                }
+                else {
+                    *n = '\0';
+                    if (n != name) {
+                        /* search param */
+                        {
+                            struct macro_param *prm = mac->params;
+                            for (prm = mac->params; prm; prm = prm->next) {
+                                if (!strcmp(prm->name, name)) {
+                                    writes(pp, prm->arg);
+                                    break;
+                                }
+                            }
+                            if (!prm) {
+                                    writes(pp, name);
+                            }
+                        }
+                    }
+                    n = name;
+                    writec(pp, *p);
+                }
+                p++;
+            }
+        }
+        return;
+    }
 
     if (mac && mac->repl)
         writes(pp, mac->repl);

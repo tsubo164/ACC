@@ -30,6 +30,12 @@ void bar(const char *format, ...)
     vprintf(format, ap);
 }
 
+#define ADD(aa, bb) ((aa)+(bb))
+int x = ADD(2, 3);
+#define SQUARE(x) ((x) * (x))
+int y = 4;
+int z = SQUARE(y++);
+
 int main()
 {
     bar("    bar >> %d, %d, %d, %d\n", 11, 22, 33, 44);

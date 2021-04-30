@@ -12,9 +12,17 @@ struct strbuf {
 	char *buf;
 };
 
+struct macro_param {
+    char *name;
+    char arg[32];
+    struct macro_param *next;
+};
+
 struct macro_entry {
     char *name;
     char *repl;
+    int is_func;
+    struct macro_param *params;
     struct macro_entry *next;
 };
 
