@@ -1501,6 +1501,10 @@ static struct ast_node *statement(struct parser *p)
     case '}':
         return NULL;
 
+    case ';':
+        gettok(p);
+        return statement(p);
+
     default:
         if (consume(p, TOK_IDENT)) {
             if (nexttok(p, ':')) {

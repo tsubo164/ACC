@@ -14,7 +14,6 @@
 * TODO
   - struct arg
   - struct assign
-  - variable arguments
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;
@@ -107,3 +106,4 @@
   - convert from pointer to int e.g. if (node)
   - void pointer, void parameter
   - typedef'ed type produces actual type => actual type holds link to typedef sym
+  - variable arguments

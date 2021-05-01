@@ -1,40 +1,27 @@
 /*
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 */
 #include <stdio.h>
-#include <string.h>
-
-typedef struct {
-    unsigned int gp_offset;
-    unsigned int fp_offset;
-    void *overflow_arg_area;
-    void *reg_save_area;
-} va_list[1];
-void __builtin_va_start(va_list ap, void *last);
-
-int vprintf(const char *format, va_list ap);
-int vsprintf(char *str, const char *format, va_list ap);
+#include <stdarg.h>
 
 int my_sprintf(char *str, const char *format, ...)
 {
+    int ret;
     va_list ap;
-    __builtin_va_start(ap, &(format));
-    return vsprintf(str, format, ap);
+    va_start(ap, format);
+    ret = vsprintf(str, format, ap);
+    va_end(ap);
+    return ret;
 }
 
 void bar(const char *format, ...)
 {
     va_list ap;
-    __builtin_va_start(ap, &(format));
+    va_start(ap, format);
     vprintf(format, ap);
+    va_end(ap);
 }
-
-#define ADD(aa, bb) ((aa)+(bb))
-int x = ADD(2, 3);
-#define SQUARE(x) ((x) * (x))
-int y = 4;
-int z = SQUARE(y++);
 
 int main()
 {
