@@ -21,6 +21,7 @@
     - `int i = j + 1 // illegal even if global`
     - `char s[] = "abc"` is not supported
     - `char *s = "abc"` is not supported
+    - `struct Point p = q` is not supported
   - simplify ast
     - remove `NOD_SPEC_*` from tree
     - remove `NOD_DECL_*` from tree

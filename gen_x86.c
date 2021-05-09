@@ -1012,16 +1012,51 @@ static void gen_init_scalar_local(FILE *fp, const struct data_type *type,
         code3__(fp, ident, ADD_, imme(offset), A_);
     code2__(fp, ident, PUSH_, RAX);
 
-    if (expr) {
+    if (expr && is_struct(expr->type)) {
         /* init expr */
-        gen_code(fp, expr);
-        /* assign expr */
+        /* TODO TMP */
+        const int size = get_size(expr->type);
+        const int N8 = size / 8;
+        const int N4 = (size - 8 * N8) / 4;
+        int offset = 0;
+        int i;
+
+        gen_address(fp, expr);
         code2__(fp, &dummy, POP_,  RDX);
-        code3__(fp, &dummy, MOV_, A_, addr1(RDX));
+        gen_comment(fp, "copy struct object");
+
+        for (i = 0; i < N8; i++) {
+            if (offset == 0) {
+                fprintf(fp, "    movq   (%%rax), %%rdi\n");
+                fprintf(fp, "    movq   %%rdi, (%%rdx)\n");
+            } else {
+                fprintf(fp, "    movq   %d(%%rax), %%rdi\n", offset);
+                fprintf(fp, "    movq   %%rdi, %d(%%rdx)\n", offset);
+            }
+            offset += 8;
+        }
+        for (i = 0; i < N4; i++) {
+            if (offset == 0) {
+                fprintf(fp, "    movl   (%%rax), %%edi\n");
+                fprintf(fp, "    movl   %%edi, (%%rdx)\n");
+            } else {
+                fprintf(fp, "    movl   %d(%%rax), %%edi\n", offset);
+                fprintf(fp, "    movl   %%edi, %d(%%rdx)\n", offset);
+            }
+            offset += 4;
+        }
     } else {
-        /* assign zero */
-        code2__(fp, &dummy, POP_,  RDX);
-        code3__(fp, &dummy, MOV_, imme(0), addr1(RAX));
+        if (expr) {
+            /* init expr */
+            gen_code(fp, expr);
+            /* assign expr */
+            code2__(fp, &dummy, POP_,  RDX);
+            code3__(fp, &dummy, MOV_, A_, addr1(RDX));
+        } else {
+            /* assign zero */
+            code2__(fp, &dummy, POP_,  RDX);
+            code3__(fp, &dummy, MOV_, imme(0), addr1(RAX));
+        }
     }
 }
 
@@ -1125,7 +1160,20 @@ static void assign_init(struct memory_byte *base,
         break;
 
     default:
-        {
+        if (is_struct(node->type)) {
+            /* init by struct object */
+            const int size = get_size(node->type);
+            int i;
+
+            base->init = node;
+
+            for (i = 0; i < size; i++) {
+                /* override byte properties as if struct object is a scaler value */
+                base[i].is_written = 1;
+                base[i].written_size = (i == 0) ? size : 0;
+                base[i].type = node->type;
+            }
+        } else {
             /* assign initializer to byte */
             const int size = base->written_size;
             int i;

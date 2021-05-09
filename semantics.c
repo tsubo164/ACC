@@ -103,10 +103,9 @@ static void check_init_scalar(struct ast_node *node, struct tree_context *ctx)
             return;
 
         if (!is_compatible(t1, t2)) {
-            if (!is_array(t1) && !is_struct(t1))
-                add_error2(ctx->messages, &node->pos,
-                        "initializing '%s' with an expression of incompatible type '%s'",
-                        type_name_of(t1), type_name_of(t2));
+            add_error2(ctx->messages, &node->pos,
+                    "initializing '%s' with an expression of incompatible type '%s'",
+                    type_name_of(t1), type_name_of(t2));
         }
         break;
 
@@ -189,12 +188,19 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
         check_init_array_element(node->r, &new_ctx);
     }
     else if(is_struct(node->type)) {
-        struct tree_context new_ctx = *ctx;
+        if (node->r->kind == NOD_INIT || node->r->kind == NOD_LIST) {
+            /* initialized by member initializer */
+            struct tree_context new_ctx = *ctx;
 
-        new_ctx.index = 0;
-        new_ctx.struct_sym = first_member(symbol_of(node->type));
+            new_ctx.index = 0;
+            new_ctx.struct_sym = first_member(symbol_of(node->type));
 
-        check_init_struct_members(node->r, &new_ctx);
+            check_init_struct_members(node->r, &new_ctx);
+        }
+        else {
+            /* initialized by struct object */
+            check_init_scalar(node, ctx);
+        }
     }
     else {
         check_init_scalar(node, ctx);

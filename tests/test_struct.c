@@ -256,6 +256,20 @@ int main()
         assert(55, getx(&result));
         assert(120, gety(&result));
     }
+    {
+        /* initialize struct object with another struct object */
+        typedef struct point {
+            int x, y, z, w;
+        } Point;
+
+        Point p = {11, 22, 33, 44};
+        Point q = p;
+
+        assert(11, q.x);
+        assert(22, q.y);
+        assert(33, q.z);
+        assert(44, q.w);
+    }
 
     return 0;
 }
