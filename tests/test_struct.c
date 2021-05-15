@@ -270,6 +270,22 @@ int main()
         assert(33, q.z);
         assert(44, q.w);
     }
+    {
+        /* assign struct object */
+        typedef struct point {
+            int x, y, z, w;
+        } Point;
+
+        Point p = {111, 222, 333, 444};
+        Point q;
+
+        q = p;
+
+        assert(111, q.x);
+        assert(222, q.y);
+        assert(333, q.z);
+        assert(444, q.w);
+    }
 
     return 0;
 }

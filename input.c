@@ -22,21 +22,14 @@ int a = foo();
 [-] init struct by struct (only for local)
 [ ] check type for assign
 [x] check different struct assignment
-[ ] copy struct
+[x] copy struct
 */
 int main()
 {
     Point p = {11, 22, 33, 44};//, q;
-    Point r = p;
-    //Vector v = p;
-    int i = 17;
+    Point q;
 
-    /*
     q = p;
-    v = p;
-    */
 
-    //return 17;
-    //return q.z;
-    return r.w;
+    return q.w;
 }

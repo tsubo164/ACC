@@ -997,6 +997,37 @@ static void gen_cast(FILE *fp, const struct ast_node *node)
     }
 }
 
+static void gen_assign_struct(FILE *fp, const struct data_type *type)
+{
+    /* assuming src addess is in rax, and dest address is in rdx */
+    const int size = get_size(type);
+    const int N8 = size / 8;
+    const int N4 = (size - 8 * N8) / 4;
+    int offset = 0;
+    int i;
+
+    for (i = 0; i < N8; i++) {
+        if (offset == 0) {
+            fprintf(fp, "    movq   (%%rax), %%rdi\n");
+            fprintf(fp, "    movq   %%rdi, (%%rdx)\n");
+        } else {
+            fprintf(fp, "    movq   %d(%%rax), %%rdi\n", offset);
+            fprintf(fp, "    movq   %%rdi, %d(%%rdx)\n", offset);
+        }
+        offset += 8;
+    }
+    for (i = 0; i < N4; i++) {
+        if (offset == 0) {
+            fprintf(fp, "    movl   (%%rax), %%edi\n");
+            fprintf(fp, "    movl   %%edi, (%%rdx)\n");
+        } else {
+            fprintf(fp, "    movl   %d(%%rax), %%edi\n", offset);
+            fprintf(fp, "    movl   %%edi, %d(%%rdx)\n", offset);
+        }
+        offset += 4;
+    }
+}
+
 static void gen_init_scalar_local(FILE *fp, const struct data_type *type,
         const struct ast_node *ident, int offset, const struct ast_node *expr)
 {
@@ -1014,37 +1045,11 @@ static void gen_init_scalar_local(FILE *fp, const struct data_type *type,
 
     if (expr && is_struct(expr->type)) {
         /* init expr */
-        /* TODO TMP */
-        const int size = get_size(expr->type);
-        const int N8 = size / 8;
-        const int N4 = (size - 8 * N8) / 4;
-        int offset = 0;
-        int i;
-
         gen_address(fp, expr);
         code2__(fp, &dummy, POP_,  RDX);
         gen_comment(fp, "copy struct object");
 
-        for (i = 0; i < N8; i++) {
-            if (offset == 0) {
-                fprintf(fp, "    movq   (%%rax), %%rdi\n");
-                fprintf(fp, "    movq   %%rdi, (%%rdx)\n");
-            } else {
-                fprintf(fp, "    movq   %d(%%rax), %%rdi\n", offset);
-                fprintf(fp, "    movq   %%rdi, %d(%%rdx)\n", offset);
-            }
-            offset += 8;
-        }
-        for (i = 0; i < N4; i++) {
-            if (offset == 0) {
-                fprintf(fp, "    movl   (%%rax), %%edi\n");
-                fprintf(fp, "    movl   %%edi, (%%rdx)\n");
-            } else {
-                fprintf(fp, "    movl   %d(%%rax), %%edi\n", offset);
-                fprintf(fp, "    movl   %%edi, %d(%%rdx)\n", offset);
-            }
-            offset += 4;
-        }
+        gen_assign_struct(fp, expr->type);
     } else {
         if (expr) {
             /* init expr */
@@ -1509,6 +1514,17 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_ASSIGN:
+        if (is_struct(node->type)) {
+            gen_comment(fp, "assign struct");
+            gen_address(fp, node->l);
+            code2__(fp, node, PUSH_, RAX);
+            gen_address(fp, node->r);
+            code2__(fp, node, POP_,  RDX);
+
+            gen_assign_struct(fp, node->type);
+            break;
+        }
+
         gen_comment(fp, "assign");
         gen_address(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
