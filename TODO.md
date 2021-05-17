@@ -13,7 +13,7 @@
 
 * TODO
   - struct arg
-  - struct assign
+  - struct return
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;
@@ -108,3 +108,4 @@
   - void pointer, void parameter
   - typedef'ed type produces actual type => actual type holds link to typedef sym
   - variable arguments
+  - struct assign

@@ -20,7 +20,7 @@ int foo()
 int a = foo();
 /*
 [-] init struct by struct (only for local)
-[ ] check type for assign
+[x] check type for assign
 [x] check different struct assignment
 [x] copy struct
 */
@@ -28,8 +28,11 @@ int main()
 {
     Point p = {11, 22, 33, 44};//, q;
     Point q;
+    Vector v = {91, 88, 77};
 
     q = p;
+
+    q = v;
 
     return q.w;
 }

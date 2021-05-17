@@ -76,7 +76,7 @@ struct tree_context {
 
 static void check_initializer(struct ast_node *node, struct tree_context *ctx);
 
-static int is_null_pointer(struct ast_node *node)
+static int is_integer_zero(struct ast_node *node)
 {
     if (is_integer(node->type) &&
         node->kind == NOD_NUM &&
@@ -98,8 +98,8 @@ static void check_init_scalar(struct ast_node *node, struct tree_context *ctx)
         t1 = node->type;
         t2 = node->r->type;
 
-        /* zero to null pointer */
-        if (is_pointer(node->type) && is_null_pointer(node->r))
+        /* integer zero to pointer */
+        if (is_pointer(node->type) && is_integer_zero(node->r))
             return;
 
         if (!is_compatible(t1, t2)) {
@@ -276,6 +276,16 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             if (is_const(node->type))
                 add_error2(ctx->messages, &node->pos,
                         "cannot assign to variable '%s' with const-qualified", sym->name);
+        }
+
+        /* integer zero to pointer */
+        if (is_pointer(node->l->type) && is_integer_zero(node->r))
+            return;
+
+        if (!is_compatible(node->l->type, node->r->type)) {
+            add_error2(ctx->messages, &node->pos,
+                    "initializing '%s' with an expression of incompatible type '%s'",
+                    type_name_of(node->l->type), type_name_of(node->r->type));
         }
         return;
 
