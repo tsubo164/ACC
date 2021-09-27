@@ -470,7 +470,7 @@ static void code3__(FILE *fp, const struct ast_node *node,
     struct opecode o0 = op;
     struct operand o1 = oper1;
     struct operand o2 = oper2;
-    int tag = data_tag_(node->type);
+    int tag = node ? data_tag_(node->type) : QUAD;
 
     /* this rule comes from x86-64 machine instructions.
      * it depends on the size of register when loading from memory.
@@ -499,6 +499,13 @@ static void code3__(FILE *fp, const struct ast_node *node,
 
 /* forward declaration */
 static void gen_code(FILE *fp, const struct ast_node *node);
+static void gen_address(FILE *fp, const struct ast_node *node);
+static void gen_assign_struct(FILE *fp, const struct data_type *type);
+
+static void gen_comment(FILE *fp, const char *cmt)
+{
+    fprintf(fp, "## %s\n", cmt);
+}
 
 static const struct ast_node *find_node(const struct ast_node *node, int node_kind)
 {
@@ -605,6 +612,115 @@ static void gen_func_epilogue(FILE *fp, const struct ast_node *node)
     code1__(fp, node, RET_);
 }
 
+struct arg_area {
+    const struct ast_node *expr;
+    int offset;
+    int size;
+};
+
+static void print_arg_area(const struct arg_area *args, int count)
+{
+    int i;
+    for (i = 0; i < count; i++) {
+        const struct arg_area *a = &args[i];
+        printf("* %2d | size: %d,  offset: %d\n", i, a->size, a->offset);
+    }
+}
+
+static void gen_func_call2(FILE *fp, const struct ast_node *node)
+{
+    const struct symbol *func_sym = node->l->sym;
+    const int arg_count = node->ival;
+    struct arg_area *args = NULL;
+    int total_area_size = 0;
+
+    /* allocate arg area */
+    args = malloc(arg_count * sizeof(struct arg_area));
+
+    /* compute total arg area size */
+    {
+        const struct ast_node *list = node->r;
+        struct arg_area *arg = &args[arg_count - 1];
+
+        for (; list; list = list->l) {
+            const struct ast_node *arg_node = list->r;
+            arg->expr = arg_node->l;
+
+            if (get_size(arg->expr->type) <= 8) {
+                total_area_size += 8;
+                arg->size = 8;
+            } else {
+            }
+
+            arg--;
+        }
+    }
+
+    /* adjust area size */
+    {
+        const int adjust = need_adjust_stack_align(0);
+
+        if ((total_area_size + 8 * adjust) % 16 != 0)
+            total_area_size += 8;
+    }
+
+    /* compute offsets */
+    {
+        /* start from bottom of arg area */
+        int reg_offset = total_area_size - 8;
+        /* start from top of arg area */
+        int mem_offset = 0;
+        int reg_used_count = 0;
+        int i;
+
+        for (i = 0; i < arg_count; i++) {
+            struct arg_area *arg = &args[i];
+
+            if (arg->size <= 8 && reg_used_count < 6) {
+                arg->offset = reg_offset;
+
+                reg_offset -= 8;
+                reg_used_count++;
+            } else {
+                arg->offset = mem_offset;
+
+                mem_offset += 8;
+            }
+        }
+    }
+
+    if (0)
+        print_arg_area(args, arg_count);
+
+    {
+        int i;
+
+        gen_comment(fp, "allocate arg area");
+        code3__(fp, node, SUB_, imme(total_area_size), RSP);
+
+        /* eval arg expr */
+        gen_comment(fp, "store args");
+        for (i = 0; i < arg_count; i++) {
+            gen_code(fp, args[i].expr);
+            code3__(fp, NULL, MOV_, A_, addr2(RSP, args[i].offset));
+        }
+
+        /* load to registers */
+        gen_comment(fp, "load args");
+        for (i = 0; i < arg_count && i < 6; i++)
+            code3__(fp, NULL, MOV_, addr2(RSP, args[i].offset), arg(i));
+
+        /* call */
+        gen_comment(fp, "call");
+        code2__(fp, node, CALL_, str(func_sym->name));
+
+        gen_comment(fp, "free up arg area");
+        code3__(fp, node, ADD_, imme(total_area_size), RSP);
+    }
+
+    free(args);
+}
+
 static void gen_func_call(FILE *fp, const struct ast_node *node)
 {
     if (!node)
@@ -613,6 +729,13 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
     switch (node->kind) {
 
     case NOD_CALL:
+#if 0
+            gen_func_call2(stdout, node);
+#else
+            gen_func_call2(fp, node);
+            return;
+#endif
+
         {
             const struct symbol *func_sym = node->l->sym;
             const int arg_count = node->ival;
@@ -630,6 +753,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             /* push args to stack */
             gen_func_call(fp, node->r);
             /* pop args to registers (max number is 6) */
+            gen_comment(fp, "pop args");
             for (i = 0; i < arg_count; i++) {
                 if (i == 6)
                     break;
@@ -643,6 +767,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             /* code3__(fp, node, MOV_, imme(0), EAX); */
 
             /* call */
+            gen_comment(fp, "call");
             code2__(fp, node, CALL_, str(func_sym->name));
 
             /* clean up arguments on stack */
@@ -661,6 +786,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
     case NOD_ARG:
         /* push args */
+        gen_comment(fp, "push arg scalar");
         gen_code(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
         return;
@@ -729,11 +855,6 @@ static void gen_func_call_builtin(FILE *fp, const struct ast_node *node)
         gen_func_call_builtin(fp, node->l);
         return;
     }
-}
-
-static void gen_comment(FILE *fp, const char *cmt)
-{
-    fprintf(fp, "## %s\n", cmt);
 }
 
 static void gen_label(FILE *fp, int block_id, int label_id)
