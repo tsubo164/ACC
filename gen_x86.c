@@ -538,23 +538,62 @@ static void gen_func_param_list_variadic_(FILE *fp)
     }
 }
 
+static void gen_load_param(FILE *fp, const struct symbol *sym, int *reg_start)
+{
+    const int size = get_size(sym->type);
+    const int N8 = size / 8;
+    const int N4 = (size - 8 * N8) / 4;
+    int offset = 0;
+    int reg = *reg_start;
+    int i;
+
+    code3__(fp, NULL, MOV_, RBP, RDX);
+    code3__(fp, NULL, SUB_, imme(sym->mem_offset), RDX);
+
+    for (i = 0; i < N8; i++) {
+        const char *dst_reg = ARG_REG__[reg][3];
+        if (offset == 0)
+            fprintf(fp, "    movq   %%%s, (%%rdx)\n", dst_reg);
+        else
+            fprintf(fp, "    movq   %%%s, %d(%%rdx)\n", dst_reg, offset);
+        reg++;
+        offset += 8;
+    }
+    for (i = 0; i < N4; i++) {
+        const char *dst_reg = ARG_REG__[reg][2];
+        if (offset == 0)
+            fprintf(fp, "    movl   %%%s, (%%rdx)\n", dst_reg);
+        else
+            fprintf(fp, "    movl   %%%s, %d(%%rdx)\n", dst_reg, offset);
+        reg++;
+        offset += 4;
+    }
+
+    *reg_start = reg;
+}
+
 static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
 {
     const struct symbol *sym;
+    int loaded_reg_count = 0;
     int index = 0;
 
     for (sym = first_param(func_sym); sym; sym = next_param(sym)) {
-        /* TODO consider removing dummy by changing node parameter to data_type */
-        struct ast_node dummy = {0};
-        int disp = 0;
-
         if (is_ellipsis(sym))
             break;
 
-        dummy.type = sym->type;
-        disp = -1 * sym->mem_offset;
+        if (get_size(sym->type) > 8) {
+            gen_load_param(fp, sym, &loaded_reg_count);
+        }
+        else {
+            /* TODO consider removing dummy by changing node parameter to data_type */
+            struct ast_node dummy = {0};
+            const int disp = -1 * sym->mem_offset;
 
-        code3__(fp, &dummy, MOV_, arg(index), addr2(RBP, disp));
+            dummy.type = sym->type;
+            code3__(fp, &dummy, MOV_, arg(index), addr2(RBP, disp));
+        }
+
         index++;
 
         if (index == 6)
@@ -616,6 +655,7 @@ struct arg_area {
     const struct ast_node *expr;
     int offset;
     int size;
+    int pass_by_reg;
 };
 
 static void print_arg_area(const struct arg_area *args, int count)
@@ -623,8 +663,47 @@ static void print_arg_area(const struct arg_area *args, int count)
     int i;
     for (i = 0; i < count; i++) {
         const struct arg_area *a = &args[i];
-        printf("* %2d | size: %d,  offset: %d\n", i, a->size, a->offset);
+        printf("* %2d | size: %d, offset: %d, pass_by_reg: %d\n",
+                i, a->size, a->offset, a->pass_by_reg);
     }
+}
+
+static void gen_store_arg(FILE *fp, const struct arg_area *arg)
+{
+    code3__(fp, NULL, MOV_, RSP, RDX);
+    code3__(fp, NULL, ADD_, imme(arg->offset), RDX);
+    gen_assign_struct(fp, arg->expr->type);
+}
+
+static void gen_load_arg(FILE *fp, const struct arg_area *arg, int *reg_start)
+{
+    const int size = get_size(arg->expr->type);
+    const int N8 = size / 8;
+    const int N4 = (size - 8 * N8) / 4;
+    int offset = 0;
+    int reg = *reg_start;
+    int i;
+
+    for (i = 0; i < N8; i++) {
+        const char *dst_reg = ARG_REG__[reg][3];
+        if (arg->offset + offset == 0)
+            fprintf(fp, "    movq   (%%rsp), %%%s\n", dst_reg);
+        else
+            fprintf(fp, "    movq   %d(%%rsp), %%%s\n", arg->offset + offset, dst_reg);
+        reg++;
+        offset += 8;
+    }
+    for (i = 0; i < N4; i++) {
+        const char *dst_reg = ARG_REG__[reg][2];
+        if (arg->offset + offset == 0)
+            fprintf(fp, "    movl   (%%rsp), %%%s\n", dst_reg);
+        else
+            fprintf(fp, "    movl   %d(%%rsp), %%%s\n", arg->offset + offset, dst_reg);
+        reg++;
+        offset += 4;
+    }
+
+    *reg_start = reg;
 }
 
 static void gen_func_call2(FILE *fp, const struct ast_node *node)
@@ -649,7 +728,13 @@ static void gen_func_call2(FILE *fp, const struct ast_node *node)
             if (get_size(arg->expr->type) <= 8) {
                 total_area_size += 8;
                 arg->size = 8;
-            } else {
+            }
+            else if (get_size(arg->expr->type) <= 16) {
+                /* small structs */
+                total_area_size += 16;
+                arg->size = 16;
+            }
+            else {
             }
 
             arg--;
@@ -667,24 +752,36 @@ static void gen_func_call2(FILE *fp, const struct ast_node *node)
     /* compute offsets */
     {
         /* start from bottom of arg area */
-        int reg_offset = total_area_size - 8;
+        int reg_offset = total_area_size;
         /* start from top of arg area */
         int mem_offset = 0;
-        int reg_used_count = 0;
+        int used_reg_count = 0;
         int i;
 
         for (i = 0; i < arg_count; i++) {
             struct arg_area *arg = &args[i];
 
-            if (arg->size <= 8 && reg_used_count < 6) {
+            if (arg->size <= 8 && used_reg_count < 6) {
+                reg_offset -= arg->size;
+
                 arg->offset = reg_offset;
+                arg->pass_by_reg = 1;
 
-                reg_offset -= 8;
-                reg_used_count++;
-            } else {
+                used_reg_count++;
+            }
+            else if (arg->size <= 16 && used_reg_count < 5 /* need 2 regs */) {
+                reg_offset -= arg->size;
+
+                arg->offset = reg_offset;
+                arg->pass_by_reg = 1;
+
+                used_reg_count += 2;
+            }
+            else {
                 arg->offset = mem_offset;
+                arg->pass_by_reg = 0;
 
-                mem_offset += 8;
+                mem_offset += arg->size;
             }
         }
     }
@@ -693,6 +790,7 @@ static void gen_func_call2(FILE *fp, const struct ast_node *node)
         print_arg_area(args, arg_count);
 
     {
+        int loaded_reg_count = 0;
         int i;
 
         gen_comment(fp, "allocate arg area");
@@ -702,13 +800,34 @@ static void gen_func_call2(FILE *fp, const struct ast_node *node)
         gen_comment(fp, "store args");
         for (i = 0; i < arg_count; i++) {
             gen_code(fp, args[i].expr);
-            code3__(fp, NULL, MOV_, A_, addr2(RSP, args[i].offset));
+            if (args[i].size > 8)
+                gen_store_arg(fp, &args[i]);
+            else
+                code3__(fp, NULL, MOV_, A_, addr2(RSP, args[i].offset));
         }
 
         /* load to registers */
         gen_comment(fp, "load args");
-        for (i = 0; i < arg_count && i < 6; i++)
-            code3__(fp, NULL, MOV_, addr2(RSP, args[i].offset), arg(i));
+        for (i = 0; i < arg_count && loaded_reg_count < 6; i++) {
+            struct arg_area *ar = &args[i];
+
+            if (!ar->pass_by_reg)
+                continue;
+
+            if (ar->size > 8) {
+                gen_load_arg(fp, ar, &loaded_reg_count);
+            } else {
+                code3__(fp, NULL, MOV_, addr2(RSP, ar->offset),
+                        arg(loaded_reg_count));
+                loaded_reg_count++;
+            }
+        }
+
+        /* number of fp */
+        if (is_variadic(func_sym))
+            fprintf(fp, "    movl   $0, %%eax\n");
+        /* TODO fix mov suffix with imme and eax) */
+        /* code3__(fp, node, MOV_, imme(0), EAX); */
 
         /* call */
         gen_comment(fp, "call");
@@ -729,12 +848,8 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
     switch (node->kind) {
 
     case NOD_CALL:
-#if 0
-            gen_func_call2(stdout, node);
-#else
-            gen_func_call2(fp, node);
-            return;
-#endif
+        gen_func_call2(fp, node);
+        return;
 
         {
             const struct symbol *func_sym = node->l->sym;
@@ -1599,7 +1714,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_IDENT:
-        gen_ident(fp, node);
+        if (get_size(node->type) > 8)
+            gen_address(fp, node);
+        else
+            gen_ident(fp, node);
         break;
 
     case NOD_DECL_INIT:

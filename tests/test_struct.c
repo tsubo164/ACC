@@ -16,6 +16,16 @@ int gety(struct point *p)
     return p->y;
 }
 
+int getx_(struct point p)
+{
+    return p.x;
+}
+
+int gety_(struct point p)
+{
+    return p.y;
+}
+
 void add_point(struct point *out, struct point *p, struct point *q)
 {
     out->x = p->x + q->x;
@@ -28,6 +38,30 @@ typedef struct vec {
 
 int add(int x, int y) {
     return x + y;
+}
+
+int get_x3(vec v)
+{
+    return v.x;
+}
+
+int get_y3(vec v)
+{
+    return v.y;
+}
+
+int get_z3(vec v)
+{
+    return v.z;
+}
+
+typedef struct vec4 {
+    int x, y, z, w;
+} vec4;
+
+int get_w4(vec4 v)
+{
+    return v.w;
 }
 
 int main()
@@ -285,6 +319,30 @@ int main()
         assert(222, q.y);
         assert(333, q.z);
         assert(444, q.w);
+    }
+    {
+        /* 8 byte struct for passing by value */
+        struct point p = {14, 17};
+
+        assert(14, getx_(p));
+        assert(14, p.x);
+        assert(17, gety_(p));
+        assert(17, p.y);
+    }
+    {
+        /* 16 byte struct for passing by value */
+        vec v = {41, 71, 94};
+        vec4 w = {731, 811, 39, 234};
+
+        assert(41, get_x3(v));
+        assert(41, v.x);
+        assert(71, get_y3(v));
+        assert(71, v.y);
+        assert(94, get_z3(v));
+        assert(94, v.z);
+
+        assert(234, get_w4(w));
+        assert(234, w.w);
     }
 
     return 0;
