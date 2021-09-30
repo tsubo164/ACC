@@ -90,6 +90,19 @@ int main()
         assert(17, gcc_get_y(p));
         assert(17, p.y);
     }
+    {
+        /* gcc 16 byte struct for passing by value */
+        vec v = {14, 17, 49, 32};
+
+        assert(14, gcc_get_x4(v));
+        assert(14, v.x);
+        assert(17, gcc_get_y4(v));
+        assert(17, v.y);
+        assert(49, gcc_get_z4(v));
+        assert(49, v.z);
+        assert(32, gcc_get_w4(v));
+        assert(32, v.w);
+    }
 
     return 0;
 }

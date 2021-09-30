@@ -6,7 +6,7 @@ typedef struct point {
 } point;
 
 typedef struct vec {
-    int x, y, z;
+    int x, y, z, w;
 } vec;
 
 int gcc_twice(int a);
@@ -15,7 +15,12 @@ int gcc_sum1234_mult_sum5678(
         int a1, int a2, int a3, int a4,
         int a5, int a6, int a7, int a8);
 
-int gcc_get_x(struct point p);
-int gcc_get_y(struct point p);
+int gcc_get_x(point p);
+int gcc_get_y(point p);
+
+int gcc_get_x4(vec v);
+int gcc_get_y4(vec v);
+int gcc_get_z4(vec v);
+int gcc_get_w4(vec v);
 
 #endif /* GCC_FUNC_H */

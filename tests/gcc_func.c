@@ -19,12 +19,32 @@ int gcc_sum1234_mult_sum5678(
         (a5 + a6 + a7 + a8);
 }
 
-int gcc_get_x(struct point p)
+int gcc_get_x(point p)
 {
     return p.x;
 }
 
-int gcc_get_y(struct point p)
+int gcc_get_y(point p)
 {
     return p.y;
+}
+
+int gcc_get_x4(vec v)
+{
+    return v.x;
+}
+
+int gcc_get_y4(vec v)
+{
+    return v.y;
+}
+
+int gcc_get_z4(vec v)
+{
+    return v.z;
+}
+
+int gcc_get_w4(vec v)
+{
+    return v.w;
 }
