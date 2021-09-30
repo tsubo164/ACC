@@ -81,6 +81,15 @@ int main()
         my_sprintf(buf, "(%d, %d, %d, %d, %d, %d, %d)", 1, 2, 3, 4, 5, 6, 7);
         assert(0, strcmp(buf, "(1, 2, 3, 4, 5, 6, 7)"));
     }
+    {
+        /* gcc 8 byte struct for passing by value */
+        point p = {14, 17};
+
+        assert(14, gcc_get_x(p));
+        assert(14, p.x);
+        assert(17, gcc_get_y(p));
+        assert(17, p.y);
+    }
 
     return 0;
 }

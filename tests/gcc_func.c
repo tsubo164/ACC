@@ -18,3 +18,13 @@ int gcc_sum1234_mult_sum5678(
         (a1 + a2 + a3 + a4) *
         (a5 + a6 + a7 + a8);
 }
+
+int gcc_get_x(struct point p)
+{
+    return p.x;
+}
+
+int gcc_get_y(struct point p)
+{
+    return p.y;
+}
