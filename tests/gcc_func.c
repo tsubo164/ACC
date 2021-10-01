@@ -48,3 +48,18 @@ int gcc_get_w4(vec v)
 {
     return v.w;
 }
+
+long gcc_coord_x(Coord c)
+{
+    return c.x;
+}
+
+long gcc_coord_y(Coord c)
+{
+    return c.y;
+}
+
+long gcc_coord_z(Coord c)
+{
+    return c.z;
+}

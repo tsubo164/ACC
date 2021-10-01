@@ -103,6 +103,17 @@ int main()
         assert(32, gcc_get_w4(v));
         assert(32, v.w);
     }
+    {
+        /* gcc large struct for passing by value */
+        Coord c = {111, 222, 199};
+
+        assert(111, gcc_coord_x(c));
+        assert(111, c.x);
+        assert(222, gcc_coord_y(c));
+        assert(222, c.y);
+        assert(199, gcc_coord_z(c));
+        assert(199, c.z);
+    }
 
     return 0;
 }

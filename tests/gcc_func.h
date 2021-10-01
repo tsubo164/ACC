@@ -23,4 +23,12 @@ int gcc_get_y4(vec v);
 int gcc_get_z4(vec v);
 int gcc_get_w4(vec v);
 
+typedef struct coord {
+    long x, y, z;
+} Coord;
+
+long gcc_coord_x(Coord c);
+long gcc_coord_y(Coord c);
+long gcc_coord_z(Coord c);
+
 #endif /* GCC_FUNC_H */
