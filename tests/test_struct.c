@@ -64,6 +64,25 @@ int get_w4(vec4 v)
     return v.w;
 }
 
+typedef struct coord {
+    long x, y, z;
+} Coord;
+
+long coord_x(Coord c)
+{
+    return c.x;
+}
+
+long coord_y(Coord c)
+{
+    return c.y;
+}
+
+long coord_z(Coord c)
+{
+    return c.z;
+}
+
 int main()
 {
     {
@@ -343,6 +362,17 @@ int main()
 
         assert(234, get_w4(w));
         assert(234, w.w);
+    }
+    {
+        /* large struct for passing by value */
+        Coord c = {111, 222, 199};
+
+        assert(111, coord_x(c));
+        assert(111, c.x);
+        assert(222, coord_y(c));
+        assert(222, c.y);
+        assert(199, coord_z(c));
+        assert(199, c.z);
     }
 
     return 0;

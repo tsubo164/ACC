@@ -4,32 +4,27 @@
 #include <stdio.h>
 */
 
-typedef struct point {
-    int x, y, z, w;
-} Point;
+typedef struct coord {
+    long x, y, z;
+} Coord;
 
-int get_x(Point p)
+long coord_x(Coord c)
 {
-    return p.x;
+    return c.x;
 }
 
-int get_y(Point p)
+long coord_y(Coord c)
 {
-    return p.y;
+    return c.y;
 }
 
-int get_z(Point p)
+long coord_z(Coord c)
 {
-    return p.z;
-}
-
-int get_w(Point p)
-{
-    return p.w;
+    return c.z;
 }
 
 int main()
 {
-    Point p = {11, 22, 33, 44};
-    return get_w(p);
+    Coord c = {111, 222, 199};
+    return coord_z(c);
 }
