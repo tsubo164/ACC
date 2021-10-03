@@ -12,7 +12,6 @@
   - [ ] `type.c`
 
 * TODO
-  - struct arg
   - struct return
 
 * OPTIONAL
@@ -109,3 +108,4 @@
   - typedef'ed type produces actual type => actual type holds link to typedef sym
   - variable arguments
   - struct assign
+  - struct arg

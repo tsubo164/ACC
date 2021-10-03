@@ -1284,7 +1284,7 @@ static void gen_init_scalar_local(FILE *fp, const struct data_type *type,
         code3__(fp, ident, ADD_, imme(offset), A_);
     code2__(fp, ident, PUSH_, RAX);
 
-    if (expr && is_struct(expr->type)) {
+    if (expr && is_struct(expr->type) && get_size(expr->type) > 8) {
         /* init expr */
         gen_address(fp, expr);
         code2__(fp, &dummy, POP_,  RDX);
@@ -1758,7 +1758,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_ASSIGN:
-        if (is_struct(node->type)) {
+        if (is_struct(node->type) && get_size(node->type) > 8) {
             gen_comment(fp, "assign struct");
             gen_address(fp, node->l);
             code2__(fp, node, PUSH_, RAX);

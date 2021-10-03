@@ -32,6 +32,12 @@ void add_point(struct point *out, struct point *p, struct point *q)
     out->y = p->y + q->y;
 }
 
+struct point get_point()
+{
+    struct point p = {71, 92};
+    return p;
+}
+
 typedef struct vec {
     int x, y, z;
 } vec;
@@ -373,6 +379,13 @@ int main()
         assert(222, c.y);
         assert(199, coord_z(c));
         assert(199, c.z);
+    }
+    {
+        /* small struct returned by value */
+        struct point p = get_point();
+
+        assert(71, p.x);
+        assert(92, p.y);
     }
 
     return 0;
