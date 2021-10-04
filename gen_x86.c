@@ -507,6 +507,17 @@ static void gen_comment(FILE *fp, const char *cmt)
     fprintf(fp, "## %s\n", cmt);
 }
 
+static int is_small_object(const struct data_type *type)
+{
+    return get_size(type) <= 8;
+}
+
+static int is_medium_object(const struct data_type *type)
+{
+    const int size = get_size(type);
+    return size > 8 && size <= 16;
+}
+
 static const struct ast_node *find_node(const struct ast_node *node, int node_kind)
 {
     const struct ast_node *found = NULL;
@@ -1698,6 +1709,13 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_RETURN:
         gen_code(fp, node->l);
+
+        if (is_medium_object(node->type)) {
+            /* use rax and rdx */
+            code3__(fp, node, MOV_, addr1(RAX), A_);
+            code3__(fp, node, MOV_, addr2(RAX, 8), D_);
+        }
+
         code2__(fp, node, JMP_, label(scope.func, JMP_RETURN));
         break;
 
@@ -1719,10 +1737,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_IDENT:
-        if (get_size(node->type) > 8)
-            gen_address(fp, node);
-        else
+        if (is_small_object(node->type))
             gen_ident(fp, node);
+        else
+            gen_address(fp, node);
         break;
 
     case NOD_DECL_INIT:
@@ -1758,17 +1776,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_ASSIGN:
-        if (is_struct(node->type) && get_size(node->type) > 8) {
-            gen_comment(fp, "assign struct");
-            gen_address(fp, node->l);
-            code2__(fp, node, PUSH_, RAX);
-            gen_address(fp, node->r);
-            code2__(fp, node, POP_,  RDX);
-
-            gen_assign_struct(fp, node->type);
-            break;
-        }
-
         gen_comment(fp, "assign");
         gen_address(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
@@ -1786,7 +1793,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
                 code3__(fp, node, MOVSL_, EAX, RAX);
         }
 
-        code3__(fp, node, MOV_, A_, addr1(RDX));
+        if (is_small_object(node->type))
+            code3__(fp, node, MOV_, A_, addr1(RDX));
+        else
+            gen_assign_struct(fp, node->type);
+
         break;
 
     case NOD_ADD_ASSIGN:
