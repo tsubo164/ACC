@@ -61,6 +61,12 @@ int get_z3(vec v)
     return v.z;
 }
 
+vec get_vec()
+{
+    vec v = {1301, 223922, -3973};
+    return v;
+}
+
 typedef struct vec4 {
     int x, y, z, w;
 } vec4;
@@ -386,6 +392,14 @@ int main()
 
         assert(71, p.x);
         assert(92, p.y);
+    }
+    {
+        /* medium struct returned by value */
+        vec v = get_vec();
+
+        assert(1301, v.x);
+        assert(223922, v.y);
+        assert(-3973, v.z);
     }
 
     return 0;

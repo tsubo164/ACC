@@ -5,15 +5,12 @@
 */
 
 typedef struct point {
-    int x, y;
+    int x, y, z;
 } Point;
 
 Point get_point()
 {
-    /*
-    Point pt = {111, 222, 33};
-    */
-    Point pt = {111, 222};
+    Point pt = {111, 222, 55};
     return pt;
 }
 
@@ -24,13 +21,6 @@ int add(int x, int y)
 
 int main()
 {
-    /*
-    Point pt;
-    pt = get_point();
-    return pt.y;
-    */
-    int a = add(3, 7);
-    return a;
-    /*
-    */
+    Point pt = get_point();
+    return pt.z;
 }

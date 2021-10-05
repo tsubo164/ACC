@@ -507,6 +507,11 @@ static void gen_comment(FILE *fp, const char *cmt)
     fprintf(fp, "## %s\n", cmt);
 }
 
+static int align_to(int pos, int align)
+{
+    return ((pos + align - 1) / align) * align;
+}
+
 static int is_small_object(const struct data_type *type)
 {
     return get_size(type) <= 8;
@@ -617,7 +622,7 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
             gen_assign_struct(fp, sym->type);
 
             /* 8 byte align */
-            stack_offset += ((param_size + 8 - 1) / 8) * 8;
+            stack_offset += align_to(param_size, 8);
         }
     }
 }
@@ -635,6 +640,47 @@ static void gen_func_param_list(FILE *fp, const struct ast_node *node)
         gen_func_param_list_(fp, func->sym);
 }
 
+static int local_area_offset = 0;
+static void find_max_return_size(const struct ast_node *node, int *max)
+{
+    if (!node)
+        return;
+
+    if (node->kind == NOD_CALL) {
+        if (!is_small_object(node->type)) {
+            const int size = get_size(node->type);
+            if (size > *max)
+                *max = size;
+        }
+    } else {
+        find_max_return_size(node->l, max);
+        find_max_return_size(node->r, max);
+    }
+}
+
+static int get_local_area_offset(void)
+{
+    return local_area_offset;
+}
+
+static void set_local_area_offset(const struct ast_node *node)
+{
+    const struct ast_node *fdecl, *func;
+    int local_area_size = 0;
+    int ret_area_size = 0;
+
+    fdecl = find_node(node->l, NOD_DECL_FUNC);
+    func = find_node(fdecl->l, NOD_DECL_IDENT);
+
+    local_area_size = get_mem_offset(func);
+
+    find_max_return_size(node->r, &ret_area_size);
+    /* 16 byte align */
+    ret_area_size = align_to(ret_area_size, 16);
+
+    local_area_offset = local_area_size + ret_area_size;
+}
+
 static void gen_func_prologue(FILE *fp, const struct ast_node *node)
 {
     const struct ast_node *ddecl = NULL;
@@ -650,7 +696,7 @@ static void gen_func_prologue(FILE *fp, const struct ast_node *node)
     fprintf(fp, "_%s:\n", ident->sym->name);
     code2__(fp, ident, PUSH_, RBP);
     code3__(fp, ident, MOV_,  RSP, RBP);
-    code3__(fp, ident, SUB_, imme(get_mem_offset(ident)), RSP);
+    code3__(fp, ident, SUB_, imme(get_local_area_offset()), RSP);
 }
 
 static void gen_func_body(FILE *fp, const struct ast_node *node)
@@ -750,7 +796,7 @@ static void gen_func_call2(FILE *fp, const struct ast_node *node)
             type_size = get_size(arg->expr->type);
 
             /* 8 byte align */
-            arg->size = ((type_size + 8 - 1) / 8) * 8;
+            arg->size = align_to(type_size, 8);
             total_area_size += arg->size;
 
             arg--;
@@ -854,6 +900,16 @@ static void gen_func_call2(FILE *fp, const struct ast_node *node)
     }
 
     free(args);
+
+    if (is_medium_object(func_sym->type)) {
+        const int offset = -get_local_area_offset();
+
+        gen_comment(fp, "store returned value");
+        code3__(fp, NULL, MOV_, RAX, addr2(RBP, offset));
+        code3__(fp, NULL, MOV_, RDX, addr2(RBP, offset + 8));
+        gen_comment(fp, "load address to returned value");
+        code3__(fp, NULL, LEA_, addr2(RBP, offset), RAX);
+    }
 }
 
 static void gen_func_call(FILE *fp, const struct ast_node *node)
@@ -1295,25 +1351,20 @@ static void gen_init_scalar_local(FILE *fp, const struct data_type *type,
         code3__(fp, ident, ADD_, imme(offset), A_);
     code2__(fp, ident, PUSH_, RAX);
 
-    if (expr && is_struct(expr->type) && get_size(expr->type) > 8) {
+    if (expr) {
         /* init expr */
-        gen_address(fp, expr);
+        gen_code(fp, expr);
+        /* assign expr */
         code2__(fp, &dummy, POP_,  RDX);
-        gen_comment(fp, "copy struct object");
-
-        gen_assign_struct(fp, expr->type);
-    } else {
-        if (expr) {
-            /* init expr */
-            gen_code(fp, expr);
-            /* assign expr */
-            code2__(fp, &dummy, POP_,  RDX);
+        gen_comment(fp, "assign object");
+        if (is_small_object(type))
             code3__(fp, &dummy, MOV_, A_, addr1(RDX));
-        } else {
-            /* assign zero */
-            code2__(fp, &dummy, POP_,  RDX);
-            code3__(fp, &dummy, MOV_, imme(0), addr1(RAX));
-        }
+        else
+            gen_assign_struct(fp, type);
+    } else {
+        /* assign zero */
+        code2__(fp, &dummy, POP_,  RDX);
+        code3__(fp, &dummy, MOV_, imme(0), addr1(RAX));
     }
 }
 
@@ -1712,8 +1763,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
         if (is_medium_object(node->type)) {
             /* use rax and rdx */
-            code3__(fp, node, MOV_, addr1(RAX), A_);
-            code3__(fp, node, MOV_, addr2(RAX, 8), D_);
+            gen_comment(fp, "load returning value");
+            code3__(fp, NULL, MOV_, RAX, RSI);
+            code3__(fp, NULL, MOV_, addr1(RSI), A_);
+            code3__(fp, NULL, MOV_, addr2(RSI, 8), D_);
         }
 
         code2__(fp, node, JMP_, label(scope.func, JMP_RETURN));
@@ -1763,6 +1816,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         tmp = scope;
         scope.curr = next_scope++;
         scope.func = scope.curr;
+
+        set_local_area_offset(node);
 
         gen_func_prologue(fp, node->l);
         gen_comment(fp, "func params");
