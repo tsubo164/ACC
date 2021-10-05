@@ -55,6 +55,12 @@ int gcc_get_w4(vec v)
     return v.w;
 }
 
+vec gcc_get_vec(void)
+{
+    vec v = {1301, 223922, -3973};
+    return v;
+}
+
 long gcc_coord_x(Coord c)
 {
     return c.x;

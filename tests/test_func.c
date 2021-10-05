@@ -115,11 +115,19 @@ int main()
         assert(199, c.z);
     }
     {
-        /* gcc small struct returned by value */
+        /* gcc 8 byte struct returned by value */
         point p = gcc_get_point();
 
         assert(71, p.x);
         assert(92, p.y);
+    }
+    {
+        /* gcc 16 byte struct returned by value */
+        vec v = gcc_get_vec();
+
+        assert(1301, v.x);
+        assert(223922, v.y);
+        assert(-3973, v.z);
     }
 
     return 0;

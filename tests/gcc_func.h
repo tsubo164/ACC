@@ -25,6 +25,8 @@ int gcc_get_y4(vec v);
 int gcc_get_z4(vec v);
 int gcc_get_w4(vec v);
 
+vec gcc_get_vec(void);
+
 typedef struct coord {
     long x, y, z;
 } Coord;

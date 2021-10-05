@@ -387,14 +387,14 @@ int main()
         assert(199, c.z);
     }
     {
-        /* small struct returned by value */
+        /* 8 byte struct returned by value */
         struct point p = get_point();
 
         assert(71, p.x);
         assert(92, p.y);
     }
     {
-        /* medium struct returned by value */
+        /* 16 byte struct returned by value */
         vec v = get_vec();
 
         assert(1301, v.x);
