@@ -114,6 +114,13 @@ int main()
         assert(199, gcc_coord_z(c));
         assert(199, c.z);
     }
+    {
+        /* gcc small struct returned by value */
+        point p = gcc_get_point();
+
+        assert(71, p.x);
+        assert(92, p.y);
+    }
 
     return 0;
 }

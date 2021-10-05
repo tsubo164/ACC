@@ -18,6 +18,8 @@ int gcc_sum1234_mult_sum5678(
 int gcc_get_x(point p);
 int gcc_get_y(point p);
 
+point gcc_get_point(void);
+
 int gcc_get_x4(vec v);
 int gcc_get_y4(vec v);
 int gcc_get_z4(vec v);

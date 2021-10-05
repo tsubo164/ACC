@@ -29,6 +29,12 @@ int gcc_get_y(point p)
     return p.y;
 }
 
+point gcc_get_point(void)
+{
+    point p = {71, 92};
+    return p;
+}
+
 int gcc_get_x4(vec v)
 {
     return v.x;
