@@ -411,11 +411,8 @@ int main()
         /* large struct returned by value */
         Coord c = get_coord();
 
-        assert(72340, coord_x(c));
         assert(72340, c.x);
-        assert(-1230889, coord_y(c));
         assert(-1230889, c.y);
-        assert(91355, coord_z(c));
         assert(91355, c.z);
     }
 

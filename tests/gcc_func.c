@@ -75,3 +75,9 @@ long gcc_coord_z(Coord c)
 {
     return c.z;
 }
+
+Coord gcc_get_coord(void)
+{
+    Coord c = {72340, -1230889, 91355};
+    return c;
+}

@@ -35,4 +35,6 @@ long gcc_coord_x(Coord c);
 long gcc_coord_y(Coord c);
 long gcc_coord_z(Coord c);
 
+Coord gcc_get_coord(void);
+
 #endif /* GCC_FUNC_H */

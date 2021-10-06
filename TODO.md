@@ -12,7 +12,6 @@
   - [ ] `type.c`
 
 * TODO
-  - struct return
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;
@@ -109,3 +108,4 @@
   - variable arguments
   - struct assign
   - struct arg
+  - struct return

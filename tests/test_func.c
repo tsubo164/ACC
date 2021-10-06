@@ -129,6 +129,14 @@ int main()
         assert(223922, v.y);
         assert(-3973, v.z);
     }
+    {
+        /* gcc large struct returned by value */
+        Coord c = gcc_get_coord();
+
+        assert(72340, c.x);
+        assert(-1230889, c.y);
+        assert(91355, c.z);
+    }
 
     return 0;
 }
