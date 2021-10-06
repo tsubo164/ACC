@@ -135,6 +135,7 @@ const struct operand EAX = {OPR_REG, LONG, A__};
 const struct operand RAX = {OPR_REG, QUAD, A__};
 const struct operand RDX = {OPR_REG, QUAD, D__};
 const struct operand RSI = {OPR_REG, QUAD, SI__};
+const struct operand RDI = {OPR_REG, QUAD, DI__};
 const struct operand RIP = {OPR_REG, QUAD, IP__};
 const struct operand RBP = {OPR_REG, QUAD, BP__};
 const struct operand RSP = {OPR_REG, QUAD, SP__};
@@ -449,7 +450,7 @@ static void code2__(FILE *fp, const struct ast_node *node,
 {
     const struct opecode o0 = op;
     const struct operand o1 = oper1;
-    int tag = data_tag_(node->type);
+    int tag = node ? data_tag_(node->type) : QUAD;
 
     /* 64 bit mode supports only full register for pop and push */
     if (!strcmp(op.mnemonic, "push") ||
@@ -523,6 +524,11 @@ static int is_medium_object(const struct data_type *type)
     return size > 8 && size <= 16;
 }
 
+static int is_large_object(const struct data_type *type)
+{
+    return get_size(type) > 16;
+}
+
 static const struct ast_node *find_node(const struct ast_node *node, int node_kind)
 {
     const struct ast_node *found = NULL;
@@ -593,6 +599,11 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
     const struct symbol *sym;
     int stored_reg_count = 0;
     int stack_offset = 16; /* from rbp */
+
+    if (is_large_object(func_sym->type)) {
+        gen_comment(fp, "save address to returning value");
+        code2__(fp, NULL, PUSH_, RDI);
+    }
 
     for (sym = first_param(func_sym); sym; sym = next_param(sym)) {
         const int param_size = get_size(sym->type);
@@ -776,9 +787,13 @@ static void gen_load_arg(FILE *fp, const struct arg_area *arg, int *reg_start)
 static void gen_func_call2(FILE *fp, const struct ast_node *node)
 {
     const struct symbol *func_sym = node->l->sym;
-    const int arg_count = node->ival;
     struct arg_area *args = NULL;
+    int arg_count = node->ival;
     int total_area_size = 0;
+
+    /* use the first register(rdi) for pointer to return value space */
+    if (is_large_object(func_sym->type))
+        arg_count++;
 
     /* allocate arg area */
     args = malloc(arg_count * sizeof(struct arg_area));
@@ -787,6 +802,12 @@ static void gen_func_call2(FILE *fp, const struct ast_node *node)
     {
         const struct ast_node *list = node->r;
         struct arg_area *arg = &args[arg_count - 1];
+        int i;
+
+        for (i = 0; i < arg_count; i++) {
+            const struct arg_area zero = {NULL, 0, 0, 0};
+            args[0] = zero;
+        }
 
         for (; list; list = list->l) {
             const struct ast_node *arg_node = list->r;
@@ -822,6 +843,10 @@ static void gen_func_call2(FILE *fp, const struct ast_node *node)
 
         for (i = 0; i < arg_count; i++) {
             struct arg_area *arg = &args[i];
+
+            /* skip for return value */
+            if (!arg->expr)
+                continue;
 
             if (arg->size == 8 && used_reg_count < 6) {
                 reg_offset -= arg->size;
@@ -861,6 +886,10 @@ static void gen_func_call2(FILE *fp, const struct ast_node *node)
         /* eval arg expr */
         gen_comment(fp, "store args");
         for (i = 0; i < arg_count; i++) {
+            /* skip for return value */
+            if (!args[i].expr)
+                continue;
+
             gen_code(fp, args[i].expr);
             if (args[i].size > 8)
                 gen_store_arg(fp, &args[i]);
@@ -872,6 +901,14 @@ static void gen_func_call2(FILE *fp, const struct ast_node *node)
         gen_comment(fp, "load args");
         for (i = 0; i < arg_count && loaded_reg_count < 6; i++) {
             struct arg_area *ar = &args[i];
+
+            if (!ar->expr) {
+                /* large return value */
+                const int offset = -get_local_area_offset();
+                gen_comment(fp, "load address to returned value");
+                code3__(fp, NULL, LEA_, addr2(RBP, offset), arg(0));
+                continue;
+            }
 
             if (!ar->pass_by_reg)
                 continue;
@@ -1767,6 +1804,13 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             code3__(fp, NULL, MOV_, RAX, RSI);
             code3__(fp, NULL, MOV_, addr1(RSI), A_);
             code3__(fp, NULL, MOV_, addr2(RSI, 8), D_);
+        }
+        else if (is_large_object(node->type)) {
+            gen_comment(fp, "fill returning value");
+            code2__(fp, node, POP_, RDX);
+            gen_assign_struct(fp, node->type);
+            gen_comment(fp, "load address to returning value");
+            code3__(fp, NULL, MOV_, RDX, RAX);
         }
 
         code2__(fp, node, JMP_, label(scope.func, JMP_RETURN));

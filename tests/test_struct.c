@@ -95,6 +95,12 @@ long coord_z(Coord c)
     return c.z;
 }
 
+Coord get_coord(void)
+{
+    Coord c = {72340, -1230889, 91355};
+    return c;
+}
+
 int main()
 {
     {
@@ -400,6 +406,17 @@ int main()
         assert(1301, v.x);
         assert(223922, v.y);
         assert(-3973, v.z);
+    }
+    {
+        /* large struct returned by value */
+        Coord c = get_coord();
+
+        assert(72340, coord_x(c));
+        assert(72340, c.x);
+        assert(-1230889, coord_y(c));
+        assert(-1230889, c.y);
+        assert(91355, coord_z(c));
+        assert(91355, c.z);
     }
 
     return 0;

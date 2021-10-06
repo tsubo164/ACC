@@ -4,23 +4,18 @@
 #include <stdio.h>
 */
 
-typedef struct point {
-    int x, y, z;
-} Point;
+typedef struct coord {
+    long x, y, z;
+} Coord;
 
-Point get_point()
+Coord get_coord()
 {
-    Point pt = {111, 222, 55};
-    return pt;
-}
-
-int add(int x, int y)
-{
-    return x + y;
+    Coord c = {111, 222, 55};
+    return c;
 }
 
 int main()
 {
-    Point pt = get_point();
-    return pt.z;
+    Coord c = get_coord();
+    return c.z;
 }
