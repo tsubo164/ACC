@@ -1422,6 +1422,7 @@ static void print_object(struct object_byte *obj)
 {
     int i;
 
+    printf("%s %s:\n", type_name_of(obj->sym->type), obj->sym->name);
     for (i = 0; i < obj->size; i++) {
         printf("    [%04d] is_written: %d written_size: %d init: %p\n",
                 i,
@@ -1532,6 +1533,49 @@ static void assign_init(struct memory_byte *base,
     }
 }
 
+static long eval_const_expr__(const struct ast_node *node)
+{
+    long l, r;
+
+    if (!node)
+        return 0;
+
+    switch (node->kind) {
+
+    case NOD_ADD:
+        l = eval_const_expr__(node->l);
+        r = eval_const_expr__(node->r);
+        return l + r;
+
+    case NOD_SUB:
+        l = eval_const_expr__(node->l);
+        r = eval_const_expr__(node->r);
+        return l - r;
+
+    case NOD_MUL:
+        l = eval_const_expr__(node->l);
+        r = eval_const_expr__(node->r);
+        return l * r;
+
+    case NOD_DIV:
+        l = eval_const_expr__(node->l);
+        r = eval_const_expr__(node->r);
+        return l / r;
+
+    case NOD_MOD:
+        l = eval_const_expr__(node->l);
+        r = eval_const_expr__(node->r);
+        return l % r;
+
+    case NOD_SIZEOF:
+    case NOD_NUM:
+        return node->ival;
+
+    default:
+        return 0;
+    }
+}
+
 static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
         const struct ast_node *expr)
 {
@@ -1549,6 +1593,11 @@ static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
         fprintf(fp, "    .%s %ld\n", szname, expr->ival);
         break;
 
+    case NOD_IDENT:
+        if (expr->sym && is_enumerator(expr->sym))
+            fprintf(fp, "    .%s %d\n", szname, get_mem_offset(expr));
+        break;
+
     case NOD_ADDR:
         {
             /* TODO make function taking sym */
@@ -1562,7 +1611,22 @@ static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
         }
         break;
 
+    case NOD_CAST:
+        /* TODO come up better way to handle scalar universaly */
+        gen_init_scalar_global(fp, type, expr->r);
+        break;
+
+    case NOD_ADD:
+    case NOD_SUB:
+    case NOD_MUL:
+    case NOD_DIV:
+    case NOD_MOD:
+        /* TODO isolate eval_const_expr() */
+        fprintf(fp, "    .%s %ld\n", szname, eval_const_expr__(expr));
+        break;
+
     default:
+        /* TODO put an assertion */
         break;
     }
 }

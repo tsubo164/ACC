@@ -55,6 +55,18 @@ int *pval = &ival;
 int g_a[3] = {11, 22, 44};
 int g_b[3][2] = {{111, 222}, {444, 555}};
 
+/* initialize global variable with enumerator and cast expressions */
+#define NULL ((void *)0)
+enum {
+    SMALL,
+    MEDIUM,
+    LARGE
+};
+struct list {
+    int id;
+    const char *next;
+} head = {MEDIUM, NULL};
+
 int main()
 {
     {
@@ -159,6 +171,11 @@ int main()
         assert(4, sizeof ival);
         assert(8, sizeof pval);
         assert(42, *pval);
+    }
+    {
+        /* initialize global variable with enumerator and cast expressions */
+        assert(MEDIUM, head.id);
+        assertl(0, (long)head.next);
     }
 
     return 0;
