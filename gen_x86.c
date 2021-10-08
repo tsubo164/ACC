@@ -1171,6 +1171,10 @@ static void gen_load(FILE *fp, const struct ast_node *node)
     /* array objects cannot be loaded in registers, and converted to pointers */
     if (is_array(node->type))
         return;
+    /* large struct objects cannot be loaded in registers,
+     * and the compiler handle it via pointer */
+    if (!is_small_object(node->type))
+        return;
     code3__(fp, node, MOV_, addr1(RAX), A_);
 }
 

@@ -38,6 +38,15 @@ run_cc:
 	$(CC) -Wall -ansi --pedantic-errors input.c
 	./a.out
 
+#target for testing single file for self compile
+SELF =
+self: $(SELF).c
+	@$(MAKE)
+	@echo '  * self compile $(SELF).c'
+	@./$(target) $(SELF).c
+	@$(CC) -c $(SELF).s
+	@$(MAKE)
+
 tree: $(target)
 	./$(target) --print-tree input.c
 

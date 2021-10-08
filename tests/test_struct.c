@@ -67,6 +67,13 @@ vec get_vec()
     return v;
 }
 
+void copy_vec(vec *dst, const vec *src)
+{
+    if (!dst || !src || dst == src)
+        return;
+    *dst = *src;
+}
+
 typedef struct vec4 {
     int x, y, z, w;
 } vec4;
@@ -414,6 +421,16 @@ int main()
         assert(72340, c.x);
         assert(-1230889, c.y);
         assert(91355, c.z);
+    }
+    {
+        /* copying struct through pointer dereference */
+        vec v = {911, 822, 733};
+        vec w;
+
+        copy_vec(&w, &v);
+        assert(911, w.x);
+        assert(822, w.y);
+        assert(733, w.z);
     }
 
     return 0;

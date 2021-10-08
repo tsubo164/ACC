@@ -9,7 +9,7 @@
   - [ ] `semantics.c`
   - [x] `string_table.c`
   - [x] `symbol.c`
-  - [ ] `type.c`
+  - [x] `type.c`
 
 * TODO
 
