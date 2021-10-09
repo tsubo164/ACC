@@ -647,7 +647,8 @@ static struct ast_node *struct_ref(struct parser *p, struct ast_node *strc)
     typed_(member);
 
     ref = new_node_(NOD_STRUCT_REF, tokpos(p));
-    return branch_(ref, strc, member);
+    ref = branch_(ref, strc, member);
+    return convert_(p, ref);
 }
 
 /*

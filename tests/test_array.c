@@ -25,6 +25,17 @@ int array_to_pointer2(char a[1][1])
     return **a;
 }
 
+/* array in struct */
+typedef struct foo {
+    int a[4];
+} Foo;
+
+/* func with an array param */
+void count_up(int *a)
+{
+    (*a)++;
+}
+
 int main()
 {
     {
@@ -167,6 +178,16 @@ int main()
         assert('f', array_to_pointer2(b));
         assert(102, array_to_pointer2(b));
         */
+    }
+    {
+        /* converting an array to pointer accessed via dot op */
+        Foo f = {{11, 22, 33, 44}};
+
+        count_up(f.a);
+        assert(12, f.a[0]);
+
+        count_up(f.a + 1);
+        assert(23, f.a[1]);
     }
 
     return 0;
