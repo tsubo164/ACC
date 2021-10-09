@@ -1100,7 +1100,15 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
         if (is_array(node->type)) {
             code3__(fp, node, LEA_, addr2_pc_rel(RIP, sym->name, id), RAX);
         } else {
-            code3__(fp, node, MOV_, addr2_pc_rel(RIP, sym->name, id), A_);
+            /* TODO come up with better idea */
+            if (!strcmp(sym->name, "__stdinp") ||
+                !strcmp(sym->name, "__stdoutp") ||
+                !strcmp(sym->name, "__stderrp")) {
+                fprintf(fp, "    movq   _%s@GOTPCREL(%%rip), %%rax\n", sym->name);
+                code3__(fp, NULL, MOV_, addr1(RAX), RAX);
+            } else {
+                code3__(fp, node, MOV_, addr2_pc_rel(RIP, sym->name, id), A_);
+            }
         }
     }
     else if (is_enumerator(sym)) {
