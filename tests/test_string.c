@@ -43,6 +43,18 @@ int main()
         assert('A', s[0]);
         assert('\0', s[1]);
     }
+    {
+        /* string literal with escape sequence \x */
+        const char *s = "Hello\x0a";
+
+        assert('H', s[0]);
+        assert('e', s[1]);
+        assert('l', s[2]);
+        assert('l', s[3]);
+        assert('o', s[4]);
+        assert('\n', s[5]);
+        assert(10, s[5]);
+    }
 
     return 0;
 }

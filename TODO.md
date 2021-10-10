@@ -3,7 +3,7 @@
   - [ ] `gen_x86.c`
   - [ ] `lexer.c`
   - [ ] `main.c`
-  - [ ] `message.c`
+  - [x] `message.c`
   - [ ] `parse.c`
   - [ ] `preprocessor.c`
   - [ ] `semantics.c`

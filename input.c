@@ -6,5 +6,7 @@
 
 int main()
 {
-    fprintf(stdout, "hello\n");
+    int a = 42;
+    fprintf(stdout, "hello\x0a");
+    return 42;
 }

@@ -158,6 +158,48 @@ static int read_escape_sequence(struct lexer *l)
     }
 }
 
+static const char *convert_escape_sequence(const char *src, char *dst)
+{
+    const char *s = src;
+    char *d = dst;
+    char *end = NULL;
+
+    for (;;) {
+        if (*s == '\\') {
+            s++;
+            switch (*s) {
+            case '0':  *d = '\0'; break;
+            case '\\': *d = '\\'; break;
+            case '\'': *d = '\''; break;
+            case 'a':  *d = '\a'; break;
+            case 'b':  *d = '\b'; break;
+            case 'f':  *d = '\f'; break;
+            case 'n':  *d = '\n'; break;
+            case 'r':  *d = '\r'; break;
+            case 't':  *d = '\t'; break;
+            case 'v':  *d = '\v'; break;
+            case 'x':
+                s++;
+                *d = strtol(s, &end, 16);
+                s = end - 1;
+                break;
+            default:
+                /* error */
+                break;
+            }
+        } else {
+            *d = *s;
+        }
+
+        if (!*d)
+            break;
+        d++;
+        s++;
+    }
+
+    return dst;
+}
+
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
 {
     static char textbuf[1024] = {'\0'};
@@ -459,14 +501,14 @@ state_string_literal:
     switch (c) {
 
     case '"':
-        *buf = '\0';
-        tok->text = make_text(l, textbuf);
-        tok->kind = TOK_STRING_LITERAL;
+        {
+            static char no_esc_seq[1024] = {'\0'};
+            *buf = '\0';
+            convert_escape_sequence(textbuf, no_esc_seq);
+            tok->text = make_text(l, no_esc_seq);
+            tok->kind = TOK_STRING_LITERAL;
+        }
         goto state_final;
-
-    case '\\':
-        *buf++ = read_escape_sequence(l);
-        goto state_string_literal;
 
     default:
         *buf++ = c;
@@ -477,6 +519,7 @@ state_char_literal:
     c = readc(l);
 
     if (c == '\\')
+        /* TODO support hex and octal literal */
         tok->value = read_escape_sequence(l);
     else
         tok->value = c;

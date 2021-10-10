@@ -2221,29 +2221,27 @@ static void gen_global_vars(FILE *fp, const struct ast_node *node)
     gen_global_vars(fp, node->r);
 }
 
+static void print_escape_sequence(FILE *fp, const char *src)
+{
+    const char *s = src;
+
+    for (; *s; s++) {
+        if (*s >= 0 && *s < 32)
+            fprintf(fp, "\\%03o", *s);
+        else
+            fprintf(fp, "%c", *s);
+    }
+}
+
 static void gen_string_literal(FILE *fp, const struct symbol_table *table)
 {
     struct symbol *sym;
 
     for (sym = table->head; sym; sym = sym->next) {
         if (is_string_literal(sym)) {
-            const char *p;
             fprintf(fp, "_L.str.%d:\n", sym->id);
             fprintf(fp, "    .asciz \"");
-            for (p = sym->name; *p; p++) {
-                switch (*p) {
-                case '\0': fprintf(fp, "\\0"); break;
-                case '\\': fprintf(fp, "\\");  break;
-                case '\a': fprintf(fp, "\\a"); break;
-                case '\b': fprintf(fp, "\\b"); break;
-                case '\f': fprintf(fp, "\\f"); break;
-                case '\n': fprintf(fp, "\\n"); break;
-                case '\r': fprintf(fp, "\\r"); break;
-                case '\t': fprintf(fp, "\\t"); break;
-                case '\v': fprintf(fp, "\\v"); break;
-                default:   fprintf(fp, "%c", *p); break;
-                }
-            }
+            print_escape_sequence(fp, sym->name);
             fprintf(fp, "\"\n\n");
         }
     }
