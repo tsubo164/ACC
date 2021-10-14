@@ -432,6 +432,16 @@ int main()
         assert(822, w.y);
         assert(733, w.z);
     }
+    {
+        /* testing no-constness of member that comes after const member */
+        struct foo {
+            const struct point *p;
+            int i;
+        } f;
+
+        f.i = 123;
+        assert(123, f.i);
+    }
 
     return 0;
 }

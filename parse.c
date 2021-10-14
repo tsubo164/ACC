@@ -511,6 +511,7 @@ static void decl_reset_context(struct parser *p)
     p->is_typedef = 0;
     p->is_extern = 0;
     p->is_static = 0;
+    p->is_const = 0;
 }
 
 /*
@@ -1707,6 +1708,8 @@ static struct ast_node *struct_declaration(struct parser *p)
 {
     struct ast_node *tree = NULL, *spec = NULL;
 
+    decl_reset_context(p);
+
     spec = specifier_qualifier_list(p);
     if (!spec)
         return NULL;
@@ -1723,7 +1726,7 @@ static struct ast_node *struct_declaration(struct parser *p)
 /*
  * struct_declaration_list
  *     struct_declaration
- *     struct_declaration_list ',' struct_declaration
+ *     struct_declaration_list struct_declaration
  */
 static struct ast_node *struct_declaration_list(struct parser *p)
 {
@@ -1733,10 +1736,7 @@ static struct ast_node *struct_declaration_list(struct parser *p)
     const int is_extern = p->is_extern;
     const int is_static = p->is_static;
     const int is_const = p->is_const;
-    p->decl_kind = 0;
-    p->is_extern = 0;
-    p->is_static = 0;
-    p->is_const = 0;
+    const int is_typedef = p->is_typedef;
 
     for (;;) {
         struct ast_node *decl = struct_declaration(p);
@@ -1753,6 +1753,7 @@ static struct ast_node *struct_declaration_list(struct parser *p)
     p->is_extern = is_extern;
     p->is_static = is_static;
     p->is_const = is_const;
+    p->is_typedef = is_typedef;
 
     return tree;
 }
