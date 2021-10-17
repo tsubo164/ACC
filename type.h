@@ -39,6 +39,7 @@ extern struct symbol *symbol_of(const struct data_type *type);
 
 extern void set_array_length(struct data_type *type, int len);
 extern void set_struct_size(struct data_type *type, int size);
+extern void set_struct_align(struct data_type *type, int align);
 extern void set_symbol(struct data_type *type, struct symbol *sym);
 extern void set_const(struct data_type *type, int is_const);
 extern void set_unsigned(struct data_type *type, int is_unsigned);

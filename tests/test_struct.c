@@ -442,6 +442,58 @@ int main()
         f.i = 123;
         assert(123, f.i);
     }
+    {
+        /* struct size and alignment */
+        struct point {
+            int x, y, z;
+        };
+        typedef struct C {
+            char a;
+        } C;
+        typedef struct S {
+            short a;
+        } S;
+        typedef struct SC {
+            short a;
+            char b;
+        } SC;
+        typedef struct I {
+            int a;
+        } I;
+        typedef struct IC {
+            int i;
+            char a;
+        } IC;
+        typedef struct ICI {
+            int i;
+            char a;
+            int j;
+        } ICI;
+        typedef struct ICS {
+            int i;
+            char a;
+            short j;
+        } ICS;
+        typedef struct PC {
+            void *p;
+            char a;
+        } PC;
+
+        C c2[2];
+        ICI ici2[2];
+
+        assert(1, sizeof(C));
+        assert(2 , sizeof(S));
+        assert(4 , sizeof(SC));
+        assert(4 , sizeof(I));
+        assert(8 , sizeof(IC));
+        assert(12, sizeof(ICI));
+        assert(8 , sizeof(ICS));
+        assert(16, sizeof(PC));
+
+        assert(2 , sizeof(c2));
+        assert(24, sizeof(ici2));
+    }
 
     return 0;
 }

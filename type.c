@@ -14,7 +14,7 @@ static struct data_type INT_     = {DATA_TYPE_INT,     4, 4, 1, NULL, NULL};
 static struct data_type LONG_    = {DATA_TYPE_LONG,    8, 8, 1, NULL, NULL};
 static struct data_type POINTER_ = {DATA_TYPE_POINTER, 8, 8, 1, NULL, NULL};
 static struct data_type ARRAY_   = {DATA_TYPE_ARRAY,   0, 0, UNKNOWN_ARRAY_LENGTH, NULL, NULL};
-static struct data_type STRUCT_  = {DATA_TYPE_STRUCT,  0, 4, 1, NULL, NULL};
+static struct data_type STRUCT_  = {DATA_TYPE_STRUCT,  0, 0, 1, NULL, NULL};
 static struct data_type ENUM_    = {DATA_TYPE_ENUM,    4, 4, 1, NULL, NULL};
 
 int get_size(const struct data_type *type)
@@ -58,6 +58,13 @@ void set_struct_size(struct data_type *type, int size)
     if (!is_struct(type))
         return;
     type->byte_size = size;
+}
+
+void set_struct_align(struct data_type *type, int align)
+{
+    if (!is_struct(type))
+        return;
+    type->alignment = align;
 }
 
 void set_symbol(struct data_type *type, struct symbol *sym)

@@ -715,6 +715,7 @@ void compute_struct_size(struct symbol *strc)
     struct symbol *sym;
     int total_offset = 0;
     int struct_size = 0;
+    int struct_align = 0;
 
     if (is_incomplete(strc->type))
         return;
@@ -727,15 +728,17 @@ void compute_struct_size(struct symbol *strc)
             total_offset = align_to(total_offset, align);
             sym->mem_offset = total_offset;
             total_offset += size;
+            struct_align = align > struct_align ? align : struct_align;
         }
 
         if (is_struct_end_of(sym, strc))
             break;
     }
 
-    struct_size = align_to(total_offset, get_alignment(strc->type));
+    struct_size = align_to(total_offset, struct_align);
 
     set_struct_size(strc->type, struct_size);
+    set_struct_align(strc->type, struct_align);
     strc->mem_offset = struct_size;
 }
 
