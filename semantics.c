@@ -9,9 +9,6 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
     struct symbol *sym;
 
     for (sym = table->head; sym; sym = sym->next) {
-        /* TODO remove this */
-        const struct position pos = {0};
-
         if (is_local_var(sym)) {
             /* TODO support check for struct variables */
             if (is_struct(sym->type))
@@ -27,17 +24,9 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
             if (is_static(sym) && !sym->is_used)
                 add_warning2(messages, &sym->pos, "unused variable '%s'", sym->name);
         }
-        else if (is_enumerator(sym)) {
-            if (sym->is_assigned)
-                add_error(messages, "expression is not assignable", &pos);
-        }
         else if (is_func(sym)) {
             if (sym->is_defined && !sym->is_used && is_static(sym))
                 add_warning2(messages, &sym->pos, "unused function '%s'", sym->name);
-
-            if (!sym->is_defined && sym->is_used && !is_extern(sym))
-                add_warning2(messages, &sym->pos,
-                        "implicit declaration of function '%s'", sym->name);
         }
         else if (is_case(sym)) {
             if (sym->is_redefined)
@@ -48,11 +37,8 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
                 add_error2(messages, &sym->pos, "multiple default labels in one switch");
         }
         else if (is_label(sym)) {
-            if (sym->is_redefined)
-                add_error(messages, "redefinition of label ''", &pos);
-
-            if (!sym->is_defined && sym->is_used)
-                add_error(messages, "use of undeclared label ''", &pos);
+            if (sym->is_defined && !sym->is_used)
+                add_warning2(messages, &sym->pos, "unused label '%s'", sym->name);
         }
     }
     return 0;
@@ -259,6 +245,16 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
                     type_name_of(node->sym->type));
             return;
         }
+        {
+            /* TODO need to combine with incomplete error above */
+            struct symbol *sym = node->sym;
+
+            if (is_label(sym)) {
+                if (sym->is_redefined)
+                    add_error2(ctx->messages, &node->pos, "redefinition of label '%s'",
+                            sym->name);
+            }
+        }
         break;
 
     /* TODO add sub_assign, ... */
@@ -307,6 +303,20 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
                 if (!sym->is_defined && sym->is_used)
                     add_error2(ctx->messages, &node->pos,
                             "use of undeclared identifier '%s'", sym->name);
+            }
+            else if (is_func(sym)) {
+                if (!sym->is_defined && sym->is_used && !is_extern(sym))
+                    add_warning2(ctx->messages, &node->pos,
+                            "implicit declaration of function '%s'", sym->name);
+            }
+            else if (is_enumerator(sym)) {
+                if (sym->is_assigned)
+                    add_error2(ctx->messages, &node->pos, "expression is not assignable");
+            }
+            else if (is_label(sym)) {
+                if (!sym->is_defined && sym->is_used)
+                    add_error2(ctx->messages, &node->pos, "use of undeclared label '%s'",
+                            sym->name);
             }
         }
         break;
