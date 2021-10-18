@@ -407,6 +407,9 @@ static void use_sym(struct parser *p, struct ast_node *ident, int sym_kind)
     sym = use_symbol(p->symtab, ident->sval, sym_kind);
     ident->sym = sym;
     type_from_sym(ident);
+
+    if (!sym->is_defined)
+        sym->pos = ident->pos;
 }
 
 static void use_member_sym(struct parser *p,
