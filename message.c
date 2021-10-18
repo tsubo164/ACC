@@ -138,35 +138,7 @@ void free_message_list(struct message_list *list)
     free(list);
 }
 
-void add_warning(struct message_list *list, const char *msg, const struct position *pos)
-{
-    struct message *m;
-
-    if (list->warning_count >= MAX_MESSAGE_COUNT) {
-        list->warning_count++;
-        return;
-    }
-
-    m = &list->warnings[list->warning_count++];
-    m->str = msg;
-    m->pos = *pos;
-}
-
-void add_error(struct message_list *list, const char *msg, const struct position *pos)
-{
-    struct message *m;
-
-    if (list->error_count >= MAX_MESSAGE_COUNT) {
-        list->error_count++;
-        return;
-    }
-
-    m = &list->errors[list->error_count++];
-    m->str = msg;
-    m->pos = *pos;
-}
-
-void add_warning2(struct message_list *list, const struct position *pos,
+void add_warning(struct message_list *list, const struct position *pos,
         const char *msg, ...)
 {
     va_list va;
@@ -189,7 +161,7 @@ void add_warning2(struct message_list *list, const struct position *pos,
     va_end(va);
 }
 
-void add_error2(struct message_list *list, const struct position *pos,
+void add_error(struct message_list *list, const struct position *pos,
         const char *msg, ...)
 {
     va_list va;

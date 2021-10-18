@@ -24,14 +24,9 @@ struct message_list {
 extern struct message_list *new_message_list();
 extern void free_message_list(struct message_list *list);
 
-extern void add_warning(struct message_list *list,
-        const char *msg, const struct position *pos);
-extern void add_error(struct message_list *list,
-        const char *msg, const struct position *pos);
-
-extern void add_warning2(struct message_list *list, const struct position *pos,
+extern void add_warning(struct message_list *list, const struct position *pos,
         const char *msg, ...);
-extern void add_error2(struct message_list *list, const struct position *pos,
+extern void add_error(struct message_list *list, const struct position *pos,
         const char *msg, ...);
 
 extern void print_warning_messages(const struct message_list *list);

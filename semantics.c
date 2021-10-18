@@ -15,30 +15,30 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
                 continue;
 
             if (sym->is_redefined)
-                add_error2(messages, &sym->pos, "redefinition of '%s'", sym->name);
+                add_error(messages, &sym->pos, "redefinition of '%s'", sym->name);
 
             if (sym->is_defined && !sym->is_used)
-                add_warning2(messages, &sym->pos, "unused variable '%s'", sym->name);
+                add_warning(messages, &sym->pos, "unused variable '%s'", sym->name);
         }
         else if (is_global_var(sym)) {
             if (is_static(sym) && !sym->is_used)
-                add_warning2(messages, &sym->pos, "unused variable '%s'", sym->name);
+                add_warning(messages, &sym->pos, "unused variable '%s'", sym->name);
         }
         else if (is_func(sym)) {
             if (sym->is_defined && !sym->is_used && is_static(sym))
-                add_warning2(messages, &sym->pos, "unused function '%s'", sym->name);
+                add_warning(messages, &sym->pos, "unused function '%s'", sym->name);
         }
         else if (is_case(sym)) {
             if (sym->is_redefined)
-                add_error2(messages, &sym->pos, "duplicate case value '%d'", sym->mem_offset);
+                add_error(messages, &sym->pos, "duplicate case value '%d'", sym->mem_offset);
         }
         else if (is_default(sym)) {
             if (sym->is_redefined)
-                add_error2(messages, &sym->pos, "multiple default labels in one switch");
+                add_error(messages, &sym->pos, "multiple default labels in one switch");
         }
         else if (is_label(sym)) {
             if (sym->is_defined && !sym->is_used)
-                add_warning2(messages, &sym->pos, "unused label '%s'", sym->name);
+                add_warning(messages, &sym->pos, "unused label '%s'", sym->name);
         }
     }
     return 0;
@@ -88,7 +88,7 @@ static void check_init_scalar(struct ast_node *node, struct tree_context *ctx)
             return;
 
         if (!is_compatible(t1, t2)) {
-            add_error2(ctx->messages, &node->pos,
+            add_error(ctx->messages, &node->pos,
                     "initializing '%s' with an expression of incompatible type '%s'",
                     type_name_of(t1), type_name_of(t2));
         }
@@ -112,7 +112,7 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
 
     case NOD_INIT:
         if (ctx->index >= ctx->array_length) {
-            add_error2(ctx->messages, &node->pos,
+            add_error(ctx->messages, &node->pos,
                     "excess elements in array initializer");
             break;
         }
@@ -140,7 +140,7 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
 
     case NOD_INIT:
         if (!ctx->struct_sym) {
-            add_error2(ctx->messages, &node->pos,
+            add_error(ctx->messages, &node->pos,
                     "excess elements in struct initializer");
             break;
         }
@@ -238,7 +238,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
         if (is_incomplete(node->sym->type) &&
                 (is_local_var(node->sym) || is_global_var(node->sym))) {
-            add_error2(ctx->messages, &node->pos, "variable has incomplete type '%s'",
+            add_error(ctx->messages, &node->pos, "variable has incomplete type '%s'",
                     type_name_of(node->sym->type));
             return;
         }
@@ -248,7 +248,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
             if (is_label(sym)) {
                 if (sym->is_redefined)
-                    add_error2(ctx->messages, &node->pos, "redefinition of label '%s'",
+                    add_error(ctx->messages, &node->pos, "redefinition of label '%s'",
                             sym->name);
             }
         }
@@ -266,7 +266,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             /* TODO not work for array lvalue. need to find ident */
             struct symbol *sym = node->l->sym;
             if (is_const(node->type))
-                add_error2(ctx->messages, &node->pos,
+                add_error(ctx->messages, &node->pos,
                         "cannot assign to variable '%s' with const-qualified", sym->name);
         }
 
@@ -275,7 +275,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             return;
 
         if (!is_compatible(node->l->type, node->r->type)) {
-            add_error2(ctx->messages, &node->pos,
+            add_error(ctx->messages, &node->pos,
                     "initializing '%s' with an expression of incompatible type '%s'",
                     type_name_of(node->l->type), type_name_of(node->r->type));
         }
@@ -294,25 +294,25 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
                 if (sym->is_defined && sym->is_used && !sym->is_initialized)
                     /* array, struct, union will not be treated as uninitialized */
                     if (!is_array(sym->type) && !is_struct(sym->type))
-                        add_warning2(ctx->messages, &node->pos,
+                        add_warning(ctx->messages, &node->pos,
                                 "variable '%s' is uninitialized when used here", sym->name);
 
                 if (!sym->is_defined && sym->is_used)
-                    add_error2(ctx->messages, &node->pos,
+                    add_error(ctx->messages, &node->pos,
                             "use of undeclared identifier '%s'", sym->name);
             }
             else if (is_func(sym)) {
                 if (!sym->is_defined && sym->is_used && !is_extern(sym))
-                    add_warning2(ctx->messages, &node->pos,
+                    add_warning(ctx->messages, &node->pos,
                             "implicit declaration of function '%s'", sym->name);
             }
             else if (is_enumerator(sym)) {
                 if (sym->is_assigned)
-                    add_error2(ctx->messages, &node->pos, "expression is not assignable");
+                    add_error(ctx->messages, &node->pos, "expression is not assignable");
             }
             else if (is_label(sym)) {
                 if (!sym->is_defined && sym->is_used)
-                    add_error2(ctx->messages, &node->pos, "use of undeclared label '%s'",
+                    add_error(ctx->messages, &node->pos, "use of undeclared label '%s'",
                             sym->name);
             }
         }
@@ -323,19 +323,19 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
         if (!is_struct(node->l->type)) {
-            add_error2(ctx->messages, &node->pos,
+            add_error(ctx->messages, &node->pos,
                     "member reference base type '%.32s' is not a structure or union",
                     type_name_of(node->l->type));
             return;
         }
         if (is_incomplete(node->l->type)) {
-            add_error2(ctx->messages, &node->pos,
+            add_error(ctx->messages, &node->pos,
                     "incomplete definition of type 'struct %.32s'",
                     type_name_of(node->l->type));
             return;
         }
         if (!node->r->sym->is_defined)
-            add_error2(ctx->messages, &node->pos,
+            add_error(ctx->messages, &node->pos,
                     "no member named '%.32s' in 'struct %.32s'",
                     node->r->sym->name, type_name_of(node->l->type));
         return;
@@ -344,7 +344,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
         if (!underlying(node->l->type))
-            add_error2(ctx->messages, &node->pos, "indirection requires pointer operand");
+            add_error(ctx->messages, &node->pos, "indirection requires pointer operand");
         return;
 
     /* loop */
@@ -386,7 +386,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
             if (ctx->param_sym && !is_ellipsis(ctx->param_sym)) {
                 const struct position *pos = node->r ? &node->r->pos : &node->pos;
-                add_error2(ctx->messages, pos, "too few arguments to function call");
+                add_error(ctx->messages, pos, "too few arguments to function call");
             }
 
             ctx->param_sym = tmp;
@@ -395,13 +395,13 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
     case NOD_ARG:
         if (!ctx->param_sym) {
-            add_error2(ctx->messages, &node->pos, "too many arguments to function call");
+            add_error(ctx->messages, &node->pos, "too many arguments to function call");
             return;
         }
 
         if (!is_compatible(node->type, ctx->param_sym->type) &&
             !is_ellipsis(ctx->param_sym)) {
-            add_error2(ctx->messages, &node->pos,
+            add_error(ctx->messages, &node->pos,
                     "incompatible conversion from '%s' to '%s'",
                     type_name_of(node->type), type_name_of(ctx->param_sym->type));
         }
@@ -414,26 +414,26 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
     /* break and continue */
     case NOD_BREAK:
         if (ctx->loop_depth == 0 && ctx->switch_depth == 0)
-            add_error2(ctx->messages, &node->pos,
+            add_error(ctx->messages, &node->pos,
                     "'break' statement not in loop or switch statement");
         break;
 
     case NOD_CONTINUE:
         if (ctx->loop_depth == 0)
-            add_error2(ctx->messages, &node->pos,
+            add_error(ctx->messages, &node->pos,
                     "'continue' statement not in loop statement");
         break;
 
     case NOD_RETURN:
         if (!is_void(ctx->func_sym->type) && !node->l)
-            add_error2(ctx->messages, &node->pos,
+            add_error(ctx->messages, &node->pos,
                     "non-void function '%s' should return a value", ctx->func_sym->name);
         else if (is_void(ctx->func_sym->type) && node->l)
-            add_error2(ctx->messages, &node->l->pos,
+            add_error(ctx->messages, &node->l->pos,
                     "void function '%s' should not return a value", ctx->func_sym->name);
 
         else if (node->l && !is_compatible(ctx->func_sym->type, node->l->type))
-            add_error2(ctx->messages, &node->l->pos,
+            add_error(ctx->messages, &node->l->pos,
                     "incompatible conversion from '%s' to '%s'",
                     type_name_of(node->l->type), type_name_of(ctx->func_sym->type));
         break;
