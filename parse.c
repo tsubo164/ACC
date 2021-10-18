@@ -645,11 +645,12 @@ static struct ast_node *argument_expression_list(struct parser *p)
 static struct ast_node *struct_ref(struct parser *p, struct ast_node *strc)
 {
     struct ast_node *member = NULL, *ref = NULL;
+    ref = new_node_(NOD_STRUCT_REF, tokpos(p));
+
     member = identifier(p);
     use_member_sym(p, strc->type, member);
     typed_(member);
 
-    ref = new_node_(NOD_STRUCT_REF, tokpos(p));
     ref = branch_(ref, strc, member);
     return convert_(p, ref);
 }
@@ -1270,9 +1271,9 @@ static struct ast_node *break_statement(struct parser *p)
     struct ast_node *tree = NULL;
 
     expect(p, TOK_BREAK);
+    tree = new_node_(NOD_BREAK, tokpos(p));
     expect(p, ';');
 
-    tree = NEW_(NOD_BREAK);
     return tree;
 }
 
@@ -1285,9 +1286,9 @@ static struct ast_node *continue_statement(struct parser *p)
     struct ast_node *tree = NULL;
 
     expect(p, TOK_CONTINUE);
+    tree = new_node_(NOD_CONTINUE, tokpos(p));
     expect(p, ';');
 
-    tree = NEW_(NOD_CONTINUE);
     return tree;
 }
 

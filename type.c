@@ -14,7 +14,7 @@ static struct data_type INT_     = {DATA_TYPE_INT,     4, 4, 1, NULL, NULL};
 static struct data_type LONG_    = {DATA_TYPE_LONG,    8, 8, 1, NULL, NULL};
 static struct data_type POINTER_ = {DATA_TYPE_POINTER, 8, 8, 1, NULL, NULL};
 static struct data_type ARRAY_   = {DATA_TYPE_ARRAY,   0, 0, UNKNOWN_ARRAY_LENGTH, NULL, NULL};
-static struct data_type STRUCT_  = {DATA_TYPE_STRUCT,  0, 0, 1, NULL, NULL};
+static struct data_type STRUCT_  = {DATA_TYPE_STRUCT,  1, 1, 1, NULL, NULL};
 static struct data_type ENUM_    = {DATA_TYPE_ENUM,    4, 4, 1, NULL, NULL};
 
 int get_size(const struct data_type *type)

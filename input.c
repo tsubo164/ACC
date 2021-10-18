@@ -4,18 +4,17 @@
 #include <stdio.h>
 */
 
-enum {
-    A,
-    B,
-    C
-};
+struct foo;
 
 int main()
 {
-    A = 3;
-foo:
-foo:
-    goto bar;
-    add(1, 2);
-    return 42;
+    int a = 3;
+    struct foo f;
+
+    a = f.i;
+
+    break;
+    continue;
+
+    return a->i;
 }

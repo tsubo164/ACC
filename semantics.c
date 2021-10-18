@@ -218,9 +218,6 @@ static void check_init_(struct ast_node *node, struct tree_context *ctx)
 
 static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 {
-    /* TODO remove this */
-    const struct position pos = {0};
-
     if (!node)
         return;
 
@@ -332,7 +329,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             return;
         }
         if (is_incomplete(node->l->type)) {
-            add_error2(ctx->messages, &pos,
+            add_error2(ctx->messages, &node->pos,
                     "incomplete definition of type 'struct %.32s'",
                     type_name_of(node->l->type));
             return;
@@ -347,7 +344,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
         if (!underlying(node->l->type))
-            add_error(ctx->messages, "indirection requires pointer operand", &node->pos);
+            add_error2(ctx->messages, &node->pos, "indirection requires pointer operand");
         return;
 
     /* loop */
@@ -417,12 +414,14 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
     /* break and continue */
     case NOD_BREAK:
         if (ctx->loop_depth == 0 && ctx->switch_depth == 0)
-            add_error(ctx->messages, "'break' statement not in loop or switch statement", &pos);
+            add_error2(ctx->messages, &node->pos,
+                    "'break' statement not in loop or switch statement");
         break;
 
     case NOD_CONTINUE:
         if (ctx->loop_depth == 0)
-            add_error(ctx->messages, "'continue' statement not in loop statement", &pos);
+            add_error2(ctx->messages, &node->pos,
+                    "'continue' statement not in loop statement");
         break;
 
     case NOD_RETURN:

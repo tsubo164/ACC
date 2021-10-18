@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "symbol.h"
 
 int is_extern(const struct symbol *sym)
@@ -636,6 +637,8 @@ int symbol_switch_end(struct symbol_table *table)
 
 static int align_to(int pos, int align)
 {
+    if (align == 0)
+        assert(!"align needs to be non-zero to compute alignment");
     return ((pos + align - 1) / align) * align;
 }
 
