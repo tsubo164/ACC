@@ -8,15 +8,24 @@
 
 int main()
 {
-    const char *str = "this is /* string \"literal\"\n";
+    const char *s = "this is EOF\n";
     int i = EOF;
 
     switch (i) {
+    case '"':
+        return 29;
+
+    case '\'':
+        return 29;
+
     case EOF:
         return 13;
+
     default:
         break;
     }
+
+    foo();
 
     return 42;
 }
