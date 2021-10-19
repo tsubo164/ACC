@@ -13,7 +13,7 @@ sources := $(addsuffix .c, $(files))
 objects := $(addsuffix .o, $(files))
 depends := $(addsuffix .d, $(files))
 
-.PHONY: all clean run run_cc tree test
+.PHONY: all clean run run_cc tree test self
 
 all: $(target)
 

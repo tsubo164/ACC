@@ -4,17 +4,19 @@
 #include <stdio.h>
 */
 
-struct foo;
+#define EOF (-1)
 
 int main()
 {
-    int a = 3;
-    struct foo f;
+    const char *str = "this is /* string \"literal\"\n";
+    int i = EOF;
 
-    a = f.i;
+    switch (i) {
+    case EOF:
+        return 13;
+    default:
+        break;
+    }
 
-    break;
-    continue;
-
-    return a->i;
+    return 42;
 }

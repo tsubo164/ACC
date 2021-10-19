@@ -401,10 +401,33 @@ static void block_comment(struct preprocessor *pp)
         }
         else if (c == '\n') {
             writec(pp, c);
-        } else if (c == EOF) {
+        }
+        else if (c == EOF) {
             error_(pp, "unterminated /* comment");
             break;
         }
+    }
+}
+
+static void string_literal(struct preprocessor *pp)
+{
+    for (;;) {
+        int c = readc(pp);
+
+        if (c == '"') {
+            writec(pp, c);
+            break;
+        }
+        else if (c == '\\') {
+            writec(pp, c);
+            c = readc(pp);
+        }
+        else if (c == EOF) {
+            error_(pp, "unterminated \" for string literal");
+            break;
+        }
+
+        writec(pp, c);
     }
 }
 
@@ -793,6 +816,11 @@ static void text_lines(struct preprocessor *pp)
             else {
                 unreadc(pp, c1);
             }
+        }
+        else if (c == '"') {
+            writec(pp, c);
+            string_literal(pp);
+            continue;
         }
         else if (c == '#') {
             directive_line(pp);

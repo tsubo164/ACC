@@ -4,7 +4,7 @@
 #include <stddef.h>
 #include <stdarg.h>
 
-#define EOF -1
+#define EOF (-1)
 
 typedef struct _FILE FILE;
 

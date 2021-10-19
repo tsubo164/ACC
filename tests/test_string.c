@@ -1,4 +1,12 @@
 #include "test.h"
+/*
+TODO fix infinite loop. make it enable to include std headers from here
+#include "../include/stdio.h"
+#include "../include/string.h"
+*/
+int printf(const char *format, ...);
+int sprintf(char *str, const char *format, ...);
+int strcmp(const char *s1, const char *s2);
 
 enum {
     A,
@@ -54,6 +62,17 @@ int main()
         assert('o', s[4]);
         assert('\n', s[5]);
         assert(10, s[5]);
+    }
+    {
+        /* string literal with double quotation mark */
+        const char *str = "this is /* string \"literal\"\n";
+        char buf[128];
+
+        buf[0] = 't';
+        buf[1] = '\0';
+        sprintf(buf, "%s", str);
+
+        assert(1, !strcmp(buf, str));
     }
 
     return 0;

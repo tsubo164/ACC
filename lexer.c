@@ -510,6 +510,12 @@ state_string_literal:
         }
         goto state_final;
 
+    case '\\':
+        *buf++ = c;
+        c = readc(l);
+        *buf++ = c;
+        goto state_string_literal;
+
     default:
         *buf++ = c;
         goto state_string_literal;
