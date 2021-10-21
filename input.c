@@ -4,28 +4,16 @@
 #include <stdio.h>
 */
 
-#define EOF (-1)
+static int foo(void);
 
 int main()
 {
-    const char *s = "this is EOF\n";
-    int i = EOF;
+    int a = bar();
 
-    switch (i) {
-    case '"':
-        return 29;
+    return foo();
+}
 
-    case '\'':
-        return 29;
-
-    case EOF:
-        return 13;
-
-    default:
-        break;
-    }
-
-    foo();
-
+static int foo(void)
+{
     return 42;
 }

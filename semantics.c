@@ -302,7 +302,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
                             "use of undeclared identifier '%s'", sym->name);
             }
             else if (is_func(sym)) {
-                if (!sym->is_defined && sym->is_used && !is_extern(sym))
+                if (!sym->is_defined && sym->is_used && !is_extern(sym) && !is_static(sym))
                     add_warning(ctx->messages, &node->pos,
                             "implicit declaration of function '%s'", sym->name);
             }

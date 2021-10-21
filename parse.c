@@ -2122,7 +2122,11 @@ static struct ast_node *direct_declarator(struct parser *p)
     if (consume(p, '(')) {
         /* function */
         struct ast_node *fn = NEW_(NOD_DECL_FUNC);
-        p->is_extern = 1;
+
+        /* functions are externnal by default */
+        if (!p->is_extern && !p->is_static)
+            p->is_extern = 1;
+
         decl_set_kind(p, SYM_FUNC);
         define_sym(p, ident);
         p->func_sym = ident->sym;
