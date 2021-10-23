@@ -266,6 +266,7 @@ static struct ast_node *typed_(struct ast_node *node)
 
     /* nodes with literal */
     case NOD_NUM:
+        /* TODO improve long/int decision */
         node->type = node->ival >> 32 ? type_long() : type_int();
         break;
 
