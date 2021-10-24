@@ -281,6 +281,50 @@ static void scan_word(struct lexer *l, struct token *tok)
     }
 }
 
+static void scan_string_literal(struct lexer *l, struct token *tok)
+{
+    static char buf[1024] = {'\0'};
+    char *p = buf;
+
+    for (;;) {
+        const int c = readc(l);
+
+        if (c == '"') {
+            static char no_esc_seq[1024] = {'\0'};
+            *p = '\0';
+            convert_escape_sequence(buf, no_esc_seq);
+            tok->text = make_text(l, no_esc_seq);
+            tok->kind = TOK_STRING_LITERAL;
+            return;
+        }
+        else if (c == '\\') {
+            *p++ = c;
+            *p++ = readc(l);
+            continue;
+        }
+        else {
+            *p++ = c;
+            continue;
+        }
+    }
+}
+
+static void scan_char_literal(struct lexer *l, struct token *tok)
+{
+    int c = readc(l);
+
+    if (c == '\\')
+        /* TODO support hex and octal literal */
+        tok->value = read_escape_sequence(l);
+    else
+        tok->value = c;
+    tok->kind = TOK_NUM;
+
+    c = readc(l);
+    if (c != '\'')
+        ;/* error */
+}
+
 static void scan_two_char(struct lexer *l, struct token *tok, char *str, int tok_kind)
 {
     const int c = readc(l);
@@ -332,6 +376,18 @@ state_initial:
         goto state_final;
     }
 
+    /* string literal */
+    if (c == '"') {
+        scan_string_literal(l, tok);
+        goto state_final;
+    }
+
+    /* char literal */
+    if (c == '\'') {
+        scan_char_literal(l, tok);
+        goto state_final;
+    }
+
     if (c == '/') {
         const int c1 = readc(l);
         if (c1 == '/') {
@@ -354,13 +410,8 @@ state_initial:
     }
 
     if (c == '=') {
-        const int c1 = readc(l);
-        if (c1 == '=') {
-            tok->kind = TOK_EQ;
-        } else {
-            unreadc(l, c1);
-            tok->kind = c;
-        }
+        unreadc(l, c);
+        scan_two_char(l, tok, "==", TOK_EQ);
         goto state_final;
     }
 
@@ -476,14 +527,6 @@ state_initial:
         }
         goto state_final;
 
-    /* string literal */
-    case '"':
-        goto state_string_literal;
-
-    /* char literal */
-    case '\'':
-        goto state_char_literal;
-
     case '#':
         read_line_number(l);
         goto state_initial;
@@ -493,47 +536,6 @@ state_initial:
         tok->kind = TOK_UNKNOWN;
         goto state_final;
     }
-
-state_string_literal:
-    c = readc(l);
-
-    switch (c) {
-
-    case '"':
-        {
-            static char no_esc_seq[1024] = {'\0'};
-            *buf = '\0';
-            convert_escape_sequence(textbuf, no_esc_seq);
-            tok->text = make_text(l, no_esc_seq);
-            tok->kind = TOK_STRING_LITERAL;
-        }
-        goto state_final;
-
-    case '\\':
-        *buf++ = c;
-        c = readc(l);
-        *buf++ = c;
-        goto state_string_literal;
-
-    default:
-        *buf++ = c;
-        goto state_string_literal;
-    }
-
-state_char_literal:
-    c = readc(l);
-
-    if (c == '\\')
-        /* TODO support hex and octal literal */
-        tok->value = read_escape_sequence(l);
-    else
-        tok->value = c;
-    tok->kind = TOK_NUM;
-
-    c = readc(l);
-    if (c != '\'')
-        ;/* error */
-    goto state_final;
 
 state_final:
     return tok->kind;
