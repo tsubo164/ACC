@@ -62,9 +62,26 @@ int main()
         }
         assert(30, sum);
     }
+    {
+        /* infinite loop style */
+        int i = 0;
+        for (;;) {
+            if (i == 10)
+                break;
+            i++;
+        }
+        assert(10, i);
+    }
+    {
+        /* test for null statement */
+        int a = 19;
 
-    /*
-    for (;;) {}
-    */
+        if (0)
+            ;
+        a = 22;
+
+        assert(22, a);
+    }
+
     return 0;
 }

@@ -45,7 +45,8 @@ self: $(SELF).c
 	@echo '  * self compile $(SELF).c'
 	@./$(target) $(SELF).c
 	@$(CC) -c $(SELF).s
-	@$(MAKE)
+	@echo '  * self link    $(target)1'
+	@$(CC) -o $(target) $(objects) $(LDFLAGS)
 
 tree: $(target)
 	./$(target) --print-tree input.c

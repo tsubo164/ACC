@@ -4,28 +4,15 @@
 #include <stdio.h>
 */
 
-#define EOF (-1)
-
 int main()
 {
-    int c = -1;
+    int a = 19;
 
-    switch (c) {
-    case '\'':
-        break;
+    if (0)
+        ;
+    a = 22;
 
-    case 'a':
-        break;
-
-    case EOF:
-        return 19;
-        break;
-
-    default:
-        break;
-    }
-
-    return 42;
+    return a;
 }
 
 /*

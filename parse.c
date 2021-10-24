@@ -1509,7 +1509,9 @@ static struct ast_node *statement(struct parser *p)
 
     case ';':
         gettok(p);
-        return statement(p);
+        /* TODO consider having NOP node */
+        /* null statement */
+        return NULL;
 
     default:
         if (consume(p, TOK_IDENT)) {

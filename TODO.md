@@ -1,7 +1,7 @@
 * SELF COMPILE
   - [x] `ast.c`
   - [ ] `gen_x86.c`
-  - [ ] `lexer.c`
+  - [x] `lexer.c`
   - [ ] `main.c`
   - [x] `message.c`
   - [ ] `parse.c`
