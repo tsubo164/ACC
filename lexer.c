@@ -200,6 +200,51 @@ static const char *convert_escape_sequence(const char *src, char *dst)
     return dst;
 }
 
+static void scan_number(struct lexer *l, struct token *tok)
+{
+    static char buf[128] = {'\0'};
+    char *p = buf;
+
+    for (;;) {
+        const int c = readc(l);
+
+        if (isdigit(c)) {
+            *p++ = c;
+            continue;
+        }
+        else {
+            *p = '\0';
+            unreadc(l, c);
+            tok->text = make_text(l, buf);
+            tok->kind = TOK_NUM;
+            tok->value = strtol(tok->text, &p, 10);
+            return;
+        }
+    }
+}
+
+static void scan_word(struct lexer *l, struct token *tok)
+{
+    static char buf[128] = {'\0'};
+    char *p = buf;
+
+    for (;;) {
+        const int c = readc(l);
+
+        if (isalnum(c) || c == '_') {
+            *p++ = c;
+            continue;
+        }
+        else {
+            *p = '\0';
+            unreadc(l, c);
+            tok->text = make_text(l, buf);
+            keyword_or_identifier(tok);
+            return;
+        }
+    }
+}
+
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
 {
     static char textbuf[1024] = {'\0'};
@@ -214,6 +259,36 @@ state_initial:
     c = readc(l);
     tok->pos = l->pos;
 
+    /* space */
+    if (isspace(c))
+        goto state_initial;
+
+    /* number */
+    if (isdigit(c)) {
+        unreadc(l, c);
+        scan_number(l, tok);
+        goto state_final;
+    }
+
+    /* word */
+    if (isalpha(c) || c == '_') {
+        unreadc(l, c);
+        scan_word(l, tok);
+        goto state_final;
+    }
+
+    if (c == '=') {
+        int c1 = readc(l);
+        if (c1 == '=') {
+            tok->kind = TOK_EQ;
+        } else {
+            unreadc(l, c1);
+            tok->kind = c;
+        }
+        goto state_final;
+    }
+
+    /* ================================================= */
     switch (c) {
 
     /* ---- */
@@ -347,6 +422,7 @@ state_initial:
         }
         goto state_final;
 
+        /*
     case '=':
         c = readc(l);
         switch (c) {
@@ -359,6 +435,7 @@ state_initial:
             break;
         }
         goto state_final;
+        */
 
     /* relational */
     case '<':
@@ -400,16 +477,21 @@ state_initial:
         goto state_final;
 
     /* whitespaces */
+        /*
     case ' ': case '\n':
         goto state_initial;
+        */
 
     /* number */
+        /*
     case '0': case '1': case '2': case '3': case '4':
     case '5': case '6': case '7': case '8': case '9':
         *buf++ = c;
         goto state_number;
+        */
 
     /* word */
+        /*
     case '_':
     case 'A': case 'B': case 'C': case 'D': case 'E':
     case 'F': case 'G': case 'H': case 'I': case 'J':
@@ -423,6 +505,7 @@ state_initial:
     case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
         *buf++ = c;
         goto state_word;
+        */
 
     /* string literal */
     case '"':
@@ -447,6 +530,7 @@ state_initial:
         goto state_final;
     }
 
+    /*
 state_number:
     c = readc(l);
 
@@ -465,7 +549,9 @@ state_number:
         tok->value = strtol(tok->text, &buf, 10);
         goto state_final;
     }
+    */
 
+    /*
 state_word:
     c = readc(l);
 
@@ -494,6 +580,7 @@ state_word:
         keyword_or_identifier(tok);
         goto state_final;
     }
+    */
 
 state_string_literal:
     c = readc(l);

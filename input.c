@@ -6,13 +6,8 @@
 
 int main()
 {
-    int a = 19;
-
-    if (0)
-        ;
-    a = 22;
-
-    return a;
+	//char *buf;
+    return 42;
 }
 
 /*
