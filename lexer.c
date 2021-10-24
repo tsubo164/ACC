@@ -245,6 +245,25 @@ static void scan_word(struct lexer *l, struct token *tok)
     }
 }
 
+static void scan_two_char(struct lexer *l, struct token *tok, char *str, int tok_kind)
+{
+    const int c = readc(l);
+
+    if (c == str[0]) {
+        const int c1 = readc(l);
+        if (c1 == str[1]) {
+            tok->kind = tok_kind;
+        } else {
+            unreadc(l, c1);
+            tok->kind = c;
+        }
+        return;
+    }
+    else {
+        unreadc(l, c);
+    }
+}
+
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
 {
     static char textbuf[1024] = {'\0'};
@@ -278,7 +297,7 @@ state_initial:
     }
 
     if (c == '=') {
-        int c1 = readc(l);
+        const int c1 = readc(l);
         if (c1 == '=') {
             tok->kind = TOK_EQ;
         } else {
@@ -288,35 +307,43 @@ state_initial:
         goto state_final;
     }
 
+    if (c == '!') {
+        unreadc(l, c);
+        scan_two_char(l, tok, "!=", TOK_NE);
+        goto state_final;
+    }
+
+    if (c == '<') {
+        unreadc(l, c);
+        scan_two_char(l, tok, "<=", TOK_LE);
+        goto state_final;
+    }
+
+    if (c == '>') {
+        unreadc(l, c);
+        scan_two_char(l, tok, ">=", TOK_GE);
+        goto state_final;
+    }
+
+    if (c == '|') {
+        unreadc(l, c);
+        scan_two_char(l, tok, "||", TOK_LOGICAL_OR);
+        goto state_final;
+    }
+
+    if (c == '&') {
+        unreadc(l, c);
+        scan_two_char(l, tok, "&&", TOK_LOGICAL_AND);
+        goto state_final;
+    }
+
+    if (strchr("(){}[]:;,?%", c)) {
+        tok->kind = c;
+        goto state_final;
+    }
+
     /* ================================================= */
     switch (c) {
-
-    /* ---- */
-    case '|':
-        c = readc(l);
-        switch (c) {
-        case '|':
-            tok->kind = TOK_LOGICAL_OR;
-            break;
-        default:
-            unreadc(l, c);
-            tok->kind = '|';
-            break;
-        }
-        goto state_final;
-
-    case '&':
-        c = readc(l);
-        switch (c) {
-        case '&':
-            tok->kind = TOK_LOGICAL_AND;
-            break;
-        default:
-            unreadc(l, c);
-            tok->kind = '&';
-            break;
-        }
-        goto state_final;
 
     /* access */
     case '.':
@@ -404,109 +431,6 @@ state_initial:
         }
         goto state_final;
 
-    case '%':
-        tok->kind = c;
-        goto state_final;
-
-    /* equality */
-    case '!':
-        c = readc(l);
-        switch (c) {
-        case '=':
-            tok->kind = TOK_NE;
-            break;
-        default:
-            unreadc(l, c);
-            tok->kind = '!';
-            break;
-        }
-        goto state_final;
-
-        /*
-    case '=':
-        c = readc(l);
-        switch (c) {
-        case '=':
-            tok->kind = TOK_EQ;
-            break;
-        default:
-            unreadc(l, c);
-            tok->kind = '=';
-            break;
-        }
-        goto state_final;
-        */
-
-    /* relational */
-    case '<':
-        c = readc(l);
-        switch (c) {
-        case '=':
-            tok->kind = TOK_LE;
-            break;
-        default:
-            unreadc(l, c);
-            tok->kind = '<';
-            break;
-        }
-        goto state_final;
-
-    case '>':
-        c = readc(l);
-        switch (c) {
-        case '=':
-            tok->kind = TOK_GE;
-            break;
-        default:
-            unreadc(l, c);
-            tok->kind = '>';
-            break;
-        }
-        goto state_final;
-
-    /* parenthees */
-    case '(': case ')':
-    case '{': case '}':
-    case '[': case ']':
-        tok->kind = c;
-        goto state_final;
-
-    /* separators */
-    case ':': case ';': case ',': case '?':
-        tok->kind = c;
-        goto state_final;
-
-    /* whitespaces */
-        /*
-    case ' ': case '\n':
-        goto state_initial;
-        */
-
-    /* number */
-        /*
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
-        *buf++ = c;
-        goto state_number;
-        */
-
-    /* word */
-        /*
-    case '_':
-    case 'A': case 'B': case 'C': case 'D': case 'E':
-    case 'F': case 'G': case 'H': case 'I': case 'J':
-    case 'K': case 'L': case 'M': case 'N': case 'O':
-    case 'P': case 'Q': case 'R': case 'S': case 'T':
-    case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
-    case 'a': case 'b': case 'c': case 'd': case 'e':
-    case 'f': case 'g': case 'h': case 'i': case 'j':
-    case 'k': case 'l': case 'm': case 'n': case 'o':
-    case 'p': case 'q': case 'r': case 's': case 't':
-    case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
-        *buf++ = c;
-        goto state_word;
-        */
-
     /* string literal */
     case '"':
         goto state_string_literal;
@@ -529,58 +453,6 @@ state_initial:
         tok->kind = TOK_UNKNOWN;
         goto state_final;
     }
-
-    /*
-state_number:
-    c = readc(l);
-
-    switch (c) {
-
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
-        *buf++ = c;
-        goto state_number;
-
-    default:
-        *buf = '\0';
-        unreadc(l, c);
-        tok->text = make_text(l, textbuf);
-        tok->kind = TOK_NUM;
-        tok->value = strtol(tok->text, &buf, 10);
-        goto state_final;
-    }
-    */
-
-    /*
-state_word:
-    c = readc(l);
-
-    switch (c) {
-
-    case '_':
-    case 'A': case 'B': case 'C': case 'D': case 'E':
-    case 'F': case 'G': case 'H': case 'I': case 'J':
-    case 'K': case 'L': case 'M': case 'N': case 'O':
-    case 'P': case 'Q': case 'R': case 'S': case 'T':
-    case 'U': case 'V': case 'W': case 'X': case 'Y': case 'Z':
-    case 'a': case 'b': case 'c': case 'd': case 'e':
-    case 'f': case 'g': case 'h': case 'i': case 'j':
-    case 'k': case 'l': case 'm': case 'n': case 'o':
-    case 'p': case 'q': case 'r': case 's': case 't':
-    case 'u': case 'v': case 'w': case 'x': case 'y': case 'z':
-    case '0': case '1': case '2': case '3': case '4':
-    case '5': case '6': case '7': case '8': case '9':
-        *buf++ = c;
-        goto state_word;
-
-    default:
-        *buf = '\0';
-        unreadc(l, c);
-        tok->text = make_text(l, textbuf);
-        keyword_or_identifier(tok);
-        goto state_final;
-    }
-    */
 
 state_string_literal:
     c = readc(l);
