@@ -325,22 +325,16 @@ static void scan_char_literal(struct lexer *l, struct token *tok)
         ;/* error */
 }
 
-static void scan_two_char(struct lexer *l, struct token *tok, char *str, int tok_kind)
+static void try_two_char(struct lexer *l, struct token *tok,
+        int first, int second, int tok_kind)
 {
-    const int c = readc(l);
+    const int c1 = readc(l);
 
-    if (c == str[0]) {
-        const int c1 = readc(l);
-        if (c1 == str[1]) {
-            tok->kind = tok_kind;
-        } else {
-            unreadc(l, c1);
-            tok->kind = c;
-        }
-        return;
-    }
-    else {
-        unreadc(l, c);
+    if (c1 == second) {
+        tok->kind = tok_kind;
+    } else {
+        unreadc(l, c1);
+        tok->kind = first;
     }
 }
 
@@ -388,6 +382,68 @@ state_initial:
         goto state_final;
     }
 
+    /* line number */
+    if (c == '#') {
+        read_line_number(l);
+        goto state_initial;
+    }
+
+    if (c == '.') {
+        const int c2 = readc(l);
+        if (c2 == '.') {
+            const int c3 = readc(l);
+            if (c3 == '.') {
+                tok->kind = TOK_ELLIPSIS;
+                goto state_final;
+            } else {
+                unreadc(l, c3);
+            }
+            unreadc(l, c2);
+        } else {
+            unreadc(l, c2);
+        }
+        tok->kind = c;
+        goto state_final;
+    }
+
+    if (c == '+') {
+        const int c1 = readc(l);
+        if (c1 == '+') {
+            tok->kind = TOK_INC;
+            goto state_final;
+        }
+        else if (c1 == '=') {
+            tok->kind = TOK_ADD_ASSIGN;
+            goto state_final;
+        }
+        else {
+            unreadc(l, c1);
+            tok->kind = c;
+            goto state_final;
+        }
+    }
+
+    if (c == '-') {
+        const int c1 = readc(l);
+        if (c1 == '-') {
+            tok->kind = TOK_DEC;
+            goto state_final;
+        }
+        else if (c1 == '=') {
+            tok->kind = TOK_SUB_ASSIGN;
+            goto state_final;
+        }
+        else if (c1 == '>') {
+            tok->kind = TOK_POINTER;
+            goto state_final;
+        }
+        else {
+            unreadc(l, c1);
+            tok->kind = c;
+            goto state_final;
+        }
+    }
+
     if (c == '/') {
         const int c1 = readc(l);
         if (c1 == '/') {
@@ -409,39 +465,38 @@ state_initial:
         }
     }
 
+    if (c == '*') {
+        try_two_char(l, tok, c, '=', TOK_MUL_ASSIGN);
+        goto state_final;
+    }
+
     if (c == '=') {
-        unreadc(l, c);
-        scan_two_char(l, tok, "==", TOK_EQ);
+        try_two_char(l, tok, c, '=', TOK_EQ);
         goto state_final;
     }
 
     if (c == '!') {
-        unreadc(l, c);
-        scan_two_char(l, tok, "!=", TOK_NE);
+        try_two_char(l, tok, c, '=', TOK_NE);
         goto state_final;
     }
 
     if (c == '<') {
-        unreadc(l, c);
-        scan_two_char(l, tok, "<=", TOK_LE);
+        try_two_char(l, tok, c, '=', TOK_LE);
         goto state_final;
     }
 
     if (c == '>') {
-        unreadc(l, c);
-        scan_two_char(l, tok, ">=", TOK_GE);
+        try_two_char(l, tok, c, '=', TOK_GE);
         goto state_final;
     }
 
     if (c == '|') {
-        unreadc(l, c);
-        scan_two_char(l, tok, "||", TOK_LOGICAL_OR);
+        try_two_char(l, tok, c, '|', TOK_LOGICAL_OR);
         goto state_final;
     }
 
     if (c == '&') {
-        unreadc(l, c);
-        scan_two_char(l, tok, "&&", TOK_LOGICAL_AND);
+        try_two_char(l, tok, c, '&', TOK_LOGICAL_AND);
         goto state_final;
     }
 
@@ -457,79 +512,6 @@ state_initial:
 
     /* ================================================= */
     switch (c) {
-
-    /* access */
-    case '.':
-        {
-            const int c2 = readc(l);
-            if (c2 == '.') {
-                const int c3 = readc(l);
-                if (c3 == '.') {
-                    tok->kind = TOK_ELLIPSIS;
-                    goto state_final;
-                } else {
-                    unreadc(l, c3);
-                }
-                unreadc(l, c2);
-            } else {
-                unreadc(l, c2);
-            }
-            tok->kind = '.';
-            goto state_final;
-        }
-
-    /* arithmetic */
-    case '+':
-        c = readc(l);
-        switch (c) {
-        case '+':
-            tok->kind = TOK_INC;
-            break;
-        case '=':
-            tok->kind = TOK_ADD_ASSIGN;
-            break;
-        default:
-            unreadc(l, c);
-            tok->kind = '+';
-            break;
-        }
-        goto state_final;
-
-    case '-':
-        c = readc(l);
-        switch (c) {
-        case '-':
-            tok->kind = TOK_DEC;
-            break;
-        case '=':
-            tok->kind = TOK_SUB_ASSIGN;
-            break;
-        case '>':
-            tok->kind = TOK_POINTER;
-            break;
-        default:
-            unreadc(l, c);
-            tok->kind = '-';
-            break;
-        }
-        goto state_final;
-
-    case '*':
-        c = readc(l);
-        switch (c) {
-        case '=':
-            tok->kind = TOK_MUL_ASSIGN;
-            break;
-        default:
-            unreadc(l, c);
-            tok->kind = '*';
-            break;
-        }
-        goto state_final;
-
-    case '#':
-        read_line_number(l);
-        goto state_initial;
 
     /* unknown */
     default:
