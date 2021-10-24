@@ -200,6 +200,42 @@ static const char *convert_escape_sequence(const char *src, char *dst)
     return dst;
 }
 
+static void skip_line_comment(struct lexer *l)
+{
+    for (;;) {
+        const int c = readc(l);
+
+        if (c == '\n')
+            break;
+    }
+}
+
+static void skip_block_comment(struct lexer *l)
+{
+    for (;;) {
+        const int c = readc(l);
+
+        if (c == '*') {
+            const int c1 = readc(l);
+            if (c1 == '/') {
+                return;
+            } else {
+                unreadc(l, c1);
+                continue;
+            }
+        }
+        else if (c == '#') {
+            read_column_number(l);
+            continue;
+        }
+        else if (c == EOF) {
+            /* TODO error handling */
+            printf("error: unterminated /* comment\n");
+            return;
+        }
+    }
+}
+
 static void scan_number(struct lexer *l, struct token *tok)
 {
     static char buf[128] = {'\0'};
@@ -296,6 +332,27 @@ state_initial:
         goto state_final;
     }
 
+    if (c == '/') {
+        const int c1 = readc(l);
+        if (c1 == '/') {
+            skip_line_comment(l);
+            goto state_initial;
+        }
+        else if (c1 == '*') {
+            skip_block_comment(l);
+            goto state_initial;
+        }
+        else if (c1 == '=') {
+            tok->kind = TOK_DIV_ASSIGN;
+            goto state_final;
+        }
+        else {
+            unreadc(l, c1);
+            tok->kind = c;
+            goto state_final;
+        }
+    }
+
     if (c == '=') {
         const int c1 = readc(l);
         if (c1 == '=') {
@@ -339,6 +396,11 @@ state_initial:
 
     if (strchr("(){}[]:;,?%", c)) {
         tok->kind = c;
+        goto state_final;
+    }
+
+    if (c == EOF) {
+        tok->kind = TOK_EOF;
         goto state_final;
     }
 
@@ -414,23 +476,6 @@ state_initial:
         }
         goto state_final;
 
-    case '/':
-        c = readc(l);
-        switch (c) {
-        case '/':
-            goto state_line_comment;
-        case '*':
-            goto state_block_comment;
-        case '=':
-            tok->kind = TOK_DIV_ASSIGN;
-            break;
-        default:
-            unreadc(l, c);
-            tok->kind = '/';
-            break;
-        }
-        goto state_final;
-
     /* string literal */
     case '"':
         goto state_string_literal;
@@ -438,11 +483,6 @@ state_initial:
     /* char literal */
     case '\'':
         goto state_char_literal;
-
-    /* eof */
-    case EOF:
-        tok->kind = TOK_EOF;
-        goto state_final;
 
     case '#':
         read_line_number(l);
@@ -494,47 +534,6 @@ state_char_literal:
     if (c != '\'')
         ;/* error */
     goto state_final;
-
-state_line_comment:
-    c = readc(l);
-
-    switch (c) {
-
-    case '\n':
-        goto state_initial;
-
-    default:
-        goto state_line_comment;
-    }
-
-state_block_comment:
-    c = readc(l);
-
-    switch (c) {
-
-    case '*':
-        c = readc(l);
-        switch (c) {
-        case '/':
-            goto state_initial;
-        default:
-            unreadc(l, c);
-            goto state_block_comment;
-        }
-
-    case EOF:
-        /* TODO error handling */
-        unreadc(l, c);
-        printf("error: unterminated /* comment\n");
-        goto state_initial;
-
-    case '#':
-        read_column_number(l);
-        goto state_block_comment;
-
-    default:
-        goto state_block_comment;
-    }
 
 state_final:
     return tok->kind;
