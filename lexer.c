@@ -340,186 +340,177 @@ static void try_two_char(struct lexer *l, struct token *tok,
 
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
 {
-    static char textbuf[1024] = {'\0'};
-    char *buf;
-    int c = '\0';
-
     token_init(tok);
-    textbuf[0] = '\0';
-    buf = textbuf;
 
-state_initial:
-    c = readc(l);
-    tok->pos = l->pos;
+    for (;;) {
+        const int c = readc(l);
+        tok->pos = l->pos;
 
-    /* space */
-    if (isspace(c))
-        goto state_initial;
+        /* space */
+        if (isspace(c))
+            continue;
 
-    /* number */
-    if (isdigit(c)) {
-        unreadc(l, c);
-        scan_number(l, tok);
-        goto state_final;
-    }
+        /* number */
+        if (isdigit(c)) {
+            unreadc(l, c);
+            scan_number(l, tok);
+            break;
+        }
 
-    /* word */
-    if (isalpha(c) || c == '_') {
-        unreadc(l, c);
-        scan_word(l, tok);
-        goto state_final;
-    }
+        /* word */
+        if (isalpha(c) || c == '_') {
+            unreadc(l, c);
+            scan_word(l, tok);
+            break;
+        }
 
-    /* string literal */
-    if (c == '"') {
-        scan_string_literal(l, tok);
-        goto state_final;
-    }
+        /* string literal */
+        if (c == '"') {
+            scan_string_literal(l, tok);
+            break;
+        }
 
-    /* char literal */
-    if (c == '\'') {
-        scan_char_literal(l, tok);
-        goto state_final;
-    }
+        /* char literal */
+        if (c == '\'') {
+            scan_char_literal(l, tok);
+            break;
+        }
 
-    /* line number */
-    if (c == '#') {
-        read_line_number(l);
-        goto state_initial;
-    }
+        /* line number */
+        if (c == '#') {
+            read_line_number(l);
+            continue;
+        }
 
-    if (c == '.') {
-        const int c2 = readc(l);
-        if (c2 == '.') {
-            const int c3 = readc(l);
-            if (c3 == '.') {
-                tok->kind = TOK_ELLIPSIS;
-                goto state_final;
+        /* ellipsis (...) or '.' */
+        if (c == '.') {
+            const int c2 = readc(l);
+            if (c2 == '.') {
+                const int c3 = readc(l);
+                if (c3 == '.') {
+                    tok->kind = TOK_ELLIPSIS;
+                    break;
+                } else {
+                    unreadc(l, c3);
+                }
+                unreadc(l, c2);
             } else {
-                unreadc(l, c3);
+                unreadc(l, c2);
             }
-            unreadc(l, c2);
-        } else {
-            unreadc(l, c2);
-        }
-        tok->kind = c;
-        goto state_final;
-    }
-
-    if (c == '+') {
-        const int c1 = readc(l);
-        if (c1 == '+') {
-            tok->kind = TOK_INC;
-            goto state_final;
-        }
-        else if (c1 == '=') {
-            tok->kind = TOK_ADD_ASSIGN;
-            goto state_final;
-        }
-        else {
-            unreadc(l, c1);
             tok->kind = c;
-            goto state_final;
+            break;
         }
-    }
 
-    if (c == '-') {
-        const int c1 = readc(l);
-        if (c1 == '-') {
-            tok->kind = TOK_DEC;
-            goto state_final;
+        if (c == '+') {
+            const int c1 = readc(l);
+            if (c1 == '+') {
+                tok->kind = TOK_INC;
+                break;
+            }
+            else if (c1 == '=') {
+                tok->kind = TOK_ADD_ASSIGN;
+                break;
+            }
+            else {
+                unreadc(l, c1);
+                tok->kind = c;
+                break;
+            }
         }
-        else if (c1 == '=') {
-            tok->kind = TOK_SUB_ASSIGN;
-            goto state_final;
+
+        if (c == '-') {
+            const int c1 = readc(l);
+            if (c1 == '-') {
+                tok->kind = TOK_DEC;
+                break;
+            }
+            else if (c1 == '=') {
+                tok->kind = TOK_SUB_ASSIGN;
+                break;
+            }
+            else if (c1 == '>') {
+                tok->kind = TOK_POINTER;
+                break;
+            }
+            else {
+                unreadc(l, c1);
+                tok->kind = c;
+                break;
+            }
         }
-        else if (c1 == '>') {
-            tok->kind = TOK_POINTER;
-            goto state_final;
+
+        if (c == '/') {
+            const int c1 = readc(l);
+            if (c1 == '/') {
+                skip_line_comment(l);
+                continue;
+            }
+            else if (c1 == '*') {
+                skip_block_comment(l);
+                continue;
+            }
+            else if (c1 == '=') {
+                tok->kind = TOK_DIV_ASSIGN;
+                break;
+            }
+            else {
+                unreadc(l, c1);
+                tok->kind = c;
+                break;
+            }
         }
-        else {
-            unreadc(l, c1);
+
+        if (c == '*') {
+            try_two_char(l, tok, c, '=', TOK_MUL_ASSIGN);
+            break;
+        }
+
+        if (c == '=') {
+            try_two_char(l, tok, c, '=', TOK_EQ);
+            break;
+        }
+
+        if (c == '!') {
+            try_two_char(l, tok, c, '=', TOK_NE);
+            break;
+        }
+
+        if (c == '<') {
+            try_two_char(l, tok, c, '=', TOK_LE);
+            break;
+        }
+
+        if (c == '>') {
+            try_two_char(l, tok, c, '=', TOK_GE);
+            break;
+        }
+
+        if (c == '|') {
+            try_two_char(l, tok, c, '|', TOK_LOGICAL_OR);
+            break;
+        }
+
+        if (c == '&') {
+            try_two_char(l, tok, c, '&', TOK_LOGICAL_AND);
+            break;
+        }
+
+        if (strchr("(){}[]:;,?%", c)) {
             tok->kind = c;
-            goto state_final;
+            break;
         }
-    }
 
-    if (c == '/') {
-        const int c1 = readc(l);
-        if (c1 == '/') {
-            skip_line_comment(l);
-            goto state_initial;
+        if (c == EOF) {
+            tok->kind = TOK_EOF;
+            break;
         }
-        else if (c1 == '*') {
-            skip_block_comment(l);
-            goto state_initial;
-        }
-        else if (c1 == '=') {
-            tok->kind = TOK_DIV_ASSIGN;
-            goto state_final;
-        }
-        else {
-            unreadc(l, c1);
-            tok->kind = c;
-            goto state_final;
-        }
-    }
 
-    if (c == '*') {
-        try_two_char(l, tok, c, '=', TOK_MUL_ASSIGN);
-        goto state_final;
-    }
-
-    if (c == '=') {
-        try_two_char(l, tok, c, '=', TOK_EQ);
-        goto state_final;
-    }
-
-    if (c == '!') {
-        try_two_char(l, tok, c, '=', TOK_NE);
-        goto state_final;
-    }
-
-    if (c == '<') {
-        try_two_char(l, tok, c, '=', TOK_LE);
-        goto state_final;
-    }
-
-    if (c == '>') {
-        try_two_char(l, tok, c, '=', TOK_GE);
-        goto state_final;
-    }
-
-    if (c == '|') {
-        try_two_char(l, tok, c, '|', TOK_LOGICAL_OR);
-        goto state_final;
-    }
-
-    if (c == '&') {
-        try_two_char(l, tok, c, '&', TOK_LOGICAL_AND);
-        goto state_final;
-    }
-
-    if (strchr("(){}[]:;,?%", c)) {
-        tok->kind = c;
-        goto state_final;
-    }
-
-    if (c == EOF) {
-        tok->kind = TOK_EOF;
-        goto state_final;
-    }
-
-    /* ================================================= */
-    switch (c) {
-
-    /* unknown */
-    default:
+        /* unknown */
         tok->kind = TOK_UNKNOWN;
-        goto state_final;
+        tok->value = c;
+        break;
     }
 
-state_final:
     return tok->kind;
 }
 

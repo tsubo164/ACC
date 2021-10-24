@@ -6,7 +6,7 @@
 
 int main()
 {
-	//char *buf;
+	char *buf;
     return 42;
 }
 
