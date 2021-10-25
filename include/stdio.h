@@ -19,6 +19,7 @@ FILE *fopen(const char *path, const char *mode);
 int fclose(FILE *stream);
 
 int fgetc(FILE *stream);
+int ungetc(int c, FILE *stream);
 
 int fprintf(FILE *stream, const char *format, ...);
 int printf(const char *format, ...);

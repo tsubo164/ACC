@@ -3,8 +3,14 @@
 
 #include <stddef.h>
 
+#define EXIT_FAILURE 1
+#define EXIT_SUCCESS 0
+
 void *malloc(size_t size);
+void *realloc(void *ptr, size_t size);
 void free(void *ptr);
+
+void exit(int status);
 
 long strtol(const char *str, char **endptr, int base);
 
