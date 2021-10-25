@@ -6,7 +6,7 @@
 
 int main()
 {
-	char *buf;
+	char *buf = "# %d \"%s\"\n";
     return 42;
 }
 

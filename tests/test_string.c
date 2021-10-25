@@ -73,6 +73,8 @@ int main()
         sprintf(buf, "%s", str);
 
         assert(1, !strcmp(buf, str));
+        assert(34, buf[18]);
+        assert(34, buf[26]);
     }
 
     return 0;

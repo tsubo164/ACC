@@ -184,7 +184,9 @@ static const char *convert_escape_sequence(const char *src, char *dst)
                 s = end - 1;
                 break;
             default:
-                /* error */
+                *d = '\\';
+                d++;
+                *d = *s;
                 break;
             }
         } else {
@@ -298,8 +300,9 @@ static void scan_string_literal(struct lexer *l, struct token *tok)
             return;
         }
         else if (c == '\\') {
+            const int c1 = readc(l);
             *p++ = c;
-            *p++ = readc(l);
+            *p++ = c1;
             continue;
         }
         else {

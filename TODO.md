@@ -5,7 +5,7 @@
   - [ ] `main.c`
   - [x] `message.c`
   - [ ] `parse.c`
-  - [ ] `preprocessor.c`
+  - [x] `preprocessor.c`
   - [x] `semantics.c`
   - [x] `string_table.c`
   - [x] `symbol.c`
