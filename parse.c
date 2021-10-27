@@ -132,6 +132,23 @@ static void expect(struct parser *p, enum token_kind query)
     }
 }
 
+static void expect_or_recover(struct parser *p, enum token_kind query)
+{
+    const struct token *tok = gettok(p);
+
+    if (tok->kind == query)
+        return;
+
+    for (;;) {
+        tok = gettok(p);
+        if (tok->kind == query || tok->kind == TOK_EOF)
+            break;
+    }
+
+    p->is_panic_mode = 0;
+    return;
+}
+
 struct parser *new_parser(void)
 {
     struct parser *p = malloc(sizeof(struct parser));
@@ -515,6 +532,11 @@ static void decl_reset_context(struct parser *p)
     p->is_extern = 0;
     p->is_static = 0;
     p->is_const = 0;
+}
+
+static int is_global_scope(const struct parser *p)
+{
+    return p->symtab->current_scope_level == 0;
 }
 
 /*
@@ -1969,11 +1991,20 @@ static struct ast_node *type_specifier(struct parser *p)
         if (sym) {
             tree = new_node_(NOD_SPEC_TYPE_NAME, tokpos(p));
             decl_set_type(p, type_type_name(sym));
-        } else {
+            break;
+        }
+        else if (is_global_scope(p) && p->decl_type == NULL) {
+            static char msg[128] = {'\0'};
+            sprintf(msg, "unknown type name '%s'", tok->text);
+            syntax_error(p, msg);
+            break;
+        }
+        else {
+            /* inside function. the identifier could be a part of statement */
             /* unget identifier */
             ungettok(p);
+            break;
         }
-        break;
 
     default:
         ungettok(p);
@@ -2478,7 +2509,7 @@ static struct ast_node *declaration(struct parser *p)
         p->func_sym = NULL;
     }
 
-    expect(p, ';');
+    expect_or_recover(p, ';');
     return tree;
 }
 
@@ -2533,18 +2564,9 @@ static struct ast_node *extern_decl(struct parser *p)
 static struct ast_node *translation_unit(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    struct ast_node *decl = NULL;
 
-    while (!consume(p, TOK_EOF)) {
-        decl = extern_decl(p);
-
-        if (!decl) {
-            syntax_error(p, "unexpected token at external declaration");
-            continue;
-        }
-
-        tree = new_node(NOD_LIST, tree, decl);
-    }
+    while (!consume(p, TOK_EOF))
+        tree = new_node(NOD_LIST, tree, extern_decl(p));
 
     return tree;
 }
