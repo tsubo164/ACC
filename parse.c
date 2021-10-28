@@ -103,32 +103,14 @@ static void expect(struct parser *p, enum token_kind query)
 {
     const struct token *tok = gettok(p);
 
-    /* TODO improve error recovery. may not need is_panic_mode */
-    if (p->is_panic_mode) {
-        /* ignore errors until synced */
-        if (tok->kind == query || tok->kind == TOK_EOF)
-            p->is_panic_mode = 0;
+    if (p->is_panic_mode)
         return;
-    }
 
     if (tok->kind != query) {
         char buf[64] = {'\0'};
-        const char *msg = NULL;
         /* TODO improve error message */
-        sprintf(buf, "expected token '%c'", query);
-        msg = insert_string(p->lex.strtab, buf);
-        syntax_error(p, msg);
-
-        for (;;) {
-            tok = gettok(p);
-            if (tok->kind == ';' ||
-                tok->kind == '(' ||
-                tok->kind == ')' ||
-                tok->kind == '{' ||
-                tok->kind == '}' ||
-                tok->kind == TOK_EOF)
-                break;
-        }
+        sprintf(buf, "expected '%c'", query);
+        syntax_error(p, buf);
     }
 }
 
@@ -2563,10 +2545,18 @@ static struct ast_node *extern_decl(struct parser *p)
  */
 static struct ast_node *translation_unit(struct parser *p)
 {
+    static int null_count = 0;
     struct ast_node *tree = NULL;
 
-    while (!consume(p, TOK_EOF))
-        tree = new_node(NOD_LIST, tree, extern_decl(p));
+    while (!consume(p, TOK_EOF)) {
+        struct ast_node *decl = extern_decl(p);
+
+        if (!decl) {
+            if (++null_count >= 5)
+                break;
+        }
+        tree = new_node(NOD_LIST, tree, decl);
+    }
 
     return tree;
 }

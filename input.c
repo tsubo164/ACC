@@ -4,72 +4,31 @@
 #include <stdio.h>
 */
 
-thog
+/*
+thog;
+*/
 
+/*
+int a = 0*
 struct int 234
-
 8 * >> {
-};
-
-
-/*
+}
 */
-
-/*
-//global
-//  IDENT
-//  TYPE
-//  typedef/const/static/extrn
-//hoge = 0;
-hoge
-*/
-
-int a = 4 >> 4;
-/*
-int foo;
-*/
-foo
-/*
-= 
-bar
-*/
-unsigned int a;
 
 int main()
 {
-    int x = 2;
+    int x = 0;
+    int i = 2;
 
     /*
+    for (i = 0; i < 10; i+) {
+        x++;
+    }
+
     x = 4 >> 3;
     */
-    return 9;
+    return x + ;
 }
-    /*
-int main()
-{
-    foo
-    @
-    x = 0;
-    return 43;
-}
-    */
-
-/*
-int foo()
-{
-    int x;
-    return y;
-}
-
-int a = 0;
-
-int main()
-{
-    //int a = 3 >> 1;
-    a = 3 >> 2;
-    return 42;
-}
-*/
 
 /*
 void foo();
@@ -85,5 +44,25 @@ int main()
 static int foo(void)
 {
     return 42;
+}
+*/
+/*
+static struct ast_node *translation_unit(struct parser *p)
+{
+    static int null_count = 0;
+    struct ast_node *tree = NULL;
+
+    while (!consume(p, TOK_EOF)) {
+        struct ast_node *decl = extern_decl(p);
+
+        if (!decl) {
+            if (++null_count >= 5)
+                break;
+        }
+
+        tree = new_node(NOD_LIST, tree, decl);
+    }
+
+    return tree;
 }
 */
