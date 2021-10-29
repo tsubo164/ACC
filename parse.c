@@ -20,8 +20,7 @@ static const struct token *gettok(struct parser *p)
         p->curr = (p->curr + 1) % N;
         p->head = p->curr;
         lex_get_token(&p->lex, &p->tokbuf[p->curr]);
-        if (0)
-            type_name_or_identifier(p);
+        type_name_or_identifier(p);
     } else {
         p->curr = (p->curr + 1) % N;
     }
@@ -529,11 +528,6 @@ static void decl_reset_context(struct parser *p)
     p->is_extern = 0;
     p->is_static = 0;
     p->is_const = 0;
-}
-
-static int is_global_scope(const struct parser *p)
-{
-    return p->symtab->current_scope_level == 0;
 }
 
 /*
@@ -1932,7 +1926,6 @@ static struct ast_node *enum_specifier(struct parser *p)
 
 static struct ast_node *type_specifier(struct parser *p)
 {
-    struct symbol *sym = NULL;
     struct ast_node *tree = NULL;
     const struct token *tok = gettok(p);
 
@@ -1982,26 +1975,20 @@ static struct ast_node *type_specifier(struct parser *p)
         tree = enum_specifier(p);
         break;
 
-    case TOK_IDENT:
-        sym = find_type_name_symbol(p->symtab, tok->text);
+    case TOK_TYPE_NAME:
+        {
+            struct symbol *sym = find_type_name_symbol(p->symtab, tok->text);
 
-        if (sym) {
-            tree = new_node_(NOD_SPEC_TYPE_NAME, tokpos(p));
-            decl_set_type(p, type_type_name(sym));
-            break;
+            if (sym) {
+                tree = new_node_(NOD_SPEC_TYPE_NAME, tokpos(p));
+                decl_set_type(p, type_type_name(sym));
+                break;
+            }
+            else {
+                /* assert */
+            }
         }
-        else if (is_global_scope(p) && p->decl_type == NULL) {
-            static char msg[128] = {'\0'};
-            sprintf(msg, "unknown type name '%s'", tok->text);
-            syntax_error(p, msg);
-            break;
-        }
-        else {
-            /* inside function. the identifier could be a part of statement */
-            /* unget identifier */
-            ungettok(p);
-            break;
-        }
+        break;
 
     default:
         ungettok(p);
@@ -2535,14 +2522,6 @@ static int is_start_of_decl(struct parser *p)
     case TOK_TYPEDEF:
     case TOK_CONST:
         return 1;
-    }
-
-    if (kind == TOK_IDENT) {
-        const struct token *tok = gettok(p);
-        const struct symbol *sym = find_type_name_symbol(p->symtab, tok->text);
-        ungettok(p);
-
-        return sym != NULL;
     }
 
     return 0;

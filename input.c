@@ -4,6 +4,20 @@
 #include <stdio.h>
 */
 
+/* array in struct */
+typedef struct foo {
+    int a[4];
+} Foo;
+
+int main()
+{
+    Foo f = {{11, 22, 33, 44}};
+    return f.a[2];
+    /*
+    return x + i;
+    */
+}
+
 /*
 thog;
 */
@@ -14,21 +28,6 @@ struct int 234
 8 * >> {
 }
 */
-
-int main()
-{
-    int x = 0;
-    int i = 2;
-
-    /*
-    for (i = 0; i < 10; i+) {
-        x++;
-    }
-
-    x = 4 >> 3;
-    */
-    return x + ;
-}
 
 /*
 void foo();
