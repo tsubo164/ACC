@@ -10,6 +10,8 @@ static struct ast_node *new_node(enum ast_node_kind kind,
     return new_ast_node(kind, l, r);
 }
 
+static void type_name_or_identifier(struct parser *p);
+
 static const struct token *gettok(struct parser *p)
 {
     const int N = TOKEN_BUFFER_SIZE;
@@ -18,6 +20,8 @@ static const struct token *gettok(struct parser *p)
         p->curr = (p->curr + 1) % N;
         p->head = p->curr;
         lex_get_token(&p->lex, &p->tokbuf[p->curr]);
+        if (0)
+            type_name_or_identifier(p);
     } else {
         p->curr = (p->curr + 1) % N;
     }
@@ -88,6 +92,17 @@ static int peektok(struct parser *p)
 
     ungettok(p);
     return kind;
+}
+
+static void type_name_or_identifier(struct parser *p)
+{
+    struct token *tok = &p->tokbuf[p->curr];
+
+    if (tok->kind == TOK_IDENT) {
+        const struct symbol *sym = find_type_name_symbol(p->symtab, tok->text);
+        if (sym)
+            tok->kind = TOK_TYPE_NAME;
+    }
 }
 
 static void syntax_error(struct parser *p, const char *msg)
@@ -2495,6 +2510,44 @@ static struct ast_node *declaration(struct parser *p)
     return tree;
 }
 
+/* TODO remove parser from parameter */
+static int is_start_of_decl(struct parser *p)
+{
+    const int kind = peektok(p);
+
+    switch (kind) {
+    case TOK_VOID:
+    case TOK_CHAR:
+    case TOK_SHORT:
+    case TOK_INT:
+    case TOK_LONG:
+    case TOK_SIGNED:
+    case TOK_UNSIGNED:
+    case TOK_STRUCT:
+    case TOK_ENUM:
+    case TOK_TYPE_NAME:
+        return 1;
+    }
+
+    switch (kind) {
+    case TOK_STATIC:
+    case TOK_EXTERN:
+    case TOK_TYPEDEF:
+    case TOK_CONST:
+        return 1;
+    }
+
+    if (kind == TOK_IDENT) {
+        const struct token *tok = gettok(p);
+        const struct symbol *sym = find_type_name_symbol(p->symtab, tok->text);
+        ungettok(p);
+
+        return sym != NULL;
+    }
+
+    return 0;
+}
+
 /*
  * declaration_list
  *     declaration
@@ -2504,14 +2557,12 @@ static struct ast_node *declaration_list(struct parser *p)
 {
     struct ast_node *tree = NULL;
 
-    for (;;) {
+    while (is_start_of_decl(p)) {
         struct ast_node *decl = declaration(p);
-
-        if (!decl)
-            return tree;
-
         tree = new_node(NOD_LIST, tree, decl);
     }
+
+    return tree;
 }
 
 /*

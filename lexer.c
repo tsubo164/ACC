@@ -565,6 +565,7 @@ void print_token(const struct token *tok)
     case TOK_LONG:
     case TOK_SIGNED:
     case TOK_UNSIGNED:
+    case TOK_TYPE_NAME:
         printf("\"%s\"\n", tok->text);
         return;
     default:
