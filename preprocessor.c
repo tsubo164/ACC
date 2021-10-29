@@ -398,6 +398,8 @@ static void block_comment(struct preprocessor *pp)
 
             if (c1 == '/')
                 break;
+            else
+                unreadc(pp, c1);
         }
         else if (c == '\n') {
             writec(pp, c);
