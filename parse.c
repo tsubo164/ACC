@@ -571,6 +571,11 @@ static int is_type_qual(int kind)
     }
 }
 
+static int is_type_spec_qual(int kind)
+{
+    return is_type_spec(kind) || is_type_qual(kind);
+}
+
 /*
  * forward declarations
  */
@@ -786,8 +791,10 @@ static struct ast_node *cast_expression(struct parser *p)
     struct ast_node *tree = NULL, *tname = NULL;
 
     if (consume(p, '(')) {
-        tname = type_name(p);
-        if (tname) {
+        const int next = peektok(p);
+
+        if (is_type_spec_qual(next)) {
+            tname = type_name(p);
             expect(p, ')');
 
             tree = new_node_(NOD_CAST, tokpos(p));
@@ -851,15 +858,18 @@ static struct ast_node *unary_expression(struct parser *p)
 
     case TOK_SIZEOF:
         if (consume(p, '(')) {
-            struct ast_node *tname = type_name(p);
-            if (tname) {
+            const int next = peektok(p);
+
+            if (is_type_spec_qual(next)) {
+                struct ast_node *tname = type_name(p);
+
                 tree = new_node_(NOD_SIZEOF, tokpos(p));
                 expect(p, ')');
                 tree = branch_(tree, tname, NULL);
                 tree->ival = get_size(tree->l->type);
                 return tree;
             } else {
-                /* unget '(' then try sizeof expression */
+                /* unget '(' then try 'sizeof expression' */
                 ungettok(p);
             }
         }
@@ -1649,27 +1659,22 @@ static struct ast_node *type_qualifier(struct parser *p)
 static struct ast_node *specifier_qualifier_list(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    struct ast_node *list, *qual, *spec;
+    struct ast_node *list = NULL, *spec = NULL;
 
     for (;;) {
-        qual = type_qualifier(p);
-        if (qual) {
-            list = new_node_(NOD_LIST, tokpos(p));
-            tree = branch_(list, tree, qual);
-        }
+        const int next = peektok(p);
 
-        spec = type_specifier(p);
-        if (spec) {
-            list = new_node_(NOD_LIST, tokpos(p));
-            tree = branch_(list, tree, spec);
-        }
-
-        if (!qual && !spec)
+        if (is_type_qual(next))
+            spec = type_qualifier(p);
+        else
+        if (is_type_spec(next))
+            spec = type_specifier(p);
+        else
             break;
-    }
 
-    if (!tree)
-        return NULL;
+        list = new_node_(NOD_LIST, tokpos(p));
+        tree = branch_(list, tree, spec);
+    }
 
     if (p->decl_kind != SYM_TAG_STRUCT &&
         p->decl_kind != SYM_TAG_ENUM) {
@@ -1799,13 +1804,16 @@ static struct ast_node *struct_declaration_list(struct parser *p)
     const int is_typedef = p->is_typedef;
 
     for (;;) {
-        struct ast_node *decl = struct_declaration(p);
+        const int next = peektok(p);
 
-        if (!decl)
+        if (is_type_spec_qual(next)) {
+            struct ast_node *decl = struct_declaration(p);
+
+            list = new_node_(NOD_LIST, tokpos(p));
+            tree = branch_(list, tree, decl);
+        } else {
             break;
-
-        list = new_node_(NOD_LIST, tokpos(p));
-        tree = branch_(list, tree, decl);
+        }
     }
 
     p->decl_type = tmp;
@@ -2539,10 +2547,7 @@ static struct ast_node *declaration_list(struct parser *p)
     for (;;) {
         const int next = peektok(p);
 
-        if (is_type_spec(next) ||
-            is_type_qual(next) ||
-            is_storage_class_spec(next)) {
-
+        if (is_type_spec_qual(next) || is_storage_class_spec(next)) {
             struct ast_node *decl = declaration(p);
             tree = new_node(NOD_LIST, tree, decl);
         } else {
