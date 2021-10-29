@@ -530,6 +530,47 @@ static void decl_reset_context(struct parser *p)
     p->is_const = 0;
 }
 
+static int is_type_spec(int kind)
+{
+    switch (kind) {
+    case TOK_VOID:
+    case TOK_CHAR:
+    case TOK_SHORT:
+    case TOK_INT:
+    case TOK_LONG:
+    case TOK_SIGNED:
+    case TOK_UNSIGNED:
+    case TOK_STRUCT:
+    case TOK_ENUM:
+    case TOK_TYPE_NAME:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+static int is_storage_class_spec(int kind)
+{
+    switch (kind) {
+    case TOK_STATIC:
+    case TOK_EXTERN:
+    case TOK_TYPEDEF:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
+static int is_type_qual(int kind)
+{
+    switch (kind) {
+    case TOK_CONST:
+        return 1;
+    default:
+        return 0;
+    }
+}
+
 /*
  * forward declarations
  */
@@ -2408,37 +2449,26 @@ static struct ast_node *storage_class_specifier(struct parser *p)
  */
 static struct ast_node *declaration_specifiers(struct parser *p)
 {
-    /* this function should return NULL when there is no type spec
-     * so decl know we're not parsing a decl anymore and move on to
-     * parsing statements. */
     struct ast_node *tree = NULL, *decl = NULL;
-    struct ast_node *list, *stor, *qual, *spec;
+    struct ast_node *list = NULL, *spec = NULL;
 
     for (;;) {
-        stor = storage_class_specifier(p);
-        if (stor) {
-            list = new_node_(NOD_LIST, tokpos(p));
-            tree = branch_(list, tree, stor);
-        }
+        const int next = peektok(p);
 
-        qual = type_qualifier(p);
-        if (qual) {
-            list = new_node_(NOD_LIST, tokpos(p));
-            tree = branch_(list, tree, qual);
-        }
-
-        spec = type_specifier(p);
-        if (spec) {
-            list = new_node_(NOD_LIST, tokpos(p));
-            tree = branch_(list, tree, spec);
-        }
-
-        if (!stor && !qual && !spec)
+        if (is_storage_class_spec(next))
+            spec = storage_class_specifier(p);
+        else
+        if (is_type_qual(next))
+            spec = type_qualifier(p);
+        else
+        if (is_type_spec(next))
+            spec = type_specifier(p);
+        else
             break;
-    }
 
-    if (!tree)
-        return NULL;
+        list = new_node_(NOD_LIST, tokpos(p));
+        tree = branch_(list, tree, spec);
+    }
 
     if (p->decl_kind != SYM_TAG_STRUCT &&
         p->decl_kind != SYM_TAG_ENUM) {
@@ -2497,36 +2527,6 @@ static struct ast_node *declaration(struct parser *p)
     return tree;
 }
 
-/* TODO remove parser from parameter */
-static int is_start_of_decl(struct parser *p)
-{
-    const int kind = peektok(p);
-
-    switch (kind) {
-    case TOK_VOID:
-    case TOK_CHAR:
-    case TOK_SHORT:
-    case TOK_INT:
-    case TOK_LONG:
-    case TOK_SIGNED:
-    case TOK_UNSIGNED:
-    case TOK_STRUCT:
-    case TOK_ENUM:
-    case TOK_TYPE_NAME:
-        return 1;
-    }
-
-    switch (kind) {
-    case TOK_STATIC:
-    case TOK_EXTERN:
-    case TOK_TYPEDEF:
-    case TOK_CONST:
-        return 1;
-    }
-
-    return 0;
-}
-
 /*
  * declaration_list
  *     declaration
@@ -2536,9 +2536,18 @@ static struct ast_node *declaration_list(struct parser *p)
 {
     struct ast_node *tree = NULL;
 
-    while (is_start_of_decl(p)) {
-        struct ast_node *decl = declaration(p);
-        tree = new_node(NOD_LIST, tree, decl);
+    for (;;) {
+        const int next = peektok(p);
+
+        if (is_type_spec(next) ||
+            is_type_qual(next) ||
+            is_storage_class_spec(next)) {
+
+            struct ast_node *decl = declaration(p);
+            tree = new_node(NOD_LIST, tree, decl);
+        } else {
+            break;
+        }
     }
 
     return tree;

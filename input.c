@@ -5,17 +5,33 @@
 */
 
 /* array in struct */
+/*
 typedef struct foo {
     int a[4];
 } Foo;
+*/
+struct foo {
+    int a;
+};
 
 int main()
 {
+    /*
     Foo f = {{11, 22, 33, 44}};
     return f.a[2];
-    /*
     return x + i;
     */
+
+    /*
+    int *p = (void *) 0;
+    int a = !p ? 42 : 19;
+
+    if (sizeof (const int) == 4)
+        a++;
+    */
+    int a = 42;
+
+    return a;
 }
 
 /*
