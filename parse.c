@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include "parse.h"
 
 /* XXX */
@@ -104,13 +105,21 @@ static void type_name_or_identifier(struct parser *p)
     }
 }
 
-static void syntax_error(struct parser *p, const char *msg)
+static void syntax_error(struct parser *p, const char *msg, ...)
 {
-    if (!p->is_panic_mode) {
-        const struct token *tok = current_token(p);
-        add_error(p->msg, &tok->pos, msg);
-        p->is_panic_mode = 1;
+    va_list va;
+    va_start(va, msg);
+    {
+        char buf[128] = {'\0'};
+        vsprintf(buf, msg, va);
+
+        if (!p->is_panic_mode) {
+            const struct token *tok = current_token(p);
+            add_error(p->msg, &tok->pos, buf);
+            p->is_panic_mode = 1;
+        }
     }
+    va_end(va);
 }
 
 static void expect(struct parser *p, enum token_kind query)
@@ -120,12 +129,8 @@ static void expect(struct parser *p, enum token_kind query)
     if (p->is_panic_mode)
         return;
 
-    if (tok->kind != query) {
-        char buf[64] = {'\0'};
-        /* TODO improve error message */
-        sprintf(buf, "expected '%c'", query);
-        syntax_error(p, buf);
-    }
+    if (tok->kind != query)
+        syntax_error(p, "expected '%c'", query);
 }
 
 static void expect_or_recover(struct parser *p, enum token_kind query)
@@ -2040,7 +2045,7 @@ static struct ast_node *type_specifier(struct parser *p)
         break;
 
     default:
-        ungettok(p);
+        /* assert */
         break;
     }
 
@@ -2579,7 +2584,27 @@ static struct ast_node *statement_list(struct parser *p)
 
 static struct ast_node *extern_decl(struct parser *p)
 {
-    return declaration(p);
+    const int next = peektok(p);
+
+    if (is_type_spec_qual(next) || is_storage_class_spec(next)) {
+        return declaration(p);
+    } else {
+        const struct token *tok = gettok(p);
+        syntax_error(p, "unknown type name '%s'", tok->text);
+
+        /* recover */
+        for (;;) {
+            tok = gettok(p);
+
+            if (is_type_spec_qual(tok->kind) || is_storage_class_spec(tok->kind)
+                    || tok->kind == TOK_EOF) {
+                ungettok(p);
+                p->is_panic_mode = 0;
+                break;
+            }
+        }
+        return NULL;
+    }
 }
 
 /*

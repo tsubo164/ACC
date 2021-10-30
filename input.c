@@ -4,58 +4,6 @@
 #include <stdio.h>
 */
 
-/* array in struct */
-/*
-typedef struct foo {
-    int a[4];
-} Foo;
-struct foo {
-    int a;
-};
-*/
-
-void assert(int i, int j)
-{
-}
-
-int main()
-{
-    {
-        int a = 0;
-        int b = -12;
-        int c;
-
-        c = a || b++;
-        assert(1, c);
-        assert(-11, b);
-
-        a = 1;
-        c = (a || b++);
-        /*
-        assert(1, c);
-        assert(-11, b);
-        */
-
-        return 42;
-    }
-    /*
-    Foo f = {{11, 22, 33, 44}};
-    return f.a[2];
-    return x + i;
-
-    int *p = (void *) 0;
-    int a = !p ? 42 : 19;
-
-    if (sizeof (const int) == 4)
-        a++;
-    */
-    /*
-    int a = 42;
-
-    return a;
-    */
-}
-
 /*
 thog;
 */
@@ -66,6 +14,14 @@ struct int 234
 8 * >> {
 }
 */
+
+hoge h;
+
+int main()
+{
+    int a = 0;
+    return 42
+}
 
 /*
 void foo();
