@@ -581,6 +581,11 @@ static int is_type_spec_qual(int kind)
     return is_type_spec(kind) || is_type_qual(kind);
 }
 
+static int is_start_of_decl(int kind)
+{
+    return is_type_spec_qual(kind) || is_storage_class_spec(kind);
+}
+
 /*
  * forward declarations
  */
@@ -2552,7 +2557,7 @@ static struct ast_node *declaration_list(struct parser *p)
     for (;;) {
         const int next = peektok(p);
 
-        if (is_type_spec_qual(next) || is_storage_class_spec(next)) {
+        if (is_start_of_decl(next)) {
             struct ast_node *decl = declaration(p);
             tree = new_node(NOD_LIST, tree, decl);
         } else {
@@ -2586,7 +2591,7 @@ static struct ast_node *extern_decl(struct parser *p)
 {
     const int next = peektok(p);
 
-    if (is_type_spec_qual(next) || is_storage_class_spec(next)) {
+    if (is_start_of_decl(next)) {
         return declaration(p);
     } else {
         const struct token *tok = gettok(p);
@@ -2596,8 +2601,7 @@ static struct ast_node *extern_decl(struct parser *p)
         for (;;) {
             tok = gettok(p);
 
-            if (is_type_spec_qual(tok->kind) || is_storage_class_spec(tok->kind)
-                    || tok->kind == TOK_EOF) {
+            if (is_start_of_decl(tok->kind) || tok->kind == TOK_EOF) {
                 ungettok(p);
                 p->is_panic_mode = 0;
                 break;
