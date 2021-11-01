@@ -4,14 +4,15 @@
 #include <stdio.h>
 */
 
+enum {
+    A = 1 << 0,
+    B = 1 << 1,
+    C = 1 << 2
+};
+
 int main()
 {
-    int a = 15;
-
-    a %= 4;
-
-    a = 24145;
-    a %= 1233;
+    int a = B | C;
 
     return a;
 }

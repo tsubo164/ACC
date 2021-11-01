@@ -74,6 +74,7 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_MOD_ASSIGN: return "NOD_MOD_ASSIGN";
     case NOD_SHL_ASSIGN: return "NOD_SHL_ASSIGN";
     case NOD_SHR_ASSIGN: return "NOD_SHR_ASSIGN";
+    case NOD_BIT_OR: return "NOD_BIT_OR";
     case NOD_STRUCT_REF: return "NOD_STRUCT_REF";
     case NOD_CAST: return "NOD_CAST";
     case NOD_ADDR: return "NOD_ADDR";

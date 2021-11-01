@@ -71,6 +71,7 @@ const struct opecode IDIV_  = {"idiv",  1};
 const struct opecode SHL_   = {"shl",   1};
 const struct opecode SHR_   = {"shr",   1};
 const struct opecode SAR_   = {"sar",   1};
+const struct opecode OR_    = {"or",    1};
 const struct opecode XOR_   = {"xor",   1};
 const struct opecode CMP_   = {"cmp",   1};
 const struct opecode POP_   = {"pop",   0};
@@ -1590,6 +1591,16 @@ static long eval_const_expr__(const struct ast_node *node)
         r = eval_const_expr__(node->r);
         return l % r;
 
+    case NOD_SHL:
+        l = eval_const_expr__(node->l);
+        r = eval_const_expr__(node->r);
+        return l << r;
+
+    case NOD_SHR:
+        l = eval_const_expr__(node->l);
+        r = eval_const_expr__(node->r);
+        return l >> r;
+
     case NOD_SIZEOF:
     case NOD_NUM:
         return node->ival;
@@ -2125,6 +2136,26 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, IMUL_, D_, A_);
         break;
 
+    case NOD_DIV:
+        gen_code(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code3__(fp, node, MOV_, A_, DI_);
+        code2__(fp, node, POP_, RAX);
+        code1__(fp, node, CLTD_); /* rax -> rdx:rax */
+        code2__(fp, node, IDIV_, DI_);
+        break;
+
+    case NOD_MOD:
+        gen_code(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code3__(fp, node, MOV_, A_, DI_);
+        code2__(fp, node, POP_, RAX);
+        gen_div(fp, node, DI_);
+        code3__(fp, node, MOV_, D_, A_);
+        break;
+
     case NOD_SHL:
         gen_code(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
@@ -2146,24 +2177,12 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             code3__(fp, node, SAR_, CL, A_);
         break;
 
-    case NOD_DIV:
+    case NOD_BIT_OR:
         gen_code(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
-        code3__(fp, node, MOV_, A_, DI_);
-        code2__(fp, node, POP_, RAX);
-        code1__(fp, node, CLTD_); /* rax -> rdx:rax */
-        code2__(fp, node, IDIV_, DI_);
-        break;
-
-    case NOD_MOD:
-        gen_code(fp, node->l);
-        code2__(fp, node, PUSH_, RAX);
-        gen_code(fp, node->r);
-        code3__(fp, node, MOV_, A_, DI_);
-        code2__(fp, node, POP_, RAX);
-        gen_div(fp, node, DI_);
-        code3__(fp, node, MOV_, D_, A_);
+        code2__(fp, node, POP_, RDX);
+        code3__(fp, node, OR_, D_, A_);
         break;
 
     case NOD_NOT:

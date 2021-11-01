@@ -372,6 +372,16 @@ static int eval_const_expr(const struct ast_node *node, struct parser *p)
         r = eval_const_expr(node->r, p);
         return l % r;
 
+    case NOD_SHL:
+        l = eval_const_expr(node->l, p);
+        r = eval_const_expr(node->r, p);
+        return l << r;
+
+    case NOD_SHR:
+        l = eval_const_expr(node->l, p);
+        r = eval_const_expr(node->r, p);
+        return l >> r;
+
     case NOD_SIZEOF:
     case NOD_NUM:
         return node->ival;
@@ -1088,13 +1098,40 @@ static struct ast_node *equality_expression(struct parser *p)
 }
 
 /*
+ * exclusive_or_expression
+ *     and_expression
+ *     exclusive_or_expression '^' and_expression
+ */
+static struct ast_node *exclusive_or_expression(struct parser *p)
+{
+    return equality_expression(p);
+}
+
+/*
  * inclusive_or_expression
  *     exclusive_or_expression
  *     inclusive_or_expression '|' exclusive_or_expression
  */
 static struct ast_node *inclusive_or_expression(struct parser *p)
 {
-    return equality_expression(p);
+    struct ast_node *tree = exclusive_or_expression(p);
+    struct ast_node *expr = NULL;
+
+    for (;;) {
+        const struct token *tok = gettok(p);
+
+        switch (tok->kind) {
+
+        case '|':
+            expr = new_node_(NOD_BIT_OR, tokpos(p));
+            tree = branch_(expr, tree, exclusive_or_expression(p));
+            break;
+
+        default:
+            ungettok(p);
+            return tree;
+        }
+    }
 }
 
 /*

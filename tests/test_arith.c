@@ -233,6 +233,12 @@ int main()
         int a = 1;
         int n = 3;
 
+        enum {
+            A = 1 << 0,
+            B = 1 << 1,
+            C = 1 << 2
+        };
+
         a = a << 2;
         assert(4, a);
 
@@ -247,6 +253,10 @@ int main()
 
         a <<= n;
         assert(1024, a);
+
+        assert(1, A);
+        assert(2, B);
+        assert(4, C);
     }
     {
         /* shfit right */
@@ -269,6 +279,19 @@ int main()
         i = -512;
         i >>= n;
         assert(-64, i);
+    }
+    {
+        /* bit or */
+        enum {
+            A = 1 << 0,
+            B = 1 << 1,
+            C = 1 << 2
+        };
+
+        assert(3, A | B);
+        assert(5, A | C);
+        assert(6, B | C);
+        assert(7, A | B | C);
     }
 
     return 0;
