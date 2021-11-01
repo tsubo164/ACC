@@ -202,6 +202,18 @@ static const char *convert_escape_sequence(const char *src, char *dst)
     return dst;
 }
 
+static void skip_spaces(struct lexer *l)
+{
+    for (;;) {
+        const int c = readc(l);
+
+        if (!isspace(c)) {
+            unreadc(l, c);
+            break;
+        }
+    }
+}
+
 static void skip_line_comment(struct lexer *l)
 {
     for (;;) {
@@ -328,17 +340,43 @@ static void scan_char_literal(struct lexer *l, struct token *tok)
         ;/* error */
 }
 
-static void try_two_char(struct lexer *l, struct token *tok,
-        int first, int second, int tok_kind)
+static int match_one_more(struct lexer *l, struct token *tok,
+        const char *str, int tok_kind1, int tok_kind2)
 {
-    const int c1 = readc(l);
+    int c;
 
-    if (c1 == second) {
-        tok->kind = tok_kind;
-    } else {
-        unreadc(l, c1);
-        tok->kind = first;
+    c = readc(l);
+    if (c != str[1]) {
+        unreadc(l, c);
+        tok->kind = tok_kind1;
+        return 0;
     }
+
+    tok->kind = tok_kind2;
+    return 1;
+}
+
+static int match_two_more(struct lexer *l, struct token *tok,
+        const char *str, int tok_kind1, int tok_kind2, int tok_kind3)
+{
+    int c;
+
+    c = readc(l);
+    if (c != str[1]) {
+        unreadc(l, c);
+        tok->kind = tok_kind1;
+        return 0;
+    }
+
+    c = readc(l);
+    if (c != str[2]) {
+        unreadc(l, c);
+        tok->kind = tok_kind2;
+        return 1;
+    }
+
+    tok->kind = tok_kind3;
+    return 2;
 }
 
 enum token_kind lex_get_token(struct lexer *l, struct token *tok)
@@ -350,8 +388,10 @@ enum token_kind lex_get_token(struct lexer *l, struct token *tok)
         tok->pos = l->pos;
 
         /* space */
-        if (isspace(c))
+        if (isspace(c)) {
+            skip_spaces(l);
             continue;
+        }
 
         /* number */
         if (isdigit(c)) {
@@ -385,6 +425,22 @@ enum token_kind lex_get_token(struct lexer *l, struct token *tok)
             continue;
         }
 
+        /* comments */
+        if (c == '/') {
+            const int c1 = readc(l);
+            if (c1 == '/') {
+                skip_line_comment(l);
+                continue;
+            }
+            else if (c1 == '*') {
+                skip_block_comment(l);
+                continue;
+            }
+            else
+                unreadc(l, c1);
+            /* no break for arith op */
+        }
+
         /* ellipsis (...) or '.' */
         if (c == '.') {
             const int c2 = readc(l);
@@ -405,96 +461,62 @@ enum token_kind lex_get_token(struct lexer *l, struct token *tok)
         }
 
         if (c == '+') {
-            const int c1 = readc(l);
-            if (c1 == '+') {
-                tok->kind = TOK_INC;
+            if (match_one_more(l, tok, "++", c, TOK_INC))
                 break;
-            }
-            else if (c1 == '=') {
-                tok->kind = TOK_ADD_ASSIGN;
-                break;
-            }
-            else {
-                unreadc(l, c1);
-                tok->kind = c;
-                break;
-            }
+            match_one_more(l, tok, "+=", c, TOK_ADD_ASSIGN);
+            break;
         }
 
         if (c == '-') {
-            const int c1 = readc(l);
-            if (c1 == '-') {
-                tok->kind = TOK_DEC;
+            if (match_one_more(l, tok, "--", c, TOK_DEC))
                 break;
-            }
-            else if (c1 == '=') {
-                tok->kind = TOK_SUB_ASSIGN;
+            if (match_one_more(l, tok, "-=", c, TOK_SUB_ASSIGN))
                 break;
-            }
-            else if (c1 == '>') {
-                tok->kind = TOK_POINTER;
-                break;
-            }
-            else {
-                unreadc(l, c1);
-                tok->kind = c;
-                break;
-            }
-        }
-
-        if (c == '/') {
-            const int c1 = readc(l);
-            if (c1 == '/') {
-                skip_line_comment(l);
-                continue;
-            }
-            else if (c1 == '*') {
-                skip_block_comment(l);
-                continue;
-            }
-            else if (c1 == '=') {
-                tok->kind = TOK_DIV_ASSIGN;
-                break;
-            }
-            else {
-                unreadc(l, c1);
-                tok->kind = c;
-                break;
-            }
+            match_one_more(l, tok, "->", c, TOK_POINTER);
+            break;
         }
 
         if (c == '*') {
-            try_two_char(l, tok, c, '=', TOK_MUL_ASSIGN);
+            match_one_more(l, tok, "*=", c, TOK_MUL_ASSIGN);
+            break;
+        }
+
+        if (c == '/') {
+            match_one_more(l, tok, "/=", c, TOK_DIV_ASSIGN);
             break;
         }
 
         if (c == '=') {
-            try_two_char(l, tok, c, '=', TOK_EQ);
+            match_one_more(l, tok, "==", c, TOK_EQ);
             break;
         }
 
         if (c == '!') {
-            try_two_char(l, tok, c, '=', TOK_NE);
+            match_one_more(l, tok, "!=", c, TOK_NE);
             break;
         }
 
         if (c == '<') {
-            try_two_char(l, tok, c, '=', TOK_LE);
+            if (match_one_more(l, tok, "<=", c, TOK_LE))
+                break;
+            match_two_more(l, tok, "<<=", c, TOK_SHL, TOK_SHL_ASSIGN);
             break;
         }
 
         if (c == '>') {
-            try_two_char(l, tok, c, '=', TOK_GE);
+            if (match_one_more(l, tok, ">=", c, TOK_GE))
+                break;
+            match_two_more(l, tok, "<<=", c, TOK_SHR, TOK_SHR_ASSIGN);
             break;
         }
 
         if (c == '|') {
-            try_two_char(l, tok, c, '|', TOK_LOGICAL_OR);
+            match_one_more(l, tok, "||", c, TOK_LOGICAL_OR);
             break;
         }
 
         if (c == '&') {
-            try_two_char(l, tok, c, '&', TOK_LOGICAL_AND);
+            match_one_more(l, tok, "&&", c, TOK_LOGICAL_AND);
             break;
         }
 
@@ -581,6 +603,8 @@ void print_token(const struct token *tok)
     case TOK_GE: s = ">="; break;
     case TOK_EQ: s = "=="; break;
     case TOK_NE: s = "!="; break;
+    case TOK_SHL: s = "<<"; break;
+    case TOK_SHR: s = ">>"; break;
     case TOK_LOGICAL_OR: s = "||"; break;
     case TOK_LOGICAL_AND: s = "&&"; break;
     case TOK_POINTER: s = "->"; break;
@@ -589,6 +613,8 @@ void print_token(const struct token *tok)
     case TOK_SUB_ASSIGN: s = "+="; break;
     case TOK_MUL_ASSIGN: s = "+="; break;
     case TOK_DIV_ASSIGN: s = "+="; break;
+    case TOK_SHL_ASSIGN: s = "<<="; break;
+    case TOK_SHR_ASSIGN: s = ">>="; break;
         /* ellipsis */
     case TOK_ELLIPSIS: s = "..."; break;
         /* ---- */

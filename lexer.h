@@ -48,6 +48,8 @@ enum token_kind {
     TOK_GE,
     TOK_EQ,
     TOK_NE,
+    TOK_SHL,
+    TOK_SHR,
     TOK_LOGICAL_OR,
     TOK_LOGICAL_AND,
     TOK_POINTER,
@@ -56,6 +58,8 @@ enum token_kind {
     TOK_SUB_ASSIGN,
     TOK_MUL_ASSIGN,
     TOK_DIV_ASSIGN,
+    TOK_SHL_ASSIGN,
+    TOK_SHR_ASSIGN,
     /* ellipsis */
     TOK_ELLIPSIS,
     /* ---- */
