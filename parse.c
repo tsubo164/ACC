@@ -1098,13 +1098,57 @@ static struct ast_node *equality_expression(struct parser *p)
 }
 
 /*
+ * and_expression
+ *     equality_expression
+ *     and_expression '&' equality_expression
+ */
+static struct ast_node *and_expression(struct parser *p)
+{
+    struct ast_node *tree = equality_expression(p);
+    struct ast_node *expr = NULL;
+
+    for (;;) {
+        const struct token *tok = gettok(p);
+
+        switch (tok->kind) {
+
+        case '&':
+            expr = new_node_(NOD_BIT_AND, tokpos(p));
+            tree = branch_(expr, tree, equality_expression(p));
+            break;
+
+        default:
+            ungettok(p);
+            return tree;
+        }
+    }
+}
+
+/*
  * exclusive_or_expression
  *     and_expression
  *     exclusive_or_expression '^' and_expression
  */
 static struct ast_node *exclusive_or_expression(struct parser *p)
 {
-    return equality_expression(p);
+    struct ast_node *tree = and_expression(p);
+    struct ast_node *expr = NULL;
+
+    for (;;) {
+        const struct token *tok = gettok(p);
+
+        switch (tok->kind) {
+
+        case '^':
+            expr = new_node_(NOD_BIT_XOR, tokpos(p));
+            tree = branch_(expr, tree, and_expression(p));
+            break;
+
+        default:
+            ungettok(p);
+            return tree;
+        }
+    }
 }
 
 /*

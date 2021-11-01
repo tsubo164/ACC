@@ -13,8 +13,9 @@ enum {
 int main()
 {
     int a = B | C;
+    int b = A | B;
 
-    return a;
+    return a ^ b;
 }
 
 /*

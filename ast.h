@@ -35,6 +35,8 @@ enum ast_node_kind {
     NOD_SHL_ASSIGN,
     NOD_SHR_ASSIGN,
     NOD_BIT_OR,
+    NOD_BIT_XOR,
+    NOD_BIT_AND,
     NOD_STRUCT_REF,
     NOD_CAST,
     NOD_ADDR,

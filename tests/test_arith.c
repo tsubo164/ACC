@@ -293,6 +293,33 @@ int main()
         assert(6, B | C);
         assert(7, A | B | C);
     }
+    {
+        /* bit xor */
+        enum {
+            A = 1 << 0,
+            B = 1 << 1,
+            C = 1 << 2
+        };
+
+        int a = B | C;
+        int b = A | B;
+
+        assert(5, a ^ b);
+    }
+    {
+        /* bit and */
+        enum {
+            A = 1 << 0,
+            B = 1 << 1,
+            C = 1 << 2
+        };
+
+        int a = B | C;
+        int b = A | B;
+
+        assert(2, a & b);
+    }
+
 
     return 0;
 }
