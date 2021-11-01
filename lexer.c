@@ -506,7 +506,7 @@ enum token_kind lex_get_token(struct lexer *l, struct token *tok)
         if (c == '>') {
             if (match_one_more(l, tok, ">=", c, TOK_GE))
                 break;
-            match_two_more(l, tok, "<<=", c, TOK_SHR, TOK_SHR_ASSIGN);
+            match_two_more(l, tok, ">>=", c, TOK_SHR, TOK_SHR_ASSIGN);
             break;
         }
 

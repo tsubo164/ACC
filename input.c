@@ -6,9 +6,10 @@
 
 int main()
 {
-    int a = 1;
+    unsigned int a = 1;
 
-    a = a << 3;
+    a = a << 4;
+
     return a;
 }
 

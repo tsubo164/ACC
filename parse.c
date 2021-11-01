@@ -230,6 +230,11 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = node->l->type;
         break;
 
+    case NOD_SHL:
+    case NOD_SHR:
+        node->type = node->l->type;
+        break;
+
     case NOD_CALL:
         node->type = node->l->type;
         break;
@@ -969,16 +974,49 @@ static struct ast_node *additive_expression(struct parser *p)
 }
 
 /*
- * relational_expression
+ * shift_expression
  *     additive_expression
- *     relational_expression '<' additive_expression
- *     relational_expression '>' additive_expression
- *     relational_expression TOK_LE additive_expression
- *     relational_expression TOK_GE additive_expression
+ *     shift_expression TOK_SHL additive_expression
+ *     shift_expression TOK_SHR additive_expression
+ */
+static struct ast_node *shift_expression(struct parser *p)
+{
+    struct ast_node *tree = additive_expression(p);
+    struct ast_node *expr = NULL;
+
+    for (;;) {
+        const struct token *tok = gettok(p);
+
+        switch (tok->kind) {
+
+        case TOK_SHL:
+            expr = new_node_(NOD_SHL, tokpos(p));
+            tree = branch_(expr, tree, additive_expression(p));
+            break;
+
+        case TOK_SHR:
+            expr = new_node_(NOD_SHR, tokpos(p));
+            tree = branch_(expr, tree, additive_expression(p));
+            break;
+
+        default:
+            ungettok(p);
+            return tree;
+        }
+    }
+}
+
+/*
+ * relational_expression
+ *     shift_expression
+ *     relational_expression '<' shift_expression
+ *     relational_expression '>' shift_expression
+ *     relational_expression TOK_LE shift_expression
+ *     relational_expression TOK_GE shift_expression
  */
 static struct ast_node *relational_expression(struct parser *p)
 {
-    struct ast_node *tree = additive_expression(p);
+    struct ast_node *tree = shift_expression(p);
     struct ast_node *rela = NULL;
 
     for (;;) {
@@ -988,22 +1026,22 @@ static struct ast_node *relational_expression(struct parser *p)
 
         case '<':
             rela = new_node_(NOD_LT, tokpos(p));
-            tree = branch_(rela, tree, additive_expression(p));
+            tree = branch_(rela, tree, shift_expression(p));
             break;
 
         case '>':
             rela = new_node_(NOD_GT, tokpos(p));
-            tree = branch_(rela, tree, additive_expression(p));
+            tree = branch_(rela, tree, shift_expression(p));
             break;
 
         case TOK_LE:
             rela = new_node_(NOD_LE, tokpos(p));
-            tree = branch_(rela, tree, additive_expression(p));
+            tree = branch_(rela, tree, shift_expression(p));
             break;
 
         case TOK_GE:
             rela = new_node_(NOD_GE, tokpos(p));
-            tree = branch_(rela, tree, additive_expression(p));
+            tree = branch_(rela, tree, shift_expression(p));
             break;
 
         default:

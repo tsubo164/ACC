@@ -43,6 +43,8 @@ enum ast_node_kind {
     NOD_MUL,
     NOD_DIV,
     NOD_MOD,
+    NOD_SHL,
+    NOD_SHR,
     NOD_LT,
     NOD_GT,
     NOD_LE,

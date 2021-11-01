@@ -215,6 +215,35 @@ int main()
         assert(1321, *p);
         assert(1321, *q);
     }
+    {
+        /* shfit left */
+        int a = 1;
+        int n = 3;
+
+        a = a << 2;
+        assert(4, a);
+
+        a = a << 4;
+        assert(64, a);
+
+        a = 1 << n;
+        assert(8, a);
+    }
+    {
+        /* shfit right */
+        int i = -256;
+        unsigned int u = 512;
+        int n = 3;
+
+        i = i >> 2;
+        assert(-64, i);
+
+        i = i >> 4;
+        assert(-4, i);
+
+        u = u >> n;
+        assert(64, u);
+    }
 
     return 0;
 }

@@ -83,6 +83,8 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_MUL: return "NOD_MUL";
     case NOD_DIV: return "NOD_DIV";
     case NOD_MOD: return "NOD_MOD";
+    case NOD_SHL: return "NOD_SHL";
+    case NOD_SHR: return "NOD_SHR";
     case NOD_LT: return "NOD_LT";
     case NOD_GT: return "NOD_GT";
     case NOD_LE: return "NOD_LE";

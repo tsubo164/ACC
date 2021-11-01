@@ -68,6 +68,9 @@ const struct opecode SUB_   = {"sub",   1};
 const struct opecode IMUL_  = {"imul",  1};
 const struct opecode DIV_   = {"div",   1};
 const struct opecode IDIV_  = {"idiv",  1};
+const struct opecode SHL_   = {"shl",   1};
+const struct opecode SHR_   = {"shr",   1};
+const struct opecode SAR_   = {"sar",   1};
 const struct opecode XOR_   = {"xor",   1};
 const struct opecode CMP_   = {"cmp",   1};
 const struct opecode POP_   = {"pop",   0};
@@ -131,8 +134,10 @@ const struct operand SP_ = {OPR_REG, VARI, SP__};
 const struct operand AL  = {OPR_REG, BYTE, A__};
 const struct operand AX  = {OPR_REG, WORD, A__};
 const struct operand EAX = {OPR_REG, LONG, A__};
+const struct operand CL  = {OPR_REG, BYTE, C__};
 
 const struct operand RAX = {OPR_REG, QUAD, A__};
+const struct operand RCX = {OPR_REG, QUAD, C__};
 const struct operand RDX = {OPR_REG, QUAD, D__};
 const struct operand RSI = {OPR_REG, QUAD, SI__};
 const struct operand RDI = {OPR_REG, QUAD, DI__};
@@ -2080,6 +2085,28 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->r);
         code2__(fp, node, POP_,  RDX);
         code3__(fp, node, IMUL_, D_, A_);
+        break;
+
+    case NOD_SHL:
+        gen_code(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code3__(fp, node, MOV_, A_, C_);
+        code2__(fp, node, POP_,  RAX);
+        code3__(fp, node, SHL_, CL, A_);
+        break;
+
+    case NOD_SHR:
+        gen_code(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code3__(fp, node, MOV_, A_, C_);
+        code2__(fp, node, POP_,  RAX);
+
+        if (is_unsigned(node->type))
+            code3__(fp, node, SHR_, CL, A_);
+        else
+            code3__(fp, node, SAR_, CL, A_);
         break;
 
     case NOD_DIV:
