@@ -2029,6 +2029,31 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, MOV_, A_, addr1(RSI));
         break;
 
+    case NOD_SHL_ASSIGN:
+        gen_comment(fp, "shl-assign");
+        gen_address(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code3__(fp, node, MOV_, A_, C_);
+        code2__(fp, node, POP_,  RDX);
+        code3__(fp, node, SHL_, CL, addr1(RDX));
+        code3__(fp, node, MOV_, addr1(RDX), A_);
+        break;
+
+    case NOD_SHR_ASSIGN:
+        gen_comment(fp, "shr-assign");
+        gen_address(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code3__(fp, node, MOV_, A_, C_);
+        code2__(fp, node, POP_,  RDX);
+        if (is_unsigned(node->type))
+            code3__(fp, node, SHR_, CL, addr1(RDX));
+        else
+            code3__(fp, node, SAR_, CL, addr1(RDX));
+        code3__(fp, node, MOV_, addr1(RDX), A_);
+        break;
+
     case NOD_ADDR:
         gen_address(fp, node->l);
         break;
@@ -2102,7 +2127,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->r);
         code3__(fp, node, MOV_, A_, C_);
         code2__(fp, node, POP_,  RAX);
-
         if (is_unsigned(node->type))
             code3__(fp, node, SHR_, CL, A_);
         else

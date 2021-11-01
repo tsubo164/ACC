@@ -8,7 +8,7 @@ int main()
 {
     unsigned int a = 1;
 
-    a = a << 4;
+    a <<= 4;
 
     return a;
 }

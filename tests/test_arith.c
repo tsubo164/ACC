@@ -228,6 +228,12 @@ int main()
 
         a = 1 << n;
         assert(8, a);
+
+        a <<= 4;
+        assert(128, a);
+
+        a <<= n;
+        assert(1024, a);
     }
     {
         /* shfit right */
@@ -243,6 +249,13 @@ int main()
 
         u = u >> n;
         assert(64, u);
+
+        u >>= 2;
+        assert(16, u);
+
+        i = -512;
+        i >>= n;
+        assert(-64, i);
     }
 
     return 0;
