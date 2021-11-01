@@ -2029,6 +2029,19 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, MOV_, A_, addr1(RSI));
         break;
 
+    case NOD_MOD_ASSIGN:
+        gen_comment(fp, "mod-assign");
+        gen_address(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code3__(fp, node, MOV_, A_, DI_);
+        code2__(fp, node, POP_, RSI);
+        code3__(fp, node, MOV_, addr1(RSI), A_);
+        gen_div(fp, node, DI_);
+        code3__(fp, node, MOV_, D_, A_);
+        code3__(fp, node, MOV_, A_, addr1(RSI));
+        break;
+
     case NOD_SHL_ASSIGN:
         gen_comment(fp, "shl-assign");
         gen_address(fp, node->l);

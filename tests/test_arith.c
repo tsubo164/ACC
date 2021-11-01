@@ -198,6 +198,19 @@ int main()
         assert(-124, a % b);
     }
     {
+        /* modulo operator */
+        int a = 15;
+        int b = 4;
+
+        a %= b;
+        assert(3, a);
+
+        a = 24145;
+        b = 1233;
+        a %= b;
+        assert(718, a);
+    }
+    {
         /* implicit conversion from logical ops with pointer type */
         int *p = (void *) 0;
         int a = !p;

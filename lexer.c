@@ -486,6 +486,11 @@ enum token_kind lex_get_token(struct lexer *l, struct token *tok)
             break;
         }
 
+        if (c == '%') {
+            match_one_more(l, tok, "%=", c, TOK_MOD_ASSIGN);
+            break;
+        }
+
         if (c == '=') {
             match_one_more(l, tok, "==", c, TOK_EQ);
             break;
@@ -520,7 +525,7 @@ enum token_kind lex_get_token(struct lexer *l, struct token *tok)
             break;
         }
 
-        if (strchr("(){}[]:;,?%", c)) {
+        if (strchr("(){}[]:;,?", c)) {
             tok->kind = c;
             break;
         }
@@ -610,9 +615,10 @@ void print_token(const struct token *tok)
     case TOK_POINTER: s = "->"; break;
         /* assignment op */
     case TOK_ADD_ASSIGN: s = "+="; break;
-    case TOK_SUB_ASSIGN: s = "+="; break;
-    case TOK_MUL_ASSIGN: s = "+="; break;
-    case TOK_DIV_ASSIGN: s = "+="; break;
+    case TOK_SUB_ASSIGN: s = "-="; break;
+    case TOK_MUL_ASSIGN: s = "*="; break;
+    case TOK_DIV_ASSIGN: s = "/="; break;
+    case TOK_MOD_ASSIGN: s = "%="; break;
     case TOK_SHL_ASSIGN: s = "<<="; break;
     case TOK_SHR_ASSIGN: s = ">>="; break;
         /* ellipsis */

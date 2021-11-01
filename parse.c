@@ -226,6 +226,7 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_SUB_ASSIGN:
     case NOD_MUL_ASSIGN:
     case NOD_DIV_ASSIGN:
+    case NOD_MOD_ASSIGN:
     case NOD_SHL_ASSIGN:
     case NOD_SHR_ASSIGN:
     case NOD_DECL_INIT:
@@ -1193,6 +1194,9 @@ static struct ast_node *conditional_expression(struct parser *p)
  *     unary_expression TOK_SUB_ASSIGN assignment_expression
  *     unary_expression TOK_MUL_ASSIGN assignment_expression
  *     unary_expression TOK_DIV_ASSIGN assignment_expression
+ *     unary_expression TOK_MOD_ASSIGN assignment_expression
+ *     unary_expression TOK_SHL_ASSIGN assignment_expression
+ *     unary_expression TOK_SHR_ASSIGN assignment_expression
  */
 static struct ast_node *assignment_expression(struct parser *p);
 static struct ast_node *assign_(struct parser *p, int node_kind, struct ast_node *lval)
@@ -1230,6 +1234,10 @@ static struct ast_node *assignment_expression(struct parser *p)
 
     case TOK_DIV_ASSIGN:
         asgn = new_node_(NOD_DIV_ASSIGN, tokpos(p));
+        return branch_(asgn, tree, assignment_expression(p));
+
+    case TOK_MOD_ASSIGN:
+        asgn = new_node_(NOD_MOD_ASSIGN, tokpos(p));
         return branch_(asgn, tree, assignment_expression(p));
 
     case TOK_SHL_ASSIGN:

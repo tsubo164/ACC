@@ -6,9 +6,12 @@
 
 int main()
 {
-    unsigned int a = 1;
+    int a = 15;
 
-    a <<= 4;
+    a %= 4;
+
+    a = 24145;
+    a %= 1233;
 
     return a;
 }
