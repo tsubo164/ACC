@@ -525,7 +525,7 @@ enum token_kind lex_get_token(struct lexer *l, struct token *tok)
             break;
         }
 
-        if (strchr("(){}[]:;,?^", c)) {
+        if (strchr("(){}[]:;,?^~", c)) {
             tok->kind = c;
             break;
         }

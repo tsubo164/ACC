@@ -4,18 +4,11 @@
 #include <stdio.h>
 */
 
-enum {
-    A = 1 << 0,
-    B = 1 << 1,
-    C = 1 << 2
-};
-
 int main()
 {
-    int a = B | C;
-    int b = A | B;
+    int i = -1;
 
-    return a ^ b;
+    return ~i;
 }
 
 /*

@@ -74,6 +74,7 @@ const struct opecode SAR_   = {"sar",   1};
 const struct opecode OR_    = {"or",    1};
 const struct opecode XOR_   = {"xor",   1};
 const struct opecode AND_   = {"and",   1};
+const struct opecode NOT_   = {"not",   1};
 const struct opecode CMP_   = {"cmp",   1};
 const struct opecode POP_   = {"pop",   0};
 const struct opecode PUSH_  = {"push",  0};
@@ -2200,6 +2201,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->r);
         code2__(fp, node, POP_, RDX);
         code3__(fp, node, AND_, D_, A_);
+        break;
+
+    case NOD_BIT_NOT:
+        gen_code(fp, node->l);
+        code2__(fp, node, NOT_, A_);
         break;
 
     case NOD_NOT:

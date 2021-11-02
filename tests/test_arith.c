@@ -319,7 +319,15 @@ int main()
 
         assert(2, a & b);
     }
+    {
+        /* bit not */
+        int a = -1;
 
+        assert(0, ~a);
+
+        a = 0;
+        assert(-1, ~a);
+    }
 
     return 0;
 }

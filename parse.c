@@ -876,6 +876,10 @@ static struct ast_node *unary_expression(struct parser *p)
         tree = new_node_(NOD_NOT, tokpos(p));
         return branch_(tree, cast_expression(p), NULL);
 
+    case '~':
+        tree = new_node_(NOD_BIT_NOT, tokpos(p));
+        return branch_(tree, cast_expression(p), NULL);
+
     case TOK_INC:
         tree = new_node_(NOD_PREINC, tokpos(p));
         return branch_(tree, unary_expression(p), NULL);
