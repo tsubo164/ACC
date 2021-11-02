@@ -229,6 +229,9 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_MOD_ASSIGN:
     case NOD_SHL_ASSIGN:
     case NOD_SHR_ASSIGN:
+    case NOD_OR_ASSIGN:
+    case NOD_XOR_ASSIGN:
+    case NOD_AND_ASSIGN:
     case NOD_DECL_INIT:
         node->type = node->l->type;
         break;
@@ -1331,6 +1334,18 @@ static struct ast_node *assignment_expression(struct parser *p)
 
     case TOK_SHR_ASSIGN:
         asgn = new_node_(NOD_SHR_ASSIGN, tokpos(p));
+        return branch_(asgn, tree, assignment_expression(p));
+
+    case TOK_OR_ASSIGN:
+        asgn = new_node_(NOD_OR_ASSIGN, tokpos(p));
+        return branch_(asgn, tree, assignment_expression(p));
+
+    case TOK_XOR_ASSIGN:
+        asgn = new_node_(NOD_XOR_ASSIGN, tokpos(p));
+        return branch_(asgn, tree, assignment_expression(p));
+
+    case TOK_AND_ASSIGN:
+        asgn = new_node_(NOD_AND_ASSIGN, tokpos(p));
         return branch_(asgn, tree, assignment_expression(p));
 
     default:

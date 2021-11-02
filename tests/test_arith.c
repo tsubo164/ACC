@@ -287,11 +287,15 @@ int main()
             B = 1 << 1,
             C = 1 << 2
         };
+        int a = A;
 
         assert(3, A | B);
         assert(5, A | C);
         assert(6, B | C);
         assert(7, A | B | C);
+
+        a |= C;
+        assert(5, a);
     }
     {
         /* bit xor */
@@ -305,6 +309,10 @@ int main()
         int b = A | B;
 
         assert(5, a ^ b);
+
+        assert(6, a);
+        a ^= b;
+        assert(5, a);
     }
     {
         /* bit and */
@@ -318,6 +326,10 @@ int main()
         int b = A | B;
 
         assert(2, a & b);
+
+        assert(6, a);
+        a &= b;
+        assert(2, a);
     }
     {
         /* bit not */

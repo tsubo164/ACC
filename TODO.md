@@ -29,7 +29,6 @@
   - unversal type string for better messages
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics
   - use registers r10 r11
-  - bitwise op |, &, ~, ^
   - union
   - control flow check
   - lexer error
@@ -109,3 +108,4 @@
   - struct arg
   - struct return
   - bit shift <<, >>
+  - bitwise op |, &, ~, ^

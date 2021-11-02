@@ -6,9 +6,16 @@
 
 int main()
 {
-    int i = -1;
+    enum {
+        A = 1 << 0,
+        B = 1 << 1,
+        C = 1 << 2
+    };
 
-    return ~i;
+    int i = A;
+    i |= B;
+
+    return i;
 }
 
 /*

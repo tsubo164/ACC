@@ -2080,6 +2080,36 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, MOV_, addr1(RDX), A_);
         break;
 
+    case NOD_OR_ASSIGN:
+        gen_comment(fp, "or-assign");
+        gen_address(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code2__(fp, node, POP_,  RDX);
+        code3__(fp, node, OR_, A_, addr1(RDX));
+        code3__(fp, node, MOV_, addr1(RDX), A_);
+        break;
+
+    case NOD_XOR_ASSIGN:
+        gen_comment(fp, "or-assign");
+        gen_address(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code2__(fp, node, POP_,  RDX);
+        code3__(fp, node, XOR_, A_, addr1(RDX));
+        code3__(fp, node, MOV_, addr1(RDX), A_);
+        break;
+
+    case NOD_AND_ASSIGN:
+        gen_comment(fp, "or-assign");
+        gen_address(fp, node->l);
+        code2__(fp, node, PUSH_, RAX);
+        gen_code(fp, node->r);
+        code2__(fp, node, POP_,  RDX);
+        code3__(fp, node, AND_, A_, addr1(RDX));
+        code3__(fp, node, MOV_, addr1(RDX), A_);
+        break;
+
     case NOD_ADDR:
         gen_address(fp, node->l);
         break;
