@@ -877,7 +877,7 @@ static struct ast_node *unary_expression(struct parser *p)
         return branch_(tree, cast_expression(p), NULL);
 
     case '~':
-        tree = new_node_(NOD_BIT_NOT, tokpos(p));
+        tree = new_node_(NOD_NOT, tokpos(p));
         return branch_(tree, cast_expression(p), NULL);
 
     case TOK_INC:
@@ -1117,7 +1117,7 @@ static struct ast_node *and_expression(struct parser *p)
         switch (tok->kind) {
 
         case '&':
-            expr = new_node_(NOD_BIT_AND, tokpos(p));
+            expr = new_node_(NOD_AND, tokpos(p));
             tree = branch_(expr, tree, equality_expression(p));
             break;
 
@@ -1144,7 +1144,7 @@ static struct ast_node *exclusive_or_expression(struct parser *p)
         switch (tok->kind) {
 
         case '^':
-            expr = new_node_(NOD_BIT_XOR, tokpos(p));
+            expr = new_node_(NOD_XOR, tokpos(p));
             tree = branch_(expr, tree, and_expression(p));
             break;
 
@@ -1171,7 +1171,7 @@ static struct ast_node *inclusive_or_expression(struct parser *p)
         switch (tok->kind) {
 
         case '|':
-            expr = new_node_(NOD_BIT_OR, tokpos(p));
+            expr = new_node_(NOD_OR, tokpos(p));
             tree = branch_(expr, tree, exclusive_or_expression(p));
             break;
 

@@ -2179,7 +2179,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             code3__(fp, node, SAR_, CL, A_);
         break;
 
-    case NOD_BIT_OR:
+    case NOD_OR:
         gen_code(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
@@ -2187,7 +2187,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, OR_, D_, A_);
         break;
 
-    case NOD_BIT_XOR:
+    case NOD_XOR:
         gen_code(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
@@ -2195,7 +2195,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, XOR_, D_, A_);
         break;
 
-    case NOD_BIT_AND:
+    case NOD_AND:
         gen_code(fp, node->l);
         code2__(fp, node, PUSH_, RAX);
         gen_code(fp, node->r);
@@ -2203,7 +2203,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, AND_, D_, A_);
         break;
 
-    case NOD_BIT_NOT:
+    case NOD_NOT:
         gen_code(fp, node->l);
         code2__(fp, node, NOT_, A_);
         break;
