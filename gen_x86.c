@@ -2208,13 +2208,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2__(fp, node, NOT_, A_);
         break;
 
-    case NOD_NOT:
-        gen_code(fp, node->l);
-        code3__(fp, node, CMP_, imme(0), A_);
-        code2__(fp, node, SETE_,  AL);
-        code3__(fp, node, MOVZB_, AL, A_);
-        break;
-
     case NOD_COND:
         /* cond */
         gen_comment(fp, "cond-?");
@@ -2272,6 +2265,13 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_label(fp, scope.curr, JMP_EXIT);
 
         scope = tmp;
+        break;
+
+    case NOD_LOGICAL_NOT:
+        gen_code(fp, node->l);
+        code3__(fp, node, CMP_, imme(0), A_);
+        code2__(fp, node, SETE_,  AL);
+        code3__(fp, node, MOVZB_, AL, A_);
         break;
 
     case NOD_PREINC:

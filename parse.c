@@ -272,9 +272,9 @@ static struct ast_node *typed_(struct ast_node *node)
         break;
 
     /* logical ops */
-    case NOD_LOGICAL_AND:
     case NOD_LOGICAL_OR:
-    case NOD_NOT:
+    case NOD_LOGICAL_AND:
+    case NOD_LOGICAL_NOT:
     case NOD_EQ:
     case NOD_NE:
         node->type = promote_type(node->l, node->r);
@@ -873,7 +873,7 @@ static struct ast_node *unary_expression(struct parser *p)
         return tree;
 
     case '!':
-        tree = new_node_(NOD_NOT, tokpos(p));
+        tree = new_node_(NOD_LOGICAL_NOT, tokpos(p));
         return branch_(tree, cast_expression(p), NULL);
 
     case '~':
