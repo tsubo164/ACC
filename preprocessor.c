@@ -768,16 +768,17 @@ static void read_arguments(struct preprocessor *pp, struct macro_param *params)
     }
 }
 
-static struct macro_param *find_param(struct macro_param *params, const char *name)
+static const struct macro_param *find_param(const struct macro_param *params,
+        const char *name)
 {
-    struct macro_param *p;
+    const struct macro_param *p;
     for (p = params; p; p = p->next)
         if (!strcmp(p->name, name))
             return p;
     return NULL;
 }
 
-static void expand_function(struct preprocessor *pp, struct macro_entry *mac)
+static void expand_function(struct preprocessor *pp, const struct macro_entry *mac)
 {
     char token[32] = {'\0'};
     char *t = token;
@@ -790,7 +791,7 @@ static void expand_function(struct preprocessor *pp, struct macro_entry *mac)
         } else {
             *t = '\0';
             if (t != token) {
-                struct macro_param *prm = find_param(mac->params, token);
+                const struct macro_param *prm = find_param(mac->params, token);
                 if (prm)
                     writes(pp, prm->arg);
                 else
@@ -802,6 +803,127 @@ static void expand_function(struct preprocessor *pp, struct macro_entry *mac)
     }
 }
 
+static void glue(struct strbuf *dst, const char *src)
+{
+    strbuf_append(dst, src);
+}
+
+static void glue_ch(struct strbuf *dst, char src)
+{
+    strbuf_append_char(dst, src);
+}
+
+static int subst(struct preprocessor *pp, const char *tok, struct strbuf *dst)
+{
+    struct macro_entry *mac;
+    int has_subst = 0;
+
+    mac = lookup_macro(pp->mactab, tok);
+
+    if (mac && mac->repl) {
+        if (mac->is_func) {
+            /*
+            read_arguments(pp, mac->params);
+            expand_function(pp, mac);
+            */
+        } else {
+            glue(dst, mac->repl);
+            has_subst = 1;
+        }
+    } else {
+        glue(dst, tok);
+    }
+
+    return has_subst;
+}
+
+static void expand_fn(struct preprocessor *pp, struct strbuf *dst,
+        const struct macro_entry *mac)
+{
+    char tok[128] = {'\0'};
+    char *t = tok;
+    const char *ch = mac->repl;
+
+    for (;;) {
+        if (is_macroname(*ch)) {
+            /* making token */
+            *t = *ch;
+            t++;
+        } else {
+            *t = '\0';
+            if (t != tok) {
+                /* end of token */
+                const struct macro_param *prm = find_param(mac->params, tok);
+                if (prm)
+                    /*
+                    writes(pp, prm->arg);
+                    */
+                    glue(dst, prm->arg);
+                else
+                    /*
+                    writes(pp, tok);
+                    */
+                    glue(dst, tok);
+            }
+            t = tok;
+            /*
+            writec(pp, *ch);
+            */
+            glue_ch(dst, *ch);
+        }
+
+        /* need check after subst, otherwise a token ending with
+         * null char won't be subst'ed*/
+        if (!*ch)
+            break;
+        ch++;
+    }
+}
+
+static void expand_ts(struct preprocessor *pp, const char *ts)
+{
+    int nsubst = 0;
+    char tok[128];
+    char *t = tok;
+    const char *ch = ts;
+    struct strbuf result;
+    strbuf_init(&result);
+
+    for (;;) {
+        if (is_macroname(*ch)) {
+            /* making token */
+            *t = *ch;
+            t++;
+        }
+        else {
+            if (t != tok) {
+                /* end of token */
+                *t = '\0';
+                t = tok;
+                nsubst += subst(pp, tok, &result);
+            }
+            if (*ch)
+                /* skipping char */
+                glue_ch(&result, *ch);
+        }
+
+        /* need check after subst, otherwise a token ending with
+         * null char won't be subst'ed*/
+        if (!*ch)
+            break;
+        ch++;
+    }
+
+    printf("[%s]\n    => [%s] (%d)\n", ts, result.buf, nsubst);
+    printf("\n");
+
+    if (nsubst)
+        expand_ts(pp, result.buf);
+    else
+        writes(pp, result.buf);
+    strbuf_free(&result);
+}
+
 static void expand(struct preprocessor *pp)
 {
     static char tok[128] = {'\0'};
@@ -810,6 +932,12 @@ static void expand(struct preprocessor *pp)
     token(pp, tok);
 
     mac = lookup_macro(pp->mactab, tok);
+    {
+        /*
+        expand_ts(pp, tok);
+        return;
+        */
+    }
 
     if (mac && mac->repl) {
         if (mac->is_func) {
