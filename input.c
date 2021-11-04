@@ -49,12 +49,14 @@ static int foo(void)
 */
 
     /*
-#define T(k) {k, k}
     */
+#define T(k) {k, k}
 #define LIST(T) \
     T(foo) \
     T(bar) \
     T(baz)
 
 LIST(T)
+    /*
 T(test)
+    */

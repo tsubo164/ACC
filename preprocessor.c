@@ -58,6 +58,10 @@ void strbuf_append(struct strbuf *s, const char *c)
 void strbuf_append_char(struct strbuf *s, char c)
 {
     const size_t new_len = s->len + 1;
+
+    if (c == '\0')
+        return;
+
     strbuf_grow(s, new_len);
     s->buf[s->len]  = c;
     s->buf[new_len] = '\0';
@@ -742,12 +746,11 @@ static const char *get_arg(const char *args, char *buf)
     return s;
 }
 
-static void read_args(const char *args, struct macro_param *params)
+static const char *read_args(const char *args, struct macro_param *params)
 {
     struct macro_param *prm = params;
     char arg[128] = {'\0'};
     const char *s = args;
-
 
     while (*s != '(')
         s++;
@@ -757,7 +760,7 @@ static void read_args(const char *args, struct macro_param *params)
     for (;;) {
         if (!prm) {
             /* TODO error */
-            return;
+            return NULL;
         }
 
         s = get_arg(s, arg);
@@ -765,13 +768,15 @@ static void read_args(const char *args, struct macro_param *params)
         prm = prm->next;
 
         if (*s == ')')
-            return;
+            /* the next char */
+            return s + 1;
         else if (*s == ',') {
             s++;
             continue;
         }
         else if (*s == '\0')
-            return;
+            /* null char */
+            return s;
     }
 }
 
@@ -795,14 +800,15 @@ static void glue_ch(struct strbuf *dst, char src)
     strbuf_append_char(dst, src);
 }
 
-static void expand_fn(const struct macro_entry *mac,
+static const char *expand_fn(const struct macro_entry *mac,
         const char *args, struct strbuf *dst)
 {
     char tok[128] = {'\0'};
     char *t = tok;
     const char *s = mac->repl;
+    const char *end_of_args;
 
-    read_args(args, mac->params);
+    end_of_args = read_args(args, mac->params);
 
     for (;;) {
         if (is_macroname(*s)) {
@@ -821,6 +827,11 @@ static void expand_fn(const struct macro_entry *mac,
             }
             t = tok;
             glue_ch(dst, *s);
+
+            /* skip trailing spaces */
+            if (is_whitespaces(*s))
+                while (is_whitespaces(*(s + 1)))
+                    s++;
         }
 
         /* need check after substitution, otherwise a token ending with
@@ -829,6 +840,8 @@ static void expand_fn(const struct macro_entry *mac,
             break;
         s++;
     }
+
+    return end_of_args;
 }
 
 static int subst(struct preprocessor *pp, const char *ts, struct strbuf *dst)
@@ -851,7 +864,7 @@ static int subst(struct preprocessor *pp, const char *ts, struct strbuf *dst)
                 mac = lookup_macro(pp->mactab, tok);
                 if (mac && mac->repl) {
                     if (mac->is_func)
-                        expand_fn(mac, s, dst);
+                        s = expand_fn(mac, s, dst);
                     else
                         glue(dst, mac->repl);
                     has_subst = 1;
