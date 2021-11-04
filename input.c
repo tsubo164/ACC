@@ -3,12 +3,18 @@
 #include <string.h>
 #include <stdio.h>
 */
+#define FOO bar
+FOO
+#define ADD(a, b) (b + a)
+ADD ((2), (3))
+#define PLUS(a, b) add__(a, b)
+PLUS(2, 3)
+
 #define NULL ((void*)0)
 #define NEW_(k) new_node(k, NULL, NULL)
 NEW_(NOD_NUM)
-
-#define ADD(a, b) (a + b)
-ADD(2, 3)
+/*
+*/
 /*
 int main()
 {
@@ -41,3 +47,14 @@ static int foo(void)
     return 42;
 }
 */
+
+    /*
+#define T(k) {k, k}
+    */
+#define LIST(T) \
+    T(foo) \
+    T(bar) \
+    T(baz)
+
+LIST(T)
+T(test)

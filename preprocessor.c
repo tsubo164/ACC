@@ -715,56 +715,63 @@ static void directive_line(struct preprocessor *pp)
         unknown_directive(pp, direc);
 }
 
-static void argument(struct preprocessor *pp, char *buf)
+static const char *get_arg(const char *args, char *buf)
 {
-    char *p = buf;
-
-    whitespaces(pp);
+    int depth = 0;
+    const char *s = args;
+    char *d = buf;
 
     for (;;) {
-        const int c = readc(pp);
-        /* TODO push/pop '(', ')' */
-        if (!is_whitespaces(c) && c != ')' && c != ',') {
-            *p++ = c;
-        } else {
-            unreadc(pp, c);
+        if (*s == ',' || *s == '\0')
             break;
-        }
+
+        if (*s == ')' && depth == 0)
+            break;
+
+        if (*s == '(')
+            depth++;
+        if (*s == ')')
+            depth--;
+
+        if (!is_whitespaces(*s))
+            *d++ = *s;
+
+        s++;
     }
-    *p = '\0';
+    *d = '\0';
+    return s;
 }
 
-static void read_arguments(struct preprocessor *pp, struct macro_param *params)
+static void read_args(const char *args, struct macro_param *params)
 {
-    struct macro_param *p = params;
+    struct macro_param *prm = params;
     char arg[128] = {'\0'};
-    int c;
+    const char *s = args;
 
-    whitespaces(pp);
 
-    c = readc(pp);
-    if (c != '(') {
-        /* TODO error */
-        return;
-    }
+    while (*s != '(')
+        s++;
+    /* skip the first '(' */
+    s++;
 
     for (;;) {
-        if (!p) {
+        if (!prm) {
             /* TODO error */
             return;
         }
 
-        argument(pp, arg);
-        strcpy(p->arg, arg);
-        p = p->next;
+        s = get_arg(s, arg);
+        strcpy(prm->arg, arg);
+        prm = prm->next;
 
-        whitespaces(pp);
-
-        c = readc(pp);
-        if (c == ')')
+        if (*s == ')')
             return;
-        else if (c == ',')
+        else if (*s == ',') {
+            s++;
             continue;
+        }
+        else if (*s == '\0')
+            return;
     }
 }
 
@@ -778,31 +785,6 @@ static const struct macro_param *find_param(const struct macro_param *params,
     return NULL;
 }
 
-static void expand_function(struct preprocessor *pp, const struct macro_entry *mac)
-{
-    char token[32] = {'\0'};
-    char *t = token;
-    char *ch;
-
-    for (ch = mac->repl; *ch; ch++) {
-        if (isalnum(*ch) || *ch == '_') {
-            *t = *ch;
-            t++;
-        } else {
-            *t = '\0';
-            if (t != token) {
-                const struct macro_param *prm = find_param(mac->params, token);
-                if (prm)
-                    writes(pp, prm->arg);
-                else
-                    writes(pp, token);
-            }
-            t = token;
-            writec(pp, *ch);
-        }
-    }
-}
-
 static void glue(struct strbuf *dst, const char *src)
 {
     strbuf_append(dst, src);
@@ -813,41 +795,19 @@ static void glue_ch(struct strbuf *dst, char src)
     strbuf_append_char(dst, src);
 }
 
-static int subst(struct preprocessor *pp, const char *tok, struct strbuf *dst)
-{
-    struct macro_entry *mac;
-    int has_subst = 0;
-
-    mac = lookup_macro(pp->mactab, tok);
-
-    if (mac && mac->repl) {
-        if (mac->is_func) {
-            /*
-            read_arguments(pp, mac->params);
-            expand_function(pp, mac);
-            */
-        } else {
-            glue(dst, mac->repl);
-            has_subst = 1;
-        }
-    } else {
-        glue(dst, tok);
-    }
-
-    return has_subst;
-}
-
-static void expand_fn(struct preprocessor *pp, struct strbuf *dst,
-        const struct macro_entry *mac)
+static void expand_fn(const struct macro_entry *mac,
+        const char *args, struct strbuf *dst)
 {
     char tok[128] = {'\0'};
     char *t = tok;
-    const char *ch = mac->repl;
+    const char *s = mac->repl;
+
+    read_args(args, mac->params);
 
     for (;;) {
-        if (is_macroname(*ch)) {
+        if (is_macroname(*s)) {
             /* making token */
-            *t = *ch;
+            *t = *s;
             t++;
         } else {
             *t = '\0';
@@ -855,73 +815,105 @@ static void expand_fn(struct preprocessor *pp, struct strbuf *dst,
                 /* end of token */
                 const struct macro_param *prm = find_param(mac->params, tok);
                 if (prm)
-                    /*
-                    writes(pp, prm->arg);
-                    */
                     glue(dst, prm->arg);
                 else
-                    /*
-                    writes(pp, tok);
-                    */
                     glue(dst, tok);
             }
             t = tok;
-            /*
-            writec(pp, *ch);
-            */
-            glue_ch(dst, *ch);
+            glue_ch(dst, *s);
         }
 
-        /* need check after subst, otherwise a token ending with
-         * null char won't be subst'ed*/
-        if (!*ch)
+        /* need check after substitution, otherwise a token ending with
+         * null char won't be substituted */
+        if (!*s)
             break;
-        ch++;
+        s++;
     }
+}
+
+static int subst(struct preprocessor *pp, const char *ts, struct strbuf *dst)
+{
+    struct macro_entry *mac;
+    int has_subst = 0;
+    char tok[128] = {'\0'};
+    char *t = tok;
+    const char *s = ts;
+
+    for (;;) {
+        if (is_macroname(*s)) {
+            /* making token */
+            *t = *s;
+            t++;
+        } else {
+            *t = '\0';
+            if (t != tok) {
+                /* end of token */
+                mac = lookup_macro(pp->mactab, tok);
+                if (mac && mac->repl) {
+                    if (mac->is_func)
+                        expand_fn(mac, s, dst);
+                    else
+                        glue(dst, mac->repl);
+                    has_subst = 1;
+                } else {
+                    glue(dst, tok);
+                }
+            }
+            t = tok;
+            glue_ch(dst, *s);
+        }
+
+        /* need check after substitution, otherwise a token ending with
+         * null char won't be substituted */
+        if (!*s)
+            break;
+        s++;
+    }
+    return has_subst;
 }
 
 static void expand_ts(struct preprocessor *pp, const char *ts)
 {
     int nsubst = 0;
-    char tok[128];
-    char *t = tok;
-    const char *ch = ts;
     struct strbuf result;
     strbuf_init(&result);
 
-    for (;;) {
-        if (is_macroname(*ch)) {
-            /* making token */
-            *t = *ch;
-            t++;
-        }
-        else {
-            if (t != tok) {
-                /* end of token */
-                *t = '\0';
-                t = tok;
-                nsubst += subst(pp, tok, &result);
-            }
-            if (*ch)
-                /* skipping char */
-                glue_ch(&result, *ch);
-        }
+    nsubst = subst(pp, ts, &result);
 
-        /* need check after subst, otherwise a token ending with
-         * null char won't be subst'ed*/
-        if (!*ch)
-            break;
-        ch++;
-    }
-
-    printf("[%s]\n    => [%s] (%d)\n", ts, result.buf, nsubst);
-    printf("\n");
+    if (0)
+        printf("[%s]\n    => [%s] (%d)\n\n", ts, result.buf, nsubst);
 
     if (nsubst)
         expand_ts(pp, result.buf);
     else
         writes(pp, result.buf);
     strbuf_free(&result);
+}
+
+static void glue_args(struct preprocessor *pp, struct strbuf *dst)
+{
+    int depth = 0;
+    int done = 0;
+
+    for (;;) {
+        const int c = readc(pp);
+
+        if (c == '(')
+            depth++;
+
+        if (c == ')')
+            done = (--depth == 0);
+
+        glue_ch(dst, c);
+
+        if (done)
+            return;
+
+        if (!c) {
+            /* TODO error */
+            return;
+        }
+    }
 }
 
 static void expand(struct preprocessor *pp)
@@ -932,21 +924,20 @@ static void expand(struct preprocessor *pp)
     token(pp, tok);
 
     mac = lookup_macro(pp->mactab, tok);
-    {
-        /*
-        expand_ts(pp, tok);
-        return;
-        */
-    }
 
-    if (mac && mac->repl) {
-        if (mac->is_func) {
-            read_arguments(pp, mac->params);
-            expand_function(pp, mac);
-        } else {
-            writes(pp, mac->repl);
-        }
-    } else {
+    if (mac) {
+        /* makes token sequence */
+        struct strbuf ts;
+        strbuf_init(&ts);
+
+        glue(&ts, tok);
+        if (mac->is_func)
+            glue_args(pp, &ts);
+
+        expand_ts(pp, ts.buf);
+        strbuf_free(&ts);
+    }
+    else {
         writes(pp, tok);
     }
 }
