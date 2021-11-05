@@ -215,6 +215,14 @@ static void add_replacement(struct macro_entry *mac, const char *repl)
     mac->repl = dst;
 }
 
+static void reset_hideset(struct preprocessor *pp)
+{
+    int i;
+    for (i = 0; i < MAX_HIDESET; i++)
+        pp->hideset[i] = NULL;
+    pp->hs_count = 0;
+}
+
 struct preprocessor *new_preprocessor(void)
 {
     struct preprocessor *pp;
@@ -231,6 +239,7 @@ struct preprocessor *new_preprocessor(void)
 
     pp->skip_depth = 0;
 
+    reset_hideset(pp);
     return pp;
 }
 
@@ -800,6 +809,42 @@ static void glue_ch(struct strbuf *dst, char src)
     strbuf_append_char(dst, src);
 }
 
+static void add_hideset(struct preprocessor *pp, const struct macro_entry *mac)
+{
+    const int N = pp->hs_count;
+    int i;
+
+    if (N == MAX_HIDESET) {
+        /* hideset is full. TODO error */
+        return;
+    }
+    if (!mac)
+        return;
+
+    for (i = 0; i < N; i++)
+        if (pp->hideset[i] == mac)
+            /* already in hideset */
+            return;
+
+    pp->hideset[i] = mac;
+    pp->hs_count++;
+}
+
+static int in_hideset(struct preprocessor *pp, const struct macro_entry *mac)
+{
+    const int N = pp->hs_count;
+    int i;
+
+    if (!mac)
+        return 0;
+
+    for (i = 0; i < N; i++)
+        if (pp->hideset[i] == mac)
+            return 1;
+
+    return 0;
+}
+
 static const char *expand_fn(const struct macro_entry *mac,
         const char *args, struct strbuf *dst)
 {
@@ -861,12 +906,17 @@ static int subst(struct preprocessor *pp, const char *ts, struct strbuf *dst)
             *t = '\0';
             if (t != tok) {
                 /* end of token */
+                int in_hs;
                 mac = lookup_macro(pp->mactab, tok);
-                if (mac && mac->repl) {
+                in_hs = in_hideset(pp, mac);
+
+                if (mac && mac->repl && !in_hs) {
                     if (mac->is_func)
                         s = expand_fn(mac, s, dst);
                     else
                         glue(dst, mac->repl);
+
+                    add_hideset(pp, mac);
                     has_subst = 1;
                 } else {
                     glue(dst, tok);
@@ -893,8 +943,12 @@ static void expand_ts(struct preprocessor *pp, const char *ts)
 
     nsubst = subst(pp, ts, &result);
 
-    if (0)
+    if (0) {
+        static int depth = 0;
+        printf("depth: [%d]\n", depth);
         printf("[%s]\n    => [%s] (%d)\n\n", ts, result.buf, nsubst);
+        depth++;
+    }
 
     if (nsubst)
         expand_ts(pp, result.buf);
@@ -942,6 +996,7 @@ static void expand(struct preprocessor *pp)
         /* makes token sequence */
         struct strbuf ts;
         strbuf_init(&ts);
+        reset_hideset(pp);
 
         glue(&ts, tok);
         if (mac->is_func)

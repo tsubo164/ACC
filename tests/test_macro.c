@@ -4,6 +4,18 @@
 #define ADD(x, y) ((x) + (y))
 #define SQUARE(x) ((x) * (x))
 
+enum {
+    A = 123,
+    B = 456,
+    C = 789,
+    D = 111
+};
+/* cyclic define */
+#define A B
+#define B C
+#define C A
+#define D 999
+
 int main()
 {
     {
@@ -29,6 +41,13 @@ int main()
         assert(42, x);
         assert(20, SQUARE(y++));
         assert(6, y);
+    }
+    {
+        /* cyclic define */
+        assert(123, A);
+        assert(456, B);
+        assert(789, C);
+        assert(999, D);
     }
 
     return 0;

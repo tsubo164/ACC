@@ -30,10 +30,14 @@ struct macro_table {
     struct macro_entry *entries[PP_HASH_SIZE];
 };
 
+#define MAX_HIDESET 32
 struct preprocessor {
     FILE *fp;
     struct strbuf *text;
     struct macro_table *mactab;
+    const struct macro_entry *hideset[MAX_HIDESET];
+    int hs_count;
+
     const char *filename;
     int y;
     int x;
