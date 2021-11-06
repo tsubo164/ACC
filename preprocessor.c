@@ -16,17 +16,24 @@
 #define TERMINAL_DECORATION_BOLD    "\x1b[1m"
 #define TERMINAL_DECORATION_RESET   "\x1b[0m"
 
-void strbuf_init(struct strbuf *s);
+void strbuf_init(struct strbuf *s, size_t reserve_len);
 void strbuf_copy(struct strbuf *s, const char *c);
 void strbuf_append(struct strbuf *s, const char *c);
 void strbuf_grow(struct strbuf *s, size_t new_len);
 void strbuf_free(struct strbuf *s);
 
-void strbuf_init(struct strbuf *s)
+static void zero_clear(struct strbuf *s)
 {
     s->buf = NULL;
     s->len = 0;
     s->alloc = 0;
+}
+
+void strbuf_init(struct strbuf *s, size_t reserve_len)
+{
+    zero_clear(s);
+    strbuf_grow(s, reserve_len);
+    s->buf[0] = '\0';
 }
 
 void strbuf_copy(struct strbuf *s, const char *c)
@@ -70,20 +77,24 @@ void strbuf_append_char(struct strbuf *s, char c)
 
 void strbuf_grow(struct strbuf *s, size_t new_len)
 {
-    static const size_t INIT_BUF_SIZE = 1024 * 16;
+#define INIT_BUF_SIZE 32
+    size_t new_alloc = s->alloc == 0 ? INIT_BUF_SIZE : s->alloc;
 
-    if (s->alloc < new_len + 1) {
-        const size_t new_alloc = s->alloc == 0 ? INIT_BUF_SIZE : s->alloc * 2;
-        s->buf = (char *) realloc(s->buf, sizeof(char) * new_alloc);
-        s->alloc = new_alloc;
-    }
+    while (new_alloc < new_len + 1)
+        new_alloc *= 2;
+
+    if (new_alloc == s->alloc)
+        return;
+
+    s->buf = (char *) realloc(s->buf, sizeof(char) * new_alloc);
+    s->alloc = new_alloc;
 }
 
 void strbuf_free(struct strbuf *s)
 {
     if (s->alloc > 0) {
         free(s->buf);
-        strbuf_init(s);
+        zero_clear(s);
     }
 }
 
@@ -230,7 +241,7 @@ struct preprocessor *new_preprocessor(void)
     pp = malloc(sizeof(struct preprocessor));
 
     pp->text = malloc(sizeof(struct strbuf));
-    strbuf_init(pp->text);
+    strbuf_init(pp->text, 1024 * 16 - 1);
     pp->mactab = new_macro_table(); 
     pp->filename = NULL;
     pp->y = 1;
@@ -939,7 +950,10 @@ static void expand_ts(struct preprocessor *pp, const char *ts)
 {
     int nsubst = 0;
     struct strbuf result;
-    strbuf_init(&result);
+    strbuf_init(&result, 0);
+
+    if (ts && ts[0] == '\0')
+        return;
 
     nsubst = subst(pp, ts, &result);
 
@@ -995,7 +1009,7 @@ static void expand(struct preprocessor *pp)
     if (mac) {
         /* makes token sequence */
         struct strbuf ts;
-        strbuf_init(&ts);
+        strbuf_init(&ts, 0);
         reset_hideset(pp);
 
         glue(&ts, tok);
