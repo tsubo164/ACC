@@ -1684,6 +1684,16 @@ static struct ast_node *labeled_statement(struct parser *p)
 }
 
 /*
+ * null_statement
+ *     ';'
+ */
+static struct ast_node *null_statement(struct parser *p)
+{
+    expect(p, ';');
+    return NULL;
+}
+
+/*
  * statement
  *     labeled_statement
  *     compound_statement
@@ -1734,14 +1744,8 @@ static struct ast_node *statement(struct parser *p)
     case '{':
         return compound_statement(p);
 
-    case '}':
-        return NULL;
-
     case ';':
-        gettok(p);
-        /* TODO consider having NOP node */
-        /* null statement */
-        return NULL;
+        return null_statement(p);
 
     default:
         if (consume(p, TOK_IDENT)) {
@@ -1756,6 +1760,7 @@ static struct ast_node *statement(struct parser *p)
         return expression_statement(p);
     }
 }
+
 /* direct_abstract_declarator
  *     '(' abstract_declarator ')'
  *     '[' ']'
@@ -2734,12 +2739,12 @@ static struct ast_node *statement_list(struct parser *p)
     struct ast_node *tree = NULL;
 
     for (;;) {
-        struct ast_node *stmt = statement(p);
+        const int next = peektok(p);
 
-        if (!stmt)
+        if (next == '}' || next == TOK_EOF)
             return tree;
 
-        tree = new_node(NOD_LIST, tree, stmt);
+        tree = new_node(NOD_LIST, tree, statement(p));
     }
 }
 

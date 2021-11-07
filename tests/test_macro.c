@@ -59,14 +59,12 @@ int main()
     }
     {
         /* empty macro replacements */
-        /*
         int a = 42;
 
         va_end(a);
         NOTHING;
 
-        assert(123, a);
-        */
+        assert(42, a);
     }
     {
         int a = OP(+);
