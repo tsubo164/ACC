@@ -36,7 +36,6 @@ struct preprocessor {
     struct strbuf *text;
     struct macro_table *mactab;
     const struct macro_entry *hideset[MAX_HIDESET];
-    int hs_count;
 
     const char *filename;
     int y;

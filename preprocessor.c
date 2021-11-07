@@ -231,7 +231,6 @@ static void reset_hideset(struct preprocessor *pp)
     int i;
     for (i = 0; i < MAX_HIDESET; i++)
         pp->hideset[i] = NULL;
-    pp->hs_count = 0;
 }
 
 struct preprocessor *new_preprocessor(void)
@@ -820,38 +819,55 @@ static void glue_ch(struct strbuf *dst, char src)
     strbuf_append_char(dst, src);
 }
 
-static void add_hideset(struct preprocessor *pp, const struct macro_entry *mac)
+static void add_hideset(const struct macro_entry *mac,
+        const struct macro_entry **hideset, int max_count)
 {
-    const int N = pp->hs_count;
     int i;
 
-    if (N == MAX_HIDESET) {
-        /* hideset is full. TODO error */
-        return;
-    }
     if (!mac)
         return;
 
-    for (i = 0; i < N; i++)
-        if (pp->hideset[i] == mac)
+    for (i = 0; i < max_count; i++) {
+        if (hideset[i] == mac)
             /* already in hideset */
             return;
+        if (hideset[i] == NULL)
+            /* end of list */
+            break;
+    }
 
-    pp->hideset[i] = mac;
-    pp->hs_count++;
+    if (i == max_count)
+        /* hideset is full. TODO error */
+        return;
+
+    hideset[i] = mac;
+}
+
+static void union_hideset(struct preprocessor *pp,
+        const struct macro_entry **tmpset, int max_count)
+{
+    int i;
+
+    for (i = 0; i < max_count; i++) {
+        if (tmpset[i] == NULL)
+            break;
+        add_hideset(tmpset[i], pp->hideset, MAX_HIDESET);
+    }
 }
 
 static int in_hideset(struct preprocessor *pp, const struct macro_entry *mac)
 {
-    const int N = pp->hs_count;
     int i;
 
     if (!mac)
         return 0;
 
-    for (i = 0; i < N; i++)
+    for (i = 0; i < MAX_HIDESET; i++) {
         if (pp->hideset[i] == mac)
             return 1;
+        if (pp->hideset[i] == NULL)
+            return 0;
+    }
 
     return 0;
 }
@@ -902,6 +918,8 @@ static const char *expand_fn(const struct macro_entry *mac,
 
 static int subst(struct preprocessor *pp, const char *ts, struct strbuf *dst)
 {
+#define MAX_TMPSET 16
+    const struct macro_entry *tmpset[MAX_TMPSET] = {NULL};
     struct macro_entry *mac;
     int has_subst = 0;
     char tok[128] = {'\0'};
@@ -927,7 +945,7 @@ static int subst(struct preprocessor *pp, const char *ts, struct strbuf *dst)
                     else
                         glue(dst, mac->repl);
 
-                    add_hideset(pp, mac);
+                    add_hideset(mac, tmpset, MAX_TMPSET);
                     has_subst = 1;
                 } else {
                     glue(dst, tok);
@@ -943,6 +961,8 @@ static int subst(struct preprocessor *pp, const char *ts, struct strbuf *dst)
             break;
         s++;
     }
+
+    union_hideset(pp, tmpset, MAX_TMPSET);
     return has_subst;
 }
 

@@ -16,6 +16,14 @@ enum {
 #define C A
 #define D 999
 
+/* empty macro replacements */
+#define va_end(ap)
+#define NOTHING
+
+/* testing hideset for one macro apearing twice */
+#define SEVEN (7)
+#define OP(op) (SEVEN op SEVEN)
+
 int main()
 {
     {
@@ -48,6 +56,23 @@ int main()
         assert(456, B);
         assert(789, C);
         assert(999, D);
+    }
+    {
+        /* empty macro replacements */
+        /*
+        int a = 42;
+
+        va_end(a);
+        NOTHING;
+
+        assert(123, a);
+        */
+    }
+    {
+        int a = OP(+);
+
+        assert(14, a);
+        assert(49, OP(*));
     }
 
     return 0;
