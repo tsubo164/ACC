@@ -440,17 +440,17 @@ static int stack_align = 8;
 
 static void inc_stack_align(int n)
 {
-    stack_align += 8 * n;
+    stack_align += n;
 }
 
 static void dec_stack_align(int n)
 {
-    stack_align -= 8 * n;
+    stack_align -= n;
 }
 
-static int need_adjust_stack_align(int stack_arg_count)
+static int need_adjust_stack_align(void)
 {
-    return (stack_align + 8 * stack_arg_count) % 16 != 0;
+    return stack_align % 16 != 0;
 }
 
 static void code2__(FILE *fp, const struct ast_node *node,
@@ -466,9 +466,9 @@ static void code2__(FILE *fp, const struct ast_node *node,
         tag = QUAD;
 
     if (!strcmp(op.mnemonic, "push"))
-        inc_stack_align(1);
+        inc_stack_align(8);
     if (!strcmp(op.mnemonic, "pop"))
-        dec_stack_align(1);
+        dec_stack_align(8);
 
     code__(fp, tag, &o0, &o1, NULL);
 }
@@ -834,7 +834,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
     /* adjust area size */
     {
-        const int adjust = need_adjust_stack_align(0);
+        const int adjust = need_adjust_stack_align();
 
         if ((total_area_size + 8 * adjust) % 16 != 0)
             total_area_size += 8;
