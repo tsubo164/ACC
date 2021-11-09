@@ -36,6 +36,17 @@ int my_sprintf(char *str, const char *format, ...)
     return vsprintf(str, format, ap);
 }
 
+/* testing stack alignment for nested function call */
+int foo(int a, int b, int c)
+{
+    return a + b + c;
+}
+/* testing stack alignment for nested function call */
+int bar(int a)
+{
+    return 2 * a;
+}
+
 int main()
 {
     {
@@ -136,6 +147,14 @@ int main()
         assert(72340, c.x);
         assert(-1230889, c.y);
         assert(91355, c.z);
+    }
+    {
+        /* testing stack alignment for nested function call */
+        int a;
+
+        a = foo(11, 22, bar(33));
+
+        assert(99, a);
     }
 
     return 0;

@@ -4,7 +4,7 @@
   - [x] `lexer.c`
   - [ ] `main.c`
   - [x] `message.c`
-  - [ ] `parse.c`
+  - [x] `parse.c`
   - [x] `preprocessor.c`
   - [x] `semantics.c`
   - [x] `string_table.c`
@@ -12,6 +12,7 @@
   - [x] `type.c`
 
 * TODO
+  - improve warnings for unused function.
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;

@@ -32,13 +32,22 @@ static int foo(void)
     return 42;
 }
 */
+
+int foo(int a, int b, int c)
+{
+    return a + b + c;
+}
+
+int bar(int a)
+{
+    return 2 * a;
+}
+
 int main()
 {
-    int a = 42;
-    //`a = 3;
-    ;
+    int a;
 
-    while (0)
-        ;
+    a = foo(11, 22, bar(33));
+
     return a;
 }

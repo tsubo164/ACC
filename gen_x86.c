@@ -438,14 +438,14 @@ static void code1__(FILE *fp, const struct ast_node *node,
  * the rbp % 0x10 should be 0x08 */
 static int stack_align = 8;
 
-static void inc_stack_align(int n)
+static void inc_stack_align(int byte)
 {
-    stack_align += n;
+    stack_align += byte;
 }
 
-static void dec_stack_align(int n)
+static void dec_stack_align(int byte)
 {
-    stack_align -= n;
+    stack_align -= byte;
 }
 
 static int need_adjust_stack_align(void)
@@ -556,6 +556,22 @@ static const struct ast_node *find_node(const struct ast_node *node, int node_ki
         return found;
 
     return NULL;
+}
+
+static void gen_add_stack_pointer(FILE *fp, int byte)
+{
+    if (!byte)
+        return;
+    code3__(fp, NULL, ADD_, imme(byte), RSP);
+    inc_stack_align(byte);
+}
+
+static void gen_sub_stack_pointer(FILE *fp, int byte)
+{
+    if (!byte)
+        return;
+    code3__(fp, NULL, SUB_, imme(byte), RSP);
+    dec_stack_align(byte);
 }
 
 static void gen_func_param_list_variadic_(FILE *fp)
@@ -889,7 +905,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         int i;
 
         gen_comment(fp, "allocate arg area");
-        code3__(fp, node, SUB_, imme(total_area_size), RSP);
+        gen_sub_stack_pointer(fp, total_area_size);
 
         /* eval arg expr */
         gen_comment(fp, "store args");
@@ -941,7 +957,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         code2__(fp, node, CALL_, str(func_sym->name));
 
         gen_comment(fp, "free up arg area");
-        code3__(fp, node, ADD_, imme(total_area_size), RSP);
+        gen_add_stack_pointer(fp, total_area_size);
     }
 
     free(args);
