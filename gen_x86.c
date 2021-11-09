@@ -792,7 +792,7 @@ static void gen_load_arg(FILE *fp, const struct arg_area *arg, int *reg_start)
     *reg_start = reg;
 }
 
-static void gen_func_call2(FILE *fp, const struct ast_node *node)
+static void gen_func_call(FILE *fp, const struct ast_node *node)
 {
     const struct symbol *func_sym = node->l->sym;
     struct arg_area *args = NULL;
@@ -954,80 +954,6 @@ static void gen_func_call2(FILE *fp, const struct ast_node *node)
         code3__(fp, NULL, MOV_, RDX, addr2(RBP, offset + 8));
         gen_comment(fp, "load address to returned value");
         code3__(fp, NULL, LEA_, addr2(RBP, offset), RAX);
-    }
-}
-
-static void gen_func_call(FILE *fp, const struct ast_node *node)
-{
-    if (!node)
-        return;
-
-    switch (node->kind) {
-
-    case NOD_CALL:
-        gen_func_call2(fp, node);
-        return;
-
-        {
-            const struct symbol *func_sym = node->l->sym;
-            const int arg_count = node->ival;
-            const int stack_arg_count = arg_count > 6 ? arg_count - 6 : 0;
-            const int adjust = need_adjust_stack_align(stack_arg_count);
-            int i;
-
-            /* Need to adjust stack alignment before pushing arguments
-             * as we always want them to be the top of stack for functions
-             * that take more than 6 arguments */
-            /* adjust stack alignment */
-            if (adjust)
-                fprintf(fp, "    subq   $8, %%rsp ## alignment\n");
-
-            /* push args to stack */
-            gen_func_call(fp, node->r);
-            /* pop args to registers (max number is 6) */
-            gen_comment(fp, "pop args");
-            for (i = 0; i < arg_count; i++) {
-                if (i == 6)
-                    break;
-                code2__(fp, node, POP_, arg(i));
-            }
-
-            /* number of fp */
-            if (is_variadic(func_sym))
-                fprintf(fp, "    movl   $0, %%eax\n");
-            /* TODO fix mov suffix with imme and eax) */
-            /* code3__(fp, node, MOV_, imme(0), EAX); */
-
-            /* call */
-            gen_comment(fp, "call");
-            code2__(fp, node, CALL_, str(func_sym->name));
-
-            /* clean up arguments on stack */
-            if (stack_arg_count > 0) {
-                fprintf(fp, "    addq   $%d, %%rsp ## clean up arguments on stack\n",
-                        8 * stack_arg_count);
-                dec_stack_align(stack_arg_count);
-            }
-
-            /* adjust stack alignment */
-            if (adjust)
-                fprintf(fp, "    addq   $8, %%rsp ## alignment\n");
-
-            return;
-        }
-
-    case NOD_ARG:
-        /* push args */
-        gen_comment(fp, "push arg scalar");
-        gen_code(fp, node->l);
-        code2__(fp, node, PUSH_, RAX);
-        return;
-
-    default:
-        /* walk tree from the rightmost arg */
-        gen_func_call(fp, node->r);
-        gen_func_call(fp, node->l);
-        return;
     }
 }
 
