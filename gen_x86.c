@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include "gen_x86.h"
 #include "type.h"
 
@@ -2305,13 +2306,46 @@ static void gen_global_vars(FILE *fp, const struct ast_node *node)
     gen_global_vars(fp, node->r);
 }
 
-static void print_escape_sequence(FILE *fp, const char *src)
+static int char_to_escape_sequence(int ch, char *es)
+{
+    int es1 = '\0';
+
+    if (!es)
+        return 0;
+
+    switch (ch) {
+    case '\0': es1 = '0';  break;
+    case '\\': es1 = '\\'; break;
+    case '\'': es1 = '\''; break;
+    case '"':  es1 = '"';  break;
+    case '\a': es1 = 'a';  break;
+    case '\b': es1 = 'b';  break;
+    case '\f': es1 = 'f';  break;
+    case '\n': es1 = 'n';  break;
+    case '\r': es1 = 'r';  break;
+    case '\t': es1 = 't';  break;
+    case '\v': es1 = 'v';  break;
+    default:
+       return 0;
+    }
+
+    es[0] = '\\';
+    es[1] = es1;
+    es[2] = '\0';
+
+    return 1;
+}
+
+static void print_string_literal(FILE *fp, const char *src)
 {
     const char *s = src;
+    char es[4] = {'\0'};
 
     for (; *s; s++) {
-        if (*s >= 0 && *s < 32)
+        if (iscntrl(*s))
             fprintf(fp, "\\%03o", *s);
+        else if (char_to_escape_sequence(*s, es) && *s != '\'')
+            fprintf(fp, "%s", es);
         else
             fprintf(fp, "%c", *s);
     }
@@ -2325,7 +2359,7 @@ static void gen_string_literal(FILE *fp, const struct symbol_table *table)
         if (is_string_literal(sym)) {
             fprintf(fp, "_L.str.%d:\n", sym->id);
             fprintf(fp, "    .asciz \"");
-            print_escape_sequence(fp, sym->name);
+            print_string_literal(fp, sym->name);
             fprintf(fp, "\"\n\n");
         }
     }

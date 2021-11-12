@@ -3,18 +3,24 @@
 #include <string.h>
 #include <stdio.h>
 */
+#include <stdio.h>
 
-/* testing hideset for one macro apearing twice */
-/*
-#define SEVEN (7)
-#define OP(op) (SEVEN op SEVEN)
-OP(+)
-
-#define A B
-#define B C
-#define C A
-A
-*/
+int main()
+{
+    int c = 32;
+    printf("\\%03o", c);
+    printf("\"\\n\"\n");
+    printf("================\n");
+    printf("[%c]\n", '\"');
+    printf("[%c]\n", '"');
+    printf("================\n");
+    printf("test'test\n");
+    printf("test\'test\n");
+    printf("================\n");
+    printf("test\test\n");
+    printf("test\\test\n");
+    return c;
+}
 
 /*
 void foo();
@@ -32,22 +38,3 @@ static int foo(void)
     return 42;
 }
 */
-
-int foo(int a, int b, int c)
-{
-    return a + b + c;
-}
-
-int bar(int a)
-{
-    return 2 * a;
-}
-
-int main()
-{
-    int a;
-
-    a = foo(11, 22, bar(33));
-
-    return a;
-}

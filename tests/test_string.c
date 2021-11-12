@@ -76,6 +76,36 @@ int main()
         assert(34, buf[18]);
         assert(34, buf[26]);
     }
+    {
+        /* string literal with back slash */
+        const char *str = "\\%03o";
+        char buf[128];
+
+        sprintf(buf, "%s", str);
+
+        assert(1, !strcmp(buf, str));
+        assert(92, buf[0]);
+        assert(37, buf[1]);
+        assert(48, buf[2]);
+        assert(51, buf[3]);
+        assert(111, buf[4]);
+        assert(0,  buf[5]);
+    }
+    {
+        /* string literal with back slash */
+        const char *str = "\"\\n\"\n";
+        char buf[128];
+
+        sprintf(buf, "%s", str);
+
+        assert(1, !strcmp(buf, str));
+        assert(34, buf[0]);
+        assert(92, buf[1]);
+        assert(110, buf[2]);
+        assert(34, buf[3]);
+        assert(10, buf[4]);
+        assert(0,  buf[5]);
+    }
 
     return 0;
 }

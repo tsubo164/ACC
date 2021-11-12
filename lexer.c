@@ -137,25 +137,47 @@ void lexer_init(struct lexer *lex)
 static void read_line_number(struct lexer *l);
 static void read_column_number(struct lexer *l);
 
+static int escape_sequence_to_char(char *es, int *ch)
+{
+    int c = '\0';
+
+    if (es[0] != '\\')
+        return 0;
+
+    switch (es[1]) {
+    case '0':  c = '\0'; break;
+    case '\\': c = '\\'; break;
+    case '\'': c = '\''; break;
+    case '"':  c = '"';  break;
+    case 'a':  c = '\a'; break;
+    case 'b':  c = '\b'; break;
+    case 'f':  c = '\f'; break;
+    case 'n':  c = '\n'; break;
+    case 'r':  c = '\r'; break;
+    case 't':  c = '\t'; break;
+    case 'v':  c = '\v'; break;
+    default:
+        return 0;
+    }
+
+    *ch = c;
+    return 1;
+}
+
 static int read_escape_sequence(struct lexer *l)
 {
-    const int c = readc(l);
+    char es[4] = {'\0'};
+    int ch;
 
-    switch (c) {
-    case '0':  return '\0';
-    case '\\': return '\\';
-    case '\'': return '\'';
-    case 'a':  return '\a';
-    case 'b':  return '\b';
-    case 'f':  return '\f';
-    case 'n':  return '\n';
-    case 'r':  return '\r';
-    case 't':  return '\t';
-    case 'v':  return '\v';
-    default:
+    es[0] = '\\';
+    es[1] = readc(l);
+    es[2] = '\0';
+
+    if (escape_sequence_to_char(es, &ch))
+        return ch;
+    else
         /* TODO error/warning */
-        return c;
-    }
+        return es[1];
 }
 
 static const char *convert_escape_sequence(const char *src, char *dst)
@@ -166,29 +188,28 @@ static const char *convert_escape_sequence(const char *src, char *dst)
 
     for (;;) {
         if (*s == '\\') {
+            char es[4] = {'\0'};
+            int ch;
+
             s++;
-            switch (*s) {
-            case '0':  *d = '\0'; break;
-            case '\\': *d = '\\'; break;
-            case '\'': *d = '\''; break;
-            case 'a':  *d = '\a'; break;
-            case 'b':  *d = '\b'; break;
-            case 'f':  *d = '\f'; break;
-            case 'n':  *d = '\n'; break;
-            case 'r':  *d = '\r'; break;
-            case 't':  *d = '\t'; break;
-            case 'v':  *d = '\v'; break;
-            case 'x':
+            es[0] = '\\';
+            es[1] = *s;
+            es[2] = '\0';
+
+            if (escape_sequence_to_char(es, &ch)) {
+                *d = ch;
+            }
+            else if (*s == 'x') {
                 s++;
                 *d = strtol(s, &end, 16);
                 s = end - 1;
-                break;
-            default:
+            }
+            else {
                 *d = '\\';
                 d++;
                 *d = *s;
-                break;
             }
+
         } else {
             *d = *s;
         }
