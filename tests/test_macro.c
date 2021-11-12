@@ -72,6 +72,25 @@ int main()
         assert(14, a);
         assert(49, OP(*));
     }
+    {
+        /* ifdef and ifndef */
+        int a = 13;
+
+#define FOO
+#ifdef FOO
+        a = 99;
+#endif
+        assert(99, a);
+
+#ifndef BAR
+        a = -12223;
+#endif
+
+#ifdef BAR
+        a = 723;
+#endif
+        assert(-12223, a);
+    }
 
     return 0;
 }

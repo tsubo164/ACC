@@ -621,6 +621,17 @@ static void if_part(struct preprocessor *pp)
     new_line(pp);
 }
 
+static void ifdef_part(struct preprocessor *pp)
+{
+    static char ident[128] = {'\0'};
+
+    token(pp, ident);
+    new_line(pp);
+
+    if (!lookup_macro(pp->mactab, ident))
+        pp->skip_depth++;
+}
+
 static void ifndef_part(struct preprocessor *pp)
 {
     static char ident[128] = {'\0'};
@@ -730,6 +741,8 @@ static void directive_line(struct preprocessor *pp)
         define_line(pp);
     else if (!strcmp(direc, "if"))
         if_part(pp);
+    else if (!strcmp(direc, "ifdef"))
+        ifdef_part(pp);
     else if (!strcmp(direc, "ifndef"))
         ifndef_part(pp);
     else if (!strcmp(direc, "endif"))
