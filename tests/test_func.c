@@ -47,6 +47,18 @@ int bar(int a)
     return 2 * a;
 }
 
+Coord make_coord(long l)
+{
+    Coord c = {7, -19, 0};
+    c.z = l;
+    return c;
+}
+
+long some_calc(long a, long b, Coord coord)
+{
+    return a + b + coord.x;
+}
+
 int main()
 {
     {
@@ -155,6 +167,14 @@ int main()
         a = foo(11, 22, bar(33));
 
         assert(99, a);
+    }
+    {
+        /* large struct passed by value in nested function call */
+        long l = 23;
+
+        l = some_calc(9, 17, make_coord(55));
+
+        assert(33, l);
     }
 
     return 0;

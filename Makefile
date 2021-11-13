@@ -41,7 +41,6 @@ run_cc:
 #target for testing single file for self compile
 SELF =
 self: $(SELF).c
-	@$(MAKE)
 	@echo '  * self compile $(SELF).c'
 	@./$(target) $(SELF).c
 	@$(CC) -c $(SELF).s

@@ -585,13 +585,13 @@ static void gen_func_param_list_variadic_(FILE *fp)
     }
 }
 
-static void gen_store_param(FILE *fp, const struct symbol *sym, int *reg_start)
+static int gen_store_param(FILE *fp, const struct symbol *sym, int stored_regs)
 {
     const int size = get_size(sym->type);
     const int N8 = size / 8;
     const int N4 = (size - 8 * N8) / 4;
     int offset = 0;
-    int reg = *reg_start;
+    int reg = stored_regs;
     int i;
 
     code3__(fp, NULL, MOV_, RBP, RDX);
@@ -616,7 +616,7 @@ static void gen_store_param(FILE *fp, const struct symbol *sym, int *reg_start)
         offset += 4;
     }
 
-    *reg_start = reg;
+    return reg;
 }
 
 static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
@@ -646,7 +646,7 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
             stored_reg_count++;
         }
         else if (param_size <= 16 && stored_reg_count < 5) {
-            gen_store_param(fp, sym, &stored_reg_count);
+            stored_reg_count = gen_store_param(fp, sym, stored_reg_count);
         }
         else {
             /* src from stack */
@@ -778,13 +778,13 @@ static void gen_store_arg(FILE *fp, const struct arg_area *arg)
     gen_assign_struct(fp, arg->expr->type);
 }
 
-static void gen_load_arg(FILE *fp, const struct arg_area *arg, int *reg_start)
+static int gen_load_arg(FILE *fp, const struct arg_area *arg, int loaded_regs)
 {
     const int size = get_size(arg->expr->type);
     const int N8 = size / 8;
     const int N4 = (size - 8 * N8) / 4;
     int offset = 0;
-    int reg = *reg_start;
+    int reg = loaded_regs;
     int i;
 
     for (i = 0; i < N8; i++) {
@@ -806,7 +806,7 @@ static void gen_load_arg(FILE *fp, const struct arg_area *arg, int *reg_start)
         offset += 4;
     }
 
-    *reg_start = reg;
+    return reg;
 }
 
 static void gen_func_call(FILE *fp, const struct ast_node *node)
@@ -932,6 +932,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 const int offset = -get_local_area_offset();
                 gen_comment(fp, "load address to returned value");
                 code3__(fp, NULL, LEA_, addr2(RBP, offset), arg(0));
+                loaded_reg_count++;
                 continue;
             }
 
@@ -939,7 +940,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 continue;
 
             if (ar->size > 8) {
-                gen_load_arg(fp, ar, &loaded_reg_count);
+                loaded_reg_count = gen_load_arg(fp, ar, loaded_reg_count);
             } else {
                 code3__(fp, NULL, MOV_, addr2(RSP, ar->offset),
                         arg(loaded_reg_count));

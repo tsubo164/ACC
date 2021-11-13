@@ -3,23 +3,29 @@
 #include <string.h>
 #include <stdio.h>
 */
-#include <stdio.h>
+typedef struct Coord {
+    long x, y, z;
+} Coord;
+
+Coord get_coord(long l)
+{
+    Coord c = {7, -19, 0};
+    c.z = l;
+    return c;
+}
+
+long some_calc(long a, long b, Coord coord)
+{
+    return a + b + coord.x;
+}
 
 int main()
 {
-    int c = 32;
-    printf("\\%03o", c);
-    printf("\"\\n\"\n");
-    printf("================\n");
-    printf("[%c]\n", '\"');
-    printf("[%c]\n", '"');
-    printf("================\n");
-    printf("test'test\n");
-    printf("test\'test\n");
-    printf("================\n");
-    printf("test\test\n");
-    printf("test\\test\n");
-    return c;
+    long l = 23;
+
+    l = some_calc(9, 17, get_coord(55));
+
+    return l;
 }
 
 /*
