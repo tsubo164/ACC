@@ -738,6 +738,12 @@ void compute_struct_size(struct symbol *strc)
             break;
     }
 
+    if (struct_align == 0) {
+        /* an empty struct created by error. pretends its size is 4 */
+        total_offset = 4;
+        struct_align = 4;
+    }
+
     struct_size = align_to(total_offset, struct_align);
 
     set_struct_size(strc->type, struct_size);

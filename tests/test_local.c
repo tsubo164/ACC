@@ -63,7 +63,7 @@ int main()
         assert(46, x);
     }
     {
-        /* initialize wity expressions */
+        /* initialize with expressions */
         int a[3] = {R + G + B, 22, add(G * 2, 13)};
         int b = add(2, 3) * B;
 
@@ -72,6 +72,15 @@ int main()
         assert(35, a[2]);
 
         assert(60, b);
+    }
+    {
+        /* missing type specifier defaults to int - C89 */
+        /*
+        const a = 42;
+
+        assert(4, sizeof a);
+        assert(42, a);
+        */
     }
 
     return 0;

@@ -1,5 +1,6 @@
 CC      = gcc
 OPT     = -O2
+#OPT     = -O0 -g
 CFLAGS  = $(OPT) -Wall -ansi --pedantic-errors -c
 LDFLAGS = 
 RM      = rm -f

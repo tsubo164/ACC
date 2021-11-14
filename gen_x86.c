@@ -1410,7 +1410,7 @@ static void zero_clear_bytes(struct memory_byte *bytes, const struct data_type *
         int i;
 
         for (i = 0; i < len; i++) {
-            const base = elem_size * i;
+            const int base = elem_size * i;
 
             zero_clear_bytes(bytes + base, underlying(type));
         }
@@ -1435,7 +1435,7 @@ static void zero_clear_bytes(struct memory_byte *bytes, const struct data_type *
 
 static void init_object_byte(struct object_byte *obj, const struct ast_node *ident)
 {
-    const size = get_size(ident->type);
+    const int size = get_size(ident->type);
 
     obj->bytes = (struct memory_byte *) calloc(size, sizeof(struct memory_byte));
     obj->size = size;

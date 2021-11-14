@@ -607,6 +607,16 @@ static int is_start_of_decl(int kind)
     return is_type_spec_qual(kind) || is_storage_class_spec(kind);
 }
 
+static void default_to_int(struct parser *p)
+{
+    if (!p->decl_type) {
+        const struct token *next = gettok(p);
+        decl_set_type(p, type_int());
+        add_warning(p->msg, &next->pos, "type specifier missing, defaults to 'int'");
+        ungettok(p);
+    }
+}
+
 /*
  * forward declarations
  */
@@ -1979,10 +1989,16 @@ static struct ast_node *struct_declaration_list(struct parser *p)
 
         if (is_type_spec_qual(next)) {
             struct ast_node *decl = struct_declaration(p);
-
             list = new_node_(NOD_LIST, tokpos(p));
             tree = branch_(list, tree, decl);
-        } else {
+        }
+        else if (next == '}' || next == TOK_EOF) {
+            break;
+        }
+        else {
+            gettok(p);
+            syntax_error(p, "type name requires a specifier or qualifier");
+            ungettok(p);
             break;
         }
     }
@@ -2648,6 +2664,8 @@ static struct ast_node *declaration_specifiers(struct parser *p)
         list = new_node_(NOD_LIST, tokpos(p));
         tree = branch_(list, tree, spec);
     }
+
+    default_to_int(p);
 
     if (p->decl_kind != SYM_TAG_STRUCT &&
         p->decl_kind != SYM_TAG_ENUM) {
