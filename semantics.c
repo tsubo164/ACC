@@ -262,12 +262,19 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         check_tree_(node->l, ctx);
         ctx->is_lvalue = 0;
 
-        {
-            /* TODO not work for array lvalue. need to find ident */
-            struct symbol *sym = node->l->sym;
+        if (node->l->kind == NOD_DEREF) {
             if (is_const(node->type))
                 add_error(ctx->messages, &node->pos,
-                        "cannot assign to variable '%s' with const-qualified", sym->name);
+                        "read-only variable is not assignable");
+        }
+        else if (node->l->kind == NOD_IDENT) {
+            if (is_const(node->type))
+                add_error(ctx->messages, &node->pos,
+                        "cannot assign to variable '%s' with const-qualified",
+                        node->l->sym->name);
+        }
+        else {
+            /* TODO assert? */
         }
 
         /* integer zero to pointer */

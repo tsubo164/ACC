@@ -4,18 +4,24 @@
 #include <stdio.h>
 */
 
-hoge = 3;
-
-struct point {
-    x;
-    int y;
+struct opecode {
+    int a;
 };
+
+void foo(const struct opecode *op, const int *nchars)
+{
+    *nchars = 3;
+}
 
 int main()
 {
-    const i = 23;
+    const int i = 3;
+    int a[4];
 
-    return i;
+    i = 9;
+    a[2] = 19;
+
+    return a[2];
 }
 
 /*
