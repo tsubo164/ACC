@@ -13,6 +13,7 @@
 
 * TODO
   - improve warnings for unused function.
+  - improve const qualifier for struct parameter.
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;

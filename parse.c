@@ -2244,6 +2244,8 @@ static struct ast_node *parameter_declaration(struct parser *p)
     struct ast_node *tree = NULL;
     struct ast_node *spec = NULL, *decl = NULL;
 
+    decl_reset_context(p);
+
     spec = declaration_specifiers(p);
     if (!spec)
         return NULL;
@@ -2278,6 +2280,8 @@ static struct ast_node *parameter_list(struct parser *p)
         tree = branch_(list, tree, param);
 
         if (!consume(p, ','))
+            return tree;
+        if (nexttok(p, TOK_ELLIPSIS))
             return tree;
     }
 }
@@ -2387,7 +2391,8 @@ static struct ast_node *direct_declarator(struct parser *p)
 
         begin_scope(p);
         fn->l = tree;
-        fn->r = parameter_type_list(p);
+        if (!nexttok(p, ')'))
+            fn->r = parameter_type_list(p);
         tree = fn;
         expect(p, ')');
     } else {

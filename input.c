@@ -4,11 +4,14 @@
 #include <stdio.h>
 */
 
-struct opecode {
+typedef struct opecode {
     int a;
-};
+} Opecode;
 
-void foo(const struct opecode *op, const int *nchars)
+    /*
+void foo(const Opecode *op, int *nchars)
+    */
+void foo(const struct opecode *op, int *nchars)
 {
     *nchars = 3;
 }

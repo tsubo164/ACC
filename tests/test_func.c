@@ -59,6 +59,11 @@ long some_calc(long a, long b, Coord coord)
     return a + b + coord.x;
 }
 
+void some_coord_func(const struct coord *c, int *nchars)
+{
+    *nchars = 3;
+}
+
 int main()
 {
     {
@@ -175,6 +180,14 @@ int main()
         l = some_calc(9, 17, make_coord(55));
 
         assert(33, l);
+    }
+    {
+        Coord c = {111, 222, 333};
+        int a = 17;
+
+        some_coord_func(&c, &a);
+
+        assert(3, a);
     }
 
     return 0;
