@@ -14,6 +14,7 @@
 * TODO
   - improve warnings for unused function.
   - improve const qualifier for struct parameter.
+  - add tests for malloc
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;

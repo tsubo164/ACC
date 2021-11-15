@@ -406,19 +406,6 @@ static int data_tag_(const struct data_type *type)
     if (is_enum(type))
         return LONG;
     return QUAD;
-#if 0
-    const int size = get_size(type);
-
-    switch (size) {
-    case 1: return BYTE;
-    case 2: return WORD;
-    case 4: return LONG;
-    case 8: return QUAD;
-    default:
-        /* TODO error handling */
-        return QUAD;
-    }
-#endif
 }
 
 static int get_mem_offset(const struct ast_node *node)
