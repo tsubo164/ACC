@@ -663,7 +663,7 @@ static void gen_func_param_list(FILE *fp, const struct ast_node *node)
         gen_func_param_list_(fp, func->sym);
 }
 
-static int local_area_offset = 0;
+static int local_area_size = 0;
 static void find_max_return_size(const struct ast_node *node, int *max)
 {
     if (!node)
@@ -675,33 +675,32 @@ static void find_max_return_size(const struct ast_node *node, int *max)
             if (size > *max)
                 *max = size;
         }
-    } else {
-        find_max_return_size(node->l, max);
-        find_max_return_size(node->r, max);
     }
+    find_max_return_size(node->l, max);
+    find_max_return_size(node->r, max);
 }
 
-static int get_local_area_offset(void)
+static int get_local_area_size(void)
 {
-    return local_area_offset;
+    return local_area_size;
 }
 
 static void set_local_area_offset(const struct ast_node *node)
 {
     const struct ast_node *fdecl, *func;
-    int local_area_size = 0;
-    int ret_area_size = 0;
+    int local_var_size = 0;
+    int ret_val_size = 0;
 
     fdecl = find_node(node->l, NOD_DECL_FUNC);
     func = find_node(fdecl->l, NOD_DECL_IDENT);
 
-    local_area_size = get_mem_offset(func);
+    local_var_size = get_mem_offset(func);
 
-    find_max_return_size(node->r, &ret_area_size);
+    find_max_return_size(node->r, &ret_val_size);
     /* 16 byte align */
-    ret_area_size = align_to(ret_area_size, 16);
+    ret_val_size = align_to(ret_val_size, 16);
 
-    local_area_offset = local_area_size + ret_area_size;
+    local_area_size = local_var_size + ret_val_size;
 }
 
 static void gen_func_prologue(FILE *fp, const struct ast_node *node)
@@ -719,7 +718,7 @@ static void gen_func_prologue(FILE *fp, const struct ast_node *node)
     fprintf(fp, "_%s:\n", ident->sym->name);
     code2__(fp, ident, PUSH_, RBP);
     code3__(fp, ident, MOV_,  RSP, RBP);
-    code3__(fp, ident, SUB_, imme(get_local_area_offset()), RSP);
+    code3__(fp, ident, SUB_, imme(get_local_area_size()), RSP);
 }
 
 static void gen_func_body(FILE *fp, const struct ast_node *node)
@@ -916,7 +915,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
             if (!ar->expr) {
                 /* large return value */
-                const int offset = -get_local_area_offset();
+                const int offset = -get_local_area_size();
                 gen_comment(fp, "load address to returned value");
                 code3__(fp, NULL, LEA_, addr2(RBP, offset), arg(0));
                 loaded_reg_count++;
@@ -952,7 +951,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
     free(args);
 
     if (is_medium_object(func_sym->type)) {
-        const int offset = -get_local_area_offset();
+        const int offset = -get_local_area_size();
 
         gen_comment(fp, "store returned value");
         code3__(fp, NULL, MOV_, RAX, addr2(RBP, offset));

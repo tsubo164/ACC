@@ -64,6 +64,12 @@ void some_coord_func(const struct coord *c, int *nchars)
     *nchars = 3;
 }
 
+/* calling function returning large struct in a function that has no local area */
+long try_some_calc(void)
+{
+    return some_calc(19, 27, make_coord(55));
+}
+
 int main()
 {
     {
@@ -188,6 +194,12 @@ int main()
         some_coord_func(&c, &a);
 
         assert(3, a);
+    }
+    {
+        /* calling function returning large struct in a function that has no local area */
+        long l = try_some_calc();
+
+        assert(53, l);
     }
 
     return 0;
