@@ -4,27 +4,22 @@
 #include <stdio.h>
 */
 
-typedef struct opecode {
-    int a;
-} Opecode;
+typedef struct point {
+    int x, y, z;
+} point;
 
-    /*
-void foo(const Opecode *op, int *nchars)
-    */
-void foo(const struct opecode *op, int *nchars)
+int foo(const char *s, int *i, point p)
 {
-    *nchars = 3;
+    return *i + p.x;
 }
 
 int main()
 {
-    const int i = 3;
-    int a[4];
+    point p = {11, 22, 33};
+    const char *s = "Heloo, world\n";
+    int i = 42;
 
-    i = 9;
-    a[2] = 19;
-
-    return a[2];
+    return foo(s, &i, p);
 }
 
 /*

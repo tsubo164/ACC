@@ -581,24 +581,24 @@ static int gen_store_param(FILE *fp, const struct symbol *sym, int stored_regs)
     int reg = stored_regs;
     int i;
 
-    code3__(fp, NULL, MOV_, RBP, RDX);
-    code3__(fp, NULL, SUB_, imme(sym->mem_offset), RDX);
+    fprintf(fp, "    movq   %%rbp, %%r10\n");
+    fprintf(fp, "    subq   $%d, %%r10\n", sym->mem_offset);
 
     for (i = 0; i < N8; i++) {
-        const char *src_reg = ARG_REG__[reg][3];
+        const char *src_reg = ARG_REG__[reg][QUAD];
         if (offset == 0)
-            fprintf(fp, "    movq   %%%s, (%%rdx)\n", src_reg);
+            fprintf(fp, "    movq   %%%s, (%%r10)\n", src_reg);
         else
-            fprintf(fp, "    movq   %%%s, %d(%%rdx)\n", src_reg, offset);
+            fprintf(fp, "    movq   %%%s, %d(%%r10)\n", src_reg, offset);
         reg++;
         offset += 8;
     }
     for (i = 0; i < N4; i++) {
-        const char *src_reg = ARG_REG__[reg][2];
+        const char *src_reg = ARG_REG__[reg][LONG];
         if (offset == 0)
-            fprintf(fp, "    movl   %%%s, (%%rdx)\n", src_reg);
+            fprintf(fp, "    movl   %%%s, (%%r10)\n", src_reg);
         else
-            fprintf(fp, "    movl   %%%s, %d(%%rdx)\n", src_reg, offset);
+            fprintf(fp, "    movl   %%%s, %d(%%r10)\n", src_reg, offset);
         reg++;
         offset += 4;
     }
@@ -774,7 +774,7 @@ static int gen_load_arg(FILE *fp, const struct arg_area *arg, int loaded_regs)
     int i;
 
     for (i = 0; i < N8; i++) {
-        const char *dst_reg = ARG_REG__[reg][3];
+        const char *dst_reg = ARG_REG__[reg][QUAD];
         if (arg->offset + offset == 0)
             fprintf(fp, "    movq   (%%rsp), %%%s\n", dst_reg);
         else
@@ -783,7 +783,7 @@ static int gen_load_arg(FILE *fp, const struct arg_area *arg, int loaded_regs)
         offset += 8;
     }
     for (i = 0; i < N4; i++) {
-        const char *dst_reg = ARG_REG__[reg][2];
+        const char *dst_reg = ARG_REG__[reg][LONG];
         if (arg->offset + offset == 0)
             fprintf(fp, "    movl   (%%rsp), %%%s\n", dst_reg);
         else

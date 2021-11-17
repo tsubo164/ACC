@@ -70,6 +70,12 @@ long try_some_calc(void)
     return some_calc(19, 27, make_coord(55));
 }
 
+/* mid size struct param to be stored correctly without stepping on rdx */
+int mid_struct_and_some_ptr(const char *s, int *i, vec p)
+{
+    return *i + p.x;
+}
+
 int main()
 {
     {
@@ -200,6 +206,14 @@ int main()
         long l = try_some_calc();
 
         assert(53, l);
+    }
+    {
+        /* mid size struct param to be stored correctly without stepping on rdx */
+        vec p = {11, 22, 33};
+        const char *s = "Heloo, world\n";
+        int i = 42;
+
+        assert(53, mid_struct_and_some_ptr(s, &i, p));
     }
 
     return 0;
