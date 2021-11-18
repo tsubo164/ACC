@@ -797,6 +797,7 @@ static int gen_load_arg(FILE *fp, const struct arg_area *arg, int loaded_regs)
 
 static void gen_func_call(FILE *fp, const struct ast_node *node)
 {
+    /* TODO divide this function */
     const struct symbol *func_sym = node->l->sym;
     struct arg_area *args = NULL;
     int arg_count = node->ival;
@@ -902,10 +903,31 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 continue;
 
             gen_code(fp, args[i].expr);
-            if (args[i].size > 8)
+            if (args[i].size > 8) {
                 gen_store_arg(fp, &args[i]);
-            else
+            } else {
+                /* sign extensions on parameter passing */
+                const struct data_type *type = args[i].expr->type;
+                if (is_char(type)) {
+                    if (is_unsigned(type))
+                        code3__(fp, node, MOVZB_, AL, RAX);
+                    else
+                        code3__(fp, node, MOVSB_, AL, RAX);
+                }
+                else if (is_short(type)) {
+                    if (is_unsigned(type))
+                        code3__(fp, node, MOVZW_, AX, RAX);
+                    else
+                        code3__(fp, node, MOVSW_, AX, RAX);
+                }
+                else if (is_int(type)) {
+                    if (is_unsigned(type))
+                        fprintf(fp, "    movl   %%eax, %%eax\n");
+                    else
+                        code3__(fp, node, MOVSL_, EAX, RAX);
+                }
                 code3__(fp, NULL, MOV_, A_, addr2(RSP, args[i].offset));
+            }
         }
 
         /* load to registers */

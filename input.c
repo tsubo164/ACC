@@ -3,23 +3,25 @@
 #include <string.h>
 #include <stdio.h>
 */
+#include <stdio.h>
 
-typedef struct point {
-    int x, y, z;
-} point;
-
-int foo(const char *s, int *i, point p)
+long bar(long l)
 {
-    return *i + p.x;
+    return l;
 }
 
 int main()
 {
-    point p = {11, 22, 33};
-    const char *s = "Heloo, world\n";
-    int i = 42;
+    long l = 0;
+    int i = -32;
 
-    return foo(s, &i, p);
+    l = i;
+    printf("----> %ld\n", l);
+
+    l = bar(i);
+    printf("----> %ld\n", l);
+
+    return 42;
 }
 
 /*

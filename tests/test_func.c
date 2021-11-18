@@ -76,6 +76,12 @@ int mid_struct_and_some_ptr(const char *s, int *i, vec p)
     return *i + p.x;
 }
 
+/* testing sign extension on parameter passing */
+long twice_long(long l)
+{
+    return 2 * l;
+}
+
 int main()
 {
     {
@@ -214,6 +220,18 @@ int main()
         int i = 42;
 
         assert(53, mid_struct_and_some_ptr(s, &i, p));
+    }
+    {
+        /* testing sign extension on parameter passing */
+        long l;
+        int i = -32;
+        char buf[32] = {'\0'};
+
+        l = twice_long(i);
+        sprintf(buf, "%ld", l);
+
+        /* need compare string, otherwise equality will succeed with the wrong value */
+        assert(0, strcmp("-64", buf));
     }
 
     return 0;
