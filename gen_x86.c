@@ -615,6 +615,7 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
     if (is_large_object(func_sym->type)) {
         gen_comment(fp, "save address to returning value");
         code2__(fp, NULL, PUSH_, RDI);
+        stored_reg_count++;
     }
 
     for (sym = first_param(func_sym); sym; sym = next_param(sym)) {

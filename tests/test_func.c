@@ -82,6 +82,16 @@ long twice_long(long l)
     return 2 * l;
 }
 
+/* returning struct by value with a parameter using rdi */
+Coord ret_struct_by_val(const char *s, int id)
+{
+    Coord c = {11, 22, 33};
+    c.x += id;
+    c.y += id;
+    c.z += id;
+    return c;
+}
+
 int main()
 {
     {
@@ -232,6 +242,14 @@ int main()
 
         /* need compare string, otherwise equality will succeed with the wrong value */
         assert(0, strcmp("-64", buf));
+    }
+    {
+        /* returning struct by value with a parameter using rdi */
+        Coord c = ret_struct_by_val("foo", 19);
+
+        assert(30, c.x);
+        assert(41, c.y);
+        assert(52, c.z);
     }
 
     return 0;

@@ -5,23 +5,24 @@
 */
 #include <stdio.h>
 
-long bar(long l)
+typedef struct coord {
+    long x, y, z;
+} Coord;
+
+Coord ret_struct_by_val(const char *s, int id)
 {
-    return l;
+    Coord c = {11, 22, 33};
+    c.x += id;
+
+    printf("s: [%s]\n", s);
+    return c;
 }
 
 int main()
 {
-    long l = 0;
-    int i = -32;
+    Coord c = ret_struct_by_val("foo", 19);
 
-    l = i;
-    printf("----> %ld\n", l);
-
-    l = bar(i);
-    printf("----> %ld\n", l);
-
-    return 42;
+    return c.x;
 }
 
 /*
