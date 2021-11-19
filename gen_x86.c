@@ -55,6 +55,8 @@ static const char *BP__[] = {"bpl", "bp", "ebp", "rbp"};
 static const char *SP__[] = {"spl", "sp", "esp", "rsp"};
 static const char *R8__[] = {"r8b", "r8w", "r8d", "r8"};
 static const char *R9__[] = {"r9b", "r9w", "r9d", "r9"};
+static const char *R10__[] = {"r10b", "r10w", "r10d", "r10"};
+static const char *R11__[] = {"r11b", "r11w", "r11d", "r11"};
 static const char **ARG_REG__[] = {DI__, SI__, D__, C__, R8__, R9__};
 
 struct opecode {
@@ -148,6 +150,8 @@ const struct operand RDI = {OPR_REG, QUAD, DI__};
 const struct operand RIP = {OPR_REG, QUAD, IP__};
 const struct operand RBP = {OPR_REG, QUAD, BP__};
 const struct operand RSP = {OPR_REG, QUAD, SP__};
+const struct operand R10 = {OPR_REG, QUAD, R10__};
+const struct operand R11 = {OPR_REG, QUAD, R11__};
 
 /* 2, 0x8, ... */
 struct operand imme(long value)
@@ -637,6 +641,10 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
             stored_reg_count = gen_store_param(fp, sym, stored_reg_count);
         }
         else {
+            gen_comment(fp, "save rdi and rdx arg");
+            code3__(fp, NULL, MOV_, RDI, R10);
+            code3__(fp, NULL, MOV_, RDX, R11);
+
             /* src from stack */
             code3__(fp, NULL, MOV_, RBP, RAX);
             code3__(fp, NULL, ADD_, imme(stack_offset), RAX);
@@ -644,6 +652,10 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
             code3__(fp, NULL, MOV_, RBP, RDX);
             code3__(fp, NULL, SUB_, imme(sym->mem_offset), RDX);
             gen_assign_struct(fp, sym->type);
+
+            gen_comment(fp, "restore rdi and rdx arg");
+            code3__(fp, NULL, MOV_, R10, RDI);
+            code3__(fp, NULL, MOV_, R11, RDX);
 
             /* 8 byte align */
             stack_offset += align_to(param_size, 8);

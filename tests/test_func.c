@@ -92,6 +92,16 @@ Coord ret_struct_by_val(const char *s, int id)
     return c;
 }
 
+/* returning struct by value with a parameter using rdi and taking struc value param */
+Coord ret_struct_by_val_with_struct_param(Coord cd, const char *s, int id)
+{
+    Coord c = cd;
+    c.x += id;
+    c.y += id;
+    c.z += id;
+    return c;
+}
+
 int main()
 {
     {
@@ -250,6 +260,16 @@ int main()
         assert(30, c.x);
         assert(41, c.y);
         assert(52, c.z);
+    }
+    {
+
+        Coord c = {111, 222, 333};
+
+        c = ret_struct_by_val_with_struct_param(c, "foo", 23);
+
+        assert(134, c.x);
+        assert(245, c.y);
+        assert(356, c.z);
     }
 
     return 0;
