@@ -3,34 +3,12 @@
 #include <string.h>
 #include <stdio.h>
 */
+
 #include <stdio.h>
+const char *SI__[] = {"sil", "si", "esi", "rsi"};
+const char *DI__[] = {"dil", "di", "edi", "rdi"};
+const char **ARG_REG__[] = {DI__, SI__};
 
-typedef struct coord {
-    long x, y, z;
-} Coord;
-
-Coord verts[] = {
-    {111, 222, 333},
-    {444, 555, 666},
-    {777, 888, 999}
-};
-
-struct data_spec {
-    const char *suffix;
-    const char *sizename;
-};
-
-const struct data_spec data_spec_table[] = {
-    {"b", "byte"},
-    {"w", "word"},
-    {"l", "long"},
-    {"q", "quad"}
-};
-
-const char *A__[]  = {"al",  "ax", "eax", "rax"};
-
-char *str = "Hello";
-int *p = ((void*)1);
 /* TODO need support */
 /*
 char c[10] = "FOO";
@@ -38,17 +16,14 @@ char c[10] = "FOO";
 
 int main()
 {
-    char *s = "local";
     /* TODO need support */
     /*
     char a[] = "array";
-    return 42 + a[0];
-    return 42;
     */
+    printf(">>  [%s]\n", ARG_REG__[0][2]);
+    printf(">>  sizeof [%d]\n", sizeof ARG_REG__);
 
-    printf(">> [%s]\n", data_spec_table[1].sizename);
-    printf(">> [%s]\n", A__[2]);
-    return s[3];
+    return 42;
 }
 
 /*

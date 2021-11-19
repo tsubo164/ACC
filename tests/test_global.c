@@ -100,6 +100,11 @@ const char *A__[]  = {"al",  "ax", "eax", "rax"};
 char *str = "Hello";
 int *p = ((void*)1);
 
+/* initialize array of array of pointer to char */
+const char *SI__[] = {"sil", "si", "esi", "rsi"};
+const char *DI__[] = {"dil", "di", "edi", "rdi"};
+const char **ARG_REG__[] = {DI__, SI__};
+
 int main()
 {
     {
@@ -254,6 +259,18 @@ int main()
         assert(8, sizeof str);
         assert(0, strcmp("Hello",  str));
         assert(1, (int) p);
+    }
+    {
+        /* initialize array of array of pointer to char */
+        assert(16, sizeof ARG_REG__);
+        assert(0, strcmp("dil", ARG_REG__[0][0]));
+        assert(0, strcmp("di",  ARG_REG__[0][1]));
+        assert(0, strcmp("edi", ARG_REG__[0][2]));
+        assert(0, strcmp("rdi", ARG_REG__[0][3]));
+        assert(0, strcmp("sil", ARG_REG__[1][0]));
+        assert(0, strcmp("si",  ARG_REG__[1][1]));
+        assert(0, strcmp("esi", ARG_REG__[1][2]));
+        assert(0, strcmp("rsi", ARG_REG__[1][3]));
     }
 
     return 0;
