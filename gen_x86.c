@@ -1598,8 +1598,16 @@ static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
         if (expr->sym && is_enumerator(expr->sym))
             fprintf(fp, "    .%s %d\n", szname, get_mem_offset(expr));
         /* initialize with const global variable */
-        if (expr->sym && is_global_var(expr->sym))
-            fprintf(fp, "    .%s _%s\n", szname, expr->sym->name);
+        if (expr->sym && is_global_var(expr->sym)) {
+            /* TODO make function taking sym */
+            const struct symbol *sym = expr->sym;
+            fprintf(fp, "    .%s ", szname);
+            if (is_static(sym))
+                gen_pc_rel_addr(fp, sym->name, sym->id);
+            else
+                gen_pc_rel_addr(fp, sym->name, -1);
+            fprintf(fp, "\n");
+        }
         break;
 
     case NOD_ADDR:

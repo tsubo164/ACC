@@ -5,9 +5,9 @@
 */
 
 #include <stdio.h>
-const char *SI__[] = {"sil", "si", "esi", "rsi"};
-const char *DI__[] = {"dil", "di", "edi", "rdi"};
-const char **ARG_REG__[] = {DI__, SI__};
+static const char *SI__[] = {"sil", "si", "esi", "rsi"};
+static const char *DI__[] = {"dil", "di", "edi", "rdi"};
+static const char **ARG_REG__[] = {DI__, SI__};
 
 /* TODO need support */
 /*

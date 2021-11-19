@@ -1,6 +1,6 @@
 * SELF COMPILE
   - [x] `ast.c`
-  - [ ] `gen_x86.c`
+  - [x] `gen_x86.c`
   - [x] `lexer.c`
   - [ ] `main.c`
   - [x] `message.c`

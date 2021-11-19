@@ -103,7 +103,10 @@ int *p = ((void*)1);
 /* initialize array of array of pointer to char */
 const char *SI__[] = {"sil", "si", "esi", "rsi"};
 const char *DI__[] = {"dil", "di", "edi", "rdi"};
-const char **ARG_REG__[] = {DI__, SI__};
+/* initialize static array of array of pointer to char */
+static const char *C__[]  = {"cl",  "cx", "ecx", "rcx"};
+static const char *D__[]  = {"dl",  "dx", "edx", "rdx"};
+const char **ARG_REG__[] = {DI__, SI__, D__, C__};
 
 int main()
 {
@@ -262,7 +265,7 @@ int main()
     }
     {
         /* initialize array of array of pointer to char */
-        assert(16, sizeof ARG_REG__);
+        assert(32, sizeof ARG_REG__);
         assert(0, strcmp("dil", ARG_REG__[0][0]));
         assert(0, strcmp("di",  ARG_REG__[0][1]));
         assert(0, strcmp("edi", ARG_REG__[0][2]));
@@ -271,6 +274,15 @@ int main()
         assert(0, strcmp("si",  ARG_REG__[1][1]));
         assert(0, strcmp("esi", ARG_REG__[1][2]));
         assert(0, strcmp("rsi", ARG_REG__[1][3]));
+        /* initialize static array of array of pointer to char */
+        assert(0, strcmp("dl",  ARG_REG__[2][0]));
+        assert(0, strcmp("dx",  ARG_REG__[2][1]));
+        assert(0, strcmp("edx", ARG_REG__[2][2]));
+        assert(0, strcmp("rdx", ARG_REG__[2][3]));
+        assert(0, strcmp("cl",  ARG_REG__[3][0]));
+        assert(0, strcmp("cx",  ARG_REG__[3][1]));
+        assert(0, strcmp("ecx", ARG_REG__[3][2]));
+        assert(0, strcmp("rcx", ARG_REG__[3][3]));
     }
 
     return 0;
