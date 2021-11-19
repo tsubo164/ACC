@@ -15,6 +15,7 @@
   - improve warnings for unused function.
   - improve const qualifier for struct parameter.
   - add tests for malloc
+  - initialize array of char using string literal
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;

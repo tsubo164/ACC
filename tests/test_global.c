@@ -1,5 +1,7 @@
 #include "test.h"
 
+int strcmp(const char *s1, const char *s2);
+
 /* initialization for local and global variables */
 int X = 8;
 char Y;
@@ -66,6 +68,37 @@ struct list {
     int id;
     const char *next;
 } head = {MEDIUM, NULL};
+
+/* initialize array of struct */
+typedef struct coord {
+    long x, y, z;
+} Coord;
+
+Coord verts[] = {
+    {111, 222, 333},
+    {444, 555, 666},
+    {777, 888, 999}
+};
+
+/* initialize array of struct that has pointer to char */
+struct data_spec {
+    const char *suffix;
+    const char *sizename;
+};
+
+const struct data_spec data_spec_table[] = {
+    {"b", "byte"},
+    {"w", "word"},
+    {"l", "long"},
+    {"q", "quad"}
+};
+
+/* initialize array of to char */
+const char *A__[]  = {"al",  "ax", "eax", "rax"};
+
+/* initialize to char */
+char *str = "Hello";
+int *p = ((void*)1);
 
 int main()
 {
@@ -176,6 +209,51 @@ int main()
         /* initialize global variable with enumerator and cast expressions */
         assert(MEDIUM, head.id);
         assertl(0, (long)head.next);
+    }
+    {
+        /* initialize array of struct */
+        Coord c;
+        assert(72, sizeof verts);
+        assert(111, verts[0].x);
+        assert(222, verts[0].y);
+        assert(333, verts[0].z);
+        assert(444, verts[1].x);
+        assert(555, verts[1].y);
+        assert(666, verts[1].z);
+        assert(777, verts[2].x);
+        assert(888, verts[2].y);
+        assert(999, verts[2].z);
+
+        c = verts[2];
+        assert(777, c.x);
+        assert(888, c.y);
+        assert(999, c.z);
+    }
+    {
+        /* initialize array of struct that has pointer to char */
+        assert(64, sizeof data_spec_table);
+        assert(0, strcmp("b",    data_spec_table[0].suffix));
+        assert(0, strcmp("byte", data_spec_table[0].sizename));
+        assert(0, strcmp("w",    data_spec_table[1].suffix));
+        assert(0, strcmp("word", data_spec_table[1].sizename));
+        assert(0, strcmp("l",    data_spec_table[2].suffix));
+        assert(0, strcmp("long", data_spec_table[2].sizename));
+        assert(0, strcmp("q",    data_spec_table[3].suffix));
+        assert(0, strcmp("quad", data_spec_table[3].sizename));
+    }
+    {
+        /* initialize array of to char */
+        assert(32, sizeof A__);
+        assert(0, strcmp("al",  A__[0]));
+        assert(0, strcmp("ax",  A__[1]));
+        assert(0, strcmp("eax", A__[2]));
+        assert(0, strcmp("rax", A__[3]));
+    }
+    {
+        /* initialize to char */
+        assert(8, sizeof str);
+        assert(0, strcmp("Hello",  str));
+        assert(1, (int) p);
     }
 
     return 0;

@@ -1617,6 +1617,11 @@ static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
         gen_init_scalar_global(fp, type, expr->r);
         break;
 
+    case NOD_STRING:
+        fprintf(fp, "    .%s ", szname);
+        fprintf(fp, "_L.str.%d\n", expr->sym->id);
+        break;
+
     case NOD_ADD:
     case NOD_SUB:
     case NOD_MUL:

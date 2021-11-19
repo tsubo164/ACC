@@ -9,25 +9,46 @@ typedef struct coord {
     long x, y, z;
 } Coord;
 
-Coord ret_struct_by_val_with_struct_param(Coord cd, const char *s, int id)
-{
-    Coord c = cd;
-    c.x += id;
-    c.y += id;
-    c.z += id;
+Coord verts[] = {
+    {111, 222, 333},
+    {444, 555, 666},
+    {777, 888, 999}
+};
 
-    printf("s: [%s]: (%ld, %ld, %ld)\n", s, c.x, c.y, c.z);
-    return c;
-}
+struct data_spec {
+    const char *suffix;
+    const char *sizename;
+};
+
+const struct data_spec data_spec_table[] = {
+    {"b", "byte"},
+    {"w", "word"},
+    {"l", "long"},
+    {"q", "quad"}
+};
+
+const char *A__[]  = {"al",  "ax", "eax", "rax"};
+
+char *str = "Hello";
+int *p = ((void*)1);
+/* TODO need support */
+/*
+char c[10] = "FOO";
+*/
 
 int main()
 {
+    char *s = "local";
+    /* TODO need support */
+    /*
+    char a[] = "array";
+    return 42 + a[0];
+    return 42;
+    */
 
-    Coord c = {11, 22, 33};
-
-    c = ret_struct_by_val_with_struct_param(c, "foo", 19);
-
-    return c.x;
+    printf(">> [%s]\n", data_spec_table[1].sizename);
+    printf(">> [%s]\n", A__[2]);
+    return s[3];
 }
 
 /*
