@@ -268,6 +268,10 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = node->r->type;
         break;
 
+    case NOD_COMMA:
+        node->type = node->r->type;
+        break;
+
     /* nodes with symbol */
     case NOD_DECL_IDENT:
     case NOD_IDENT:
@@ -1367,10 +1371,24 @@ static struct ast_node *assignment_expression(struct parser *p)
 /*
  * expression
  *     assignment_expression
+ *     expression ',' assignment_expression
  */
 static struct ast_node *expression(struct parser *p)
 {
-    return assignment_expression(p);
+    struct ast_node *tree = assignment_expression(p);
+    struct ast_node *asgn = NULL;
+
+    for (;;) {
+        if (!consume(p, ','))
+            return tree;
+
+        asgn = assignment_expression(p);
+        if (!asgn)
+            return tree;
+
+        tree = new_node(NOD_COMMA, tree, asgn);
+        tree = typed_(tree);
+    }
 }
 
 /*

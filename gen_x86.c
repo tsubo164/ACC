@@ -2285,6 +2285,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, MOVZB_, AL, A_);
         break;
 
+    case NOD_COMMA:
+        gen_code(fp, node->l);
+        gen_code(fp, node->r);
+        break;
+
     case NOD_PREINC:
         gen_preincdec(fp, node, ADD_);
         break;

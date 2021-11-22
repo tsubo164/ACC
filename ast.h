@@ -61,6 +61,7 @@ enum ast_node_kind {
     NOD_GE,
     NOD_EQ,
     NOD_NE,
+    NOD_COMMA,
     NOD_COND,
     NOD_COND_THEN,
     NOD_LOGICAL_OR,

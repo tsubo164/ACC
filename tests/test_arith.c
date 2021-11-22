@@ -340,6 +340,18 @@ int main()
         a = 0;
         assert(-1, ~a);
     }
+    {
+        /* comma operator */
+        char a = 10;
+        short b = 20;
+        int c = 30;
+
+        a = a > 0 ? a++, b++, c++ : -1;
+
+        assert(30, a);
+        assert(21, b);
+        assert(31, c);
+    }
 
     return 0;
 }

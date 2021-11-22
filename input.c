@@ -4,25 +4,15 @@
 #include <stdio.h>
 */
 
-static int foo(void);
-
-static int foo(void);
-
 int main()
 {
-    int a = 9;
-    int a;
-    /*
-    return foo() + a;
-    */
-    return 0;
-}
+    char a = 10;
+    short b = 20;
+    int c = 30;
 
-static int foo(void)
-{
-    return 42;
-}
-/*
-*/
+    a = a > 0 ? a++, b++, c++ : -1;
 
-static int foo(void);
+    ((void)0);
+
+    return a + b + c;
+}

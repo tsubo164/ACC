@@ -101,6 +101,7 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_GE: return "NOD_GE";
     case NOD_EQ: return "NOD_EQ";
     case NOD_NE: return "NOD_NE";
+    case NOD_COMMA: return "NOD_COMMA";
     case NOD_COND: return "NOD_COND";
     case NOD_COND_THEN: return "NOD_COND_THEN";
     case NOD_LOGICAL_OR: return "NOD_LOGICAL_OR";
