@@ -119,6 +119,16 @@ int is_builtin(const struct symbol *sym)
     return sym && sym->is_builtin;
 }
 
+int is_origin(const struct symbol *sym)
+{
+    return sym && !sym->orig;
+}
+
+int has_origin(const struct symbol *sym)
+{
+    return !is_origin(sym);
+}
+
 struct symbol_table *new_symbol_table(void)
 {
     struct symbol_table *table;
@@ -187,7 +197,7 @@ static void print_horizonal_line(char c, int n)
 
 void print_symbol_table(const struct symbol_table *table)
 {
-    const int COLUMNS = 88;
+    const int COLUMNS = 96;
     const struct symbol *sym;
 
     print_horizonal_line('-', COLUMNS);
@@ -199,6 +209,7 @@ void print_symbol_table(const struct symbol_table *table)
     printf("%5s | ", "scope");
     printf("%5s| ", "offset");
     printf("%5s | ", "id");
+    printf("%5s | ", "orig");
     printf("%7s | ", "ESDRIAU");
     printf("\n");
 
@@ -243,7 +254,13 @@ void print_symbol_table(const struct symbol_table *table)
             printf("%5s | ",  "*");
         else
             printf("%5d | ",  sym->mem_offset);
+        /* id */
         printf("%5d | ",  sym->id);
+        /* orig */
+        if (has_origin(sym))
+            printf("%5d | ",  sym->orig->id);
+        else
+            printf("%5s | ",  "--");
 
         /* flags */
         printf("%c", sym->is_extern      ? 'E' : '.');
@@ -401,18 +418,27 @@ static void link_type_to_sym(struct data_type *type, struct symbol *sym)
         set_symbol(type, sym);
 }
 
+static struct symbol *get_origin(struct symbol *sym)
+{
+    if (has_origin(sym))
+        return sym->orig;
+    else
+        return sym;
+}
+
 struct symbol *define_symbol(struct symbol_table *table,
         const char *name, int kind, struct data_type *type)
 {
     struct symbol *sym = NULL, *orig = NULL;
     const int curr_scope = table->current_scope_level;
     struct data_type *defined_type = type;
+    int already_defined = 0;
 
     sym = lookup(table, name, kind);
 
     if (is_func_prototype(sym)) {
         /* the pointer to original declaration/definition */
-        orig = sym->orig ? sym->orig : sym;
+        orig = get_origin(sym);
     }
     else if (is_defined_at(sym, curr_scope)) {
         if (is_incomplete(sym->type)) {
@@ -420,13 +446,15 @@ struct symbol *define_symbol(struct symbol_table *table,
              * the found incomplete type will be used instead */
             defined_type = sym->type;
         } else {
-            sym->is_redefined = 1;
-            return sym;
+            already_defined = 1;
+            orig = get_origin(sym);
         }
     }
 
     sym = push_symbol(table, name, kind, defined_type);
+
     sym->is_defined = 1;
+    sym->is_redefined = already_defined;
     sym->orig = orig;
     link_type_to_sym(defined_type, sym);
 

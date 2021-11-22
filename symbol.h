@@ -78,6 +78,8 @@ extern int is_ellipsis(const struct symbol *sym);
 extern int is_string_literal(const struct symbol *sym);
 extern int is_variadic(const struct symbol *sym);
 extern int is_builtin(const struct symbol *sym);
+extern int is_origin(const struct symbol *sym);
+extern int has_origin(const struct symbol *sym);
 extern const char *symbol_to_string(const struct symbol *sym);
 
 /* symbol table */

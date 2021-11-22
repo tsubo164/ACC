@@ -10,10 +10,10 @@ static int foo(void);
 
 int main()
 {
+    int a = 9;
+    int a;
     /*
-    int a;
-    int a;
-    return foo();
+    return foo() + a;
     */
     return 0;
 }
@@ -25,10 +25,4 @@ static int foo(void)
 /*
 */
 
-/*
-int bar(void)
-{
-    return foo();
-}
-*/
 static int foo(void);

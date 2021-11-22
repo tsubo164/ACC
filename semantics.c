@@ -4,13 +4,22 @@
 #include "message.h"
 #include "ast.h"
 
-static int is_func_used(const struct symbol *sym)
+static int is_orig_used(const struct symbol *sym)
 {
     if (!sym)
         return 0;
-    if (sym->orig)
+    if (has_origin(sym))
         return sym->orig->is_used;
     return sym->is_used;
+}
+
+static int is_orig_initialized(const struct symbol *sym)
+{
+    if (!sym)
+        return 0;
+    if (has_origin(sym))
+        return sym->orig->is_initialized;
+    return sym->is_initialized;
 }
 
 static int check_symbol_usage(struct symbol_table *table, struct message_list *messages)
@@ -26,7 +35,7 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
             if (sym->is_redefined)
                 add_error(messages, &sym->pos, "redefinition of '%s'", sym->name);
 
-            if (sym->is_defined && !sym->is_used)
+            if (sym->is_defined && !sym->is_used && is_origin(sym))
                 add_warning(messages, &sym->pos, "unused variable '%s'", sym->name);
         }
         else if (is_global_var(sym)) {
@@ -34,7 +43,7 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
                 add_warning(messages, &sym->pos, "unused variable '%s'", sym->name);
         }
         else if (is_func(sym)) {
-            if (sym->is_defined && !is_func_used(sym) && is_static(sym))
+            if (sym->is_defined && !is_orig_used(sym) && is_static(sym))
                 add_warning(messages, &sym->pos, "unused function '%s'", sym->name);
         }
         else if (is_case(sym)) {
@@ -301,8 +310,8 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         if (ctx->is_lvalue && !node->sym->is_used)
             node->sym->is_initialized = 1;
         node->sym->is_assigned = ctx->is_lvalue;
-        /* TODO make set_is_used() */
         node->sym->is_used = 1;
+        /* update orig->is_used */
         if (node->sym->orig)
             node->sym->orig->is_used = 1;
 
@@ -310,7 +319,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             struct symbol *sym = node->sym;
 
             if (is_local_var(sym) || is_global_var(sym)) {
-                if (sym->is_defined && sym->is_used && !sym->is_initialized)
+                if (sym->is_defined && sym->is_used && !is_orig_initialized(sym))
                     /* array, struct, union will not be treated as uninitialized */
                     if (!is_array(sym->type) && !is_struct(sym->type))
                         add_warning(ctx->messages, &node->pos,

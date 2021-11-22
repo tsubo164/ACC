@@ -2719,8 +2719,9 @@ static struct ast_node *declaration(struct parser *p)
         p->func_sym = NULL;
         return tree;
     } else if (decl_is_func(p)) {
-        /* is func prototype. unflag its definition */
+        /* is func prototype. unflag its (re)definition */
         p->func_sym->is_defined = 0;
+        p->func_sym->is_redefined = 0;
         end_scope(p);
         p->func_sym = NULL;
     }
