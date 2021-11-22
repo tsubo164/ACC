@@ -404,12 +404,15 @@ static void link_type_to_sym(struct data_type *type, struct symbol *sym)
 struct symbol *define_symbol(struct symbol_table *table,
         const char *name, int kind, struct data_type *type)
 {
-    struct symbol *sym = lookup(table, name, kind);
+    struct symbol *sym = NULL, *orig = NULL;
     const int curr_scope = table->current_scope_level;
     struct data_type *defined_type = type;
 
+    sym = lookup(table, name, kind);
+
     if (is_func_prototype(sym)) {
-        /* ignores function prototypes */
+        /* the pointer to original declaration/definition */
+        orig = sym->orig ? sym->orig : sym;
     }
     else if (is_defined_at(sym, curr_scope)) {
         if (is_incomplete(sym->type)) {
@@ -424,6 +427,7 @@ struct symbol *define_symbol(struct symbol_table *table,
 
     sym = push_symbol(table, name, kind, defined_type);
     sym->is_defined = 1;
+    sym->orig = orig;
     link_type_to_sym(defined_type, sym);
 
     return sym;

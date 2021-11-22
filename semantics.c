@@ -4,6 +4,15 @@
 #include "message.h"
 #include "ast.h"
 
+static int is_func_used(const struct symbol *sym)
+{
+    if (!sym)
+        return 0;
+    if (sym->orig)
+        return sym->orig->is_used;
+    return sym->is_used;
+}
+
 static int check_symbol_usage(struct symbol_table *table, struct message_list *messages)
 {
     struct symbol *sym;
@@ -25,7 +34,7 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
                 add_warning(messages, &sym->pos, "unused variable '%s'", sym->name);
         }
         else if (is_func(sym)) {
-            if (sym->is_defined && !sym->is_used && is_static(sym))
+            if (sym->is_defined && !is_func_used(sym) && is_static(sym))
                 add_warning(messages, &sym->pos, "unused function '%s'", sym->name);
         }
         else if (is_case(sym)) {
@@ -292,7 +301,10 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         if (ctx->is_lvalue && !node->sym->is_used)
             node->sym->is_initialized = 1;
         node->sym->is_assigned = ctx->is_lvalue;
+        /* TODO make set_is_used() */
         node->sym->is_used = 1;
+        if (node->sym->orig)
+            node->sym->orig->is_used = 1;
 
         {
             struct symbol *sym = node->sym;

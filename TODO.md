@@ -2,7 +2,7 @@
   - [x] `ast.c`
   - [x] `gen_x86.c`
   - [x] `lexer.c`
-  - [ ] `main.c`
+  - [x] `main.c`
   - [x] `message.c`
   - [x] `parse.c`
   - [x] `preprocessor.c`
@@ -15,14 +15,12 @@
   - improve warnings for unused function.
   - improve const qualifier for struct parameter.
   - add tests for malloc
-  - initialize array of char using string literal
+  - initialize array of char using string literal `char s[] = "abc"`
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;
     - `int *p = ptr + 1 // legal if global`
     - `int i = j + 1 // illegal even if global`
-    - `char s[] = "abc"` is not supported
-    - `char *s = "abc"` is not supported
     - `struct Point p = q` is not supported
   - simplify ast
     - remove `NOD_SPEC_*` from tree

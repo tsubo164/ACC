@@ -36,6 +36,7 @@ struct symbol {
 
     struct symbol *next;
     struct symbol *prev;
+    struct symbol *orig;
 
     /* flags */
     char is_extern;
