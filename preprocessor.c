@@ -769,10 +769,7 @@ static const char *get_arg(const char *args, char *buf)
         if (*s == ')')
             depth--;
 
-        if (!is_whitespaces(*s))
-            *d++ = *s;
-
-        s++;
+        *d++ = *s++;
     }
     *d = '\0';
     return s;

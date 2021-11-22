@@ -12,10 +12,13 @@
   - [x] `type.c`
 
 * TODO
-  - improve warnings for unused function.
   - improve const qualifier for struct parameter.
-  - add tests for malloc
   - initialize array of char using string literal `char s[] = "abc"`
+  - add tests for malloc()
+  - add tests for assert()
+  - add include paths
+  - union
+  - function pointer
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;
@@ -31,7 +34,6 @@
   - unversal type string for better messages
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics
   - use registers r10 r11
-  - union
   - control flow check
   - lexer error
 
@@ -111,3 +113,4 @@
   - struct return
   - bit shift <<, >>
   - bitwise op |, &, ~, ^
+  - improve warnings for unused function.

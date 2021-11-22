@@ -4,15 +4,13 @@
 #include <stdio.h>
 */
 
+#include <assert.h>
+
 int main()
 {
     char a = 10;
-    short b = 20;
-    int c = 30;
 
-    a = a > 0 ? a++, b++, c++ : -1;
+    assert(a > 10);
 
-    ((void)0);
-
-    return a + b + c;
+    return 42;
 }
