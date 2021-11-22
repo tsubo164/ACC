@@ -19,6 +19,8 @@
   - add include paths
   - union
   - function pointer
+  - stringize macro and string cat macro
+  - string literal to stringize macro
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;

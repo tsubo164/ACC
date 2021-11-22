@@ -14,7 +14,7 @@ struct strbuf {
 
 struct macro_param {
     char *name;
-    char arg[32];
+    struct strbuf arg;
     struct macro_param *next;
 };
 

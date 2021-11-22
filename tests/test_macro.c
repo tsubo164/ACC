@@ -1,5 +1,7 @@
 #include "test.h"
 
+int strcmp(const char *s1, const char *s2);
+
 #define ARRARY_SIZE 8
 #define ADD(x, y) ((x) + (y))
 #define SQUARE(x) ((x) * (x))
@@ -23,6 +25,9 @@ enum {
 /* testing hideset for one macro apearing twice */
 #define SEVEN (7)
 #define OP(op) (SEVEN op SEVEN)
+
+/* testing long arg */
+#define LONG_ARG(a) a
 
 int main()
 {
@@ -90,6 +95,11 @@ int main()
         a = 723;
 #endif
         assert(-12223, a);
+    }
+    {
+        const char *s = LONG_ARG("The comma operator has the lowest precedence of any C operator and acts as a sequence point");
+
+        assert(0, strcmp("The comma operator has the lowest precedence of any C operator and acts as a sequence point", s));
     }
 
     return 0;

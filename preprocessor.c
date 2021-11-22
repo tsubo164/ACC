@@ -117,7 +117,7 @@ static struct macro_param *new_param(const char *name)
 
     strncpy(dst, name, alloc);
     param->name = dst;
-    param->arg[0] = '\0';
+    strbuf_init(&param->arg, 0);
     param->next = NULL;
 
     return param;
@@ -130,6 +130,7 @@ static void free_param(struct macro_param *param)
 
     free_param(param->next);
     free(param->name);
+    strbuf_free(&param->arg);
     free(param);
 }
 
@@ -751,7 +752,7 @@ static void directive_line(struct preprocessor *pp)
         unknown_directive(pp, direc);
 }
 
-static const char *get_arg(const char *args, char *buf)
+static const char *next_arg(const char *args, char *buf)
 {
     int depth = 0;
     const char *s = args;
@@ -778,7 +779,7 @@ static const char *get_arg(const char *args, char *buf)
 static const char *read_args(const char *args, struct macro_param *params)
 {
     struct macro_param *prm = params;
-    char arg[128] = {'\0'};
+    char arg_[1024] = {'\0'};
     const char *s = args;
 
     while (*s != '(')
@@ -792,8 +793,8 @@ static const char *read_args(const char *args, struct macro_param *params)
             return NULL;
         }
 
-        s = get_arg(s, arg);
-        strcpy(prm->arg, arg);
+        s = next_arg(s, arg_);
+        strbuf_copy(&prm->arg, arg_);
         prm = prm->next;
 
         if (*s == ')')
@@ -903,7 +904,7 @@ static const char *expand_fn(const struct macro_entry *mac,
                 /* end of token */
                 const struct macro_param *prm = find_param(mac->params, tok);
                 if (prm)
-                    glue(dst, prm->arg);
+                    glue(dst, prm->arg.buf);
                 else
                     glue(dst, tok);
             }
