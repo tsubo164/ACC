@@ -669,8 +669,7 @@ int symbol_switch_end(struct symbol_table *table)
 
 static int align_to(int pos, int align)
 {
-    if (align == 0)
-        assert(!"align needs to be non-zero to compute alignment");
+    assert(align > 0);
     return ((pos + align - 1) / align) * align;
 }
 

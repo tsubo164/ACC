@@ -4,13 +4,13 @@
 #include <stdio.h>
 */
 
-#include <assert.h>
-
 int main()
 {
     char a = 10;
+    char b = 20;
 
-    assert(a > 10);
+    /* need () around the third expression */
+    (a > 10) ? a = 42 : (a = 19);
 
-    return 42;
+    return a;
 }
