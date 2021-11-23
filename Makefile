@@ -1,37 +1,33 @@
-CC      = gcc
+CC      = cc
 OPT     = -O2
 #OPT     = -O0 -g
 CFLAGS  = $(OPT) -Wall -ansi --pedantic-errors -c
 LDFLAGS = 
 RM      = rm -f
 
-target_name := acc
-files       := ast gen_x86 lexer main message parse preprocessor \
-               semantics string_table symbol type
+SRCS    := ast gen_x86 lexer main message parse preprocessor \
+					 semantics string_table symbol type
 
-target  := $(target_name)
-sources := $(addsuffix .c, $(files))
-objects := $(addsuffix .o, $(files))
-depends := $(addsuffix .d, $(files))
+ACC  := acc
+OBJS := $(addsuffix .o, $(SRCS))
+DEPS := $(addsuffix .d, $(SRCS))
 
 .PHONY: all clean run run_cc tree test self
 
-all: $(target)
+all: $(ACC)
 
-$(objects): %.o: %.c
-	@echo '  compile $<'
-	@$(CC) $(CFLAGS) -c -o $@ $<
+$(OBJS): %.o: %.c
+	$(CC) $(CFLAGS) -o $@ $<
 
-$(target): $(objects)
-	@echo '  link    $@'
-	@$(CC) -o $@ $^ $(LDFLAGS)
+$(ACC): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
 
 clean:
-	$(RM) $(target) a.out *.o *.s *.d
-	@$(MAKE) --no-print-directory -C tests $@
+	$(RM) $(ACC) a.out *.o *.s *.d
+	$(MAKE) --no-print-directory -C tests $@
 
-run: $(target)
-	./$(target) input.c
+run: $(ACC)
+	./$(ACC) input.c
 	$(CC) input.s
 	./a.out
 
@@ -42,29 +38,26 @@ run_cc:
 #target for testing single file for self compile
 SELF =
 self: $(SELF).c
-	@echo '  * self compile $(SELF).c'
-	@./$(target) $(SELF).c
-	@$(CC) -c $(SELF).s
-	@echo '  * self link    $(target)'
-	@$(CC) -o $(target) $(objects) $(LDFLAGS)
+	./$(ACC) $(SELF).c
+	$(CC) -c $(SELF).s
+	$(CC) -o $(ACC) $(OBJS) $(LDFLAGS)
 
-tree: $(target)
-	./$(target) --print-tree input.c
+tree: $(ACC)
+	./$(ACC) --print-tree input.c
 
-pp: $(target)
-	./$(target) --print-preprocess input.c
+pp: $(ACC)
+	./$(ACC) --print-preprocess input.c
 
-test: $(target)
-	@$(MAKE) --no-print-directory -C tests $@
+test: $(ACC)
+	$(MAKE) --no-print-directory -C tests $@
 
-test_cc: $(target)
+test_cc:
 	@echo "\033[0;31m*** testing with cc ***\033[0;39m"
-	@$(MAKE) --no-print-directory -C tests test ACC='cc -S'
+	$(MAKE) --no-print-directory -C tests test ACC='cc -S'
 
-$(depends): %.d: %.c
-	@echo '  dependency $<'
-	@$(CC) $(CFLAGS) -I$(incdir) -c -MM $< > $@
+$(DEPS): %.d: %.c
+	$(CC) -I$(incdir) -c -MM $< > $@
 
 ifneq "$(MAKECMDGOALS)" "clean"
--include $(depends)
+-include $(DEPS)
 endif
