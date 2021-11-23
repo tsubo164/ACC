@@ -24,7 +24,7 @@ $(ACC): $(OBJS)
 
 clean:
 	$(RM) $(ACC) a.out *.o *.s *.d
-	$(MAKE) --no-print-directory -C tests $@
+	$(MAKE) -C tests $@
 
 run: $(ACC)
 	./$(ACC) input.c
@@ -49,7 +49,7 @@ pp: $(ACC)
 	./$(ACC) --print-preprocess input.c
 
 test: $(ACC)
-	$(MAKE) --no-print-directory -C tests $@
+	$(MAKE) -C tests $@
 
 test_cc:
 	@echo "\033[0;31m*** testing with cc ***\033[0;39m"
