@@ -2,7 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "gen_x86.h"
+#include "gen_x64.h"
 #include "type.h"
 
 static int att_syntax = 1;
@@ -2408,7 +2408,7 @@ static void gen_string_literal(FILE *fp, const struct symbol_table *table)
     }
 }
 
-void gen_x86(FILE *fp,
+void gen_x64(FILE *fp,
         const struct ast_node *tree, const struct symbol_table *table)
 {
     if (!att_syntax) {

@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "gen_x86.h"
+#include "gen_x64.h"
 #include "lexer.h"
 #include "message.h"
 #include "parse.h"
@@ -124,7 +124,7 @@ static int compile(const char *filename, const struct option *opt)
     if (!fp) {
         exit(EXIT_FAILURE);
     }
-    gen_x86(fp, tree, symtab);
+    gen_x64(fp, tree, symtab);
 
     fclose(fp);
 

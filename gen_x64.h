@@ -3,7 +3,7 @@
 
 #include "ast.h"
 
-extern void gen_x86(FILE *fp,
+extern void gen_x64(FILE *fp,
         const struct ast_node *tree, const struct symbol_table *table);
 
 #endif /* _H */

@@ -5,7 +5,7 @@ CFLAGS  = $(OPT) -Wall -ansi --pedantic-errors -c
 LDFLAGS = 
 RM      = rm -f
 
-SRCS    := ast gen_x86 lexer main message parse preprocessor \
+SRCS    := ast gen_x64 lexer main message parse preprocessor \
 					 semantics string_table symbol type
 
 ACC  := acc
