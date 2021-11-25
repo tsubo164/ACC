@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "ast.h"
+#include "esc_seq.h"
 
 #define TERMINAL_COLOR_BLACK   "\x1b[30m"
 #define TERMINAL_COLOR_RED     "\x1b[31m"
@@ -243,7 +244,9 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
     case NOD_STRING:
         printf(TERMINAL_COLOR_MAGENTA);
         printf(TERMINAL_DECORATION_BOLD);
-            printf(" \"%s\"", tree->sym->name);
+            printf(" \"");
+            print_string_literal(stdout, tree->sym->name);
+            printf("\"");
         printf(TERMINAL_DECORATION_RESET);
         printf(TERMINAL_COLOR_RESET);
         break;

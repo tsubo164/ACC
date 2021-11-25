@@ -3,6 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include "symbol.h"
+#include "esc_seq.h"
 
 int is_extern(const struct symbol *sym)
 {
@@ -218,7 +219,13 @@ void print_symbol_table(const struct symbol_table *table)
     for (sym = table->head; sym; sym = sym->next) {
         printf("|");
         /* symbol name */
-        printf("%15.15s | ", sym->name ? sym->name : "--");
+        if (sym->kind == SYM_STRING) {
+            char buf[1024] = {'\0'};
+            make_string_literal(sym->name, buf, sizeof(buf)/sizeof(buf[0]));
+            printf("%15.15s | ", buf);
+        } else {
+            printf("%15.15s | ", sym->name ? sym->name : "--");
+        }
 
         /* symbol kind */
         printf("%-20s | ",  symbol_to_string(sym));
