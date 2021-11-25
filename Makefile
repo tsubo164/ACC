@@ -8,7 +8,7 @@ RM      = rm -f
 SRCS    := ast esc_seq gen_x64 lexer main message parse preprocessor \
 					 semantics string_table symbol type
 
-.PHONY: all clean run run_cc tree test self clean2
+.PHONY: all run run_cc tree pp test test2 test3 test_all clean clean2 clean3
 
 #-------------------------------------------------------------------------------
 # stage 1
@@ -24,7 +24,7 @@ $(OBJS): %.o: %.c
 $(ACC): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-clean: clean2
+clean: clean3 clean2
 	$(RM) $(ACC) a.out *.o *.s *.d
 	$(MAKE) -C tests $@
 
@@ -62,6 +62,43 @@ test2: $(ACC2)
 clean2:
 	$(RM) $(ACC2) *.2.c *.2.s *.2.o
 	$(RM) -r stage2
+
+#-------------------------------------------------------------------------------
+# stage 3
+ACC3 := acc3
+OBJS3 := $(addsuffix .3.o, $(SRCS))
+ASMS3 := $(addsuffix .3.s, $(SRCS))
+SRCS3 := $(addsuffix .3.c, $(SRCS))
+
+$(ACC3): $(OBJS3)
+	$(CC) -o $@ $^ $(LDFLAGS)
+
+$(OBJS3): %.o: %.s
+	$(CC) -c -o $@ $<
+
+$(ASMS3): %.3.s: %.3.c
+	./$(ACC2) $^
+
+$(SRCS3): %.3.c: %.c
+	cp $< $@
+
+test3: $(ACC3)
+	mkdir -p stage3
+	cp tests/*.c stage3/
+	cp tests/*.h stage3/
+	cp tests/Makefile stage3/
+	$(MAKE) -C stage3 test ACC=../$<
+	@echo stage3
+	diff $(ACC2) $(ACC3)
+
+clean3:
+	$(RM) $(ACC3) *.3.c *.3.s *.3.o
+	$(RM) -r stage3
+
+#-------------------------------------------------------------------------------
+# test all
+test_all: test test2 test3
+
 
 #-------------------------------------------------------------------------------
 # debug
