@@ -2,6 +2,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "lexer.h"
+#include "esc_seq.h"
 
 static int readc(struct lexer *l)
 {
@@ -136,33 +137,6 @@ void lexer_init(struct lexer *lex)
 
 static void read_line_number(struct lexer *l);
 static void read_column_number(struct lexer *l);
-
-static int escape_sequence_to_char(char *es, int *ch)
-{
-    int c = '\0';
-
-    if (es[0] != '\\')
-        return 0;
-
-    switch (es[1]) {
-    case '0':  c = '\0'; break;
-    case '\\': c = '\\'; break;
-    case '\'': c = '\''; break;
-    case '"':  c = '"';  break;
-    case 'a':  c = '\a'; break;
-    case 'b':  c = '\b'; break;
-    case 'f':  c = '\f'; break;
-    case 'n':  c = '\n'; break;
-    case 'r':  c = '\r'; break;
-    case 't':  c = '\t'; break;
-    case 'v':  c = '\v'; break;
-    default:
-        return 0;
-    }
-
-    *ch = c;
-    return 1;
-}
 
 static int read_escape_sequence(struct lexer *l)
 {
