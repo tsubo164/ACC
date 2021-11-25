@@ -12,7 +12,10 @@
   - [x] `type.c`
 
 * TODO
-  - improve const qualifier for struct parameter.
+  - improve lookup() in symbol.c
+      - check only the current scope for local variables define
+  - improve options to be able to specify the output file name
+  - improve const qualifier for struct parameter
   - initialize array of char using string literal `char s[] = "abc"`
   - add tests for malloc()
   - add tests for assert()

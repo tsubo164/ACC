@@ -141,7 +141,7 @@ static void read_column_number(struct lexer *l);
 static int read_escape_sequence(struct lexer *l)
 {
     char es[4] = {'\0'};
-    int ch;
+    int ch = '\0';
 
     es[0] = '\\';
     es[1] = readc(l);
@@ -163,7 +163,7 @@ static const char *convert_escape_sequence(const char *src, char *dst)
     for (;;) {
         if (*s == '\\') {
             char es[4] = {'\0'};
-            int ch;
+            int ch = '\0';
 
             s++;
             es[0] = '\\';

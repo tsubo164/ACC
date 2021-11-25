@@ -443,7 +443,9 @@ struct symbol *define_symbol(struct symbol_table *table,
 
     sym = lookup(table, name, kind);
 
-    if (is_func_prototype(sym)) {
+    /* TODO may not need SYM_FUNC check when making define functions
+     * for each symbol kind */
+    if (is_func_prototype(sym) && kind == SYM_FUNC) {
         /* the pointer to original declaration/definition */
         orig = get_origin(sym);
     }
