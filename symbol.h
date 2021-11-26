@@ -19,6 +19,7 @@ enum symbol_kind {
     SYM_MEMBER,
     SYM_ENUMERATOR,
     SYM_TAG_STRUCT,
+    SYM_TAG_UNION,
     SYM_TAG_ENUM,
     SYM_TYPEDEF,
     SYM_ELLIPSIS
@@ -67,6 +68,7 @@ extern int is_func(const struct symbol *sym);
 extern int is_func_prototype(const struct symbol *sym);
 extern int is_param(const struct symbol *sym);
 extern int is_struct_tag(const struct symbol *sym);
+extern int is_union_tag(const struct symbol *sym);
 extern int is_member(const struct symbol *sym);
 extern int is_enum_tag(const struct symbol *sym);
 extern int is_enumerator(const struct symbol *sym);
@@ -121,6 +123,7 @@ extern int symbol_switch_end(struct symbol_table *table);
 /* sizes */
 extern void compute_func_size(struct symbol *func);
 extern void compute_struct_size(struct symbol *strc);
+extern void compute_union_size(struct symbol *strc);
 extern void compute_enum_size(struct symbol *enm);
 extern void compute_type_name_size(struct symbol *type_name);
 

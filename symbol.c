@@ -65,6 +65,11 @@ int is_struct_tag(const struct symbol *sym)
     return sym && sym->kind == SYM_TAG_STRUCT;
 }
 
+int is_union_tag(const struct symbol *sym)
+{
+    return sym && sym->kind == SYM_TAG_UNION;
+}
+
 int is_member(const struct symbol *sym)
 {
     return sym && sym->kind == SYM_MEMBER;
@@ -181,6 +186,7 @@ const char *symbol_to_string(const struct symbol *sym)
     case SYM_MEMBER: return "SYM_MEMBER";
     case SYM_ENUMERATOR: return "SYM_ENUMERATOR";
     case SYM_TAG_STRUCT: return "SYM_TAG_STRUCT";
+    case SYM_TAG_UNION: return "SYM_TAG_UNION";
     case SYM_TAG_ENUM: return "SYM_TAG_ENUM";
     case SYM_TYPEDEF: return "SYM_TYPEDEF";
     case SYM_ELLIPSIS: return "SYM_ELLIPSIS";
@@ -353,6 +359,7 @@ static int namespace_of(int kind)
         return 0;
 
     case SYM_TAG_STRUCT:
+    case SYM_TAG_UNION:
     case SYM_TAG_ENUM:
         return 1;
 
@@ -420,8 +427,9 @@ static int is_defined_at(struct symbol *sym, int scope)
 
 static void link_type_to_sym(struct data_type *type, struct symbol *sym)
 {
-    if (sym->kind == SYM_TAG_STRUCT ||
-        sym->kind == SYM_TAG_ENUM)
+    if (is_struct_tag(sym) ||
+        is_union_tag(sym) ||
+        is_enum_tag(sym))
         set_symbol(type, sym);
 }
 
@@ -478,6 +486,8 @@ struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind
         struct data_type *type;
         if (kind == SYM_TAG_STRUCT)
             type = type_struct();
+        else if (kind == SYM_TAG_UNION)
+            type = type_union();
         else if (kind == SYM_TAG_ENUM)
             type = type_enum();
         else
@@ -743,7 +753,7 @@ static int is_member_of(const struct symbol *member, const struct symbol *struct
         member->scope_level == struct_tag->scope_level + 1;
 }
 
-static int is_struct_end_of(const struct symbol *member, const struct symbol *struct_tag)
+static int is_end_of_scope(const struct symbol *member, const struct symbol *struct_tag)
 {
     /* inside of struct is one level upper than struct scope */
     if (!member || !struct_tag)
@@ -753,18 +763,18 @@ static int is_struct_end_of(const struct symbol *member, const struct symbol *st
         member->scope_level == struct_tag->scope_level + 1;
 }
 
-void compute_struct_size(struct symbol *strc)
+void compute_struct_size(struct symbol *struct_sym)
 {
     struct symbol *sym;
     int total_offset = 0;
     int struct_size = 0;
     int struct_align = 0;
 
-    if (is_incomplete(strc->type))
+    if (is_incomplete(struct_sym->type))
         return;
 
-    for (sym = strc; sym; sym = sym->next) {
-        if (is_member_of(sym, strc)) {
+    for (sym = struct_sym; sym; sym = sym->next) {
+        if (is_member_of(sym, struct_sym)) {
             const int size  = get_size(sym->type);
             const int align = get_alignment(sym->type);
 
@@ -774,7 +784,7 @@ void compute_struct_size(struct symbol *strc)
             struct_align = align > struct_align ? align : struct_align;
         }
 
-        if (is_struct_end_of(sym, strc))
+        if (is_end_of_scope(sym, struct_sym))
             break;
     }
 
@@ -786,9 +796,47 @@ void compute_struct_size(struct symbol *strc)
 
     struct_size = align_to(total_offset, struct_align);
 
-    set_struct_size(strc->type, struct_size);
-    set_struct_align(strc->type, struct_align);
-    strc->mem_offset = struct_size;
+    set_struct_size(struct_sym->type, struct_size);
+    set_struct_align(struct_sym->type, struct_align);
+    struct_sym->mem_offset = struct_size;
+}
+
+void compute_union_size(struct symbol *union_sym)
+{
+    struct symbol *sym;
+    int total_offset = 0;
+    int union_size = 0;
+    int union_align = 0;
+
+    if (is_incomplete(union_sym->type))
+        return;
+
+    for (sym = union_sym; sym; sym = sym->next) {
+        if (is_member_of(sym, union_sym)) {
+            const int size  = get_size(sym->type);
+            const int align = get_alignment(sym->type);
+
+            total_offset = align_to(total_offset, align);
+            sym->mem_offset = total_offset;
+            total_offset = size > total_offset ? size : total_offset;
+            union_align = align > union_align ? align : union_align;
+        }
+
+        if (is_end_of_scope(sym, union_sym))
+            break;
+    }
+
+    if (union_align == 0) {
+        /* an empty union created by error. pretends its size is 4 */
+        total_offset = 4;
+        union_align = 4;
+    }
+
+    union_size = align_to(total_offset, union_align);
+
+    set_union_size(union_sym->type, union_size);
+    set_union_align(union_sym->type, union_align);
+    union_sym->mem_offset = union_size;
 }
 
 void compute_enum_size(struct symbol *enm)
@@ -832,7 +880,7 @@ const struct symbol *next_param(const struct symbol *sym)
 
 const struct symbol *first_member(const struct symbol *sym)
 {
-    if (!is_struct_tag(sym))
+    if (!is_struct_tag(sym) && !is_union_tag(sym))
         return NULL;
 
     if (is_incomplete(sym->type))
