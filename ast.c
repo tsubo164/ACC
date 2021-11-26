@@ -143,6 +143,7 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_SPEC_POINTER: return "NOD_SPEC_POINTER";
     case NOD_SPEC_ARRAY: return "NOD_SPEC_ARRAY";
     case NOD_SPEC_STRUCT: return "NOD_SPEC_STRUCT";
+    case NOD_SPEC_UNION: return "NOD_SPEC_UNION";
     case NOD_SPEC_ENUM: return "NOD_SPEC_ENUM";
     case NOD_SPEC_TYPE_NAME: return "NOD_SPEC_TYPE_NAME";
     case NOD_SPEC_ELLIPSIS: return "NOD_SPEC_ELLIPSIS";
