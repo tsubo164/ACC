@@ -26,6 +26,7 @@ enum token_kind {
     TOK_GOTO,
     TOK_SIZEOF,
     TOK_STRUCT,
+    TOK_UNION,
     TOK_ENUM,
     TOK_TYPEDEF,
     TOK_EXTERN,

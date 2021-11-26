@@ -74,6 +74,8 @@ static void keyword_or_identifier(struct token *tok)
         tok->kind = TOK_SIZEOF;
     else if (!strcmp(text, "struct"))
         tok->kind = TOK_STRUCT;
+    else if (!strcmp(text, "union"))
+        tok->kind = TOK_UNION;
     else if (!strcmp(text, "enum"))
         tok->kind = TOK_ENUM;
     else if (!strcmp(text, "typedef"))
@@ -583,6 +585,7 @@ void print_token(const struct token *tok)
     case TOK_GOTO:
     case TOK_SIZEOF:
     case TOK_STRUCT:
+    case TOK_UNION:
     case TOK_ENUM:
     case TOK_TYPEDEF:
     case TOK_EXTERN:
