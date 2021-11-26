@@ -299,7 +299,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         if (is_pointer(node->l->type) && is_integer_zero(node->r))
             return;
 
-        if (!is_compatible(node->l->type, node->r->type)) {
+        if (node->l && node->r && !is_compatible(node->l->type, node->r->type)) {
             add_error(ctx->messages, &node->pos,
                     "initializing '%s' with an expression of incompatible type '%s'",
                     type_name_of(node->l->type), type_name_of(node->r->type));
