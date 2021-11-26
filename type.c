@@ -15,6 +15,7 @@ static struct data_type LONG_    = {DATA_TYPE_LONG,    8, 8, 1, NULL, NULL};
 static struct data_type POINTER_ = {DATA_TYPE_POINTER, 8, 8, 1, NULL, NULL};
 static struct data_type ARRAY_   = {DATA_TYPE_ARRAY,   0, 0, UNKNOWN_ARRAY_LENGTH, NULL, NULL};
 static struct data_type STRUCT_  = {DATA_TYPE_STRUCT,  1, 1, 1, NULL, NULL};
+static struct data_type UNION_   = {DATA_TYPE_UNION,   1, 1, 1, NULL, NULL};
 static struct data_type ENUM_    = {DATA_TYPE_ENUM,    4, 4, 1, NULL, NULL};
 
 int get_size(const struct data_type *type)
@@ -63,6 +64,20 @@ void set_struct_size(struct data_type *type, int size)
 void set_struct_align(struct data_type *type, int align)
 {
     if (!is_struct(type))
+        return;
+    type->alignment = align;
+}
+
+void set_union_size(struct data_type *type, int size)
+{
+    if (!is_union(type))
+        return;
+    type->byte_size = size;
+}
+
+void set_union_align(struct data_type *type, int align)
+{
+    if (!is_union(type))
         return;
     type->alignment = align;
 }
@@ -230,6 +245,11 @@ int is_struct(const struct data_type *type)
     return type && type->kind == DATA_TYPE_STRUCT;
 }
 
+int is_union(const struct data_type *type)
+{
+    return type && type->kind == DATA_TYPE_UNION;
+}
+
 int is_enum(const struct data_type *type)
 {
     return type && type->kind == DATA_TYPE_ENUM;
@@ -310,6 +330,7 @@ const char *type_name_of(const struct data_type *type)
     case DATA_TYPE_POINTER: return "pointer";
     case DATA_TYPE_ARRAY:   return "array";
     case DATA_TYPE_STRUCT:  return symbol_of(type)->name;
+    case DATA_TYPE_UNION:   return symbol_of(type)->name;
     case DATA_TYPE_ENUM:    return symbol_of(type)->name;
     default:                return "unknown";
     }
@@ -409,6 +430,12 @@ struct data_type *type_array(struct data_type *base_type)
 struct data_type *type_struct(void)
 {
     struct data_type *type = clone(&STRUCT_);
+    return type;
+}
+
+struct data_type *type_union(void)
+{
+    struct data_type *type = clone(&UNION_);
     return type;
 }
 

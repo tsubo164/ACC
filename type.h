@@ -10,6 +10,7 @@ enum data_type_kind {
     DATA_TYPE_POINTER,
     DATA_TYPE_ARRAY,
     DATA_TYPE_STRUCT,
+    DATA_TYPE_UNION,
     DATA_TYPE_ENUM
 };
 
@@ -40,6 +41,8 @@ extern struct symbol *symbol_of(const struct data_type *type);
 extern void set_array_length(struct data_type *type, int len);
 extern void set_struct_size(struct data_type *type, int size);
 extern void set_struct_align(struct data_type *type, int align);
+extern void set_union_size(struct data_type *type, int size);
+extern void set_union_align(struct data_type *type, int align);
 extern void set_symbol(struct data_type *type, struct symbol *sym);
 extern void set_const(struct data_type *type, int is_const);
 extern void set_unsigned(struct data_type *type, int is_unsigned);
@@ -60,6 +63,7 @@ extern int is_long(const struct data_type *type);
 extern int is_pointer(const struct data_type *type);
 extern int is_array(const struct data_type *type);
 extern int is_struct(const struct data_type *type);
+extern int is_union(const struct data_type *type);
 extern int is_enum(const struct data_type *type);
 
 extern void make_type_name(const struct data_type *type, char *buf);
@@ -76,6 +80,7 @@ extern struct data_type *type_long(void);
 extern struct data_type *type_pointer(struct data_type *base_type);
 extern struct data_type *type_array(struct data_type *base_type);
 extern struct data_type *type_struct(void);
+extern struct data_type *type_union(void);
 extern struct data_type *type_enum(void);
 extern struct data_type *type_type_name(struct symbol *type_name);
 
