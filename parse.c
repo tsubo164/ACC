@@ -434,6 +434,7 @@ static void define_sym(struct parser *p, struct ast_node *node)
     sym = define_symbol(p->symtab, p->decl_ident, p->decl_kind, p->decl_type);
 
     if (p->decl_kind != SYM_TAG_STRUCT &&
+        p->decl_kind != SYM_TAG_UNION &&
         p->decl_kind != SYM_TAG_ENUM) {
         sym->is_extern = p->is_extern;
         sym->is_static = p->is_static;
@@ -571,6 +572,7 @@ static int is_type_spec(int kind)
     case TOK_SIGNED:
     case TOK_UNSIGNED:
     case TOK_STRUCT:
+    case TOK_UNION:
     case TOK_ENUM:
     case TOK_TYPE_NAME:
         return 1;
@@ -1876,6 +1878,7 @@ static struct ast_node *specifier_qualifier_list(struct parser *p)
     }
 
     if (p->decl_kind != SYM_TAG_STRUCT &&
+        p->decl_kind != SYM_TAG_UNION &&
         p->decl_kind != SYM_TAG_ENUM) {
         set_const(p->decl_type, p->is_const);
         set_unsigned(p->decl_type, p->is_unsigned);
@@ -2043,6 +2046,11 @@ static struct ast_node *struct_or_union(struct parser *p)
         tree = NEW_(NOD_SPEC_STRUCT);
         break;
 
+    case TOK_UNION:
+        decl_set_kind(p, SYM_TAG_UNION);
+        tree = NEW_(NOD_SPEC_UNION);
+        break;
+
     default:
         /* TODO error */
         break;
@@ -2060,19 +2068,26 @@ static struct ast_node *struct_or_union_specifier(struct parser *p)
 {
     struct ast_node *tree = NULL;
     struct ast_node *ident = NULL;
+    int sym_kind;
 
     tree = struct_or_union(p);
     ident = decl_identifier(p);
     tree->l = ident;
 
+    /* struct or union sym */
+    sym_kind = p->decl_kind;
+
     if (!consume(p, '{')) {
         /* define an object of struct type */
-        use_sym(p, ident, SYM_TAG_STRUCT);
+        use_sym(p, ident, sym_kind);
         decl_set_type(p, ident->sym->type);
         return tree;
     } else {
         /* define a struct type */
-        decl_set_type(p, type_struct());
+        if (sym_kind == SYM_TAG_STRUCT)
+            decl_set_type(p, type_struct());
+        else
+            decl_set_type(p, type_union());
         define_sym(p, ident);
     }
 
@@ -2081,7 +2096,11 @@ static struct ast_node *struct_or_union_specifier(struct parser *p)
     end_scope(p);
 
     expect(p, '}');
-    compute_struct_size(ident->type->sym);
+
+    if (sym_kind == SYM_TAG_STRUCT)
+        compute_struct_size(ident->type->sym);
+    else
+        compute_union_size(ident->type->sym);
 
     return tree;
 }
@@ -2220,6 +2239,7 @@ static struct ast_node *type_specifier(struct parser *p)
         break;
 
     case TOK_STRUCT:
+    case TOK_UNION:
         ungettok(p);
         tree = struct_or_union_specifier(p);
         break;
@@ -2691,6 +2711,7 @@ static struct ast_node *declaration_specifiers(struct parser *p)
     default_to_int(p);
 
     if (p->decl_kind != SYM_TAG_STRUCT &&
+        p->decl_kind != SYM_TAG_UNION &&
         p->decl_kind != SYM_TAG_ENUM) {
         set_const(p->decl_type, p->is_const);
         set_unsigned(p->decl_type, p->is_unsigned);

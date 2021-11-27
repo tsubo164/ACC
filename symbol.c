@@ -204,7 +204,7 @@ static void print_horizonal_line(char c, int n)
 
 void print_symbol_table(const struct symbol_table *table)
 {
-    const int COLUMNS = 96;
+    const int COLUMNS = 101;
     const struct symbol *sym;
 
     print_horizonal_line('-', COLUMNS);
@@ -212,7 +212,7 @@ void print_symbol_table(const struct symbol_table *table)
     printf("|");
     printf("%15s | ", "name");
     printf("%20s | ", "kind");
-    printf("%10s | ", "type");
+    printf("%15s | ", "type");
     printf("%5s | ", "scope");
     printf("%5s| ", "offset");
     printf("%5s | ", "id");
@@ -237,26 +237,12 @@ void print_symbol_table(const struct symbol_table *table)
         printf("%-20s | ",  symbol_to_string(sym));
 
         /* type */
-        if (is_struct(sym->type)) {
-            const char *tname = type_name_of(sym->type);
-            if (tname) {
-                static char buf[128] = {'\0'};
-                sprintf(buf, "struct %s", tname);
-                printf("%-10.10s | ", buf);
-            } else {
-                printf("%-10.10s | ", "struct");
-            }
-        } else if (is_enum(sym->type)) {
-            const char *tname = type_name_of(sym->type);
-            if (tname) {
-                static char buf[128] = {'\0'};
-                sprintf(buf, "enum %s", tname);
-                printf("%-10.10s | ", buf);
-            } else {
-                printf("%-10.10s | ", "enum");
-            }
+        if (sym->type) {
+            char buf[256] = {'\0'};
+            make_type_name(sym->type, buf);
+            printf("%-15.15s | ", buf);
         } else {
-            printf("%-10.10s | ", type_name_of(sym->type));
+            printf("%-15.15s | ", "--");
         }
 
         /* scope level */
@@ -804,9 +790,9 @@ void compute_struct_size(struct symbol *struct_sym)
 void compute_union_size(struct symbol *union_sym)
 {
     struct symbol *sym;
-    int total_offset = 0;
+    int max_size = 0;
     int union_size = 0;
-    int union_align = 0;
+    int max_align = 0;
 
     if (is_incomplete(union_sym->type))
         return;
@@ -816,26 +802,25 @@ void compute_union_size(struct symbol *union_sym)
             const int size  = get_size(sym->type);
             const int align = get_alignment(sym->type);
 
-            total_offset = align_to(total_offset, align);
-            sym->mem_offset = total_offset;
-            total_offset = size > total_offset ? size : total_offset;
-            union_align = align > union_align ? align : union_align;
+            sym->mem_offset = 0;
+            max_size = size > max_size ? size : max_size;
+            max_align = align > max_align ? align : max_align;
         }
 
         if (is_end_of_scope(sym, union_sym))
             break;
     }
 
-    if (union_align == 0) {
+    if (max_align == 0) {
         /* an empty union created by error. pretends its size is 4 */
-        total_offset = 4;
-        union_align = 4;
+        max_size = 4;
+        max_align = 4;
     }
 
-    union_size = align_to(total_offset, union_align);
+    union_size = align_to(max_size, max_align);
 
     set_union_size(union_sym->type, union_size);
-    set_union_align(union_sym->type, union_align);
+    set_union_align(union_sym->type, max_align);
     union_sym->mem_offset = union_size;
 }
 

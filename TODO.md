@@ -19,6 +19,7 @@
   - initialize array of char using string literal `char s[] = "abc"`
   - add tests for malloc()
   - add tests for assert()
+  - `__FILE__` and `__LINE__` macros for assert()
   - add include paths
   - union
   - function pointer

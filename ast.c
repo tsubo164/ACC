@@ -161,6 +161,9 @@ static void print_type(const struct data_type *type)
     if (is_struct(type)) {
         printf("struct %s", type_name_of(type));
     }
+    else if (is_union(type)) {
+        printf("union %s", type_name_of(type));
+    }
     else if (is_enum(type)) {
         printf("enum %s", type_name_of(type));
     }

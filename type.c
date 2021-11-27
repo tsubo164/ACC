@@ -263,6 +263,11 @@ static char *make_type_name_(const struct data_type *type, char *buf)
     if (!type)
         return NULL;
 
+    if (is_const(type)) {
+        sprintf(p, "const %n", &n);
+        p += n;
+    }
+
     if (is_void(type)) {
         sprintf(p, "void %n", &n);
         p += n;
@@ -300,6 +305,10 @@ static char *make_type_name_(const struct data_type *type, char *buf)
         sprintf(p, "struct %s %n", symbol_of(type)->name, &n);
         p += n;
     }
+    else if (is_union(type)) {
+        sprintf(p, "union %s %n", symbol_of(type)->name, &n);
+        p += n;
+    }
 
     return p;
 }
@@ -307,6 +316,10 @@ static char *make_type_name_(const struct data_type *type, char *buf)
 void make_type_name(const struct data_type *type, char *buf)
 {
     char *p;
+
+    if (!type)
+        return;
+
     p = make_type_name_(type, buf);
     /* trim trailing space */
     if (p != buf && *(p-1) == ' ')
@@ -344,6 +357,8 @@ void print_data_type(const struct data_type *type)
     printf("    name:      ");
     if (is_struct(type))
         printf("struct ");
+    else if (is_union(type))
+        printf("union ");
     else if (is_enum(type))
         printf("enum ");
     printf("%s\n", type_name_of(type));
