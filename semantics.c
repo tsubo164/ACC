@@ -29,7 +29,7 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
     for (sym = table->head; sym; sym = sym->next) {
         if (is_local_var(sym)) {
             /* TODO support check for struct variables */
-            if (is_struct(sym->type))
+            if (is_struct_or_union(sym->type))
                 continue;
 
             if (sym->is_redefined)
@@ -190,7 +190,7 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
 
         check_init_array_element(node->r, &new_ctx);
     }
-    else if(is_struct(node->type)) {
+    else if(is_struct_or_union(node->type)) {
         if (node->r->kind == NOD_INIT || node->r->kind == NOD_LIST) {
             /* initialized by member initializer */
             struct tree_context new_ctx = *ctx;
@@ -236,6 +236,9 @@ static void check_init_(struct ast_node *node, struct tree_context *ctx)
 
 static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 {
+    static char buf1[128] = {'\0'};
+    static char buf2[128] = {'\0'};
+
     if (!node)
         return;
 
@@ -300,9 +303,10 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             return;
 
         if (node->l && node->r && !is_compatible(node->l->type, node->r->type)) {
+            make_type_name(node->l->type, buf1);
+            make_type_name(node->r->type, buf2);
             add_error(ctx->messages, &node->pos,
-                    "initializing '%s' with an expression of incompatible type '%s'",
-                    type_name_of(node->l->type), type_name_of(node->r->type));
+                    "assigning incompatible types to '%s' from '%s'", buf1, buf2);
         }
         return;
 
@@ -321,7 +325,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             if (is_local_var(sym) || is_global_var(sym)) {
                 if (sym->is_defined && sym->is_used && !is_orig_initialized(sym))
                     /* array, struct, union will not be treated as uninitialized */
-                    if (!is_array(sym->type) && !is_struct(sym->type))
+                    if (!is_array(sym->type) && !is_struct_or_union(sym->type))
                         add_warning(ctx->messages, &node->pos,
                                 "variable '%s' is uninitialized when used here", sym->name);
 
@@ -350,7 +354,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
     case NOD_STRUCT_REF:
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
-        if (!is_struct(node->l->type)) {
+        if (!is_struct_or_union(node->l->type)) {
             add_error(ctx->messages, &node->pos,
                     "member reference base type '%.32s' is not a structure or union",
                     type_name_of(node->l->type));

@@ -143,6 +143,9 @@ static int is_compatible_underlying(const struct data_type *t1, const struct dat
     if (is_struct(t1) && is_struct(t2))
         return is_compatible(t1, t2);
 
+    if (is_union(t1) && is_union(t2))
+        return is_compatible(t1, t2);
+
     if (is_pointer(t1) && is_pointer(t2))
         return is_compatible_underlying(underlying(t1), underlying(t2));
 
@@ -158,6 +161,9 @@ int is_compatible(const struct data_type *t1, const struct data_type *t2)
         return 1;
 
     if (is_struct(t1) && is_struct(t2))
+        return symbol_of(t1) == symbol_of(t2);
+
+    if (is_union(t1) && is_union(t2))
         return symbol_of(t1) == symbol_of(t2);
 
     /* 6.3.2.3 Pointers void * <-> T * */
@@ -176,9 +182,11 @@ int is_incomplete(const struct data_type *type)
 {
     if (is_void(type))
         return 1;
-    if (is_enum(type) && !type->sym->is_defined)
-        return 1;
     if (is_struct(type) && !type->sym->is_defined)
+        return 1;
+    if (is_union(type) && !type->sym->is_defined)
+        return 1;
+    if (is_enum(type) && !type->sym->is_defined)
         return 1;
     return 0;
 }
@@ -253,6 +261,11 @@ int is_union(const struct data_type *type)
 int is_enum(const struct data_type *type)
 {
     return type && type->kind == DATA_TYPE_ENUM;
+}
+
+int is_struct_or_union(const struct data_type *type)
+{
+    return is_struct(type) || is_union(type);
 }
 
 static char *make_type_name_(const struct data_type *type, char *buf)

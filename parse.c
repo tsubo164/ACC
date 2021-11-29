@@ -2513,7 +2513,7 @@ static struct data_type *initializer_child_type(struct parser *p,
     if (is_array(parent)) {
         return underlying(parent);
     }
-    else if (is_struct(parent)) {
+    else if (is_struct_or_union(parent)) {
         p->init_sym = first_member(symbol_of(parent));
         return p->init_sym->type;
     }
@@ -2528,7 +2528,7 @@ static struct data_type *initializer_next_type(struct parser *p,
     if (is_array(parent)) {
         return p->init_type;
     }
-    else if (is_struct(parent)) {
+    else if (is_struct_or_union(parent)) {
         p->init_sym = next_member(p->init_sym);
         return p->init_sym ? p->init_sym->type : NULL;
     }
@@ -2542,7 +2542,7 @@ static int initializer_byte_offset(struct parser *p,
 {
     if (is_array(parent))
         return get_size(p->init_type) * index;
-    else if (is_struct(parent))
+    else if (is_struct_or_union(parent))
         return p->init_sym ? p->init_sym->mem_offset : 0;
     else
         return 0;
