@@ -88,6 +88,9 @@ static int is_integer_zero(struct ast_node *node)
     return 0;
 }
 
+static char type_name1[128] = {'\0'};
+static char type_name2[128] = {'\0'};
+
 static void check_init_scalar(struct ast_node *node, struct tree_context *ctx)
 {
     struct data_type *t1, *t2;
@@ -106,9 +109,16 @@ static void check_init_scalar(struct ast_node *node, struct tree_context *ctx)
             return;
 
         if (!is_compatible(t1, t2)) {
-            add_error(ctx->messages, &node->pos,
-                    "initializing '%s' with an expression of incompatible type '%s'",
-                    type_name_of(t1), type_name_of(t2));
+            make_type_name(t1, type_name1);
+            make_type_name(t2, type_name2);
+            if (is_pointer(t1))
+                add_error(ctx->messages, &node->pos,
+                        "incompatible pointer types initializing '%s' with an expression of type '%s'",
+                        type_name1, type_name2);
+            else
+                add_error(ctx->messages, &node->pos,
+                        "initializing '%s' with an expression of incompatible type '%s'",
+                        type_name1, type_name2);
         }
         break;
 
@@ -236,9 +246,6 @@ static void check_init_(struct ast_node *node, struct tree_context *ctx)
 
 static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 {
-    static char buf1[128] = {'\0'};
-    static char buf2[128] = {'\0'};
-
     if (!node)
         return;
 
@@ -303,10 +310,16 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             return;
 
         if (node->l && node->r && !is_compatible(node->l->type, node->r->type)) {
-            make_type_name(node->l->type, buf1);
-            make_type_name(node->r->type, buf2);
-            add_error(ctx->messages, &node->pos,
-                    "assigning incompatible types to '%s' from '%s'", buf1, buf2);
+            make_type_name(node->l->type, type_name1);
+            make_type_name(node->r->type, type_name2);
+            if (is_pointer(node->type))
+                add_error(ctx->messages, &node->pos,
+                        "incompatible pointer types assigning to '%s' from '%s'",
+                        type_name1, type_name2);
+            else
+                add_error(ctx->messages, &node->pos,
+                        "assigning to '%s' from incompatible type '%s'",
+                        type_name1, type_name2);
         }
         return;
 

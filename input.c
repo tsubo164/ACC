@@ -19,6 +19,7 @@ union foo {
 };
 
 union bar;
+union bar { int i;};
 
 int main()
 {
@@ -28,17 +29,24 @@ int main()
     struct point p;
     struct point p = {19};
     union foo f = {42};
-    */
-    union bar b;
     union foo f, *fp = NULL;
     union foo g, *gp = NULL;
-    int *ip;
+    */
+    union foo *fp = NULL;
+    int *ip = fp;
 
+    union foo f;
+    union bar b = f;
+
+    return *ip;
+    /*
     g = f;
     gp = fp;
     gp = ip;
+    g = b;
 
     return f.i;
+    */
     /*
 
     f.i = 42;
