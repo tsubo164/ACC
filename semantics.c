@@ -32,9 +32,6 @@ static int check_symbol_usage(struct symbol_table *table, struct message_list *m
             if (is_struct_or_union(sym->type))
                 continue;
 
-            if (sym->is_redefined)
-                add_error(messages, &sym->pos, "redefinition of '%s'", sym->name);
-
             if (sym->is_defined && !sym->is_used && is_origin(sym))
                 add_warning(messages, &sym->pos, "unused variable '%s'", sym->name);
         }
@@ -266,20 +263,24 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
         if (is_incomplete(node->sym->type) &&
                 (is_local_var(node->sym) || is_global_var(node->sym))) {
+            make_type_name(node->sym->type, type_name1);
             add_error(ctx->messages, &node->pos, "variable has incomplete type '%s'",
-                    type_name_of(node->sym->type));
+                    type_name1);
             return;
         }
-        {
-            /* TODO need to combine with incomplete error above */
-            struct symbol *sym = node->sym;
 
-            if (is_label(sym)) {
-                if (sym->is_redefined)
-                    add_error(ctx->messages, &node->pos, "redefinition of label '%s'",
-                            sym->name);
-            }
+        if (is_label(node->sym)) {
+            if (node->sym->is_redefined)
+                add_error(ctx->messages, &node->pos, "redefinition of label '%s'",
+                        node->sym->name);
         }
+
+        if (is_local_var(node->sym)) {
+            if (node->sym->is_redefined)
+                add_error(ctx->messages, &node->pos, "redefinition of '%s'",
+                        node->sym->name);
+        }
+
         break;
 
     /* TODO add sub_assign, ... */

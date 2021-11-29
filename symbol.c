@@ -431,6 +431,7 @@ struct symbol *define_symbol(struct symbol_table *table,
         const char *name, int kind, struct data_type *type)
 {
     struct symbol *sym = NULL, *orig = NULL;
+    struct symbol *new_sym = NULL;
     const int curr_scope = table->current_scope_level;
     struct data_type *defined_type = type;
     int already_defined = 0;
@@ -454,14 +455,14 @@ struct symbol *define_symbol(struct symbol_table *table,
         }
     }
 
-    sym = push_symbol(table, name, kind, defined_type);
+    new_sym = push_symbol(table, name, kind, defined_type);
 
-    sym->is_defined = 1;
-    sym->is_redefined = already_defined;
-    sym->orig = orig;
-    link_type_to_sym(defined_type, sym);
+    new_sym->is_defined = 1;
+    new_sym->is_redefined = already_defined;
+    new_sym->orig = orig;
+    link_type_to_sym(defined_type, new_sym);
 
-    return sym;
+    return new_sym;
 }
 
 struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind)
@@ -567,13 +568,14 @@ struct symbol *define_case_symbol(struct symbol_table *table, int kind, int case
 
 struct symbol *define_label_symbol(struct symbol_table *table, const char *label)
 {
-    struct symbol *sym;
-    struct symbol *label_sym = NULL;
+    struct symbol *sym = NULL, *orig = NULL;
+    struct symbol *new_sym = NULL;
+    int already_defined = 0;
 
     for (sym = table->tail; sym; sym = sym->prev) {
         if (match_name(sym, label)) {
-            sym->is_redefined = 1;
-            return sym;
+            already_defined = 1;
+            orig = get_origin(sym);
         }
 
         /* reached function sym */
@@ -581,10 +583,12 @@ struct symbol *define_label_symbol(struct symbol_table *table, const char *label
             break;
     }
 
-    label_sym = push_symbol(table, label, SYM_LABEL, type_int());
-    label_sym->is_defined = 1;
+    new_sym = push_symbol(table, label, SYM_LABEL, type_int());
+    new_sym->is_defined = 1;
+    new_sym->is_redefined = already_defined;
+    new_sym->orig = orig;
 
-    return label_sym;
+    return new_sym;
 }
 
 struct symbol *use_label_symbol(struct symbol_table *table, const char *label)
