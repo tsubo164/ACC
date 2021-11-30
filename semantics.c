@@ -447,9 +447,11 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
         if (!is_compatible(node->type, ctx->param_sym->type) &&
             !is_ellipsis(ctx->param_sym)) {
+            make_type_name(node->type, type_name1);
+            make_type_name(ctx->param_sym->type, type_name2);
             add_error(ctx->messages, &node->pos,
-                    "incompatible conversion from '%s' to '%s'",
-                    type_name_of(node->type), type_name_of(ctx->param_sym->type));
+                    "passing '%s' to parameter of incompatible type '%s'",
+                    type_name1, type_name2);
         }
         ctx->param_sym = next_param(ctx->param_sym);
 
@@ -471,17 +473,21 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         break;
 
     case NOD_RETURN:
-        if (!is_void(ctx->func_sym->type) && !node->l)
+        if (!is_void(ctx->func_sym->type) && !node->l) {
             add_error(ctx->messages, &node->pos,
                     "non-void function '%s' should return a value", ctx->func_sym->name);
-        else if (is_void(ctx->func_sym->type) && node->l)
+        }
+        else if (is_void(ctx->func_sym->type) && node->l) {
             add_error(ctx->messages, &node->l->pos,
                     "void function '%s' should not return a value", ctx->func_sym->name);
-
-        else if (node->l && !is_compatible(ctx->func_sym->type, node->l->type))
+        }
+        else if (node->l && !is_compatible(ctx->func_sym->type, node->l->type)) {
+            make_type_name(node->l->type, type_name1);
+            make_type_name(ctx->func_sym->type, type_name2);
             add_error(ctx->messages, &node->l->pos,
-                    "incompatible conversion from '%s' to '%s'",
-                    type_name_of(node->l->type), type_name_of(ctx->func_sym->type));
+                    "returning '%s' from a function with incompatible result type '%s'",
+                    type_name1, type_name2);
+        }
         break;
 
     default:

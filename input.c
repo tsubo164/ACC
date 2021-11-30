@@ -23,12 +23,17 @@ union bar;
 union bar { int i;};
 */
 
+struct point func(struct point p)
+{
+    return 23;
+}
+
 int main()
 {
+    func(23);
     /*
     union bar b;
     union foo f;
-    */
     union foo f;
     union foo f;
     int i;
@@ -38,6 +43,7 @@ int main()
 here:
 here:
 here:
+    */
 
     return 12;
 }
