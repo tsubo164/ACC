@@ -18,6 +18,7 @@ int main()
     union foo f;
     union var *v;
     int *i;
+    char name[8];
 
 
     v->i = 23;

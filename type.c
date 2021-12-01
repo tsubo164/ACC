@@ -339,43 +339,15 @@ void make_type_name(const struct data_type *type, char *buf)
         *(p-1) = '\0';
 }
 
-const char *type_name_of(const struct data_type *type)
-{
-    if (!type)
-        return "--";
-
-    if (has_typedef_name(type))
-        return type->alias->name;
-
-    switch (type->kind) {
-    case DATA_TYPE_VOID:    return "void";
-    case DATA_TYPE_CHAR:    return is_unsigned(type) ? "unsigned char" :  "char";
-    case DATA_TYPE_SHORT:   return is_unsigned(type) ? "unsigned short" : "short";
-    case DATA_TYPE_INT:     return is_unsigned(type) ? "unsigned int" :   "int";
-    case DATA_TYPE_LONG:    return is_unsigned(type) ? "unsigned long" :  "long";
-    case DATA_TYPE_POINTER: return "pointer";
-    case DATA_TYPE_ARRAY:   return "array";
-    case DATA_TYPE_STRUCT:  return symbol_of(type)->name;
-    case DATA_TYPE_UNION:   return symbol_of(type)->name;
-    case DATA_TYPE_ENUM:    return symbol_of(type)->name;
-    default:                return "unknown";
-    }
-}
-
 void print_data_type(const struct data_type *type)
 {
+    char type_name[128] = {'\0'};
+
     if (!type)
         return;
 
-    printf("    name:      ");
-    if (is_struct(type))
-        printf("struct ");
-    else if (is_union(type))
-        printf("union ");
-    else if (is_enum(type))
-        printf("enum ");
-    printf("%s\n", type_name_of(type));
-
+    make_type_name(type, type_name);
+    printf("    name:      %s\n", type_name);
     printf("    kind:      %d\n", type->kind);
     printf("    byte_size: %d\n", type->byte_size);
     printf("    array_len: %d\n", type->array_len);

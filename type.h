@@ -68,7 +68,6 @@ extern int is_enum(const struct data_type *type);
 extern int is_struct_or_union(const struct data_type *type);
 
 extern void make_type_name(const struct data_type *type, char *buf);
-extern const char *type_name_of(const struct data_type *type);
 extern void print_data_type(const struct data_type *type);
 extern void copy_data_type(struct data_type *dst, const struct data_type *src);
 extern void convert_array_to_pointer(struct data_type *type);

@@ -153,31 +153,10 @@ const char *node_to_string(const struct ast_node *node)
 
 static void print_type(const struct data_type *type)
 {
-    printf(" ");
+    static char type_name[128] = {'\0'};
 
-    if (is_const(type))
-        printf("const ");
-
-    if (is_struct(type)) {
-        printf("struct %s", type_name_of(type));
-    }
-    else if (is_union(type)) {
-        printf("union %s", type_name_of(type));
-    }
-    else if (is_enum(type)) {
-        printf("enum %s", type_name_of(type));
-    }
-    else if (is_array(type)) {
-        printf("[%d]", get_array_length(type));
-        print_type(underlying(type));
-    }
-    else if (is_pointer(type)) {
-        printf("*");
-        print_type(underlying(type));
-    }
-    else {
-        printf("%s", type_name_of(type));
-    }
+    make_type_name(type, type_name);
+    printf(" %s", type_name);
 }
 
 static void print_tree_recursive(const struct ast_node *tree, int depth)
