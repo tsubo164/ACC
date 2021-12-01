@@ -1412,9 +1412,11 @@ struct object_byte {
 
 static void print_object(struct object_byte *obj)
 {
+    char type_name[128] = {'\0'};
     int i;
 
-    printf("%s %s:\n", type_name_of(obj->sym->type), obj->sym->name);
+    make_type_name(obj->sym->type, type_name);
+    printf("%s %s:\n", type_name, obj->sym->name);
     for (i = 0; i < obj->size; i++) {
         printf("    [%04d] is_written: %d written_size: %d init: %p\n",
                 i,
