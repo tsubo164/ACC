@@ -46,6 +46,21 @@ const char *get_s3(union var v)
     return v.s;
 }
 
+union var get_var()
+{
+    struct point p = {1301, 223922, -3973};
+    union var v;
+    v.p = p;
+    return v;
+}
+
+void copy_var(union var *dst, const union var *src)
+{
+    if (!dst || !src || dst == src)
+        return;
+    *dst = *src;
+}
+
 union u8 {
     int i;
     long l;
@@ -60,6 +75,12 @@ int geti_(union u8 p)
 long getl_(union u8 p)
 {
     return p.l;
+}
+
+union u8 get_u8()
+{
+    union u8 p = {71};
+    return p;
 }
 
 typedef union coord {
@@ -82,6 +103,15 @@ long coord_y(Coord c)
 long coord_z(Coord c)
 {
     return c.p.z;
+}
+
+Coord get_coord(void)
+{
+    Coord c;
+    c.p.x = 72340;
+    c.p.y = -1230889;
+    c.p.z = 91355;
+    return c;
 }
 
 int main()
@@ -159,7 +189,7 @@ int main()
         assert(42, fa[2].k);
     }
     {
-        /* typedef'ed struct */
+        /* typedef'ed union */
         typedef union var variant;
         variant v0, v1;
         variant *vp = &v1;
@@ -309,6 +339,8 @@ int main()
         /* 8 byte union for passing by value */
         union u8 p = {14};
 
+        assert(8, sizeof(p));
+
         assert(14, geti_(p));
         assert(14, p.i);
 
@@ -317,9 +349,11 @@ int main()
         assertl(17, p.l);
     }
     {
-        /* 16 byte struct for passing by value */
+        /* 16 byte union for passing by value */
         typedef union var var;
         var v = {41};
+
+        assert(16, sizeof(v));
 
         assert(41, get_i3(v));
         assert(41, v.i);
@@ -332,7 +366,7 @@ int main()
         assert(10, get_s3(v)[0]);
     }
     {
-        /* large struct for passing by value */
+        /* large union for passing by value */
         Coord c; 
 
         assert(24, sizeof(c));
@@ -341,50 +375,56 @@ int main()
         c.p.y = 222;
         c.p.z = 199;
 
-        assert(111, coord_x(c));
-        assert(111, c.p.x);
-        assert(222, coord_y(c));
-        assert(222, c.p.y);
-        assert(199, coord_z(c));
-        assert(199, c.p.z);
+        assertl(111, coord_x(c));
+        assertl(111, c.p.x);
+        assertl(222, coord_y(c));
+        assertl(222, c.p.y);
+        assertl(199, coord_z(c));
+        assertl(199, c.p.z);
     }
-#ifdef MORETEST
     {
-        /* 8 byte struct returned by value */
-        struct point p = get_point();
+        /* 8 byte union returned by value */
+        union u8 p = get_u8();
 
-        assert(71, p.x);
-        assert(92, p.y);
-    }
-    {
-        /* 16 byte struct returned by value */
-        vec v = get_vec();
+        assert(8, sizeof p);
 
-        assert(1301, v.x);
-        assert(223922, v.y);
-        assert(-3973, v.z);
+        assert(71, p.i);
     }
     {
-        /* large struct returned by value */
+        /* 16 byte union returned by value */
+        union var v = get_var();
+
+        assert(16, sizeof v);
+
+        assert(1301, v.p.x);
+        assert(223922, v.p.y);
+        assert(-3973, v.p.z);
+    }
+    {
+        /* large union returned by value */
         Coord c = get_coord();
 
-        assert(72340, c.x);
-        assert(-1230889, c.y);
-        assert(91355, c.z);
+        assert(24, sizeof c);
+
+        assertl(72340, c.p.x);
+        assertl(-1230889, c.p.y);
+        assertl(91355, c.p.z);
     }
     {
-        /* copying struct through pointer dereference */
-        vec v = {911, 822, 733};
-        vec w;
+        /* copying union through pointer dereference */
+        typedef union var var;
+        var v = {911};
+        var w;
 
-        copy_vec(&w, &v);
-        assert(911, w.x);
-        assert(822, w.y);
-        assert(733, w.z);
+        copy_var(&w, &v);
+        assert(911, w.i);
+
+        w.l = 822;
+        assertl(822, w.l);
     }
     {
         /* testing no-constness of member that comes after const member */
-        struct foo {
+        union foo {
             const struct point *p;
             int i;
         } f;
@@ -393,38 +433,35 @@ int main()
         assert(123, f.i);
     }
     {
-        /* struct size and alignment */
-        struct point {
-            int x, y, z;
-        };
-        typedef struct C {
+        /* union size and alignment */
+        typedef union C {
             char a;
         } C;
-        typedef struct S {
+        typedef union S {
             short a;
         } S;
-        typedef struct SC {
+        typedef union SC {
             short a;
             char b;
         } SC;
-        typedef struct I {
+        typedef union I {
             int a;
         } I;
-        typedef struct IC {
+        typedef union IC {
             int i;
             char a;
         } IC;
-        typedef struct ICI {
+        typedef union ICI {
             int i;
             char a;
             int j;
         } ICI;
-        typedef struct ICS {
+        typedef union ICS {
             int i;
             char a;
             short j;
         } ICS;
-        typedef struct PC {
+        typedef union PC {
             void *p;
             char a;
         } PC;
@@ -432,19 +469,18 @@ int main()
         C c2[2];
         ICI ici2[2];
 
-        assert(1, sizeof(C));
+        assert(1,  sizeof(C));
         assert(2 , sizeof(S));
-        assert(4 , sizeof(SC));
+        assert(2 , sizeof(SC));
         assert(4 , sizeof(I));
-        assert(8 , sizeof(IC));
-        assert(12, sizeof(ICI));
-        assert(8 , sizeof(ICS));
-        assert(16, sizeof(PC));
+        assert(4 , sizeof(IC));
+        assert(4, sizeof(ICI));
+        assert(4 , sizeof(ICS));
+        assert(8, sizeof(PC));
 
         assert(2 , sizeof(c2));
-        assert(24, sizeof(ici2));
+        assert(8, sizeof(ici2));
     }
-#endif
 
     return 0;
 }

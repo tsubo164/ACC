@@ -10,9 +10,22 @@ union foo {
     const char *s;
 };
 
+typedef union coord {
+    const char *name;
+    struct {
+        long x, y, z;
+    } p;
+} Coord;
+
+typedef union SC {
+/*
+typedef struct SC {
+*/
+    short a;
+    char b;
+} SC;
+
 int main()
 {
-    union foo f = {42, 12321130239, (void*)0};
-
-    return f.i;
+    return sizeof(SC);
 }

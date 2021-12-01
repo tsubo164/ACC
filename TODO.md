@@ -21,7 +21,6 @@
   - add tests for assert()
   - `__FILE__` and `__LINE__` macros for assert()
   - add include paths
-  - union
   - function pointer
   - stringize macro and string cat macro
   - string literal to stringize macro
@@ -121,3 +120,4 @@
   - improve warnings for unused function.
   - universal type string for better messages
   - use registers r10 r11 (omit?)
+  - union

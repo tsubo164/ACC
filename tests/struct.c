@@ -444,9 +444,6 @@ int main()
     }
     {
         /* struct size and alignment */
-        struct point {
-            int x, y, z;
-        };
         typedef struct C {
             char a;
         } C;
