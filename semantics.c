@@ -67,6 +67,7 @@ struct tree_context {
     int switch_depth;
     int is_lvalue;
     int has_init;
+    int is_union;
 
     /* for initializers */
     const struct symbol *struct_sym;
@@ -166,12 +167,13 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
     case NOD_INIT:
         if (!ctx->struct_sym) {
             add_error(ctx->messages, &node->pos,
-                    "excess elements in struct initializer");
+                    "excess elements in %s initializer",
+                    ctx->is_union ? "union" : "struct");
             break;
         }
 
         check_initializer(node, ctx);
-        ctx->struct_sym = next_member(ctx->struct_sym);
+        ctx->struct_sym = ctx->is_union ? NULL : next_member(ctx->struct_sym);
         break;
 
     case NOD_LIST:
@@ -204,6 +206,7 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
 
             new_ctx.index = 0;
             new_ctx.struct_sym = first_member(symbol_of(node->type));
+            new_ctx.is_union = is_union(node->type);
 
             check_init_struct_members(node->r, &new_ctx);
         }

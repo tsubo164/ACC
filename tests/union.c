@@ -11,6 +11,11 @@ union var {
     struct point p;
 };
 
+int add(int x, int y)
+{
+    return x + y;
+}
+
 int main()
 {
     {
@@ -103,120 +108,72 @@ int main()
         assert(31, v1.p.x);
         assert(91, v1.p.z);
     }
-#ifdef MORETEST
     {
-        /* nested struct */
-        typedef struct point {
+        /* nested union */
+        typedef union klass {
             int x, y;
-        } point;
+            char *s;
+        } klass;
 
-        struct line {
-            point p0, p1;
+        union line {
+            klass k0, k1;
         };
 
         struct line l;
 
-        l.p0.x = 19;
-        l.p1.y = 23;
+        l.k0.x = 19;
+        l.k1.y = 23;
 
-        assert(19, l.p0.x);
-        assert(23, l.p1.y);
-        assert(42, l.p0.x + l.p1.y);
+        assert(23, l.k0.x);
+        assert(23, l.k1.y);
+        assert(46, l.k0.x + l.k1.y);
     }
     {
-        /* nested struct pointer with typedef */
-        typedef struct node Node;
-
-        struct node {
-            int id;
-            Node *next;
-        };
-
-        Node n0, n1, n2;
-
-        n0.id = 123;
-        n1.id = 765;
-        n2.id = 999;
-
-        n0.next = &n1;
-        n1.next = &n2;
-        n2.next = 0;
-
-        assert(123, n0.id);
-        assert(765, n0.next->id);
-        assert(999, n0.next->next->id);
-        assert(999, n1.next->id);
-    }
-    {
-        /* nested struct pointer without typedef */
-        struct node {
-            int id;
-            struct node *next;
-        };
-
-        struct node n0, n1, n2;
-
-        n0.id = 123;
-        n1.id = 765;
-        n2.id = 999;
-
-        n0.next = &n1;
-        n1.next = &n2;
-        n2.next = 0;
-
-        assert(123, n0.id);
-        assert(765, n0.next->id);
-        assert(999, n0.next->next->id);
-        assert(999, n1.next->id);
-    }
-    {
-        /* struct with no tag */
-        struct {
+        /* union with no tag */
+        union {
             int x, y;
+            const char *s;
         } no_tag;
 
         no_tag.x = 111;
         no_tag.y = 19;
 
-        assert(111, no_tag.x);
+        assert(19, no_tag.x);
         assert(19, no_tag.y);
-        assert(130, no_tag.x + no_tag.y);
+        assert(38, no_tag.x + no_tag.y);
     }
     {
-        /* struct initializer */
-        struct point {
-            int x, y, z;
-        } pt = {11, 22, 33};
+        /* union initializer */
+        union foo {
+            int i;
+            char *s;
+        } f = {11};
 
-        assert(11, pt.x);
-        assert(22, pt.y);
-        assert(33, pt.z);
-    }
-    {
-        /* struct initializer with less members */
-        struct point {
-            int x, y, z;
-        } pt = {19};
+        assert(11, f.i);
 
-        assert(19, pt.x);
-        assert(0,  pt.y);
-        assert(0,  pt.z);
+        f.s = "Hello";
+        assert('H', f.s[0]);
+        assert('e', f.s[1]);
+        assert('l', f.s[2]);
+        assert('l', f.s[3]);
+        assert('o', f.s[4]);
+        assert('\0', f.s[5]);
     }
     {
-        /* struct initializer with expressions */
+        /* union initializer with expressions */
         enum color {
             R = 11,
             G,
             B
         };
-        struct point {
+        union point {
             int x, y, z;
-        } pt = {19, add(40, 2), R + G + B};
+        } pt = {R + G + B}, pt2 = {add(4, 5)};
 
-        assert(19, pt.x);
-        assert(42, pt.y);
-        assert(36, pt.z);
+        assert(36, pt.x);
+        assert(9, pt2.x);
     }
+#ifdef MORETEST
     {
         /* size of struct with internal struct members */
         struct foo {

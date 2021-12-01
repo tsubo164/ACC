@@ -8,21 +8,11 @@ union foo {
     int i;
     long l;
     const char *s;
-    struct point p;
 };
-
-union var;
 
 int main()
 {
-    union foo f;
-    union var *v;
-    int *i;
-    char name[8];
+    union foo f = {42, 12321130239, (void*)0};
 
-
-    v->i = 23;
-    f.a = 3;
-
-    return i.member;
+    return f.i;
 }
