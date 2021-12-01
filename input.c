@@ -4,10 +4,6 @@
 #include <stdio.h>
 */
 
-struct point {
-    int x, y, z;
-};
-
 union foo {
     int i;
     long l;
@@ -15,25 +11,17 @@ union foo {
     struct point p;
 };
 
-/*
-union foo f = {42};
-*/
+union var;
+
 int main()
 {
-    /*
-    struct point p = {19, 29, 39};
-    */
-    union foo f = {42};
-    union foo g = f;
+    union foo f;
+    union var *v;
+    int *i;
 
-    /*
-    f.p = p;
 
-    g = f;
-    */
+    v->i = 23;
+    f.a = 3;
 
-    return g.i;
-    /*
-    return f.p.z;
-    */
+    return i.member;
 }
