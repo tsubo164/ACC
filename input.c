@@ -3,9 +3,6 @@
 #include <string.h>
 #include <stdio.h>
 */
-#include <stdio.h>
-/*
-*/
 
 struct point {
     int x, y, z;
@@ -18,32 +15,25 @@ union foo {
     struct point p;
 };
 
-union bar;
 /*
-union bar { int i;};
+union foo f = {42};
 */
-
-struct point func(struct point p)
-{
-    return 23;
-}
-
 int main()
 {
-    func(23);
     /*
-    union bar b;
-    union foo f;
-    union foo f;
-    union foo f;
-    int i;
-    int i;
-    int i;
+    struct point p = {19, 29, 39};
+    */
+    union foo f = {42};
+    union foo g = f;
 
-here:
-here:
-here:
+    /*
+    f.p = p;
+
+    g = f;
     */
 
-    return 12;
+    return g.i;
+    /*
+    return f.p.z;
+    */
 }

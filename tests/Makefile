@@ -4,7 +4,7 @@ RM = rm -f
 
 SRCS   := \
 		array enum expr func global goto for local macro pointer string \
-		struct switch type while
+		struct switch type union while
 TARGETS := $(SRCS)
 
 .PHONY: all clean test $(TARGETS)

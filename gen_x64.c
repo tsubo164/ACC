@@ -1443,6 +1443,11 @@ static void zero_clear_bytes(struct memory_byte *bytes, const struct data_type *
         for (sym = first_member(type->sym); sym; sym = next_member(sym))
             zero_clear_bytes(bytes + sym->mem_offset, sym->type);
     }
+    else if (is_union(type)) {
+        /* initialize only the first member of union */
+        const struct symbol *sym = first_member(type->sym);
+        zero_clear_bytes(bytes, sym->type);
+    }
     else {
         /* scalar */
         const int size = get_size(type);
@@ -1498,7 +1503,7 @@ static void assign_init(struct memory_byte *base,
         break;
 
     default:
-        if (is_struct(node->type)) {
+        if (is_struct_or_union(node->type)) {
             /* init by struct object */
             const int size = get_size(node->type);
             int i;
