@@ -38,9 +38,7 @@
     - add `struct declaration` to manage decl context and use it as parse param
   - `data_tag_()` needs to be based on size of type
   - `code[123]__()` needs to take `data_type` or tag instead of `ast_node`
-  - unversal type string for better messages
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics
-  - use registers r10 r11
   - control flow check
   - lexer error
 
@@ -121,3 +119,5 @@
   - bit shift <<, >>
   - bitwise op |, &, ~, ^
   - improve warnings for unused function.
+  - universal type string for better messages
+  - use registers r10 r11 (omit?)

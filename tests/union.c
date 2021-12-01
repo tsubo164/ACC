@@ -16,6 +16,74 @@ int add(int x, int y)
     return x + y;
 }
 
+void add_var(union var *out, union var *p, union var *q)
+{
+    out->i = p->i + q->i;
+}
+
+int geti(union var *p)
+{
+    return p->i;
+}
+
+long getl(union var *p)
+{
+    return p->l;
+}
+
+int get_i3(union var v)
+{
+    return v.i;
+}
+
+long get_l3(union var v)
+{
+    return v.l;
+}
+
+const char *get_s3(union var v)
+{
+    return v.s;
+}
+
+union u8 {
+    int i;
+    long l;
+    const char *s;
+};
+
+int geti_(union u8 p)
+{
+    return p.i;
+}
+
+long getl_(union u8 p)
+{
+    return p.l;
+}
+
+typedef union coord {
+    const char *name;
+    struct {
+        long x, y, z;
+    } p;
+} Coord;
+
+long coord_x(Coord c)
+{
+    return c.p.x;
+}
+
+long coord_y(Coord c)
+{
+    return c.p.y;
+}
+
+long coord_z(Coord c)
+{
+    return c.p.z;
+}
+
 int main()
 {
     {
@@ -173,109 +241,114 @@ int main()
         assert(36, pt.x);
         assert(9, pt2.x);
     }
-#ifdef MORETEST
     {
-        /* size of struct with internal struct members */
-        struct foo {
+        /* size of union with internal union members */
+        union foo {
             int a;
-            struct bar {
+            union bar {
                 int b;
             } b;
         };
 
-        assert(8, sizeof (struct foo));
+        assert(4, sizeof (union foo));
     }
     {
-        /* struct with unsigned int members */
-        struct foo {
+        /* union with unsigned int members */
+        union foo {
             const unsigned int i, j;
-        } f = {29, 31};
+        } f = {29};
 
-        assert(8, sizeof (struct foo));
+        assert(4, sizeof (union foo));
         assert(29, f.i);
-        assert(31, f.j);
+        assert(29, f.j);
     }
     {
-        /* struct pointer for functions */
-        struct point p = {42, 71};
-        struct point q = {13, 49};
-        struct point result;
+        /* union pointer for functions */
+        union var p = {42};
+        union var q = {13};
+        union var result;
 
         /* function calls in function arguments */
-        assert(42, getx(&p));
-        assert(42, p.x);
-        assert(49, gety(&q));
+        assert(42, geti(&p));
+        assert(42, p.i);
 
-        add_point(&result, &p, &q);
+        q.l = 49;
+        assertl(49, getl(&q));
 
-        assert(55, getx(&result));
-        assert(120, gety(&result));
+        q.i = 13;
+        add_var(&result, &p, &q);
+
+        assert(55, geti(&result));
+
+        result.l = 120;
+        assertl(120, getl(&result));
     }
     {
-        /* initialize struct object with another struct object */
-        typedef struct point {
-            int x, y, z, w;
-        } Point;
+        /* initialize union object with another union object */
+        typedef union var Variant;
 
-        Point p = {11, 22, 33, 44};
-        Point q = p;
+        Variant p = {79};
+        Variant q = p;
 
-        assert(11, q.x);
-        assert(22, q.y);
-        assert(33, q.z);
-        assert(44, q.w);
+        assert(79, p.i);
+        assert(79, q.i);
     }
     {
-        /* assign struct object */
-        typedef struct point {
-            int x, y, z, w;
-        } Point;
+        /* assign union object */
+        typedef union var Variant;
 
-        Point p = {111, 222, 333, 444};
-        Point q;
+        Variant p = {111};
+        Variant q;
 
         q = p;
 
-        assert(111, q.x);
-        assert(222, q.y);
-        assert(333, q.z);
-        assert(444, q.w);
+        assert(111, p.i);
+        assert(111, q.i);
     }
     {
-        /* 8 byte struct for passing by value */
-        struct point p = {14, 17};
+        /* 8 byte union for passing by value */
+        union u8 p = {14};
 
-        assert(14, getx_(p));
-        assert(14, p.x);
-        assert(17, gety_(p));
-        assert(17, p.y);
+        assert(14, geti_(p));
+        assert(14, p.i);
+
+        p.l = 17;
+        assertl(17, getl_(p));
+        assertl(17, p.l);
     }
     {
         /* 16 byte struct for passing by value */
-        vec v = {41, 71, 94};
-        vec4 w = {731, 811, 39, 234};
+        typedef union var var;
+        var v = {41};
 
-        assert(41, get_x3(v));
-        assert(41, v.x);
-        assert(71, get_y3(v));
-        assert(71, v.y);
-        assert(94, get_z3(v));
-        assert(94, v.z);
+        assert(41, get_i3(v));
+        assert(41, v.i);
 
-        assert(234, get_w4(w));
-        assert(234, w.w);
+        v.l = 71;
+        assertl(71, get_l3(v));
+        assertl(71, v.l);
+
+        v.s = "\n";
+        assert(10, get_s3(v)[0]);
     }
     {
         /* large struct for passing by value */
-        Coord c = {111, 222, 199};
+        Coord c; 
+
+        assert(24, sizeof(c));
+
+        c.p.x = 111;
+        c.p.y = 222;
+        c.p.z = 199;
 
         assert(111, coord_x(c));
-        assert(111, c.x);
+        assert(111, c.p.x);
         assert(222, coord_y(c));
-        assert(222, c.y);
+        assert(222, c.p.y);
         assert(199, coord_z(c));
-        assert(199, c.z);
+        assert(199, c.p.z);
     }
+#ifdef MORETEST
     {
         /* 8 byte struct returned by value */
         struct point p = get_point();
