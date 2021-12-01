@@ -1479,49 +1479,49 @@ static void free_object_byte(struct object_byte *obj)
 }
 
 static void assign_init(struct memory_byte *base,
-        const struct data_type *type, const struct ast_node *node)
+        const struct data_type *type, const struct ast_node *expr)
 {
-    if (!node)
+    if (!expr)
         return;
 
-    switch (node->kind) {
+    switch (expr->kind) {
 
     case NOD_INIT:
         {
             /* move cursor by designator */
-            const int offset = node->ival;
+            const int offset = expr->ival;
 
-            assign_init(base, type, node->l);
-            assign_init(base + offset, underlying(type), node->r);
+            assign_init(base, type, expr->l);
+            assign_init(base + offset, underlying(type), expr->r);
         }
         break;
 
     case NOD_LIST:
         /* pass to the next initializer */
-        assign_init(base, type, node->l);
-        assign_init(base, type, node->r);
+        assign_init(base, type, expr->l);
+        assign_init(base, type, expr->r);
         break;
 
     default:
-        if (is_struct_or_union(node->type)) {
+        if (is_struct_or_union(expr->type)) {
             /* init by struct object */
-            const int size = get_size(node->type);
+            const int size = get_size(expr->type);
             int i;
 
-            base->init = node;
+            base->init = expr;
 
             for (i = 0; i < size; i++) {
                 /* override byte properties as if struct object is a scaler value */
                 base[i].is_written = 1;
                 base[i].written_size = (i == 0) ? size : 0;
-                base[i].type = node->type;
+                base[i].type = expr->type;
             }
         } else {
             /* assign initializer to byte */
             const int size = base->written_size;
             int i;
 
-            base->init = node;
+            base->init = expr;
 
             for (i = 0; i < size; i++)
                 base[i].is_written = 1;
