@@ -16,12 +16,13 @@
       - check only the current scope for local variables define
   - improve options to be able to specify the output file name
   - improve const qualifier for struct parameter
-  - initialize array of char using string literal `char s[] = "abc"`
   - add tests for malloc()
   - add tests for assert()
   - `__FILE__` and `__LINE__` macros for assert()
+  - add `#if 0` macro
   - add include paths
   - function pointer
+  - bit field
   - stringize macro and string cat macro
   - string literal to stringize macro
   - `(a > 10) ? a = 42 : a = 19` => handle this (expression is not assignable)
@@ -121,3 +122,4 @@
   - universal type string for better messages
   - use registers r10 r11 (omit?)
   - union
+  - initialize array of char using string literal `char s[] = "abc"`

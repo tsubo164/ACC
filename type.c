@@ -310,9 +310,18 @@ static char *make_type_name_(const struct data_type *type, char *buf)
         p += n;
     }
     else if (is_array(type)) {
-        p = make_type_name_(underlying(type), p);
-        sprintf(p, "[%d]%n", get_array_length(type), &n);
-        p += n;
+        const struct data_type *t;
+
+        /* print underlying type first */
+        for (t = type; is_array(t); t = underlying(t))
+            ;
+        p = make_type_name_(t, p);
+
+        /* print array lengths */
+        for (t = type; is_array(t); t = underlying(t)) {
+            sprintf(p, "[%d]%n", get_array_length(t), &n);
+            p += n;
+        }
     }
     else if (is_struct(type)) {
         sprintf(p, "struct %s %n", symbol_of(type)->name, &n);

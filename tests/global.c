@@ -112,6 +112,16 @@ const char **ARG_REG__[] = {DI__, SI__, D__, C__};
 char first_name[] = "Foo";
 char last_name[8] = "Bar";
 
+/* array of string initializer with string literal */
+char color_list[][10] = {
+    "Red",
+    "Green",
+    "Blue"
+};
+
+/* array 7 of string initializer with string literal */
+char days[7][4] = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+
 int main()
 {
     {
@@ -309,6 +319,82 @@ int main()
         assert('\0', last_name[5]);
         assert('\0', last_name[6]);
         assert('\0', last_name[7]);
+    }
+    {
+        /* array of string initializer with string literal */
+        assert(30, sizeof color_list);
+
+        assert('R',  color_list[0][0]);
+        assert('e',  color_list[0][1]);
+        assert('d',  color_list[0][2]);
+        assert('\0', color_list[0][3]);
+        assert('\0', color_list[0][4]);
+        assert('\0', color_list[0][5]);
+        assert('\0', color_list[0][6]);
+        assert('\0', color_list[0][7]);
+        assert('\0', color_list[0][8]);
+        assert('\0', color_list[0][9]);
+
+        assert('G',  color_list[1][0]);
+        assert('r',  color_list[1][1]);
+        assert('e',  color_list[1][2]);
+        assert('e',  color_list[1][3]);
+        assert('n',  color_list[1][4]);
+        assert('\0', color_list[1][5]);
+        assert('\0', color_list[1][6]);
+        assert('\0', color_list[1][7]);
+        assert('\0', color_list[1][8]);
+        assert('\0', color_list[1][9]);
+
+        assert('B',  color_list[2][0]);
+        assert('l',  color_list[2][1]);
+        assert('u',  color_list[2][2]);
+        assert('e',  color_list[2][3]);
+        assert('\0', color_list[2][4]);
+        assert('\0', color_list[2][5]);
+        assert('\0', color_list[2][6]);
+        assert('\0', color_list[2][7]);
+        assert('\0', color_list[2][8]);
+        assert('\0', color_list[2][9]);
+    }
+    {
+        /* array 7 of string initializer with string literal */
+        assert(28, sizeof days);
+
+        assert('M',  days[0][0]);
+        assert('o',  days[0][1]);
+        assert('n',  days[0][2]);
+        assert('\0', days[0][3]);
+
+        assert('T',  days[1][0]);
+        assert('u',  days[1][1]);
+        assert('e',  days[1][2]);
+        assert('\0', days[1][3]);
+
+        assert('W',  days[2][0]);
+        assert('e',  days[2][1]);
+        assert('d',  days[2][2]);
+        assert('\0', days[2][3]);
+
+        assert('T',  days[3][0]);
+        assert('h',  days[3][1]);
+        assert('u',  days[3][2]);
+        assert('\0', days[3][3]);
+
+        assert('F',  days[4][0]);
+        assert('r',  days[4][1]);
+        assert('i',  days[4][2]);
+        assert('\0', days[4][3]);
+
+        assert('S',  days[5][0]);
+        assert('a',  days[5][1]);
+        assert('t',  days[5][2]);
+        assert('\0', days[5][3]);
+
+        assert('S',  days[6][0]);
+        assert('u',  days[6][1]);
+        assert('n',  days[6][2]);
+        assert('\0', days[6][3]);
     }
 
     return 0;
