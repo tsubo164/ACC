@@ -611,13 +611,17 @@ struct symbol *define_string_symbol(struct symbol_table *table, const char *str)
 {
     struct symbol *sym;
     struct symbol *str_sym = NULL;
+    struct data_type *str_type = NULL;
 
     for (sym = table->tail; sym; sym = sym->prev) {
         if (match_name(sym, str) && is_string_literal(sym))
             return sym;
     }
 
-    str_sym = push_symbol(table, str, SYM_STRING, type_pointer(type_char()));
+    str_type = type_array(type_char());
+    set_array_length(str_type, strlen(str) + 1);
+
+    str_sym = push_symbol(table, str, SYM_STRING, str_type);
     str_sym->is_defined = 1;
 
     return str_sym;

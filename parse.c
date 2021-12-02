@@ -275,6 +275,7 @@ static struct ast_node *typed_(struct ast_node *node)
     /* nodes with symbol */
     case NOD_DECL_IDENT:
     case NOD_IDENT:
+    case NOD_STRING:
         node->type = node->sym->type;
         break;
 
@@ -301,14 +302,6 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_NUM:
         /* TODO improve long/int decision */
         node->type = node->ival >> 32 ? type_long() : type_int();
-        break;
-
-    case NOD_STRING:
-        node->type = type_array(type_char());
-        {
-            int len = strlen(node->sval) + 1;
-            set_array_length(node->type, len);
-        }
         break;
 
     case NOD_SIZEOF:
@@ -2479,6 +2472,32 @@ static struct ast_node *declarator(struct parser *p)
     return typed_(tree);
 }
 
+static struct ast_node *string_initializer(struct parser *p)
+{
+    struct ast_node *list = NULL, *init = NULL, *num = NULL;
+    struct ast_node *tree = NULL;
+    const struct token *tok = gettok(p);
+    const char *ch = tok->text;
+    int count = 0;
+
+    do {
+        num = new_node_num(*ch, tokpos(p));
+        init = new_node_(NOD_INIT, tokpos(p));
+        init = branch_(init, NULL, num);
+        init->ival = count++;
+        type_set(init, underlying(p->init_type));
+
+        list = new_node_(NOD_LIST, tokpos(p));
+        tree = branch_(list, tree, init);
+        /* check null character at last since it needs to be added */
+    } while (*ch++);
+
+    if (has_unkown_array_length(p->init_type))
+        set_array_length(p->init_type, count);
+
+    return tree;
+}
+
 /*
  * initializer
  *     assignment_expression
@@ -2495,7 +2514,16 @@ static struct ast_node *initializer(struct parser *p)
     if (consume(p, '{')) {
         init = initializer_list(p);
         expect(p, '}');
-    } else {
+    }
+    else if (is_array(p->init_type) && nexttok(p, TOK_STRING_LITERAL)) {
+        if (!is_char(underlying(p->init_type))) {
+            /* TODO improve message */
+            syntax_error(p, "initializing wide char array with non-wide string literal");
+        }
+        /* initializing array of char with string literal */
+        init = string_initializer(p);
+    }
+    else {
         init = assignment_expression(p);
     }
     p->is_array_initializer = 0;

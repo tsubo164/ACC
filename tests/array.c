@@ -149,6 +149,37 @@ int main()
         assert(  0, a[2][1]);
     }
     {
+        /* array initializer with string literal */
+        char a[] = "Hello\n";
+
+        assert(7, sizeof a);
+
+        assert('H', a[0]);
+        assert('e', a[1]);
+        assert('l', a[2]);
+        assert('l', a[3]);
+        assert('o', a[4]);
+        assert('\n', a[5]);
+        assert('\0', a[6]);
+    }
+    {
+        /* array initializer with string literal and specified length */
+        char a[10] = "Hello\n";
+
+        assert(10, sizeof a);
+
+        assert('H', a[0]);
+        assert('e', a[1]);
+        assert('l', a[2]);
+        assert('l', a[3]);
+        assert('o', a[4]);
+        assert('\n', a[5]);
+        assert('\0', a[6]);
+        assert('\0', a[7]);
+        assert('\0', a[8]);
+        assert('\0', a[9]);
+    }
+    {
         test_single_array();
     }
     {

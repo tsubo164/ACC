@@ -4,28 +4,15 @@
 #include <stdio.h>
 */
 
-union foo {
-    int i;
-    long l;
-    const char *s;
-};
-
-typedef union coord {
-    const char *name;
-    struct {
-        long x, y, z;
-    } p;
-} Coord;
-
-typedef union SC {
-/*
-typedef struct SC {
-*/
-    short a;
-    char b;
-} SC;
+char name[10] = "John";
 
 int main()
 {
-    return sizeof(SC);
+    /*
+    char s[] = {'a', 'b', 'c', '\0'};
+    int s[] = "abc";
+    */
+    char s[] = "abc";
+
+    return s[0];
 }

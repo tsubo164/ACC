@@ -108,6 +108,10 @@ static const char *C__[]  = {"cl",  "cx", "ecx", "rcx"};
 static const char *D__[]  = {"dl",  "dx", "edx", "rdx"};
 const char **ARG_REG__[] = {DI__, SI__, D__, C__};
 
+/* array initializer with string literal */
+char first_name[] = "Foo";
+char last_name[8] = "Bar";
+
 int main()
 {
     {
@@ -283,6 +287,28 @@ int main()
         assert(0, strcmp("cx",  ARG_REG__[3][1]));
         assert(0, strcmp("ecx", ARG_REG__[3][2]));
         assert(0, strcmp("rcx", ARG_REG__[3][3]));
+    }
+    {
+        /* array initializer with string literal */
+        assert(4, sizeof first_name);
+
+        assert('F', first_name[0]);
+        assert('o', first_name[1]);
+        assert('o', first_name[2]);
+        assert('\0', first_name[3]);
+    }
+    {
+        /* array initializer with string literal and specified length */
+        assert(8, sizeof last_name);
+
+        assert('B', last_name[0]);
+        assert('a', last_name[1]);
+        assert('r', last_name[2]);
+        assert('\0', last_name[3]);
+        assert('\0', last_name[4]);
+        assert('\0', last_name[5]);
+        assert('\0', last_name[6]);
+        assert('\0', last_name[7]);
     }
 
     return 0;
