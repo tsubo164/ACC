@@ -119,7 +119,7 @@ static void init_position(struct position *pos)
     pos->filename = NULL;
 }
 
-void token_init(struct token *tok)
+void init_token(struct token *tok)
 {
     tok->kind = TOK_UNKNOWN;
     tok->value = 0;
@@ -140,6 +140,15 @@ struct lexer *new_lexer(void)
     l->prevx = 0;
 
     return l;
+}
+
+void set_source_text(struct lexer *l, const char *text)
+{
+    l->head = text;
+    l->next = text;
+
+    init_position(&l->pos);
+    l->prevx = 0;
 }
 
 void free_lexer(struct lexer *l)
@@ -389,9 +398,9 @@ static int match_two_more(struct lexer *l, struct token *tok,
     return 2;
 }
 
-enum token_kind lex_get_token(struct lexer *l, struct token *tok)
+enum token_kind get_next_token(struct lexer *l, struct token *tok)
 {
-    token_init(tok);
+    init_token(tok);
 
     for (;;) {
         const int c = readc(l);

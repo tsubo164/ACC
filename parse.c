@@ -20,7 +20,7 @@ static const struct token *gettok(struct parser *p)
     if (p->head == p->curr) {
         p->curr = (p->curr + 1) % N;
         p->head = p->curr;
-        lex_get_token(p->lex, &p->tokbuf[p->curr]);
+        get_next_token(p->lex, &p->tokbuf[p->curr]);
         type_name_or_identifier(p);
     } else {
         p->curr = (p->curr + 1) % N;
@@ -156,7 +156,7 @@ struct parser *new_parser(void)
     int i;
 
     for (i = 0; i < TOKEN_BUFFER_SIZE; i++)
-        token_init(&p->tokbuf[i]);
+        init_token(&p->tokbuf[i]);
 
     p->lex = new_lexer();
     p->head = 0;
@@ -2889,7 +2889,12 @@ static struct ast_node *translation_unit(struct parser *p)
     return tree;
 }
 
-struct ast_node *parse(struct parser *p)
+struct ast_node *parse_text(struct parser *p, const char *text)
 {
+    if (!text)
+        return NULL;
+
+    set_source_text(p->lex, text);
+
     return translation_unit(p);
 }

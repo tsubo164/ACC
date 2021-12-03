@@ -78,7 +78,7 @@ static int compile(const char *filename, const struct option *opt)
 
     /* preprocess */
     pp = new_preprocessor();
-    preprocess_text(pp, filename);
+    preprocess_file(pp, filename);
 
     if (opt->print_preprocess) {
         printf("%s", pp->text->buf);
@@ -93,10 +93,7 @@ static int compile(const char *filename, const struct option *opt)
     parser->symtab = symtab;
     parser->msg = messages;
 
-    parser->lex->head = pp->text->buf;
-    parser->lex->next = pp->text->buf;
-
-    tree = parse(parser);
+    tree = parse_text(parser, pp->text->buf);
 
     /* analyze semantics */
     semantic_analysis(tree, symtab, messages);
@@ -114,7 +111,7 @@ static int compile(const char *filename, const struct option *opt)
 
     if (messages->error_count > 0) {
         print_error_messages(messages);
-        ret = EXIT_FAILURE;
+        ret = 1;
         goto finalize;
     }
 
@@ -122,7 +119,7 @@ static int compile(const char *filename, const struct option *opt)
     make_output_filename(filename, output);
     fp = fopen(output, "w");
     if (!fp) {
-        ret = EXIT_FAILURE;
+        ret = 1;
         goto finalize;
     }
     gen_x64(fp, tree, symtab);

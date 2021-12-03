@@ -88,12 +88,13 @@ struct lexer {
     int prevx;
 };
 
-extern void token_init(struct token *tok);
+extern void init_token(struct token *tok);
 extern void print_token(const struct token *tok);
 
 extern struct lexer *new_lexer(void);
 extern void free_lexer(struct lexer *l);
 
-extern enum token_kind lex_get_token(struct lexer *l, struct token *tok);
+extern enum token_kind get_next_token(struct lexer *l, struct token *tok);
+extern void set_source_text(struct lexer *l, const char *text);
 
 #endif /* _H */

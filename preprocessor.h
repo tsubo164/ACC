@@ -48,6 +48,6 @@ struct preprocessor {
 extern struct preprocessor *new_preprocessor(void);
 extern void free_preprocessor(struct preprocessor *pp);
 
-extern int preprocess_text(struct preprocessor *pp, const char *filename);
+extern int preprocess_file(struct preprocessor *pp, const char *filename);
 
 #endif /* _H */

@@ -17,7 +17,7 @@ struct parser {
     struct symbol_table *symtab;
     struct message_list *msg;
 
-    /* TODO may need struct declaration */
+    /* TODO may need struct declaration or parse_context */
     /* declaration context */
     int decl_kind;
     const char * decl_ident;
@@ -47,6 +47,6 @@ struct parser {
 
 extern struct parser *new_parser(void);
 extern void free_parser(struct parser *p);
-extern struct ast_node *parse(struct parser *p);
+extern struct ast_node *parse_text(struct parser *p, const char *text);
 
 #endif /* _H */

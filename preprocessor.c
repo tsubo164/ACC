@@ -612,7 +612,7 @@ static void include_line(struct preprocessor *pp)
 
     new_line(pp);
 
-    preprocess_text(pp, filename);
+    preprocess_file(pp, filename);
     write_line_directive(pp);
 }
 
@@ -1107,7 +1107,7 @@ static void text_lines(struct preprocessor *pp)
     }
 }
 
-int preprocess_text(struct preprocessor *pp, const char *filename)
+int preprocess_file(struct preprocessor *pp, const char *filename)
 {
     FILE *fp;
 
