@@ -115,7 +115,7 @@ static void syntax_error(struct parser *p, const char *msg, ...)
 
         if (!p->is_panic_mode) {
             const struct token *tok = current_token(p);
-            add_error(p->msg, &tok->pos, buf);
+            add_error(p->diag, &tok->pos, buf);
             p->is_panic_mode = 1;
         }
     }
@@ -392,13 +392,13 @@ static int eval_const_expr(const struct ast_node *node, struct parser *p)
     case NOD_DECL_IDENT:
     case NOD_IDENT:
         if (node->sym->kind != SYM_ENUMERATOR) {
-            add_error(p->msg, &node->pos, "expression is not a constant expression");
+            add_error(p->diag, &node->pos, "expression is not a constant expression");
             return 0;
         }
         return node->sym->mem_offset;
 
     default:
-        add_error(p->msg, &node->pos, "expression is not a constant expression");
+        add_error(p->diag, &node->pos, "expression is not a constant expression");
         return 0;
     }
 }
@@ -614,7 +614,7 @@ static void default_to_int(struct parser *p)
     if (!p->decl_type) {
         const struct token *next = gettok(p);
         decl_set_type(p, type_int());
-        add_warning(p->msg, &next->pos, "type specifier missing, defaults to 'int'");
+        add_warning(p->diag, &next->pos, "type specifier missing, defaults to 'int'");
         ungettok(p);
     }
 }

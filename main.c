@@ -4,7 +4,7 @@
 #include "gen_x64.h"
 #include "ast.h"
 #include "lexer.h"
-#include "message.h"
+#include "diagnostic.h"
 #include "parse.h"
 #include "semantics.h"
 #include "preprocessor.h"
@@ -69,7 +69,7 @@ static int compile(const char *filename, const struct option *opt)
 {
     struct preprocessor *pp = NULL;
     struct symbol_table *symtab = NULL;
-    struct message_list *messages = NULL;
+    struct diagnostic *diag = NULL;
     struct parser *parser = NULL;
     struct ast_node *tree = NULL;
     FILE *fp = NULL;
@@ -87,16 +87,16 @@ static int compile(const char *filename, const struct option *opt)
 
     /* parse */
     symtab = new_symbol_table();
-    messages = new_message_list();
+    diag = new_diagnostic();
 
     parser = new_parser();
     parser->symtab = symtab;
-    parser->msg = messages;
+    parser->diag = diag;
 
     tree = parse_text(parser, pp->text->buf);
 
     /* analyze semantics */
-    semantic_analysis(tree, symtab, messages);
+    semantic_analysis(tree, symtab, diag);
 
     if (opt->print_tree) {
         print_tree(tree);
@@ -106,11 +106,11 @@ static int compile(const char *filename, const struct option *opt)
     }
 
     /* diagnostics */
-    if (messages->warning_count > 0)
-        print_warning_messages(messages);
+    if (diag->warning_count > 0)
+        print_warnings(diag);
 
-    if (messages->error_count > 0) {
-        print_error_messages(messages);
+    if (diag->error_count > 0) {
+        print_errors(diag);
         ret = 1;
         goto finalize;
     }
@@ -128,7 +128,7 @@ static int compile(const char *filename, const struct option *opt)
 finalize:
     free_ast_node(tree);
     free_parser(parser);
-    free_message_list(messages);
+    free_diagnostic(diag);
     free_symbol_table(symtab);
     free_preprocessor(pp);
 

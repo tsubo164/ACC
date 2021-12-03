@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
-#include "message.h"
+#include "diagnostic.h"
 
 #define TERMINAL_COLOR_BLACK   "\x1b[30m"
 #define TERMINAL_COLOR_RED     "\x1b[31m"
@@ -125,35 +125,35 @@ static void free_message(struct message *msg)
     free(msg->str);
 }
 
-struct message_list *new_message_list()
+struct diagnostic *new_diagnostic()
 {
-    struct message_list *list = malloc(sizeof(struct message_list));
+    struct diagnostic *diag = malloc(sizeof(struct diagnostic));
     int i;
 
     for (i = 0; i < MAX_MESSAGE_COUNT; i++) {
-        init_message(&list->warnings[i]);
-        init_message(&list->errors[i]);
+        init_message(&diag->warnings[i]);
+        init_message(&diag->errors[i]);
     }
 
-    list->warning_count = 0;
-    list->error_count = 0;
+    diag->warning_count = 0;
+    diag->error_count = 0;
 
-    return list;
+    return diag;
 }
 
-void free_message_list(struct message_list *list)
+void free_diagnostic(struct diagnostic *diag)
 {
     int i;
 
     for (i = 0; i < MAX_MESSAGE_COUNT; i++) {
-        free_message(&list->warnings[i]);
-        free_message(&list->errors[i]);
+        free_message(&diag->warnings[i]);
+        free_message(&diag->errors[i]);
     }
 
-    free(list);
+    free(diag);
 }
 
-void add_warning(struct message_list *list, const struct position *pos,
+void add_warning(struct diagnostic *diag, const struct position *pos,
         const char *msg, ...)
 {
     va_list va;
@@ -162,12 +162,12 @@ void add_warning(struct message_list *list, const struct position *pos,
         struct message *m;
         char buf[1024] = {'\0'};
 
-        if (list->warning_count >= MAX_MESSAGE_COUNT) {
-            list->warning_count++;
+        if (diag->warning_count >= MAX_MESSAGE_COUNT) {
+            diag->warning_count++;
             return;
         }
 
-        m = &list->warnings[list->warning_count++];
+        m = &diag->warnings[diag->warning_count++];
         m->pos = *pos;
 
         vsprintf(buf, msg, va);
@@ -177,7 +177,7 @@ void add_warning(struct message_list *list, const struct position *pos,
     va_end(va);
 }
 
-void add_error(struct message_list *list, const struct position *pos,
+void add_error(struct diagnostic *diag, const struct position *pos,
         const char *msg, ...)
 {
     va_list va;
@@ -186,12 +186,12 @@ void add_error(struct message_list *list, const struct position *pos,
         struct message *m;
         char buf[1024] = {'\0'};
 
-        if (list->error_count >= MAX_MESSAGE_COUNT) {
-            list->error_count++;
+        if (diag->error_count >= MAX_MESSAGE_COUNT) {
+            diag->error_count++;
             return;
         }
 
-        m = &list->errors[list->error_count++];
+        m = &diag->errors[diag->error_count++];
         m->pos = *pos;
 
         vsprintf(buf, msg, va);
@@ -201,12 +201,12 @@ void add_error(struct message_list *list, const struct position *pos,
     va_end(va);
 }
 
-void print_warning_messages(const struct message_list *list)
+void print_warnings(const struct diagnostic *diag)
 {
-    print_message_array(list->warnings, WARNING);
+    print_message_array(diag->warnings, WARNING);
 }
 
-void print_error_messages(const struct message_list *list)
+void print_errors(const struct diagnostic *diag)
 {
-    print_message_array(list->errors, ERROR);
+    print_message_array(diag->errors, ERROR);
 }

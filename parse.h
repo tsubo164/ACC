@@ -4,7 +4,7 @@
 #include "ast.h"
 #include "lexer.h"
 #include "symbol.h"
-#include "message.h"
+#include "diagnostic.h"
 #include "type.h"
 
 #define TOKEN_BUFFER_SIZE 4
@@ -15,7 +15,7 @@ struct parser {
     int head, curr;
 
     struct symbol_table *symtab;
-    struct message_list *msg;
+    struct diagnostic *diag;
 
     /* TODO may need struct declaration or parse_context */
     /* declaration context */

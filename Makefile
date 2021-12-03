@@ -5,7 +5,7 @@ CFLAGS  = $(OPT) -Wall -ansi --pedantic-errors -c
 LDFLAGS = 
 RM      = rm -f
 
-SRCS    := ast esc_seq gen_x64 lexer main message parse preprocessor \
+SRCS    := ast diagnostic esc_seq gen_x64 lexer main parse preprocessor \
 					 semantics string_table symbol type
 
 .PHONY: all run run_cc tree pp test test2 test3 test_all clean clean2 clean3
