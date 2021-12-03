@@ -10,7 +10,7 @@
 #define TOKEN_BUFFER_SIZE 4
 
 struct parser {
-    struct lexer lex;
+    struct lexer *lex;
     struct token tokbuf[TOKEN_BUFFER_SIZE];
     int head, curr;
 

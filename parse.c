@@ -20,7 +20,7 @@ static const struct token *gettok(struct parser *p)
     if (p->head == p->curr) {
         p->curr = (p->curr + 1) % N;
         p->head = p->curr;
-        lex_get_token(&p->lex, &p->tokbuf[p->curr]);
+        lex_get_token(p->lex, &p->tokbuf[p->curr]);
         type_name_or_identifier(p);
     } else {
         p->curr = (p->curr + 1) % N;
@@ -158,7 +158,7 @@ struct parser *new_parser(void)
     for (i = 0; i < TOKEN_BUFFER_SIZE; i++)
         token_init(&p->tokbuf[i]);
 
-    lexer_init(&p->lex);
+    p->lex = new_lexer();
     p->head = 0;
     p->curr = 0;
 
@@ -188,6 +188,9 @@ struct parser *new_parser(void)
 
 void free_parser(struct parser *p)
 {
+    if (!p)
+        return;
+    free_lexer(p->lex);
     free(p);
 }
 

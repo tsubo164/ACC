@@ -2,7 +2,6 @@
 #define LEXER_H
 
 #include <stdio.h>
-#include "string_table.h"
 #include "position.h"
 
 enum token_kind {
@@ -78,6 +77,8 @@ struct token {
     struct position pos;
 };
 
+struct string_table;
+
 struct lexer {
     struct string_table *strtab;
     const char *head;
@@ -88,15 +89,11 @@ struct lexer {
 };
 
 extern void token_init(struct token *tok);
-extern long token_file_pos(const struct token *tok);
+extern void print_token(const struct token *tok);
 
-extern void lexer_init(struct lexer *lex);
-
-extern struct lexer *new_lexer(FILE *fp, struct string_table *strtab);
-extern void free_lexer(struct lexer *lex);
+extern struct lexer *new_lexer(void);
+extern void free_lexer(struct lexer *l);
 
 extern enum token_kind lex_get_token(struct lexer *l, struct token *tok);
-
-extern void print_token(const struct token *tok);
 
 #endif /* _H */

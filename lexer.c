@@ -2,6 +2,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "lexer.h"
+#include "string_table.h"
 #include "esc_seq.h"
 
 static int readc(struct lexer *l)
@@ -127,14 +128,26 @@ void token_init(struct token *tok)
     init_position(&tok->pos);
 }
 
-void lexer_init(struct lexer *lex)
+struct lexer *new_lexer(void)
 {
-    lex->strtab = NULL;
-    lex->head = NULL;
-    lex->next = NULL;
+    struct lexer *l = malloc(sizeof(struct lexer));
 
-    init_position(&lex->pos);
-    lex->prevx = 0;
+    l->strtab = new_string_table();
+    l->head = NULL;
+    l->next = NULL;
+
+    init_position(&l->pos);
+    l->prevx = 0;
+
+    return l;
+}
+
+void free_lexer(struct lexer *l)
+{
+    if (!l)
+        return;
+    free_string_table(l->strtab);
+    free(l);
 }
 
 static void read_line_number(struct lexer *l);

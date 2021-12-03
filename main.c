@@ -7,7 +7,6 @@
 #include "message.h"
 #include "parse.h"
 #include "semantics.h"
-#include "string_table.h"
 #include "preprocessor.h"
 
 void make_output_filename(const char *input, char *output)
@@ -69,7 +68,6 @@ int main(int argc, char **argv)
 static int compile(const char *filename, const struct option *opt)
 {
     struct preprocessor *pp = NULL;
-    struct string_table *strtab = NULL;
     struct symbol_table *symtab = NULL;
     struct message_list *messages = NULL;
     struct parser *parser = NULL;
@@ -88,17 +86,15 @@ static int compile(const char *filename, const struct option *opt)
     }
 
     /* parse */
-    strtab = new_string_table();
     symtab = new_symbol_table();
     messages = new_message_list();
 
     parser = new_parser();
-    parser->lex.strtab = strtab;
     parser->symtab = symtab;
     parser->msg = messages;
 
-    parser->lex.head = pp->text->buf;
-    parser->lex.next = pp->text->buf;
+    parser->lex->head = pp->text->buf;
+    parser->lex->next = pp->text->buf;
 
     tree = parse(parser);
 
@@ -137,7 +133,6 @@ finalize:
     free_parser(parser);
     free_message_list(messages);
     free_symbol_table(symtab);
-    free_string_table(strtab);
     free_preprocessor(pp);
 
     return ret;
