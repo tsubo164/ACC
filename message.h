@@ -2,13 +2,11 @@
 #define MESSAGE_H
 
 #include "position.h"
-#include "string_table.h"
 
 #define MAX_MESSAGE_COUNT 5
 
 struct message {
-    const char *str;
-    long file_pos;
+    char *str;
     struct position pos;
 };
 
@@ -18,7 +16,6 @@ struct message_list {
 
     int warning_count;
     int error_count;
-    struct string_table *strtab;
 };
 
 extern struct message_list *new_message_list();

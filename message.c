@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 #include "message.h"
 
 #define TERMINAL_COLOR_BLACK   "\x1b[30m"
@@ -112,8 +113,16 @@ static void print_message_array(const struct message *msg_array, int msg_type)
 
 static void init_message(struct message *msg)
 {
+    if (!msg)
+        return;
     msg->str = NULL; 
-    msg->file_pos = 0;
+}
+
+static void free_message(struct message *msg)
+{
+    if (!msg)
+        return;
+    free(msg->str);
 }
 
 struct message_list *new_message_list()
@@ -128,13 +137,19 @@ struct message_list *new_message_list()
 
     list->warning_count = 0;
     list->error_count = 0;
-    list->strtab = NULL;
 
     return list;
 }
 
 void free_message_list(struct message_list *list)
 {
+    int i;
+
+    for (i = 0; i < MAX_MESSAGE_COUNT; i++) {
+        free_message(&list->warnings[i]);
+        free_message(&list->errors[i]);
+    }
+
     free(list);
 }
 
@@ -156,7 +171,8 @@ void add_warning(struct message_list *list, const struct position *pos,
         m->pos = *pos;
 
         vsprintf(buf, msg, va);
-        m->str = insert_string(list->strtab, buf);
+        m->str = malloc(sizeof(char) * (strlen(buf) + 1));
+        strcpy(m->str, buf);
     }
     va_end(va);
 }
@@ -179,7 +195,8 @@ void add_error(struct message_list *list, const struct position *pos,
         m->pos = *pos;
 
         vsprintf(buf, msg, va);
-        m->str = insert_string(list->strtab, buf);
+        m->str = malloc(sizeof(char) * (strlen(buf) + 1));
+        strcpy(m->str, buf);
     }
     va_end(va);
 }

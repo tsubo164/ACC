@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gen_x64.h"
+#include "ast.h"
 #include "lexer.h"
 #include "message.h"
 #include "parse.h"
@@ -70,24 +71,15 @@ static int compile(const char *filename, const struct option *opt)
     struct preprocessor *pp = NULL;
     struct string_table *strtab = NULL;
     struct symbol_table *symtab = NULL;
+    struct message_list *messages = NULL;
     struct parser *parser = NULL;
     struct ast_node *tree = NULL;
-    struct message_list *messages = NULL;
     FILE *fp = NULL;
     char output[256] = {'\0'};
+    int ret = 0;
 
+    /* preprocess */
     pp = new_preprocessor();
-    strtab = new_string_table();
-    symtab = new_symbol_table();
-    messages = new_message_list();
-    messages->strtab = strtab;
-
-    parser = new_parser();
-    parser->lex.strtab = strtab;
-    parser->symtab = symtab;
-    parser->msg = messages;
-
-    /* ------------------------- */
     preprocess_text(pp, filename);
 
     if (opt->print_preprocess) {
@@ -95,11 +87,22 @@ static int compile(const char *filename, const struct option *opt)
         goto finalize;
     }
 
+    /* parse */
+    strtab = new_string_table();
+    symtab = new_symbol_table();
+    messages = new_message_list();
+
+    parser = new_parser();
+    parser->lex.strtab = strtab;
+    parser->symtab = symtab;
+    parser->msg = messages;
+
     parser->lex.head = pp->text->buf;
     parser->lex.next = pp->text->buf;
 
-    /* ------------------------- */
     tree = parse(parser);
+
+    /* analyze semantics */
     semantic_analysis(tree, symtab, messages);
 
     if (opt->print_tree) {
@@ -109,32 +112,33 @@ static int compile(const char *filename, const struct option *opt)
         goto finalize;
     }
 
-    /* ------------------------- */
+    /* diagnostics */
     if (messages->warning_count > 0)
         print_warning_messages(messages);
 
     if (messages->error_count > 0) {
         print_error_messages(messages);
-        exit(EXIT_FAILURE);
+        ret = EXIT_FAILURE;
+        goto finalize;
     }
 
-    /* ------------------------- */
+    /* generate code */
     make_output_filename(filename, output);
     fp = fopen(output, "w");
     if (!fp) {
-        exit(EXIT_FAILURE);
+        ret = EXIT_FAILURE;
+        goto finalize;
     }
     gen_x64(fp, tree, symtab);
-
     fclose(fp);
 
 finalize:
-    /* ------------------------- */
-    free_message_list(messages);
+    free_ast_node(tree);
     free_parser(parser);
+    free_message_list(messages);
     free_symbol_table(symtab);
     free_string_table(strtab);
     free_preprocessor(pp);
 
-    return 0;
+    return ret;
 }
