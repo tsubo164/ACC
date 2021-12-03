@@ -90,13 +90,10 @@ static int compile(const char *filename, const struct option *opt)
     diag = new_diagnostic();
 
     parser = new_parser();
-    parser->symtab = symtab;
-    parser->diag = diag;
+    tree = parse_text(parser, pp->text->buf, symtab, diag);
 
-    tree = parse_text(parser, pp->text->buf);
-
-    /* analyze semantics */
-    semantic_analysis(tree, symtab, diag);
+    /* semantics */
+    analyze_semantics(tree, symtab, diag);
 
     if (opt->print_tree) {
         print_tree(tree);

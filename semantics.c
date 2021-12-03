@@ -517,7 +517,7 @@ static void check_tree_semantics(struct ast_node *tree, struct diagnostic *diag)
     check_tree_(tree, &ctx);
 }
 
-int semantic_analysis(struct ast_node *tree,
+int analyze_semantics(struct ast_node *tree,
         struct symbol_table *table, struct diagnostic *diag)
 {
     check_tree_semantics(tree, diag);

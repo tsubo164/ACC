@@ -47,6 +47,7 @@ struct parser {
 
 extern struct parser *new_parser(void);
 extern void free_parser(struct parser *p);
-extern struct ast_node *parse_text(struct parser *p, const char *text);
+extern struct ast_node *parse_text(struct parser *p, const char *text,
+        struct symbol_table *symtab, struct diagnostic *diag);
 
 #endif /* _H */

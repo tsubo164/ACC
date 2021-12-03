@@ -4,7 +4,7 @@
 #include "ast.h"
 #include "diagnostic.h"
 
-extern int semantic_analysis(struct ast_node *tree,
+extern int analyze_semantics(struct ast_node *tree,
         struct symbol_table *table, struct diagnostic *diag);
 
 #endif /* _H */

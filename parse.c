@@ -2889,11 +2889,17 @@ static struct ast_node *translation_unit(struct parser *p)
     return tree;
 }
 
-struct ast_node *parse_text(struct parser *p, const char *text)
+struct ast_node *parse_text(struct parser *p, const char *text,
+        struct symbol_table *symtab, struct diagnostic *diag)
 {
     if (!text)
         return NULL;
 
+    if (!symtab || !diag)
+        return NULL;
+
+    p->symtab = symtab;
+    p->diag = diag;
     set_source_text(p->lex, text);
 
     return translation_unit(p);
