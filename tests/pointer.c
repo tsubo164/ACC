@@ -1,4 +1,6 @@
 #include "test.h"
+/* TODO implement standard include paths */
+#include "../include/stddef.h"
 
 int main()
 {
@@ -140,6 +142,14 @@ int main()
         assert(12, sizeof a);
         assert(4, sizeof i);
         assert(8, sizeof p);
+    }
+    {
+        /* pointer subtraction to integer type */
+        char s[] = "abcdef";
+        char *p = s + 4;
+        ptrdiff_t d = p - s;
+
+        assert(4, d);
     }
 
     return 0;

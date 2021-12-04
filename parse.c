@@ -307,6 +307,14 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = node->ival >> 32 ? type_long() : type_int();
         break;
 
+    /* pionter arithmetic */
+    case NOD_SUB:
+        if (is_pointer(node->l->type) && is_pointer(node->r->type))
+            node->type = type_long();
+        else
+            node->type = promote_type(node->l, node->r);
+        break;
+
     case NOD_SIZEOF:
         node->type = type_int();
         break;
