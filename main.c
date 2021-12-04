@@ -43,7 +43,6 @@ int main(int argc, char **argv)
     const char *infile = NULL;
     char **argp = argv + 1;
     char **endp = argv + argc;
-    int ret = 0;
 
     while (argp != endp) {
         if (!strcmp("-E", *argp)) {
@@ -76,9 +75,14 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    ret = compile(infile, &opt);
+    if (!opt.preprocess_compile_assemble &&
+        !opt.preprocess_compile &&
+        !opt.preprocess) {
+        printf("acc: error: use -E, -S or -c option\n");
+        return 1;
+    }
 
-    return ret;
+    return compile(infile, &opt);
 }
 
 static void make_output_filename(const char *input, char *output)
@@ -139,15 +143,17 @@ static int compile(const char *filename, const struct option *opt)
         goto finalize;
     }
 
-    /* generate code */
-    make_output_filename(filename, output);
-    fp = fopen(output, "w");
-    if (!fp) {
-        ret = 1;
-        goto finalize;
+    /* compile */
+    if (opt->preprocess_compile) {
+        make_output_filename(filename, output);
+        fp = fopen(output, "w");
+        if (!fp) {
+            ret = 1;
+            goto finalize;
+        }
+        gen_x64(fp, tree, symtab);
+        fclose(fp);
     }
-    gen_x64(fp, tree, symtab);
-    fclose(fp);
 
 finalize:
     free_ast_node(tree);
