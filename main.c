@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "gen_x64.h"
 #include "ast.h"
 #include "lexer.h"
@@ -9,23 +10,31 @@
 #include "semantics.h"
 #include "preprocessor.h"
 
-void make_output_filename(const char *input, char *output)
-{
-    const size_t len = strlen(input);
-    if (len > 255) {
-        return;
-    }
-
-    strcpy(output, input);
-    if (output[len - 1] == 'c') {
-        output[len - 1] = 's';
-    }
-}
-
 struct option {
+    int preprocess;
+    int preprocess_compile;
+    int preprocess_compile_assemble;
     int print_tree;
     int print_preprocess;
 };
+
+static int is_c_filename(const char *name)
+{
+    const char *s;
+    int len;
+
+    for(s = name; *s; s++)
+        if (!isalnum(*s) && !strchr("/.-_", *s))
+            return 0;
+
+    len = s - name;
+    if (len < 3)
+        return 0;
+
+    if (*(s-2) == '.' && *(s-1) == 'c')
+        return 1;
+    return 0;
+}
 
 static int compile(const char *filename, const struct option *opt);
 
@@ -33,36 +42,58 @@ int main(int argc, char **argv)
 {
     struct option opt = {0};
     const char *infile = NULL;
+    char **argp = argv + 1;
+    char **endp = argv + argc;
     int ret = 0;
 
-    if (argc == 1) {
-        printf("acc: error: no input files\n");
-        return -1;
+    while (argp != endp) {
+        if (!strcmp("-E", *argp)) {
+            opt.preprocess = 1;
+        }
+        else if (!strcmp("-S", *argp)) {
+            opt.preprocess_compile = 1;
+        }
+        else if (!strcmp("-c", *argp)) {
+            opt.preprocess_compile_assemble = 1;
+        }
+        else if (!strcmp("--print-tree", *argp)) {
+            opt.print_tree = 1;
+        }
+        else if (!strcmp("--print-preprocess", *argp)) {
+            opt.print_preprocess = 1;
+        }
+        else if (is_c_filename(*argp)) {
+            infile = *argp;
+        }
+        else if (strlen(*argp) > 0 && *argp[0] == '-') {
+            printf("acc: error: unsupported option '%s'\n", *argp);
+            return 1;
+        }
+        else {
+        }
+
+        argp++;
     }
 
-    if (argc == 3) {
-        if (!strcmp(argv[1], "--print-tree")) {
-            opt.print_tree = 1;
-            infile = argv[2];
-        }
-        else if (!strcmp(argv[1], "--print-preprocess")) {
-            opt.print_preprocess = 1;
-            infile = argv[2];
-        } else {
-            printf("acc: error: unsupported option '%s'\n", argv[1]);
-            return -1;
-        }
-    }
-    else if (argc == 2) {
-        infile = argv[1];
-    }
-    else {
-        printf("acc: error: too many arguments\n");
+    if (!infile) {
+        printf("acc: error: no input files\n");
+        return 1;
     }
 
     ret = compile(infile, &opt);
 
     return ret;
+}
+
+static void make_output_filename(const char *input, char *output)
+{
+    const size_t len = strlen(input);
+    if (len > 255)
+        return;
+
+    strcpy(output, input);
+    if (output[len - 1] == 'c')
+        output[len - 1] = 's';
 }
 
 static int compile(const char *filename, const struct option *opt)
@@ -80,7 +111,7 @@ static int compile(const char *filename, const struct option *opt)
     pp = new_preprocessor();
     preprocess_file(pp, filename);
 
-    if (opt->print_preprocess) {
+    if (opt->print_preprocess || opt->preprocess) {
         printf("%s", pp->text->buf);
         goto finalize;
     }

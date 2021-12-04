@@ -145,6 +145,9 @@ void free_diagnostic(struct diagnostic *diag)
 {
     int i;
 
+    if (!diag)
+        return;
+
     for (i = 0; i < MAX_MESSAGE_COUNT; i++) {
         free_message(&diag->warnings[i]);
         free_message(&diag->errors[i]);
