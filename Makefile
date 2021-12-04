@@ -115,7 +115,7 @@ tree: $(ACC)
 	./$(ACC) --print-tree input.c
 
 pp: $(ACC)
-	./$(ACC) --print-preprocess input.c
+	./$(ACC) -E input.c
 
 test_cc:
 	@echo "\033[0;31m*** testing with cc ***\033[0;39m"

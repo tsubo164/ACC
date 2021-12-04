@@ -15,7 +15,6 @@ struct option {
     int preprocess_compile;
     int preprocess_compile_assemble;
     int print_tree;
-    int print_preprocess;
 };
 
 static int is_c_filename(const char *name)
@@ -58,9 +57,6 @@ int main(int argc, char **argv)
         }
         else if (!strcmp("--print-tree", *argp)) {
             opt.print_tree = 1;
-        }
-        else if (!strcmp("--print-preprocess", *argp)) {
-            opt.print_preprocess = 1;
         }
         else if (is_c_filename(*argp)) {
             infile = *argp;
@@ -111,7 +107,7 @@ static int compile(const char *filename, const struct option *opt)
     pp = new_preprocessor();
     preprocess_file(pp, filename);
 
-    if (opt->print_preprocess || opt->preprocess) {
+    if (opt->preprocess) {
         printf("%s", pp->text->buf);
         goto finalize;
     }
