@@ -3,10 +3,5 @@
 *.o
 *.s
 *.d
-acc
-acc2
-acc3
-*.2.c
-*.3.c
-stage2/
-stage3/
+acc*
+stage*/

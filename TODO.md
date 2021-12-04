@@ -14,13 +14,13 @@
 * TODO
   - improve lookup() in symbol.c
       - check only the current scope for local variables define
-  - improve options to be able to specify the output file name
   - improve const qualifier for struct parameter
   - add tests for malloc()
   - add tests for assert()
   - `__FILE__` and `__LINE__` macros for assert()
   - add `#if 0` macro
   - add include paths
+  - make module for print
   - function pointer
   - bit field
   - stringize macro and string cat macro
@@ -123,3 +123,4 @@
   - use registers r10 r11 (omit?)
   - union
   - initialize array of char using string literal `char s[] = "abc"`
+  - improve options to be able to specify the output file name

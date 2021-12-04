@@ -11,31 +11,32 @@
 #include "preprocessor.h"
 
 struct option {
+    const char *out_filename;
     int preprocess;
     int preprocess_compile;
     int preprocess_compile_assemble;
     int print_tree;
 };
 
-static int is_c_filename(const char *name)
+static int is_filename_x(const char *name, int ext)
 {
     const char *s;
-    int len;
+    int len = 0;
 
-    for(s = name; *s; s++)
+    for(s = name; *s; s++, len++)
         if (!isalnum(*s) && !strchr("/.-_", *s))
             return 0;
 
-    len = s - name;
     if (len < 3)
         return 0;
 
-    if (*(s-2) == '.' && *(s-1) == 'c')
+    if (name[len-2] == '.' && name[len-1] == ext)
         return 1;
+
     return 0;
 }
 
-static int compile(const char *filename, const struct option *opt);
+static int compile(const char *infile, const struct option *opt);
 
 int main(int argc, char **argv)
 {
@@ -54,11 +55,19 @@ int main(int argc, char **argv)
         else if (!strcmp("-c", *argp)) {
             opt.preprocess_compile_assemble = 1;
         }
+        else if (!strcmp("-o", *argp)) {
+            if (++argp == endp) {
+                printf("acc: error: missing file name after '-o'\n");
+                return 1;
+            }
+            if (is_filename_x(*argp, 's'))
+                opt.out_filename = *argp;
+        }
+        else if (is_filename_x(*argp, 'c')) {
+            infile = *argp;
+        }
         else if (!strcmp("--print-tree", *argp)) {
             opt.print_tree = 1;
-        }
-        else if (is_c_filename(*argp)) {
-            infile = *argp;
         }
         else if (strlen(*argp) > 0 && *argp[0] == '-') {
             printf("acc: error: unsupported option '%s'\n", *argp);
@@ -77,18 +86,19 @@ int main(int argc, char **argv)
 
     if (!opt.preprocess_compile_assemble &&
         !opt.preprocess_compile &&
-        !opt.preprocess) {
-        printf("acc: error: use -E, -S or -c option\n");
+        !opt.preprocess &&
+        !opt.print_tree) {
+        printf("acc: error: use -E, -S, -c or --print-tree option\n");
         return 1;
     }
 
     return compile(infile, &opt);
 }
 
-static void make_output_filename(const char *input, char *output)
+static void make_output_filename(const char *input, char *output, size_t size)
 {
     const size_t len = strlen(input);
-    if (len > 255)
+    if (len > size - 1)
         return;
 
     strcpy(output, input);
@@ -96,7 +106,7 @@ static void make_output_filename(const char *input, char *output)
         output[len - 1] = 's';
 }
 
-static int compile(const char *filename, const struct option *opt)
+static int compile(const char *infile, const struct option *opt)
 {
     struct preprocessor *pp = NULL;
     struct symbol_table *symtab = NULL;
@@ -104,15 +114,15 @@ static int compile(const char *filename, const struct option *opt)
     struct parser *parser = NULL;
     struct ast_node *tree = NULL;
     FILE *fp = NULL;
-    char output[256] = {'\0'};
+    char outfile[256] = {'\0'};
     int ret = 0;
 
     /* preprocess */
     pp = new_preprocessor();
-    preprocess_file(pp, filename);
+    preprocess_file(pp, infile);
 
     if (opt->preprocess) {
-        printf("%s", pp->text->buf);
+        printf("%s", get_text(pp));
         goto finalize;
     }
 
@@ -121,7 +131,7 @@ static int compile(const char *filename, const struct option *opt)
     diag = new_diagnostic();
 
     parser = new_parser();
-    tree = parse_text(parser, pp->text->buf, symtab, diag);
+    tree = parse_text(parser, get_text(pp), symtab, diag);
 
     /* semantics */
     analyze_semantics(tree, symtab, diag);
@@ -145,8 +155,12 @@ static int compile(const char *filename, const struct option *opt)
 
     /* compile */
     if (opt->preprocess_compile) {
-        make_output_filename(filename, output);
-        fp = fopen(output, "w");
+        if (opt->out_filename)
+            strcpy(outfile, opt->out_filename);
+        else
+            make_output_filename(infile, outfile, sizeof(outfile)/sizeof(outfile[0]));
+
+        fp = fopen(outfile, "w");
         if (!fp) {
             ret = 1;
             goto finalize;

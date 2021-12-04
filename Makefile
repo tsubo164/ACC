@@ -37,7 +37,6 @@ test: $(ACC)
 ACC2 := acc2
 OBJS2 := $(addsuffix .2.o, $(SRCS))
 ASMS2 := $(addsuffix .2.s, $(SRCS))
-SRCS2 := $(addsuffix .2.c, $(SRCS))
 
 $(ACC2): $(OBJS2)
 	$(CC) -o $@ $^ $(LDFLAGS)
@@ -45,11 +44,8 @@ $(ACC2): $(OBJS2)
 $(OBJS2): %.o: %.s
 	$(CC) -c -o $@ $<
 
-$(ASMS2): %.2.s: %.2.c
-	./$(ACC) -S $^
-
-$(SRCS2): %.2.c: %.c
-	cp $< $@
+$(ASMS2): %.2.s: %.c
+	./$(ACC) -S -o $@ $^
 
 test2: $(ACC2)
 	mkdir -p stage2
@@ -60,7 +56,7 @@ test2: $(ACC2)
 	@echo stage2
 
 clean2:
-	$(RM) $(ACC2) *.2.c *.2.s *.2.o
+	$(RM) $(ACC2) *.2.s *.2.o
 	$(RM) -r stage2
 
 #-------------------------------------------------------------------------------
@@ -68,7 +64,6 @@ clean2:
 ACC3 := acc3
 OBJS3 := $(addsuffix .3.o, $(SRCS))
 ASMS3 := $(addsuffix .3.s, $(SRCS))
-SRCS3 := $(addsuffix .3.c, $(SRCS))
 
 $(ACC3): $(OBJS3)
 	$(CC) -o $@ $^ $(LDFLAGS)
@@ -76,11 +71,8 @@ $(ACC3): $(OBJS3)
 $(OBJS3): %.o: %.s
 	$(CC) -c -o $@ $<
 
-$(ASMS3): %.3.s: %.3.c
-	./$(ACC2) -S $^
-
-$(SRCS3): %.3.c: %.c
-	cp $< $@
+$(ASMS3): %.3.s: %.c
+	./$(ACC2) -S -o $@ $^
 
 test3: $(ACC3)
 	mkdir -p stage3
@@ -92,7 +84,7 @@ test3: $(ACC3)
 	diff $(ACC2) $(ACC3)
 
 clean3:
-	$(RM) $(ACC3) *.3.c *.3.s *.3.o
+	$(RM) $(ACC3) *.3.s *.3.o
 	$(RM) -r stage3
 
 #-------------------------------------------------------------------------------
@@ -103,7 +95,7 @@ test_all: test test2 test3
 #-------------------------------------------------------------------------------
 # debug
 run: $(ACC)
-	./$(ACC) input.c
+	./$(ACC) -S input.c
 	$(CC) input.s
 	./a.out
 

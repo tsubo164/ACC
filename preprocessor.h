@@ -49,5 +49,6 @@ extern struct preprocessor *new_preprocessor(void);
 extern void free_preprocessor(struct preprocessor *pp);
 
 extern int preprocess_file(struct preprocessor *pp, const char *filename);
+extern const char *get_text(const struct preprocessor *pp);
 
 #endif /* _H */

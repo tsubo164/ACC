@@ -14,13 +14,13 @@ test: all
 	@echo "\033[0;32mOK\033[0;39m"
 
 $(TARGETS): %: %.c test.o test.h gcc_func.o
-	$(ACC) -S $@.c
+	$(ACC) -S -o $@.s $@.c
 	$(CC) -c -o $@.o $@.s
 	$(CC) -o $@.out $@.o test.o gcc_func.o
 	./$@.out
 
 test.o: test.c test.h
-	$(ACC) -S test.c
+	$(ACC) -S -o test.s test.c
 	$(CC) -c -o test.o test.s
 
 gcc_func.o: gcc_func.c gcc_func.h

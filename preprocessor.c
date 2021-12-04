@@ -265,6 +265,13 @@ void free_preprocessor(struct preprocessor *pp)
     free(pp);
 }
 
+const char *get_text(const struct preprocessor *pp)
+{
+    if (!pp || !pp->text)
+        return NULL;
+    return pp->text->buf;
+}
+
 static void error_(struct preprocessor *pp, const char *msg)
 {
     fprintf(stderr, TERMINAL_DECORATION_BOLD);
