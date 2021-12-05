@@ -486,47 +486,56 @@ struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind
     return sym;
 }
 
-static int is_struct_scope(int scope, struct symbol *strct)
+static int is_member_of(const struct symbol *sym, const struct symbol *struct_sym)
 {
-    if (scope == strct->scope_level + 1)
-        return 1;
-    else
+    /* inside of struct is one level upper than struct scope */
+    if (!sym || !struct_sym)
         return 0;
+
+    return is_member(sym) &&
+        sym->scope_level == struct_sym->scope_level + 1;
 }
 
-static int is_end_of_scope(const struct symbol *member, const struct symbol *struct_tag);
+static int is_end_of_scope(const struct symbol *sym, const struct symbol *scope_owner)
+{
+    if (!sym || !scope_owner)
+        return 0;
 
-static struct symbol *find_struct_member(struct symbol *strct, const char *member)
+    return sym->kind == SYM_SCOPE_END &&
+        sym->scope_level == scope_owner->scope_level;
+}
+
+
+static struct symbol *find_struct_member(struct symbol *struct_sym, const char *name)
 {
     struct symbol *sym;
 
-    if (!strct)
+    if (!struct_sym)
         return NULL;
 
-    if (is_incomplete(strct->type))
+    if (is_incomplete(struct_sym->type))
         return NULL;
 
-    for (sym = strct; sym; sym = sym->next) {
-        if (!is_struct_scope(sym->scope_level, strct))
+    for (sym = struct_sym; sym; sym = sym->next) {
+        if (!is_member_of(sym, struct_sym))
             continue;
 
-        if (match_name(sym, member))
+        if (match_name(sym, name))
             return sym;
 
-        if (is_end_of_scope(sym, strct))
+        if (is_end_of_scope(sym, struct_sym))
             break;
     }
     return NULL;
 }
 
 struct symbol *use_struct_member_symbol(struct symbol_table *table,
-        struct symbol *strct, const char *member)
+        struct symbol *struct_sym, const char *name)
 {
-    struct symbol *sym = find_struct_member(strct, member);
+    struct symbol *sym = find_struct_member(struct_sym, name);
 
-    if (!sym) {
-        sym = push_symbol(table, member, SYM_MEMBER, type_int());
-    }
+    if (!sym)
+        sym = push_symbol(table, name, SYM_MEMBER, type_int());
 
     return sym;
 }
@@ -680,10 +689,10 @@ static int align_to(int pos, int align)
     return ((pos + align - 1) / align) * align;
 }
 
-void compute_func_size(struct symbol *func)
+void compute_func_size(struct symbol *func_sym)
 {
     struct symbol *sym;
-    const int variadic = is_variadic(func);
+    const int variadic = is_variadic(func_sym);
     int total_offset = 0;
     int param_index = 0;
 
@@ -691,7 +700,7 @@ void compute_func_size(struct symbol *func)
         /* the size of reg_save_area (8 bytes * 6 registers) */
         total_offset += 48;
 
-    for (sym = func; sym; sym = sym->next) {
+    for (sym = func_sym; sym; sym = sym->next) {
         if (is_param(sym)) {
             if (param_index < 6) {
                 if (variadic) {
@@ -724,31 +733,11 @@ void compute_func_size(struct symbol *func)
             sym->mem_offset = total_offset;
         }
 
-        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 0)
+        if (is_end_of_scope(sym, func_sym))
             break;
     }
 
-    func->mem_offset = align_to(total_offset, 16);
-}
-
-static int is_member_of(const struct symbol *member, const struct symbol *struct_tag)
-{
-    /* inside of struct is one level upper than struct scope */
-    if (!member || !struct_tag)
-        return 0;
-
-    return is_member(member) &&
-        member->scope_level == struct_tag->scope_level + 1;
-}
-
-static int is_end_of_scope(const struct symbol *member, const struct symbol *struct_tag)
-{
-    /* inside of struct is one level upper than struct scope */
-    if (!member || !struct_tag)
-        return 0;
-
-    return member->kind == SYM_SCOPE_END &&
-        member->scope_level == struct_tag->scope_level;
+    func_sym->mem_offset = align_to(total_offset, 16);
 }
 
 void compute_struct_size(struct symbol *struct_sym)
