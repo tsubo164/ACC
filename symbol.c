@@ -644,42 +644,34 @@ struct symbol *define_ellipsis_symbol(struct symbol_table *table)
     return push_symbol(table, "...", SYM_ELLIPSIS, type_void());
 }
 
-int symbol_scope_begin(struct symbol_table *table)
+void symbol_scope_begin(struct symbol_table *table)
 {
     push_symbol(table, NULL, SYM_SCOPE_BEGIN, NULL);
     table->current_scope_level++;
-
-    return table->current_scope_level;
 }
 
-int symbol_scope_end(struct symbol_table *table)
+void symbol_scope_end(struct symbol_table *table)
 {
     table->current_scope_level--;
     push_symbol(table, NULL, SYM_SCOPE_END, NULL);
-
-    return table->current_scope_level;
 }
 
-int symbol_switch_begin(struct symbol_table *table)
+void symbol_switch_begin(struct symbol_table *table)
 {
     struct symbol *sym;
 
     table->current_switch_level++;
     sym = push_symbol(table, NULL, SYM_SWITCH_BEGIN, NULL);
     sym->scope_level = table->current_switch_level;
-
-    return table->current_switch_level;
 }
 
-int symbol_switch_end(struct symbol_table *table)
+void symbol_switch_end(struct symbol_table *table)
 {
     struct symbol *sym;
 
     sym = push_symbol(table, NULL, SYM_SWITCH_END, NULL);
     sym->scope_level = table->current_switch_level;
     table->current_switch_level--;
-
-    return table->current_switch_level;
 }
 
 static int align_to(int pos, int align)

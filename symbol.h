@@ -115,10 +115,10 @@ extern struct symbol *find_type_name_symbol(struct symbol_table *table, const ch
 extern struct symbol *define_ellipsis_symbol(struct symbol_table *table);
 
 /* scope symobl */
-extern int symbol_scope_begin(struct symbol_table *table);
-extern int symbol_scope_end(struct symbol_table *table);
-extern int symbol_switch_begin(struct symbol_table *table);
-extern int symbol_switch_end(struct symbol_table *table);
+extern void symbol_scope_begin(struct symbol_table *table);
+extern void symbol_scope_end(struct symbol_table *table);
+extern void symbol_switch_begin(struct symbol_table *table);
+extern void symbol_switch_end(struct symbol_table *table);
 
 /* sizes */
 extern void compute_func_size(struct symbol *func);
