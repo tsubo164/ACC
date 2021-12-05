@@ -386,7 +386,7 @@ static struct symbol *lookup(struct symbol_table *table,
 
         /* step down one level */
         if (sym->kind == SYM_SCOPE_BEGIN) {
-            const int lv_outside = sym->scope_level - 1;
+            const int lv_outside = sym->scope_level;
             lv_low = lv_outside < lv_low ? lv_outside : lv_low;
             continue;
         }
@@ -494,6 +494,8 @@ static int is_struct_scope(int scope, struct symbol *strct)
         return 0;
 }
 
+static int is_end_of_scope(const struct symbol *member, const struct symbol *struct_tag);
+
 static struct symbol *find_struct_member(struct symbol *strct, const char *member)
 {
     struct symbol *sym;
@@ -511,7 +513,7 @@ static struct symbol *find_struct_member(struct symbol *strct, const char *membe
         if (match_name(sym, member))
             return sym;
 
-        if (sym->kind == SYM_SCOPE_END)
+        if (is_end_of_scope(sym, strct))
             break;
     }
     return NULL;
@@ -644,16 +646,16 @@ struct symbol *define_ellipsis_symbol(struct symbol_table *table)
 
 int symbol_scope_begin(struct symbol_table *table)
 {
-    table->current_scope_level++;
     push_symbol(table, NULL, SYM_SCOPE_BEGIN, NULL);
+    table->current_scope_level++;
 
     return table->current_scope_level;
 }
 
 int symbol_scope_end(struct symbol_table *table)
 {
-    push_symbol(table, NULL, SYM_SCOPE_END, NULL);
     table->current_scope_level--;
+    push_symbol(table, NULL, SYM_SCOPE_END, NULL);
 
     return table->current_scope_level;
 }
@@ -730,7 +732,7 @@ void compute_func_size(struct symbol *func)
             sym->mem_offset = total_offset;
         }
 
-        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 1)
+        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 0)
             break;
     }
 
@@ -754,7 +756,7 @@ static int is_end_of_scope(const struct symbol *member, const struct symbol *str
         return 0;
 
     return member->kind == SYM_SCOPE_END &&
-        member->scope_level == struct_tag->scope_level + 1;
+        member->scope_level == struct_tag->scope_level;
 }
 
 void compute_struct_size(struct symbol *struct_sym)
@@ -896,7 +898,7 @@ const struct symbol *next_member(const struct symbol *sym)
         if (is_member(memb) && memb->scope_level == scope)
             break;
 
-        if (memb->kind == SYM_SCOPE_END && memb->scope_level == scope)
+        if (memb->kind == SYM_SCOPE_END && memb->scope_level == scope - 1)
             return NULL;
     }
 
