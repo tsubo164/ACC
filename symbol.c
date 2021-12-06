@@ -378,25 +378,16 @@ static struct symbol *lookup(struct symbol_table *table,
         const char *name, enum symbol_kind kind)
 {
     struct symbol *sym;
-    /* lowest level so far during search */
-    int lv_low = table->current_scope_level;
+    int lv = table->current_scope_level;
 
-    /* search backwards */
     for (sym = table->tail; sym; sym = sym->prev) {
-
         /* step down one level */
         if (sym->kind == SYM_SCOPE_BEGIN) {
-            const int lv_outside = sym->scope_level;
-            lv_low = lv_outside < lv_low ? lv_outside : lv_low;
+            lv = sym->scope_level < lv ? sym->scope_level : lv;
             continue;
         }
 
-        /* step up one level */
-        if (sym->kind == SYM_SCOPE_END)
-            continue;
-
-        /* skip upper level scope */
-        if (sym->scope_level > lv_low)
+        if (sym->scope_level > lv)
             continue;
 
         if (match_name(sym, name) && match_namespace(sym, kind))
