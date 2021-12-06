@@ -3,14 +3,16 @@
 #include <string.h>
 #include <stdio.h>
 */
-#include <stddef.h>
+
+int cnt = 42;
+
+char *p = "world!\n";
 
 int main()
 {
-    char s[] = "abc";
-    char *p = s + 2;
+    int a = cnt;
 
-    ptrdiff_t len = p - s;
+    char *s = "hello\n";
 
-    return len;
+    return a + s[0];
 }

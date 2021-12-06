@@ -110,7 +110,6 @@ enum operand_kind {
     OPR_ADDR,
     OPR_IMME,
     OPR_LABEL,
-    OPR_LABEL__,
     OPR_STR
 };
 
@@ -155,7 +154,7 @@ const struct operand R10 = {OPR_REG, QUAD, R10__};
 const struct operand R11 = {OPR_REG, QUAD, R11__};
 
 /* 2, 0x8, ... */
-struct operand imme(long value)
+static struct operand imme(long value)
 {
     struct operand o = INIT_OPERAND;
     o.kind = OPR_IMME;
@@ -165,7 +164,7 @@ struct operand imme(long value)
 }
 
 /* (base) */
-struct operand addr1(struct operand oper)
+static struct operand addr1(struct operand oper)
 {
     struct operand o = oper;
     o.kind = OPR_ADDR;
@@ -175,7 +174,7 @@ struct operand addr1(struct operand oper)
 }
 
 /* disp(base) */
-struct operand addr2(struct operand oper, int disp)
+static struct operand addr2(struct operand oper, int disp)
 {
     struct operand o = oper;
     o.kind = OPR_ADDR;
@@ -185,7 +184,7 @@ struct operand addr2(struct operand oper, int disp)
 }
 
 /* name(base) */
-struct operand addr2_pc_rel(struct operand oper, const char *name, int label_id)
+static struct operand addr2_pc_rel(struct operand oper, const char *name, int label_id)
 {
     struct operand o = oper;
     o.kind = OPR_ADDR;
@@ -196,7 +195,7 @@ struct operand addr2_pc_rel(struct operand oper, const char *name, int label_id)
 }
 
 /* _main, .L001, ... */
-struct operand str(const char *value)
+static struct operand str(const char *value)
 {
     struct operand o = INIT_OPERAND;
     o.kind = OPR_STR;
@@ -206,7 +205,7 @@ struct operand str(const char *value)
 }
 
 /* rdi, rsi, ... */
-struct operand arg(int index)
+static struct operand arg(int index)
 {
     struct operand o = INIT_OPERAND;
     o.kind = OPR_REG;
@@ -216,22 +215,11 @@ struct operand arg(int index)
 }
 
 /* .LBB1_2, ... */
-struct operand label(int block_id, int label_id)
+static struct operand label(int block_id, int label_id)
 {
     struct operand o = {0};
     o.kind = OPR_LABEL;
     o.block_id = block_id;
-    o.label_id = label_id;
-
-    return o;
-}
-
-/* _LBB1_2, ... */
-struct operand label__(const char *label_str, int label_id)
-{
-    struct operand o = {0};
-    o.kind = OPR_LABEL__;
-    o.string = label_str;
     o.label_id = label_id;
 
     return o;
@@ -339,13 +327,6 @@ static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
 
     case OPR_LABEL:
         fprintf(fp, ".LBB%d_%d", oper->block_id, oper->label_id);
-        break;
-
-    case OPR_LABEL__:
-        if (oper->label_id == 0)
-            fprintf(fp, "_%s(%%rip)", oper->string);
-        else
-            fprintf(fp, "_%s.%d(%%rip)", oper->string, oper->label_id);
         break;
 
     case OPR_STR:
@@ -1638,7 +1619,7 @@ static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
 
     case NOD_STRING:
         fprintf(fp, "    .%s ", szname);
-        fprintf(fp, "_L.str.%d\n", expr->sym->id);
+        fprintf(fp, "_L.str_%d\n", expr->sym->id);
         break;
 
     case NOD_ADD:
@@ -2118,7 +2099,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_STRING:
-        code3__(fp, node, LEA_, label__("L.str", node->sym->id), A_);
+        code3__(fp, node, LEA_, addr2_pc_rel(RIP, "L.str", node->sym->id), A_);
         break;
 
     case NOD_SIZEOF:
@@ -2363,7 +2344,7 @@ static void gen_string_literal(FILE *fp, const struct symbol_table *table)
 
     for (sym = table->head; sym; sym = sym->next) {
         if (is_string_literal(sym)) {
-            fprintf(fp, "_L.str.%d:\n", sym->id);
+            fprintf(fp, "_L.str_%d:\n", sym->id);
             fprintf(fp, "    .asciz \"");
             print_string_literal(fp, sym->name);
             fprintf(fp, "\"\n\n");
