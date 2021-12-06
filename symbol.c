@@ -135,6 +135,16 @@ int has_origin(const struct symbol *sym)
     return !is_origin(sym);
 }
 
+static int is_scope_begin(const struct symbol *sym)
+{
+    return sym && sym->kind == SYM_SCOPE_BEGIN;
+}
+
+static int is_scope_end(const struct symbol *sym)
+{
+    return sym && sym->kind == SYM_SCOPE_END;
+}
+
 struct symbol_table *new_symbol_table(void)
 {
     struct symbol_table *table;
@@ -382,10 +392,31 @@ static struct symbol *lookup(struct symbol_table *table,
 
     for (sym = table->tail; sym; sym = sym->prev) {
         /* step down one level */
-        if (sym->kind == SYM_SCOPE_BEGIN) {
+        if (is_scope_begin(sym)) {
             lv = sym->scope_level < lv ? sym->scope_level : lv;
             continue;
         }
+
+        if (sym->scope_level > lv)
+            continue;
+
+        if (match_name(sym, name) && match_namespace(sym, kind))
+            return sym;
+    }
+
+    return NULL;
+}
+
+static struct symbol *lookup_current(struct symbol_table *table,
+        const char *name, enum symbol_kind kind)
+{
+    struct symbol *sym;
+    const int lv = table->current_scope_level;
+
+    for (sym = table->tail; sym; sym = sym->prev) {
+        /* reached the beginning of current scope */
+        if (is_scope_begin(sym) && sym->scope_level < lv)
+            break;
 
         if (sym->scope_level > lv)
             continue;
@@ -427,7 +458,7 @@ struct symbol *define_symbol(struct symbol_table *table,
     struct data_type *defined_type = type;
     int already_defined = 0;
 
-    sym = lookup(table, name, kind);
+    sym = lookup_current(table, name, kind);
 
     /* TODO may not need SYM_FUNC check when making define functions
      * for each symbol kind */
@@ -492,8 +523,7 @@ static int is_end_of_scope(const struct symbol *sym, const struct symbol *scope_
     if (!sym || !scope_owner)
         return 0;
 
-    return sym->kind == SYM_SCOPE_END &&
-        sym->scope_level == scope_owner->scope_level;
+    return is_scope_end(sym) && sym->scope_level == scope_owner->scope_level;
 }
 
 
@@ -870,7 +900,7 @@ const struct symbol *next_member(const struct symbol *sym)
         if (is_member(memb) && memb->scope_level == scope)
             break;
 
-        if (memb->kind == SYM_SCOPE_END && memb->scope_level == scope - 1)
+        if (is_scope_end(memb) && memb->scope_level == scope - 1)
             return NULL;
     }
 
