@@ -109,8 +109,7 @@ enum operand_kind {
     OPR_REG,
     OPR_ADDR,
     OPR_IMME,
-    OPR_LABEL,
-    OPR_STR
+    OPR_SYM
 };
 
 struct operand {
@@ -153,6 +152,9 @@ const struct operand RSP = {OPR_REG, QUAD, SP__};
 const struct operand R10 = {OPR_REG, QUAD, R10__};
 const struct operand R11 = {OPR_REG, QUAD, R11__};
 
+static const char *LABEL_NAME_PREFIX = "LBB";
+static const char *STR_LIT_NAME_PREFIX = "L.str";
+
 /* 2, 0x8, ... */
 static struct operand imme(long value)
 {
@@ -194,12 +196,14 @@ static struct operand addr2_pc_rel(struct operand oper, const char *name, int la
     return o;
 }
 
-/* _main, .L001, ... */
-static struct operand str(const char *value)
+/* _main, _LBB1_2, _count, ... */
+static struct operand sym_(const char *prefix, int block_id, int label_id)
 {
     struct operand o = INIT_OPERAND;
-    o.kind = OPR_STR;
-    o.string = value;
+    o.kind = OPR_SYM;
+    o.string = prefix;
+    o.block_id = block_id;
+    o.label_id = label_id;
 
     return o;
 }
@@ -217,15 +221,10 @@ static struct operand arg(int index)
 /* .LBB1_2, ... */
 static struct operand label(int block_id, int label_id)
 {
-    struct operand o = {0};
-    o.kind = OPR_LABEL;
-    o.block_id = block_id;
-    o.label_id = label_id;
-
-    return o;
+    return sym_(LABEL_NAME_PREFIX, block_id, label_id);
 }
 
-static const char *reg(const struct operand *oper, int tag)
+static const char *regi(const struct operand *oper, int tag)
 {
     if (oper->data_tag == VARI) {
         return oper->reg_table[tag];
@@ -281,17 +280,13 @@ static void gen_pc_rel_addr(FILE *fp, const char *name, int label_id)
         fprintf(fp, "_%s", name);
 }
 
-static const char *LABEL_NAME_PREFIX = "LBB";
-
-static void gen_label_name(FILE *fp, const char *prefix, int block_id, int label_id)
+static void gen_symbol_name(FILE *fp, const char *prefix, int block_id, int label_id)
 {
     if (block_id < 0 && label_id < 0)
         fprintf(fp, "_%s", prefix);
     else
         fprintf(fp, "_%s%d_%d", prefix, block_id, label_id);
 }
-
-static const char *STR_LIT_NAME_PREFIX = "L.str";
 
 static void gen_string_literal_name(FILE *fp, int label_id)
 {
@@ -309,48 +304,42 @@ static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
         break;
 
     case OPR_REG:
-        if (att_syntax) {
-            fprintf(fp, "%%%s", reg(oper, tag));
-        } else {
-            fprintf(fp, "%s", reg(oper, tag));
-        }
+        if (att_syntax)
+            fprintf(fp, "%%%s", regi(oper, tag));
+        else
+            fprintf(fp, "%s", regi(oper, tag));
         break;
 
     case OPR_ADDR:
         if (att_syntax) {
             if (oper->string) {
                 gen_pc_rel_addr(fp, oper->string, oper->label_id);
-                fprintf(fp, "(%%%s)", reg(oper, tag));
-            } else
-            if (oper->disp != 0) {
-                fprintf(fp, "%d(%%%s)", oper->disp, reg(oper, tag));
-            } else {
-                fprintf(fp, "(%%%s)", reg(oper, tag));
+                fprintf(fp, "(%%%s)", regi(oper, tag));
+            }
+            else if (oper->disp != 0) {
+                fprintf(fp, "%d(%%%s)", oper->disp, regi(oper, tag));
+            }
+            else {
+                fprintf(fp, "(%%%s)", regi(oper, tag));
             }
         } else {
-            if (oper->disp != 0) {
-                fprintf(fp, "%s [%s%+d]",
-                    get_data_directive(tag), reg(oper, tag), oper->disp);
-            } else {
-                fprintf(fp, "%s [%s]", get_data_directive(tag), reg(oper, tag));
-            }
+            const char *direc = get_data_directive(tag);
+            if (oper->disp != 0)
+                fprintf(fp, "%s [%s%+d]", direc, regi(oper, tag), oper->disp);
+            else
+                fprintf(fp, "%s [%s]", direc, regi(oper, tag));
         }
         break;
 
     case OPR_IMME:
-        if (att_syntax) {
+        if (att_syntax)
             fprintf(fp, "$%ld", oper->immediate);
-        } else {
+        else
             fprintf(fp, "%ld", oper->immediate);
-        }
         break;
 
-    case OPR_LABEL:
-        gen_label_name(fp, LABEL_NAME_PREFIX, oper->block_id, oper->label_id);
-        break;
-
-    case OPR_STR:
-        gen_label_name(fp, oper->string, -1, -1);
+    case OPR_SYM:
+        gen_symbol_name(fp, oper->string, oper->block_id, oper->label_id);
         break;
 
     default:
@@ -979,7 +968,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
         /* call */
         gen_comment(fp, "call");
-        code2__(fp, node, CALL_, str(func_sym->name));
+        code2__(fp, node, CALL_, sym_(func_sym->name, -1, -1));
 
         gen_comment(fp, "free up arg area");
         gen_add_stack_pointer(fp, total_area_size);
@@ -1058,7 +1047,7 @@ static void gen_func_call_builtin(FILE *fp, const struct ast_node *node)
 
 static void gen_label(FILE *fp, int block_id, int label_id)
 {
-    gen_label_name(fp, LABEL_NAME_PREFIX, block_id, label_id);
+    gen_symbol_name(fp, LABEL_NAME_PREFIX, block_id, label_id);
     fprintf(fp, ":\n");
 }
 
