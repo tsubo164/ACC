@@ -281,9 +281,14 @@ static void gen_pc_rel_addr(FILE *fp, const char *name, int label_id)
         fprintf(fp, "_%s", name);
 }
 
-static void gen_label_name(FILE *fp, int block_id, int label_id)
+static const char *LABEL_NAME_PREFIX = "LBB";
+
+static void gen_label_name(FILE *fp, const char *prefix, int block_id, int label_id)
 {
-    fprintf(fp, ".LBB%d_%d", block_id, label_id);
+    if (block_id < 0 && label_id < 0)
+        fprintf(fp, "_%s", prefix);
+    else
+        fprintf(fp, "_%s%d_%d", prefix, block_id, label_id);
 }
 
 static const char *STR_LIT_NAME_PREFIX = "L.str";
@@ -341,11 +346,11 @@ static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
         break;
 
     case OPR_LABEL:
-        gen_label_name(fp, oper->block_id, oper->label_id);
+        gen_label_name(fp, LABEL_NAME_PREFIX, oper->block_id, oper->label_id);
         break;
 
     case OPR_STR:
-        fprintf(fp, "_%s", oper->string);
+        gen_label_name(fp, oper->string, -1, -1);
         break;
 
     default:
@@ -1053,7 +1058,7 @@ static void gen_func_call_builtin(FILE *fp, const struct ast_node *node)
 
 static void gen_label(FILE *fp, int block_id, int label_id)
 {
-    gen_label_name(fp, block_id, label_id);
+    gen_label_name(fp, LABEL_NAME_PREFIX, block_id, label_id);
     fprintf(fp, ":\n");
 }
 
