@@ -281,6 +281,21 @@ static void gen_pc_rel_addr(FILE *fp, const char *name, int label_id)
         fprintf(fp, "_%s", name);
 }
 
+static void gen_label_name(FILE *fp, int block_id, int label_id)
+{
+    fprintf(fp, ".LBB%d_%d", block_id, label_id);
+}
+
+static const char *STR_LIT_NAME_PREFIX = "L.str";
+
+static void gen_string_literal_name(FILE *fp, int label_id)
+{
+    if (label_id > 0)
+        fprintf(fp, "_%s_%d", STR_LIT_NAME_PREFIX, label_id);
+    else
+        fprintf(fp, "_%s", STR_LIT_NAME_PREFIX);
+}
+
 static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
 {
     switch (oper->kind) {
@@ -326,7 +341,7 @@ static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
         break;
 
     case OPR_LABEL:
-        fprintf(fp, ".LBB%d_%d", oper->block_id, oper->label_id);
+        gen_label_name(fp, oper->block_id, oper->label_id);
         break;
 
     case OPR_STR:
@@ -1038,7 +1053,8 @@ static void gen_func_call_builtin(FILE *fp, const struct ast_node *node)
 
 static void gen_label(FILE *fp, int block_id, int label_id)
 {
-    fprintf(fp, ".LBB%d_%d:\n", block_id, label_id);
+    gen_label_name(fp, block_id, label_id);
+    fprintf(fp, ":\n");
 }
 
 static void gen_ident(FILE *fp, const struct ast_node *node)
@@ -1619,7 +1635,8 @@ static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
 
     case NOD_STRING:
         fprintf(fp, "    .%s ", szname);
-        fprintf(fp, "_L.str_%d\n", expr->sym->id);
+        gen_string_literal_name(fp, expr->sym->id);
+        fprintf(fp, "\n");
         break;
 
     case NOD_ADD:
@@ -2099,7 +2116,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_STRING:
-        code3__(fp, node, LEA_, addr2_pc_rel(RIP, "L.str", node->sym->id), A_);
+        code3__(fp, node, LEA_, addr2_pc_rel(RIP, STR_LIT_NAME_PREFIX, node->sym->id), A_);
         break;
 
     case NOD_SIZEOF:
@@ -2344,7 +2361,8 @@ static void gen_string_literal(FILE *fp, const struct symbol_table *table)
 
     for (sym = table->head; sym; sym = sym->next) {
         if (is_string_literal(sym)) {
-            fprintf(fp, "_L.str_%d:\n", sym->id);
+            gen_string_literal_name(fp, sym->id);
+            fprintf(fp, ":\n");
             fprintf(fp, "    .asciz \"");
             print_string_literal(fp, sym->name);
             fprintf(fp, "\"\n\n");
