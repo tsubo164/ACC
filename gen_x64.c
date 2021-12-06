@@ -105,7 +105,6 @@ const struct opecode CLTD_  = {"cltd",  0};
 const struct opecode CQTO_  = {"cqto",  0};
 
 enum operand_kind {
-    OPR_NONE,
     OPR_REG,
     OPR_ADDR,
     OPR_IMME,
@@ -122,7 +121,7 @@ struct operand {
     int label_id;
     int block_id;
 };
-#define INIT_OPERAND {OPR_NONE, VARI}
+#define INIT_OPERAND {0, VARI}
 
 /* variable name registers */
 const struct operand A_  = {OPR_REG, VARI, A__};
@@ -186,9 +185,9 @@ static struct operand addr2(struct operand oper, int disp)
 }
 
 /* name(base) */
-static struct operand addr2_pc_rel(struct operand oper, const char *name, int label_id)
+static struct operand addr2_pc_rel(const char *name, int label_id)
 {
-    struct operand o = oper;
+    struct operand o = RIP;
     o.kind = OPR_ADDR;
     o.string = name;
     o.label_id = label_id;
@@ -197,7 +196,7 @@ static struct operand addr2_pc_rel(struct operand oper, const char *name, int la
 }
 
 /* _main, _LBB1_2, _count, ... */
-static struct operand sym_(const char *prefix, int block_id, int label_id)
+static struct operand symb(const char *prefix, int block_id, int label_id)
 {
     struct operand o = INIT_OPERAND;
     o.kind = OPR_SYM;
@@ -209,7 +208,7 @@ static struct operand sym_(const char *prefix, int block_id, int label_id)
 }
 
 /* rdi, rsi, ... */
-static struct operand arg(int index)
+static struct operand argu(int index)
 {
     struct operand o = INIT_OPERAND;
     o.kind = OPR_REG;
@@ -221,32 +220,28 @@ static struct operand arg(int index)
 /* .LBB1_2, ... */
 static struct operand label(int block_id, int label_id)
 {
-    return sym_(LABEL_NAME_PREFIX, block_id, label_id);
+    return symb(LABEL_NAME_PREFIX, block_id, label_id);
 }
 
 static const char *regi(const struct operand *oper, int tag)
 {
-    if (oper->data_tag == VARI) {
+    if (oper->data_tag == VARI)
         return oper->reg_table[tag];
-    } else {
+    else
         return oper->reg_table[oper->data_tag];
-    }
 }
 
 static int promote_tag(int tag, const struct operand *oper)
 {
     int t;
 
-    if (oper == NULL) {
+    if (!oper)
         return tag;
-    }
 
     /* register that holds address doesn't affect promotion
-     * as we don't know the size of data the address points to
-     */
-    if (oper->kind == OPR_ADDR) {
+     * as we don't know the size of data the address points to */
+    if (oper->kind == OPR_ADDR)
         return tag;
-    }
 
     t = oper->data_tag;
     return tag > t ? tag : t;
@@ -257,13 +252,11 @@ static void gen_opecode__(FILE *fp, int tag, const struct opecode *op, int *ncha
     int len = 0;
     const char *sfx = "";
 
-    if (att_syntax) {
+    if (att_syntax)
         sfx = get_data_suffix(tag);
-    }
 
-    if (!op->has_suffix) {
+    if (!op->has_suffix)
         sfx = "";
-    }
 
     fprintf(fp, "%s%s", op->mnemonic, sfx);
 
@@ -299,9 +292,6 @@ static void gen_string_literal_name(FILE *fp, int label_id)
 static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
 {
     switch (oper->kind) {
-
-    case OPR_NONE:
-        break;
 
     case OPR_REG:
         if (att_syntax)
@@ -563,7 +553,7 @@ static void gen_func_param_list_variadic_(FILE *fp)
     for (i = 0; i < 6; i++) {
         struct ast_node dummy = {0};
         const int disp = -8 * (6 - i);
-        code3__(fp, &dummy, MOV_, arg(i), addr2(RBP, disp));
+        code3__(fp, &dummy, MOV_, argu(i), addr2(RBP, disp));
     }
 }
 
@@ -625,7 +615,7 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
             const int disp = -1 * sym->mem_offset;
 
             dummy.type = sym->type;
-            code3__(fp, &dummy, MOV_, arg(stored_reg_count), addr2(RBP, disp));
+            code3__(fp, &dummy, MOV_, argu(stored_reg_count), addr2(RBP, disp));
             stored_reg_count++;
         }
         else if (param_size <= 16 && stored_reg_count < 5) {
@@ -943,7 +933,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 /* large return value */
                 const int offset = -get_local_area_size();
                 gen_comment(fp, "load address to returned value");
-                code3__(fp, NULL, LEA_, addr2(RBP, offset), arg(0));
+                code3__(fp, NULL, LEA_, addr2(RBP, offset), argu(0));
                 loaded_reg_count++;
                 continue;
             }
@@ -955,7 +945,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 loaded_reg_count = gen_load_arg(fp, ar, loaded_reg_count);
             } else {
                 code3__(fp, NULL, MOV_, addr2(RSP, ar->offset),
-                        arg(loaded_reg_count));
+                        argu(loaded_reg_count));
                 loaded_reg_count++;
             }
         }
@@ -968,7 +958,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
         /* call */
         gen_comment(fp, "call");
-        code2__(fp, node, CALL_, sym_(func_sym->name, -1, -1));
+        code2__(fp, node, CALL_, symb(func_sym->name, -1, -1));
 
         gen_comment(fp, "free up arg area");
         gen_add_stack_pointer(fp, total_area_size);
@@ -1063,7 +1053,7 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
     if (is_global_var(sym)) {
         const int id = is_static(sym) ? sym->id : -1;
         if (is_array(node->type)) {
-            code3__(fp, node, LEA_, addr2_pc_rel(RIP, sym->name, id), RAX);
+            code3__(fp, node, LEA_, addr2_pc_rel(sym->name, id), RAX);
         } else {
             /* TODO come up with better idea */
             if (!strcmp(sym->name, "__stdinp") ||
@@ -1072,7 +1062,7 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
                 fprintf(fp, "    movq   _%s@GOTPCREL(%%rip), %%rax\n", sym->name);
                 code3__(fp, NULL, MOV_, addr1(RAX), RAX);
             } else {
-                code3__(fp, node, MOV_, addr2_pc_rel(RIP, sym->name, id), A_);
+                code3__(fp, node, MOV_, addr2_pc_rel(sym->name, id), A_);
             }
         }
     }
@@ -1101,7 +1091,7 @@ static void gen_ident_lvalue(FILE *fp, const struct ast_node *node)
 
     if (is_global_var(sym)) {
         const int id = is_static(sym) ? sym->id : -1;
-        code3__(fp, node, LEA_, addr2_pc_rel(RIP, sym->name, id), RAX);
+        code3__(fp, node, LEA_, addr2_pc_rel(sym->name, id), RAX);
     } else {
         code3__(fp, node, MOV_, BP_, RAX);
         code3__(fp, node, SUB_, imme(get_mem_offset(node)), RAX);
@@ -2110,7 +2100,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_STRING:
-        code3__(fp, node, LEA_, addr2_pc_rel(RIP, STR_LIT_NAME_PREFIX, node->sym->id), A_);
+        code3__(fp, node, LEA_, addr2_pc_rel(STR_LIT_NAME_PREFIX, node->sym->id), A_);
         break;
 
     case NOD_SIZEOF:

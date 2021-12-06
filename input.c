@@ -10,9 +10,10 @@ char *p = "world!\n";
 
 int main()
 {
+    static int depth = 0;
     int a = cnt;
 
     char *s = "hello\n";
 
-    return a + s[0];
+    return a + s[0] + depth;
 }
