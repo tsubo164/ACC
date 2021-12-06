@@ -12,8 +12,6 @@
   - [x] `type.c`
 
 * TODO
-  - improve lookup() in symbol.c
-      - check only the current scope for local variables define
   - improve const qualifier for struct parameter
   - add tests for malloc()
   - add tests for assert()
@@ -36,6 +34,7 @@
     - remove `NOD_SPEC_*` from tree
     - remove `NOD_DECL_*` from tree
     - add `struct declaration` to manage decl context and use it as parse param
+  - make symbole table tree structure
   - `data_tag_()` needs to be based on size of type
   - `code[123]__()` needs to take `data_type` or tag instead of `ast_node`
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics
@@ -124,3 +123,5 @@
   - union
   - initialize array of char using string literal `char s[] = "abc"`
   - improve options to be able to specify the output file name
+  - improve lookup() in symbol.c
+      - check only the current scope for local variables define

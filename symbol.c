@@ -162,10 +162,13 @@ struct symbol_table *new_symbol_table(void)
 
 static void free_list(struct symbol *sym)
 {
-    if (!sym)
-        return;
-    free_list(sym->next);
-    free(sym);
+    struct symbol *s = sym, *tmp;
+
+    while (s) {
+        tmp = s->next;
+        free(s);
+        s = tmp;
+    }
 }
 
 void free_symbol_table(struct symbol_table *table)
@@ -738,7 +741,7 @@ void compute_func_size(struct symbol *func_sym)
                 }
             } else {
                 int stack_index = param_index - 6;
-                /* retrun address and original rbp (8 + 8 = 16 bytes)
+                /* return address and original rbp (8 + 8 = 16 bytes)
                  * is on top of arguments */
                 sym->mem_offset = -(16 + 8 * stack_index);
             }
