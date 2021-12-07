@@ -1102,47 +1102,23 @@ static void gen_load(FILE *fp, const struct ast_node *node,
     if (!is_small_object(node->type))
         return;
 
-    {
-        struct opecode op = MOV_;
-        struct operand o1 = addr;
-        struct operand o2 = regist;
-        int tag = node ? data_tag_(node->type) : QUAD;
-
-        switch (tag) {
-        case BYTE:
-            op = is_unsigned(node->type) ? MOVZB_ : MOVSB_;
-            o2 = EAX;
-            break;
-        case WORD:
-            op = is_unsigned(node->type) ? MOVZW_ : MOVSW_;
-            o2 = EAX;
-            break;
-        default:
-            break;
-        }
-
-        code3__(fp, node, op, o1, o2);
-    }
-    /*
-    gen_comment(fp, ">>>        LOAD");
+    gen_comment(fp, "load");
     code3__(fp, node, MOV_, addr, regist);
     if (is_char(node->type) || is_short(node->type)) {
-    gen_comment(fp, "    >>>        CAST");
+        gen_comment(fp, "cast");
         gen_cast(fp, node);
     }
-    */
 }
 
 static void gen_store(FILE *fp, const struct ast_node *node, struct operand addr)
 {
-    if (is_long(node->type)) {
-        if (is_unsigned(node->type))
-            code3__(fp, node, MOV_, EAX, RAX);
-        else
-            code3__(fp, node, MOVSL_, EAX, RAX);
-    }
+    if (is_long(node->type) && !is_long(node->r->type))
+        gen_cast(fp, node->r);
 
-    code3__(fp, node, MOV_, A_, addr1(addr));
+    if (is_small_object(node->type))
+        code3__(fp, node, MOV_, A_, addr1(RDX));
+    else
+        gen_assign_struct(fp, node->type);
 }
 
 static void gen_div(FILE *fp, const struct ast_node *node, struct operand divider)
