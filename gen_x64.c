@@ -454,34 +454,14 @@ static void code3__(FILE *fp, const struct ast_node *node,
     struct operand o2 = oper2;
     int tag = node ? data_tag_(node->type) : QUAD;
 
-    /* this rule comes from x86-64 machine instructions.
-     * it depends on the size of register when loading from memory.
-     * it is independent of language data types. */
-    /* TODO move this to gen_load()? */
-    if (!strcmp(op.mnemonic, "mov") &&
-        oper1.kind == OPR_ADDR &&
-        oper2.kind == OPR_REG)
-    {
-        switch (tag) {
-        case BYTE:
-            o0 = is_unsigned(node->type) ? MOVZB_ : MOVSB_;
-            o2 = EAX;
-            break;
-        case WORD:
-            o0 = is_unsigned(node->type) ? MOVZW_ : MOVSW_;
-            o2 = EAX;
-            break;
-        default:
-            break;
-        }
-    }
-
     code__(fp, tag, &o0, &o1, &o2);
 }
 
 /* forward declaration */
 static void gen_code(FILE *fp, const struct ast_node *node);
 static void gen_address(FILE *fp, const struct ast_node *node);
+static void gen_load(FILE *fp, const struct ast_node *node,
+        struct operand addr, struct operand regist);
 static void gen_assign_struct(FILE *fp, const struct data_type *type);
 
 static void gen_comment(FILE *fp, const char *cmt)
@@ -1072,11 +1052,10 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
     else {
         const int disp = -get_mem_offset(node);
 
-        if (is_array(node->type)) {
+        if (is_array(node->type))
             code3__(fp, node, LEA_, addr2(RBP, disp), A_);
-        } else {
-            code3__(fp, node, MOV_, addr2(RBP, disp), A_);
-        }
+        else
+            gen_load(fp, node, addr2(RBP, disp), A_);
     }
 }
 
@@ -1129,7 +1108,8 @@ static void gen_address(FILE *fp, const struct ast_node *node)
     }
 }
 
-static void gen_load(FILE *fp, const struct ast_node *node)
+static void gen_load(FILE *fp, const struct ast_node *node,
+        struct operand addr, struct operand regist)
 {
     /* array objects cannot be loaded in registers, and converted to pointers */
     if (is_array(node->type))
@@ -1138,7 +1118,28 @@ static void gen_load(FILE *fp, const struct ast_node *node)
      * and the compiler handle it via pointer */
     if (!is_small_object(node->type))
         return;
-    code3__(fp, node, MOV_, addr1(RAX), A_);
+
+    {
+        struct opecode op = MOV_;
+        struct operand o1 = addr;
+        struct operand o2 = regist;
+        int tag = node ? data_tag_(node->type) : QUAD;
+
+        switch (tag) {
+        case BYTE:
+            op = is_unsigned(node->type) ? MOVZB_ : MOVSB_;
+            o2 = EAX;
+            break;
+        case WORD:
+            op = is_unsigned(node->type) ? MOVZW_ : MOVSW_;
+            o2 = EAX;
+            break;
+        default:
+            break;
+        }
+
+        code3__(fp, node, op, o1, o2);
+    }
 }
 
 static void gen_store(FILE *fp, const struct ast_node *node, struct operand addr)
@@ -1917,7 +1918,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_STRUCT_REF:
         gen_address(fp, node);
-        gen_load(fp, node);
+        gen_load(fp, node, addr1(RAX), A_);
         break;
 
     case NOD_CALL:
@@ -2092,7 +2093,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_DEREF:
         gen_code(fp, node->l);
-        gen_load(fp, node);
+        gen_load(fp, node, addr1(RAX), A_);
         break;
 
     case NOD_NUM:
