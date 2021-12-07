@@ -1110,15 +1110,16 @@ static void gen_load(FILE *fp, const struct ast_node *node,
     }
 }
 
-static void gen_store(FILE *fp, const struct ast_node *node, struct operand addr)
+static void gen_store(FILE *fp, const struct ast_node *node,
+        struct operand regist, struct operand addr)
 {
-    if (is_long(node->type) && !is_long(node->r->type))
-        gen_cast(fp, node->r);
+    gen_comment(fp, "store");
+    if (is_char(node->type) || is_short(node->type) || is_int(node->type)) {
+        gen_comment(fp, "cast");
+        gen_cast(fp, node);
+    }
 
-    if (is_small_object(node->type))
-        code3__(fp, node, MOV_, A_, addr1(RDX));
-    else
-        gen_assign_struct(fp, node->type);
+    code3__(fp, node, MOV_, regist, addr);
 }
 
 static void gen_div(FILE *fp, const struct ast_node *node, struct operand divider)
@@ -1918,16 +1919,12 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->r);
         code2__(fp, node, POP_,  RDX);
 
-        /* TODO consider adding cast explicitly */
         if (0)
-            gen_store(fp, node, RDX);
+            gen_store(fp, node->r, A_, addr1(RDX));
 
-        if (is_long(node->type) && !is_long(node->r->type)) {
-            if (is_unsigned(node->type))
-                code3__(fp, node, MOV_, EAX, RAX);
-            else
-                code3__(fp, node, MOVSL_, EAX, RAX);
-        }
+        /* TODO come up with better idea to cast when storing */
+        if (is_long(node->type) && !is_long(node->r->type))
+            gen_cast(fp, node->r);
 
         if (is_small_object(node->type))
             code3__(fp, node, MOV_, A_, addr1(RDX));
