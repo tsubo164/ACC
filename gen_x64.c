@@ -462,6 +462,7 @@ static void gen_code(FILE *fp, const struct ast_node *node);
 static void gen_address(FILE *fp, const struct ast_node *node);
 static void gen_load(FILE *fp, const struct ast_node *node,
         struct operand addr, struct operand regist);
+static void gen_cast(FILE *fp, const struct ast_node *node);
 static void gen_assign_struct(FILE *fp, const struct data_type *type);
 
 static void gen_comment(FILE *fp, const char *cmt)
@@ -881,25 +882,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 gen_store_arg(fp, &args[i]);
             } else {
                 /* sign extensions on parameter passing */
-                const struct data_type *type = args[i].expr->type;
-                if (is_char(type)) {
-                    if (is_unsigned(type))
-                        code3__(fp, node, MOVZB_, AL, RAX);
-                    else
-                        code3__(fp, node, MOVSB_, AL, RAX);
-                }
-                else if (is_short(type)) {
-                    if (is_unsigned(type))
-                        code3__(fp, node, MOVZW_, AX, RAX);
-                    else
-                        code3__(fp, node, MOVSW_, AX, RAX);
-                }
-                else if (is_int(type)) {
-                    if (is_unsigned(type))
-                        fprintf(fp, "    movl   %%eax, %%eax\n");
-                    else
-                        code3__(fp, node, MOVSL_, EAX, RAX);
-                }
+                gen_cast(fp, args[i].expr);
                 code3__(fp, NULL, MOV_, A_, addr2(RSP, args[i].offset));
             }
         }
@@ -1140,6 +1123,14 @@ static void gen_load(FILE *fp, const struct ast_node *node,
 
         code3__(fp, node, op, o1, o2);
     }
+    /*
+    gen_comment(fp, ">>>        LOAD");
+    code3__(fp, node, MOV_, addr, regist);
+    if (is_char(node->type) || is_short(node->type)) {
+    gen_comment(fp, "    >>>        CAST");
+        gen_cast(fp, node);
+    }
+    */
 }
 
 static void gen_store(FILE *fp, const struct ast_node *node, struct operand addr)
@@ -1289,28 +1280,26 @@ static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_s
 
 static void gen_cast(FILE *fp, const struct ast_node *node)
 {
-    struct data_type *to;
+    struct data_type *type = node->type;
 
-    if (is_pointer(node->type))
+    if (is_pointer(type))
         return;
 
-    to = node->type;
-
-    if (is_char(to)) {
-        if (is_unsigned(to))
-            code3__(fp, node, MOVZB_, AL, EAX);
+    if (is_char(type)) {
+        if (is_unsigned(type))
+            code3__(fp, node, MOVZB_, AL, RAX);
         else
-            code3__(fp, node, MOVSB_, AL, EAX);
+            code3__(fp, node, MOVSB_, AL, RAX);
     }
-    else if (is_short(to)) {
-        if (is_unsigned(to))
-            code3__(fp, node, MOVZW_, AX, EAX);
+    else if (is_short(type)) {
+        if (is_unsigned(type))
+            code3__(fp, node, MOVZW_, AX, RAX);
         else
-            code3__(fp, node, MOVSW_, AX, EAX);
+            code3__(fp, node, MOVSW_, AX, RAX);
     }
-    else if (is_long(to)) {
-        if (is_unsigned(to))
-            code3__(fp, node, MOV_,   EAX, RAX);
+    else if (is_int(type)) {
+        if (is_unsigned(type))
+            code3__(fp, node, MOV_,   EAX, EAX);
         else
             code3__(fp, node, MOVSL_, EAX, RAX);
     }
