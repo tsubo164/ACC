@@ -398,13 +398,10 @@ static int get_mem_offset(const struct ast_node *node)
     return node->sym->mem_offset;
 }
 
-static void code1__(FILE *fp, const struct ast_node *node,
-        struct opecode op)
+static void code1(FILE *fp, int size, struct opecode op)
 {
     const struct opecode o0 = op;
-    const int tag = data_tag_(node->type);
-
-    code__(fp, tag, &o0, NULL, NULL);
+    code__(fp, size, &o0, NULL, NULL);
 }
 
 /* because of the return address is already pushed when a fuction starts
@@ -712,7 +709,7 @@ static void gen_func_epilogue(FILE *fp, const struct ast_node *node)
 {
     code3__(fp, node, MOV_, RBP, RSP);
     code2__(fp, node, POP_, RBP);
-    code1__(fp, node, RET_);
+    code1(fp, QUAD, RET_);
 }
 
 struct arg_area {
@@ -1133,9 +1130,9 @@ static void gen_div(FILE *fp, const struct ast_node *node, struct operand divide
 
     /* rax -> rdx:rax (signed extend) */
     if (is_long(node->type))
-        code1__(fp, node, CQTO_);
+        code1(fp, QUAD, CQTO_);
     else
-        code1__(fp, node, CLTD_);
+        code1(fp, QUAD, CLTD_);
 
     code2__(fp, node, IDIV_, divider);
 }
@@ -1971,7 +1968,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3__(fp, node, MOV_, A_, DI_);
         code2__(fp, node, POP_, RSI);
         code3__(fp, node, MOV_, addr1(RSI), A_);
-        code1__(fp, node, CLTD_); /* rax -> rdx:rax */
+        /* rax -> rdx:rax */
+        code1(fp, QUAD, CLTD_);
         code2__(fp, node, IDIV_, DI_);
         code3__(fp, node, MOV_, A_, addr1(RSI));
         break;
@@ -2108,7 +2106,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->r);
         code3__(fp, node, MOV_, A_, DI_);
         code2__(fp, node, POP_, RAX);
-        code1__(fp, node, CLTD_); /* rax -> rdx:rax */
+        /* rax -> rdx:rax */
+        code1(fp, QUAD, CLTD_);
         code2__(fp, node, IDIV_, DI_);
         break;
 
@@ -2320,9 +2319,8 @@ static void gen_string_literal(FILE *fp, const struct symbol_table *table)
 void gen_x64(FILE *fp,
         const struct ast_node *tree, const struct symbol_table *table)
 {
-    if (!att_syntax) {
+    if (!att_syntax)
         fprintf(fp, ".intel_syntax noprefix\n");
-    }
 
     fprintf(fp, "    .data\n\n");
     gen_string_literal(fp, table);
