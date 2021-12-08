@@ -2,13 +2,14 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <assert.h>
 #include "gen_x64.h"
 #include "type.h"
 #include "esc_seq.h"
 
 static int att_syntax = 1;
 
-enum data_tag {
+enum operand_size_tag {
     VARI = -1, /* variable based on context */
     BYTE = 0,
     WORD,
@@ -29,19 +30,19 @@ const struct data_spec data_spec_table[] = {
     {"q", "qword ptr", "quad"}
 };
 
-static const char *get_data_suffix(int tag)
+static const char *get_data_suffix(int size)
 {
-    return data_spec_table[tag].suffix;
+    return data_spec_table[size].suffix;
 }
 
-static const char *get_data_directive(int tag)
+static const char *get_data_directive(int size)
 {
-    return data_spec_table[tag].directive;
+    return data_spec_table[size].directive;
 }
 
-static const char *get_data_name(int tag)
+static const char *get_data_name(int size)
 {
-    return data_spec_table[tag].sizename;
+    return data_spec_table[size].sizename;
 }
 
 /* register tables */
@@ -113,7 +114,7 @@ enum operand_kind {
 
 struct operand {
     int kind;
-    int data_tag;
+    int size;
     const char **reg_table;
     const char *string;
     long immediate;
@@ -223,37 +224,37 @@ static struct operand label(int block_id, int label_id)
     return symb(LABEL_NAME_PREFIX, block_id, label_id);
 }
 
-static const char *regi(const struct operand *oper, int tag)
+static const char *regi(const struct operand *oper, int size)
 {
-    if (oper->data_tag == VARI)
-        return oper->reg_table[tag];
+    if (oper->size == VARI)
+        return oper->reg_table[size];
     else
-        return oper->reg_table[oper->data_tag];
+        return oper->reg_table[oper->size];
 }
 
-static int promote_tag(int tag, const struct operand *oper)
+static int promote_size(int size, const struct operand *oper)
 {
-    int t;
+    int sz;
 
     if (!oper)
-        return tag;
+        return size;
 
     /* register that holds address doesn't affect promotion
      * as we don't know the size of data the address points to */
     if (oper->kind == OPR_ADDR)
-        return tag;
+        return size;
 
-    t = oper->data_tag;
-    return tag > t ? tag : t;
+    sz = oper->size;
+    return size > sz ? size : sz;
 }
 
-static void gen_opecode__(FILE *fp, int tag, const struct opecode *op, int *nchars)
+static void gen_opecode__(FILE *fp, int size, const struct opecode *op, int *nchars)
 {
     int len = 0;
     const char *sfx = "";
 
     if (att_syntax)
-        sfx = get_data_suffix(tag);
+        sfx = get_data_suffix(size);
 
     if (!op->has_suffix)
         sfx = "";
@@ -289,35 +290,35 @@ static void gen_string_literal_name(FILE *fp, int label_id)
         fprintf(fp, "_%s", STR_LIT_NAME_PREFIX);
 }
 
-static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
+static void gen_operand__(FILE *fp, int size, const struct operand *oper)
 {
     switch (oper->kind) {
 
     case OPR_REG:
         if (att_syntax)
-            fprintf(fp, "%%%s", regi(oper, tag));
+            fprintf(fp, "%%%s", regi(oper, size));
         else
-            fprintf(fp, "%s", regi(oper, tag));
+            fprintf(fp, "%s", regi(oper, size));
         break;
 
     case OPR_ADDR:
         if (att_syntax) {
             if (oper->string) {
                 gen_pc_rel_addr(fp, oper->string, oper->label_id);
-                fprintf(fp, "(%%%s)", regi(oper, tag));
+                fprintf(fp, "(%%%s)", regi(oper, size));
             }
             else if (oper->disp != 0) {
-                fprintf(fp, "%d(%%%s)", oper->disp, regi(oper, tag));
+                fprintf(fp, "%d(%%%s)", oper->disp, regi(oper, size));
             }
             else {
-                fprintf(fp, "(%%%s)", regi(oper, tag));
+                fprintf(fp, "(%%%s)", regi(oper, size));
             }
         } else {
-            const char *direc = get_data_directive(tag);
+            const char *direc = get_data_directive(size);
             if (oper->disp != 0)
-                fprintf(fp, "%s [%s%+d]", direc, regi(oper, tag), oper->disp);
+                fprintf(fp, "%s [%s%+d]", direc, regi(oper, size), oper->disp);
             else
-                fprintf(fp, "%s [%s]", direc, regi(oper, tag));
+                fprintf(fp, "%s [%s]", direc, regi(oper, size));
         }
         break;
 
@@ -337,19 +338,19 @@ static void gen_operand__(FILE *fp, int tag, const struct operand *oper)
     }
 }
 
-static void code__(FILE *fp, int tag,
+static void code__(FILE *fp, int size,
         const struct opecode *op, const struct operand *oper1, const struct operand *oper2)
 {
     const struct operand *o1 = NULL, *o2 = NULL;
     int nchars = 0;
-    int dtag_ = tag;
+    int sz = size;
 
-    dtag_ = promote_tag(dtag_, oper1);
-    dtag_ = promote_tag(dtag_, oper2);
+    sz = promote_size(sz, oper1);
+    sz = promote_size(sz, oper2);
 
     fprintf(fp, "    ");
 
-    gen_opecode__(fp, dtag_, op, &nchars);
+    gen_opecode__(fp, sz, op, &nchars);
 
     if (oper1 != NULL && oper2 == NULL) {
         o1 = oper1;
@@ -367,18 +368,18 @@ static void code__(FILE *fp, int tag,
         const int max_pad = 7;
         const int pad = nchars > max_pad ? 0 : max_pad - nchars;
         fprintf(fp, "%*s", pad, "");
-        gen_operand__(fp, dtag_, o1);
+        gen_operand__(fp, sz, o1);
     }
 
     if (o2) {
         fprintf(fp, ", ");
-        gen_operand__(fp, dtag_, o2);
+        gen_operand__(fp, sz, o2);
     }
 
     fprintf(fp, "\n");
 }
 
-static int data_tag_(const struct data_type *type)
+static int operand_size(const struct data_type *type)
 {
     if (is_char(type))
         return BYTE;
@@ -401,6 +402,7 @@ static int get_mem_offset(const struct ast_node *node)
 static void code1(FILE *fp, int size, struct opecode op)
 {
     const struct opecode o0 = op;
+
     code__(fp, size, &o0, NULL, NULL);
 }
 
@@ -443,15 +445,14 @@ static void code2(FILE *fp, int size, struct opecode op,
     code__(fp, sz, &o0, &o1, NULL);
 }
 
-static void code3__(FILE *fp, const struct ast_node *node,
-        struct opecode op, struct operand oper1, struct operand oper2)
+static void code3(FILE *fp, int size, struct opecode op,
+        struct operand oper1, struct operand oper2)
 {
     struct opecode o0 = op;
     struct operand o1 = oper1;
     struct operand o2 = oper2;
-    int tag = node ? data_tag_(node->type) : QUAD;
 
-    code__(fp, tag, &o0, &o1, &o2);
+    code__(fp, size, &o0, &o1, &o2);
 }
 
 /* forward declaration */
@@ -513,7 +514,7 @@ static void gen_add_stack_pointer(FILE *fp, int byte)
 {
     if (!byte)
         return;
-    code3__(fp, NULL, ADD_, imme(byte), RSP);
+    code3(fp, QUAD, ADD_, imme(byte), RSP);
     inc_stack_align(byte);
 }
 
@@ -521,7 +522,7 @@ static void gen_sub_stack_pointer(FILE *fp, int byte)
 {
     if (!byte)
         return;
-    code3__(fp, NULL, SUB_, imme(byte), RSP);
+    code3(fp, QUAD, SUB_, imme(byte), RSP);
     dec_stack_align(byte);
 }
 
@@ -529,9 +530,8 @@ static void gen_func_param_list_variadic_(FILE *fp)
 {
     int i;
     for (i = 0; i < 6; i++) {
-        struct ast_node dummy = {0};
         const int disp = -8 * (6 - i);
-        code3__(fp, &dummy, MOV_, argu(i), addr2(RBP, disp));
+        code3(fp, QUAD, MOV_, argu(i), addr2(RBP, disp));
     }
 }
 
@@ -588,12 +588,10 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
             break;
 
         if (param_size <= 8 && stored_reg_count < 6) {
-            /* TODO consider removing dummy by changing node parameter to data_type */
-            struct ast_node dummy = {0};
+            const int size = operand_size(sym->type);
             const int disp = -1 * sym->mem_offset;
 
-            dummy.type = sym->type;
-            code3__(fp, &dummy, MOV_, argu(stored_reg_count), addr2(RBP, disp));
+            code3(fp, size, MOV_, argu(stored_reg_count), addr2(RBP, disp));
             stored_reg_count++;
         }
         else if (param_size <= 16 && stored_reg_count < 5) {
@@ -601,20 +599,20 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
         }
         else {
             gen_comment(fp, "save rdi and rdx arg");
-            code3__(fp, NULL, MOV_, RDI, R10);
-            code3__(fp, NULL, MOV_, RDX, R11);
+            code3(fp, QUAD, MOV_, RDI, R10);
+            code3(fp, QUAD, MOV_, RDX, R11);
 
             /* src from stack */
-            code3__(fp, NULL, MOV_, RBP, RAX);
-            code3__(fp, NULL, ADD_, imme(stack_offset), RAX);
+            code3(fp, QUAD, MOV_, RBP, RAX);
+            code3(fp, QUAD, ADD_, imme(stack_offset), RAX);
             /* dst from local */
-            code3__(fp, NULL, MOV_, RBP, RDX);
-            code3__(fp, NULL, SUB_, imme(sym->mem_offset), RDX);
+            code3(fp, QUAD, MOV_, RBP, RDX);
+            code3(fp, QUAD, SUB_, imme(sym->mem_offset), RDX);
             gen_assign_struct(fp, sym->type);
 
             gen_comment(fp, "restore rdi and rdx arg");
-            code3__(fp, NULL, MOV_, R10, RDI);
-            code3__(fp, NULL, MOV_, R11, RDX);
+            code3(fp, QUAD, MOV_, R10, RDI);
+            code3(fp, QUAD, MOV_, R11, RDX);
 
             /* 8 byte align */
             stack_offset += align_to(param_size, 8);
@@ -683,14 +681,14 @@ static void gen_func_prologue(FILE *fp, const struct ast_node *node)
     /* TODO define find_node_last()? */
     ddecl = find_node(node, NOD_DECL_DIRECT);
     ident = find_node(ddecl->r, NOD_DECL_IDENT);
-    /* TODO assert(ident) */
+    assert(ident);
 
     if (!is_static(ident->sym))
         fprintf(fp, "    .global _%s\n", ident->sym->name);
     fprintf(fp, "_%s:\n", ident->sym->name);
     code2(fp, QUAD, PUSH_, RBP);
-    code3__(fp, ident, MOV_,  RSP, RBP);
-    code3__(fp, ident, SUB_, imme(get_local_area_size()), RSP);
+    code3(fp, QUAD, MOV_,  RSP, RBP);
+    code3(fp, QUAD, SUB_, imme(get_local_area_size()), RSP);
 }
 
 static void gen_func_body(FILE *fp, const struct ast_node *node)
@@ -707,7 +705,7 @@ static void gen_func_body(FILE *fp, const struct ast_node *node)
 
 static void gen_func_epilogue(FILE *fp, const struct ast_node *node)
 {
-    code3__(fp, node, MOV_, RBP, RSP);
+    code3(fp, QUAD, MOV_, RBP, RSP);
     code2(fp, QUAD, POP_, RBP);
     code1(fp, QUAD, RET_);
 }
@@ -731,8 +729,8 @@ static void print_arg_area(const struct arg_area *args, int count)
 
 static void gen_store_arg(FILE *fp, const struct arg_area *arg)
 {
-    code3__(fp, NULL, MOV_, RSP, RDX);
-    code3__(fp, NULL, ADD_, imme(arg->offset), RDX);
+    code3(fp, QUAD, MOV_, RSP, RDX);
+    code3(fp, QUAD, ADD_, imme(arg->offset), RDX);
     gen_assign_struct(fp, arg->expr->type);
 }
 
@@ -880,7 +878,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             } else {
                 /* sign extensions on parameter passing */
                 gen_cast(fp, args[i].expr);
-                code3__(fp, NULL, MOV_, A_, addr2(RSP, args[i].offset));
+                code3(fp, QUAD, MOV_, RAX, addr2(RSP, args[i].offset));
             }
         }
 
@@ -893,7 +891,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 /* large return value */
                 const int offset = -get_local_area_size();
                 gen_comment(fp, "load address to returned value");
-                code3__(fp, NULL, LEA_, addr2(RBP, offset), argu(0));
+                code3(fp, QUAD, LEA_, addr2(RBP, offset), argu(0));
                 loaded_reg_count++;
                 continue;
             }
@@ -904,7 +902,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             if (ar->size > 8) {
                 loaded_reg_count = gen_load_arg(fp, ar, loaded_reg_count);
             } else {
-                code3__(fp, NULL, MOV_, addr2(RSP, ar->offset),
+                code3(fp, QUAD, MOV_, addr2(RSP, ar->offset),
                         argu(loaded_reg_count));
                 loaded_reg_count++;
             }
@@ -912,9 +910,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
         /* number of fp */
         if (is_variadic(func_sym))
-            fprintf(fp, "    movl   $0, %%eax\n");
-        /* TODO fix mov suffix with imme and eax) */
-        /* code3__(fp, node, MOV_, imme(0), EAX); */
+            code3(fp, LONG, MOV_, imme(0), EAX);
 
         /* call */
         gen_comment(fp, "call");
@@ -930,10 +926,10 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         const int offset = -get_local_area_size();
 
         gen_comment(fp, "store returned value");
-        code3__(fp, NULL, MOV_, RAX, addr2(RBP, offset));
-        code3__(fp, NULL, MOV_, RDX, addr2(RBP, offset + 8));
+        code3(fp, QUAD, MOV_, RAX, addr2(RBP, offset));
+        code3(fp, QUAD, MOV_, RDX, addr2(RBP, offset + 8));
         gen_comment(fp, "load address to returned value");
-        code3__(fp, NULL, LEA_, addr2(RBP, offset), RAX);
+        code3(fp, QUAD, LEA_, addr2(RBP, offset), RAX);
     }
 }
 
@@ -1013,27 +1009,28 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
     if (is_global_var(sym)) {
         const int id = is_static(sym) ? sym->id : -1;
         if (is_array(node->type)) {
-            code3__(fp, node, LEA_, addr2_pc_rel(sym->name, id), RAX);
+            code3(fp, QUAD, LEA_, addr2_pc_rel(sym->name, id), RAX);
         } else {
             /* TODO come up with better idea */
             if (!strcmp(sym->name, "__stdinp") ||
                 !strcmp(sym->name, "__stdoutp") ||
                 !strcmp(sym->name, "__stderrp")) {
                 fprintf(fp, "    movq   _%s@GOTPCREL(%%rip), %%rax\n", sym->name);
-                code3__(fp, NULL, MOV_, addr1(RAX), RAX);
+                code3(fp, QUAD, MOV_, addr1(RAX), RAX);
             } else {
-                code3__(fp, node, MOV_, addr2_pc_rel(sym->name, id), A_);
+                const int size = operand_size(node->type);
+                code3(fp, size, MOV_, addr2_pc_rel(sym->name, id), A_);
             }
         }
     }
     else if (is_enumerator(sym)) {
-        code3__(fp, node, MOV_, imme(get_mem_offset(node)), A_);
+        code3(fp, LONG, MOV_, imme(get_mem_offset(node)), EAX);
     }
     else {
         const int disp = -get_mem_offset(node);
 
         if (is_array(node->type))
-            code3__(fp, node, LEA_, addr2(RBP, disp), A_);
+            code3(fp, QUAD, LEA_, addr2(RBP, disp), RAX);
         else
             gen_load(fp, node, addr2(RBP, disp), A_);
     }
@@ -1050,10 +1047,10 @@ static void gen_ident_lvalue(FILE *fp, const struct ast_node *node)
 
     if (is_global_var(sym)) {
         const int id = is_static(sym) ? sym->id : -1;
-        code3__(fp, node, LEA_, addr2_pc_rel(sym->name, id), RAX);
+        code3(fp, QUAD, LEA_, addr2_pc_rel(sym->name, id), RAX);
     } else {
-        code3__(fp, node, MOV_, BP_, RAX);
-        code3__(fp, node, SUB_, imme(get_mem_offset(node)), RAX);
+        code3(fp, QUAD, MOV_, RBP, RAX);
+        code3(fp, QUAD, SUB_, imme(get_mem_offset(node)), RAX);
     }
 }
 
@@ -1078,7 +1075,7 @@ static void gen_address(FILE *fp, const struct ast_node *node)
         {
             const int disp = get_mem_offset(node->r);
             gen_address(fp, node->l);
-            code3__(fp, node, ADD_, imme(disp), RAX);
+            code3(fp, QUAD, ADD_, imme(disp), RAX);
         }
         break;
 
@@ -1091,6 +1088,8 @@ static void gen_address(FILE *fp, const struct ast_node *node)
 static void gen_load(FILE *fp, const struct ast_node *node,
         struct operand addr, struct operand regist)
 {
+    const int size = operand_size(node->type);
+
     /* array objects cannot be loaded in registers, and converted to pointers */
     if (is_array(node->type))
         return;
@@ -1100,7 +1099,7 @@ static void gen_load(FILE *fp, const struct ast_node *node,
         return;
 
     gen_comment(fp, "load");
-    code3__(fp, node, MOV_, addr, regist);
+    code3(fp, size, MOV_, addr, regist);
     if (is_char(node->type) || is_short(node->type)) {
         gen_comment(fp, "cast");
         gen_cast(fp, node);
@@ -1110,22 +1109,24 @@ static void gen_load(FILE *fp, const struct ast_node *node,
 static void gen_store(FILE *fp, const struct ast_node *node,
         struct operand regist, struct operand addr)
 {
+    const int size = operand_size(node->type);
+
     gen_comment(fp, "store");
     if (is_char(node->type) || is_short(node->type) || is_int(node->type)) {
         gen_comment(fp, "cast");
         gen_cast(fp, node);
     }
 
-    code3__(fp, node, MOV_, regist, addr);
+    code3(fp, size, MOV_, regist, addr);
 }
 
 static void gen_div(FILE *fp, const struct ast_node *node, struct operand divider)
 {
-    const int size = data_tag_(node->type);
+    const int size = operand_size(node->type);
 
     /* rax -> rdx:rax (zero extend) */
     if (is_unsigned(node->type)) {
-        code3__(fp, node, XOR_, D_, D_);
+        code3(fp, size, XOR_, D_, D_);
         code2(fp, size, DIV_, divider);
         return;
     }
@@ -1141,52 +1142,56 @@ static void gen_div(FILE *fp, const struct ast_node *node, struct operand divide
 
 static void gen_preincdec(FILE *fp, const struct ast_node *node, struct opecode op)
 {
+    const int size = operand_size(node->type);
+
     int sz = 1;
     if (is_pointer(node->type))
         sz = get_size(underlying(node->type));
 
     gen_address(fp, node->l);
-    code3__(fp, node, op, imme(sz), addr1(RAX));
-    code3__(fp, node, MOV_, addr1(RAX), A_);
+    code3(fp, size, op, imme(sz), addr1(RAX));
+    code3(fp, size, MOV_, addr1(RAX), A_);
 }
 
 static void gen_postincdec(FILE *fp, const struct ast_node *node, struct opecode op)
 {
+    const int size = operand_size(node->type);
+
     int sz = 1;
     if (is_pointer(node->type))
         sz = get_size(underlying(node->type));
 
     gen_address(fp, node->l);
-    code3__(fp, node, MOV_, RAX, RDX);
-    code3__(fp, node, MOV_, addr1(RAX), A_);
-    code3__(fp, node, op, imme(sz), addr1(RDX));
+    code3(fp, QUAD, MOV_, RAX, RDX);
+    code3(fp, size, MOV_, addr1(RAX), A_);
+    code3(fp, size, op, imme(sz), addr1(RDX));
 }
 
 static void gen_relational(FILE *fp, const struct ast_node *node, struct opecode op)
 {
-    const int size = data_tag_(node->type);
+    const int size = operand_size(node->type);
 
     gen_code(fp, node->l);
     code2(fp, QUAD, PUSH_, RAX);
     gen_code(fp, node->r);
-    code3__(fp, node, MOV_, A_, D_);
+    code3(fp, size, MOV_, A_, D_);
     code2(fp, QUAD, POP_, RAX);
-    code3__(fp, node, CMP_, D_, A_);
+    code3(fp, size, CMP_, D_, A_);
     code2(fp, size, op, AL);
-    code3__(fp, node, MOVZB_, AL, A_);
+    code3(fp, size, MOVZB_, AL, A_);
 }
 
 static void gen_equality(FILE *fp, const struct ast_node *node, struct opecode op)
 {
-    const int size = data_tag_(node->type);
+    const int size = operand_size(node->type);
 
     gen_code(fp, node->l);
     code2(fp, QUAD, PUSH_, RAX);
     gen_code(fp, node->r);
     code2(fp, QUAD, POP_, RDX);
-    code3__(fp, node, CMP_, D_, A_);
+    code3(fp, size, CMP_, D_, A_);
     code2(fp, size, op,   AL);
-    code3__(fp, node, MOVZB_, AL, A_);
+    code3(fp, size, MOVZB_, AL, A_);
 }
 
 enum jump_kind {
@@ -1224,10 +1229,9 @@ static void gen_switch_table_(FILE *fp, const struct ast_node *node,
 
     case NOD_CASE:
         {
-            struct ast_node dummy = {0};
-            dummy.type = (struct data_type *) ctrl_type;
+            const int size = operand_size(ctrl_type);
 
-            code3__(fp, &dummy, CMP_, imme(node->l->ival), A_);
+            code3(fp, size, CMP_, imme(node->l->ival), A_);
             code2(fp, QUAD, JE_,  label(switch_scope, jump_id(node)));
             /* check next statement if it is another case statement */
             gen_switch_table_(fp, node->r, switch_scope, ctrl_type);
@@ -1267,21 +1271,21 @@ static void gen_cast(FILE *fp, const struct ast_node *node)
 
     if (is_char(type)) {
         if (is_unsigned(type))
-            code3__(fp, node, MOVZB_, AL, RAX);
+            code3(fp, QUAD, MOVZB_, AL, RAX);
         else
-            code3__(fp, node, MOVSB_, AL, RAX);
+            code3(fp, QUAD, MOVSB_, AL, RAX);
     }
     else if (is_short(type)) {
         if (is_unsigned(type))
-            code3__(fp, node, MOVZW_, AX, RAX);
+            code3(fp, QUAD, MOVZW_, AX, RAX);
         else
-            code3__(fp, node, MOVSW_, AX, RAX);
+            code3(fp, QUAD, MOVSW_, AX, RAX);
     }
     else if (is_int(type)) {
         if (is_unsigned(type))
-            code3__(fp, node, MOV_,   EAX, EAX);
+            code3(fp, LONG, MOV_,   EAX, EAX);
         else
-            code3__(fp, node, MOVSL_, EAX, RAX);
+            code3(fp, QUAD, MOVSL_, EAX, RAX);
     }
 }
 
@@ -1319,32 +1323,30 @@ static void gen_assign_struct(FILE *fp, const struct data_type *type)
 static void gen_init_scalar_local(FILE *fp, const struct data_type *type,
         const struct ast_node *ident, int offset, const struct ast_node *expr)
 {
-    /* TODO fix */
-    struct ast_node dummy = {0};
-    dummy.type = (struct data_type *) type;
-
     gen_comment(fp, "local scalar init");
 
     /* ident */
     gen_address(fp, ident);
     if (offset > 0)
-        code3__(fp, ident, ADD_, imme(offset), A_);
+        code3(fp, QUAD, ADD_, imme(offset), RAX);
     code2(fp, QUAD, PUSH_, RAX);
 
     if (expr) {
+        const int size = operand_size(type);
         /* init expr */
         gen_code(fp, expr);
         /* assign expr */
         code2(fp, QUAD, POP_,  RDX);
         gen_comment(fp, "assign object");
         if (is_small_object(type))
-            code3__(fp, &dummy, MOV_, A_, addr1(RDX));
+            code3(fp, size, MOV_, A_, addr1(RDX));
         else
             gen_assign_struct(fp, type);
     } else {
+        const int size = operand_size(type);
         /* assign zero */
         code2(fp, QUAD, POP_,  RDX);
-        code3__(fp, &dummy, MOV_, imme(0), addr1(RAX));
+        code3(fp, size, MOV_, imme(0), addr1(RAX));
     }
 }
 
@@ -1539,8 +1541,8 @@ static long eval_const_expr__(const struct ast_node *node)
 static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
         const struct ast_node *expr)
 {
-    const int tag = data_tag_(type);
-    const char *szname = get_data_name(tag);
+    const int size = operand_size(type);
+    const char *szname = get_data_name(size);
 
     if (!expr) {
         fprintf(fp, "    .%s 0\n", szname);
@@ -1702,7 +1704,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     static struct jump_scope scope = {0};
     struct jump_scope tmp = {0};
     static int next_scope = 0;
-    const int size = node ? data_tag_(node->type) : 0;
+    const int size = node ? operand_size(node->type) : 0;
 
     if (node == NULL)
         return;
@@ -1736,7 +1738,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_comment(fp, "for-cond");
         gen_label(fp, scope.curr, JMP_ENTER);
         gen_code(fp, node->r);
-        code3__(fp, node, CMP_, imme(0), A_);
+        code3(fp, size, CMP_, imme(0), A_);
         code2(fp, QUAD, JE_,  label(scope.curr, JMP_EXIT));
         break;
 
@@ -1761,7 +1763,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_comment(fp, "while-cond");
         gen_label(fp, scope.curr, JMP_CONTINUE);
         gen_code(fp, node->l);
-        code3__(fp, node, CMP_, imme(0), A_);
+        code3(fp, size, CMP_, imme(0), A_);
         code2(fp, QUAD, JE_,  label(scope.curr, JMP_EXIT));
         gen_comment(fp, "while-body");
         gen_code(fp, node->r);
@@ -1783,7 +1785,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_comment(fp, "do-while-cond");
         gen_label(fp, scope.curr, JMP_CONTINUE);
         gen_code(fp, node->r);
-        code3__(fp, node, CMP_, imme(0), A_);
+        code3(fp, size, CMP_, imme(0), A_);
         code2(fp, QUAD, JE_,  label(scope.curr, JMP_EXIT));
         code2(fp, QUAD, JMP_, label(scope.curr, JMP_ENTER));
         gen_label(fp, scope.curr, JMP_EXIT);
@@ -1798,7 +1800,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
         gen_comment(fp, "if-cond");
         gen_code(fp, node->l);
-        code3__(fp, node, CMP_, imme(0), A_);
+        code3(fp, size, CMP_, imme(0), A_);
         code2(fp, QUAD, JE_,  label(scope.curr, JMP_ELSE));
         gen_code(fp, node->r);
 
@@ -1843,16 +1845,16 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         if (is_medium_object(node->type)) {
             /* use rax and rdx */
             gen_comment(fp, "load returning value");
-            code3__(fp, NULL, MOV_, RAX, RSI);
-            code3__(fp, NULL, MOV_, addr1(RSI), A_);
-            code3__(fp, NULL, MOV_, addr2(RSI, 8), D_);
+            code3(fp, QUAD, MOV_, RAX, RSI);
+            code3(fp, QUAD, MOV_, addr1(RSI), RAX);
+            code3(fp, QUAD, MOV_, addr2(RSI, 8), RDX);
         }
         else if (is_large_object(node->type)) {
             gen_comment(fp, "fill returning value");
             code2(fp, QUAD, POP_, RDX);
             gen_assign_struct(fp, node->type);
             gen_comment(fp, "load address to returning value");
-            code3__(fp, NULL, MOV_, RDX, RAX);
+            code3(fp, QUAD, MOV_, RDX, RAX);
         }
 
         code2(fp, QUAD, JMP_, label(scope.func, JMP_RETURN));
@@ -1931,7 +1933,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             gen_cast(fp, node->r);
 
         if (is_small_object(node->type))
-            code3__(fp, node, MOV_, A_, addr1(RDX));
+            code3(fp, size, MOV_, A_, addr1(RDX));
         else
             gen_assign_struct(fp, node->type);
 
@@ -1943,8 +1945,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
         code2(fp, QUAD, POP_,  RDX);
-        code3__(fp, node, ADD_, A_, addr1(RDX));
-        code3__(fp, node, MOV_, addr1(RDX), A_);
+        code3(fp, size, ADD_, A_, addr1(RDX));
+        code3(fp, size, MOV_, addr1(RDX), A_);
         break;
 
     case NOD_SUB_ASSIGN:
@@ -1953,8 +1955,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
         code2(fp, QUAD, POP_,  RDX);
-        code3__(fp, node, SUB_, A_, addr1(RDX));
-        code3__(fp, node, MOV_, addr1(RDX), A_);
+        code3(fp, size, SUB_, A_, addr1(RDX));
+        code3(fp, size, MOV_, addr1(RDX), A_);
         break;
 
     case NOD_MUL_ASSIGN:
@@ -1963,8 +1965,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
         code2(fp, QUAD, POP_,  RDX);
-        code3__(fp, node, IMUL_, addr1(RDX), A_);
-        code3__(fp, node, MOV_, A_, addr1(RDX));
+        code3(fp, size, IMUL_, addr1(RDX), A_);
+        code3(fp, size, MOV_, A_, addr1(RDX));
         break;
 
     case NOD_DIV_ASSIGN:
@@ -1972,13 +1974,13 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_address(fp, node->l);
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
-        code3__(fp, node, MOV_, A_, DI_);
+        code3(fp, size, MOV_, A_, DI_);
         code2(fp, QUAD, POP_, RSI);
-        code3__(fp, node, MOV_, addr1(RSI), A_);
+        code3(fp, size, MOV_, addr1(RSI), A_);
         /* rax -> rdx:rax */
         code1(fp, QUAD, CLTD_);
         code2(fp, size, IDIV_, DI_);
-        code3__(fp, node, MOV_, A_, addr1(RSI));
+        code3(fp, size, MOV_, A_, addr1(RSI));
         break;
 
     case NOD_MOD_ASSIGN:
@@ -1986,12 +1988,12 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_address(fp, node->l);
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
-        code3__(fp, node, MOV_, A_, DI_);
+        code3(fp, size, MOV_, A_, DI_);
         code2(fp, QUAD, POP_, RSI);
-        code3__(fp, node, MOV_, addr1(RSI), A_);
+        code3(fp, size, MOV_, addr1(RSI), A_);
         gen_div(fp, node, DI_);
-        code3__(fp, node, MOV_, D_, A_);
-        code3__(fp, node, MOV_, A_, addr1(RSI));
+        code3(fp, size, MOV_, D_, A_);
+        code3(fp, size, MOV_, A_, addr1(RSI));
         break;
 
     case NOD_SHL_ASSIGN:
@@ -1999,10 +2001,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_address(fp, node->l);
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
-        code3__(fp, node, MOV_, A_, C_);
+        code3(fp, size, MOV_, A_, C_);
         code2(fp, QUAD, POP_,  RDX);
-        code3__(fp, node, SHL_, CL, addr1(RDX));
-        code3__(fp, node, MOV_, addr1(RDX), A_);
+        code3(fp, size, SHL_, CL, addr1(RDX));
+        code3(fp, size, MOV_, addr1(RDX), A_);
         break;
 
     case NOD_SHR_ASSIGN:
@@ -2010,13 +2012,13 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_address(fp, node->l);
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
-        code3__(fp, node, MOV_, A_, C_);
+        code3(fp, size, MOV_, A_, C_);
         code2(fp, QUAD, POP_,  RDX);
         if (is_unsigned(node->type))
-            code3__(fp, node, SHR_, CL, addr1(RDX));
+            code3(fp, size, SHR_, CL, addr1(RDX));
         else
-            code3__(fp, node, SAR_, CL, addr1(RDX));
-        code3__(fp, node, MOV_, addr1(RDX), A_);
+            code3(fp, size, SAR_, CL, addr1(RDX));
+        code3(fp, size, MOV_, addr1(RDX), A_);
         break;
 
     case NOD_OR_ASSIGN:
@@ -2025,8 +2027,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
         code2(fp, QUAD, POP_,  RDX);
-        code3__(fp, node, OR_, A_, addr1(RDX));
-        code3__(fp, node, MOV_, addr1(RDX), A_);
+        code3(fp, size, OR_, A_, addr1(RDX));
+        code3(fp, size, MOV_, addr1(RDX), A_);
         break;
 
     case NOD_XOR_ASSIGN:
@@ -2035,8 +2037,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
         code2(fp, QUAD, POP_,  RDX);
-        code3__(fp, node, XOR_, A_, addr1(RDX));
-        code3__(fp, node, MOV_, addr1(RDX), A_);
+        code3(fp, size, XOR_, A_, addr1(RDX));
+        code3(fp, size, MOV_, addr1(RDX), A_);
         break;
 
     case NOD_AND_ASSIGN:
@@ -2045,8 +2047,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
         code2(fp, QUAD, POP_,  RDX);
-        code3__(fp, node, AND_, A_, addr1(RDX));
-        code3__(fp, node, MOV_, addr1(RDX), A_);
+        code3(fp, size, AND_, A_, addr1(RDX));
+        code3(fp, size, MOV_, addr1(RDX), A_);
         break;
 
     case NOD_ADDR:
@@ -2064,15 +2066,15 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_NUM:
-        code3__(fp, node, MOV_, imme(node->ival), A_);
+        code3(fp, size, MOV_, imme(node->ival), A_);
         break;
 
     case NOD_STRING:
-        code3__(fp, node, LEA_, addr2_pc_rel(STR_LIT_NAME_PREFIX, node->sym->id), A_);
+        code3(fp, QUAD, LEA_, addr2_pc_rel(STR_LIT_NAME_PREFIX, node->sym->id), RAX);
         break;
 
     case NOD_SIZEOF:
-        code3__(fp, node, MOV_, imme(get_size(node->l->type)), A_);
+        code3(fp, LONG, MOV_, imme(get_size(node->l->type)), EAX);
         break;
 
     case NOD_ADD:
@@ -2084,19 +2086,19 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         /* TODO find the best place to handle array subscript */
         if (is_array(node->l->type) || is_pointer(node->l->type)) {
             const int sz = get_size(underlying(node->l->type));
-            code3__(fp, node, IMUL_, imme(sz), RAX);
+            code3(fp, QUAD, IMUL_, imme(sz), RAX);
         }
 
-        code3__(fp, node, ADD_, D_, A_);
+        code3(fp, size, ADD_, D_, A_);
         break;
 
     case NOD_SUB:
         gen_code(fp, node->l);
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
-        code3__(fp, node, MOV_, A_, D_);
+        code3(fp, size, MOV_, A_, D_);
         code2(fp, QUAD, POP_, RAX);
-        code3__(fp, node, SUB_, D_, A_);
+        code3(fp, size, SUB_, D_, A_);
         break;
 
     case NOD_MUL:
@@ -2104,14 +2106,14 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
         code2(fp, QUAD, POP_,  RDX);
-        code3__(fp, node, IMUL_, D_, A_);
+        code3(fp, size, IMUL_, D_, A_);
         break;
 
     case NOD_DIV:
         gen_code(fp, node->l);
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
-        code3__(fp, node, MOV_, A_, DI_);
+        code3(fp, size, MOV_, A_, DI_);
         code2(fp, QUAD, POP_, RAX);
         /* rax -> rdx:rax */
         code1(fp, QUAD, CLTD_);
@@ -2122,31 +2124,31 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->l);
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
-        code3__(fp, node, MOV_, A_, DI_);
+        code3(fp, size, MOV_, A_, DI_);
         code2(fp, QUAD, POP_, RAX);
         gen_div(fp, node, DI_);
-        code3__(fp, node, MOV_, D_, A_);
+        code3(fp, size, MOV_, D_, A_);
         break;
 
     case NOD_SHL:
         gen_code(fp, node->l);
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
-        code3__(fp, node, MOV_, A_, C_);
+        code3(fp, size, MOV_, A_, C_);
         code2(fp, QUAD, POP_,  RAX);
-        code3__(fp, node, SHL_, CL, A_);
+        code3(fp, size, SHL_, CL, A_);
         break;
 
     case NOD_SHR:
         gen_code(fp, node->l);
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
-        code3__(fp, node, MOV_, A_, C_);
+        code3(fp, size, MOV_, A_, C_);
         code2(fp, QUAD, POP_,  RAX);
         if (is_unsigned(node->type))
-            code3__(fp, node, SHR_, CL, A_);
+            code3(fp, size, SHR_, CL, A_);
         else
-            code3__(fp, node, SAR_, CL, A_);
+            code3(fp, size, SAR_, CL, A_);
         break;
 
     case NOD_OR:
@@ -2154,7 +2156,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
         code2(fp, QUAD, POP_, RDX);
-        code3__(fp, node, OR_, D_, A_);
+        code3(fp, size, OR_, D_, A_);
         break;
 
     case NOD_XOR:
@@ -2162,7 +2164,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
         code2(fp, QUAD, POP_, RDX);
-        code3__(fp, node, XOR_, D_, A_);
+        code3(fp, size, XOR_, D_, A_);
         break;
 
     case NOD_AND:
@@ -2170,7 +2172,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, QUAD, PUSH_, RAX);
         gen_code(fp, node->r);
         code2(fp, QUAD, POP_, RDX);
-        code3__(fp, node, AND_, D_, A_);
+        code3(fp, size, AND_, D_, A_);
         break;
 
     case NOD_NOT:
@@ -2185,7 +2187,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         scope.curr = next_scope++;
 
         gen_code(fp, node->l);
-        code3__(fp, node, CMP_, imme(0), A_);
+        code3(fp, size, CMP_, imme(0), A_);
         code2(fp, QUAD, JE_,  label(scope.curr, JMP_ELSE));
         gen_code(fp, node->r);
 
@@ -2209,13 +2211,13 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         scope.curr = next_scope++;
 
         gen_code(fp, node->l);
-        code3__(fp, node, CMP_, imme(0), A_);
+        code3(fp, size, CMP_, imme(0), A_);
         code2(fp, QUAD, JNE_, label(scope.curr, JMP_CONTINUE));
         gen_code(fp, node->r);
-        code3__(fp, node, CMP_, imme(0), A_);
+        code3(fp, size, CMP_, imme(0), A_);
         code2(fp, QUAD, JE_,  label(scope.curr, JMP_EXIT));
         gen_label(fp, scope.curr, JMP_CONTINUE);
-        code3__(fp, node, MOV_, imme(1), A_);
+        code3(fp, LONG, MOV_, imme(1), EAX);
         gen_label(fp, scope.curr, JMP_EXIT);
 
         scope = tmp;
@@ -2226,12 +2228,12 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         scope.curr = next_scope++;
 
         gen_code(fp, node->l);
-        code3__(fp, node, CMP_, imme(0), A_);
+        code3(fp, size, CMP_, imme(0), A_);
         code2(fp, QUAD, JE_,  label(scope.curr, JMP_EXIT));
         gen_code(fp, node->r);
-        code3__(fp, node, CMP_, imme(0), A_);
+        code3(fp, size, CMP_, imme(0), A_);
         code2(fp, QUAD, JE_,  label(scope.curr, JMP_EXIT));
-        code3__(fp, node, MOV_, imme(1), A_);
+        code3(fp, LONG, MOV_, imme(1), EAX);
         gen_label(fp, scope.curr, JMP_EXIT);
 
         scope = tmp;
@@ -2239,9 +2241,9 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_LOGICAL_NOT:
         gen_code(fp, node->l);
-        code3__(fp, node, CMP_, imme(0), A_);
+        code3(fp, size, CMP_, imme(0), A_);
         code2(fp, QUAD, SETE_,  AL);
-        code3__(fp, node, MOVZB_, AL, A_);
+        code3(fp, size, MOVZB_, AL, A_);
         break;
 
     case NOD_COMMA:
