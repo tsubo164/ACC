@@ -152,6 +152,9 @@ const struct operand RSP = {OPR_REG, QUAD, SP__};
 const struct operand R10 = {OPR_REG, QUAD, R10__};
 const struct operand R11 = {OPR_REG, QUAD, R11__};
 
+const struct operand EDX = {OPR_REG, LONG, D__};
+const struct operand EDI = {OPR_REG, LONG, DI__};
+
 static const char *LABEL_NAME_PREFIX = "LBB";
 static const char *STR_LIT_NAME_PREFIX = "L.str";
 
@@ -307,11 +310,11 @@ static void gen_operand__(FILE *fp, int size, const struct operand *oper)
                 gen_pc_rel_addr(fp, oper->string, oper->label_id);
                 fprintf(fp, "(%%%s)", regi(oper, size));
             }
-            else if (oper->disp != 0) {
-                fprintf(fp, "%d(%%%s)", oper->disp, regi(oper, size));
+            else if (oper->disp == 0) {
+                fprintf(fp, "(%%%s)", regi(oper, size));
             }
             else {
-                fprintf(fp, "(%%%s)", regi(oper, size));
+                fprintf(fp, "%d(%%%s)", oper->disp, regi(oper, size));
             }
         } else {
             const char *direc = get_data_directive(size);
@@ -544,24 +547,16 @@ static int gen_store_param(FILE *fp, const struct symbol *sym, int stored_regs)
     int reg = stored_regs;
     int i;
 
-    fprintf(fp, "    movq   %%rbp, %%r10\n");
-    fprintf(fp, "    subq   $%d, %%r10\n", sym->mem_offset);
+    code3(fp, QUAD, MOV_, RBP, R10);
+    code3(fp, QUAD, SUB_, imme(sym->mem_offset), R10);
 
     for (i = 0; i < N8; i++) {
-        const char *src_reg = ARG_REG__[reg][QUAD];
-        if (offset == 0)
-            fprintf(fp, "    movq   %%%s, (%%r10)\n", src_reg);
-        else
-            fprintf(fp, "    movq   %%%s, %d(%%r10)\n", src_reg, offset);
+        code3(fp, QUAD, MOV_, argu(reg), addr2(R10, offset));
         reg++;
         offset += 8;
     }
     for (i = 0; i < N4; i++) {
-        const char *src_reg = ARG_REG__[reg][LONG];
-        if (offset == 0)
-            fprintf(fp, "    movl   %%%s, (%%r10)\n", src_reg);
-        else
-            fprintf(fp, "    movl   %%%s, %d(%%r10)\n", src_reg, offset);
+        code3(fp, LONG, MOV_, argu(reg), addr2(R10, offset));
         reg++;
         offset += 4;
     }
@@ -744,20 +739,12 @@ static int gen_load_arg(FILE *fp, const struct arg_area *arg, int loaded_regs)
     int i;
 
     for (i = 0; i < N8; i++) {
-        const char *dst_reg = ARG_REG__[reg][QUAD];
-        if (arg->offset + offset == 0)
-            fprintf(fp, "    movq   (%%rsp), %%%s\n", dst_reg);
-        else
-            fprintf(fp, "    movq   %d(%%rsp), %%%s\n", arg->offset + offset, dst_reg);
+        code3(fp, QUAD, MOV_, addr2(RSP, arg->offset + offset), argu(reg));
         reg++;
         offset += 8;
     }
     for (i = 0; i < N4; i++) {
-        const char *dst_reg = ARG_REG__[reg][LONG];
-        if (arg->offset + offset == 0)
-            fprintf(fp, "    movl   (%%rsp), %%%s\n", dst_reg);
-        else
-            fprintf(fp, "    movl   %d(%%rsp), %%%s\n", arg->offset + offset, dst_reg);
+        code3(fp, LONG, MOV_, addr2(RSP, arg->offset + offset), argu(reg));
         reg++;
         offset += 4;
     }
@@ -980,7 +967,8 @@ static void gen_func_call_builtin(FILE *fp, const struct ast_node *node)
         /* push args */
         gen_code(fp, node->l);
         /* no count pushes and pops as builtins are not function calls */
-        fprintf(fp, "    push   %%rax\n");
+        code3(fp, QUAD, SUB_, imme(8), RSP);
+        code3(fp, QUAD, MOV_, RAX, addr1(RSP));
         return;
 
     default:
@@ -1299,23 +1287,13 @@ static void gen_assign_struct(FILE *fp, const struct data_type *type)
     int i;
 
     for (i = 0; i < N8; i++) {
-        if (offset == 0) {
-            fprintf(fp, "    movq   (%%rax), %%rdi\n");
-            fprintf(fp, "    movq   %%rdi, (%%rdx)\n");
-        } else {
-            fprintf(fp, "    movq   %d(%%rax), %%rdi\n", offset);
-            fprintf(fp, "    movq   %%rdi, %d(%%rdx)\n", offset);
-        }
+        code3(fp, QUAD, MOV_, addr2(RAX, offset), RDI);
+        code3(fp, QUAD, MOV_, RDI, addr2(RDX, offset));
         offset += 8;
     }
     for (i = 0; i < N4; i++) {
-        if (offset == 0) {
-            fprintf(fp, "    movl   (%%rax), %%edi\n");
-            fprintf(fp, "    movl   %%edi, (%%rdx)\n");
-        } else {
-            fprintf(fp, "    movl   %d(%%rax), %%edi\n", offset);
-            fprintf(fp, "    movl   %%edi, %d(%%rdx)\n", offset);
-        }
+        code3(fp, LONG, MOV_, addr2(RAX, offset), EDI);
+        code3(fp, LONG, MOV_, EDI, addr2(RDX, offset));
         offset += 4;
     }
 }
