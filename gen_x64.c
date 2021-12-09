@@ -1003,7 +1003,9 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
             if (!strcmp(sym->name, "__stdinp") ||
                 !strcmp(sym->name, "__stdoutp") ||
                 !strcmp(sym->name, "__stderrp")) {
-                fprintf(fp, "    movq   _%s@GOTPCREL(%%rip), %%rax\n", sym->name);
+                char buf[128] = {'\0'};
+                sprintf(buf, "%s@GOTPCREL", sym->name);
+                code3(fp, QUAD, MOV_, addr2_pc_rel(buf, 0), A_);
                 code3(fp, QUAD, MOV_, addr1(RAX), RAX);
             } else {
                 const int size = operand_size(node->type);
