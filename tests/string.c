@@ -106,6 +106,18 @@ int main()
         assert(10, buf[4]);
         assert(0,  buf[5]);
     }
+    {
+        /* string literal in .text section otherwise %n leads to crash */
+        int num = 0;
+        char buf[8] = {'\0'};
+
+        sprintf(buf, "%s%n", "abc", &num);
+        assert(97, buf[0]);
+        assert(98, buf[1]);
+        assert(99, buf[2]);
+        assert(0, buf[3]);
+        assert(3, num);
+    }
 
     return 0;
 }

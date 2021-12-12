@@ -6,7 +6,6 @@
 #include "gen_x64.h"
 #include "type.h"
 #include "esc_seq.h"
-#include "x86_64.h"
 
 static int att_syntax = 1;
 
@@ -703,12 +702,7 @@ static void gen_func_epilogue(FILE *fp, const struct ast_node *node)
 {
     code3(fp, QUAD, MOV_, RBP, RSP);
     code2(fp, QUAD, POP_, RBP);
-    /*
     code1(fp, QUAD, RET_);
-    code3_00(fp, MOV_00, RBP_00, RSP_00);
-    code2_00(fp, POP_00, RBP_00);
-    */
-    code1_00(fp, RET_00);
 }
 
 struct arg_area {
@@ -2318,9 +2312,9 @@ void gen_x64(FILE *fp,
         fprintf(fp, ".intel_syntax noprefix\n");
 
     fprintf(fp, "    .data\n\n");
-    gen_string_literal(fp, table);
     gen_global_vars(fp, tree);
 
     fprintf(fp, "    .text\n\n");
+    gen_string_literal(fp, table);
     gen_code(fp, tree);
 }

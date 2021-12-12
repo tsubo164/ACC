@@ -4,11 +4,20 @@
 #include <stdio.h>
 */
 
+#include <stdio.h>
+
+int count = 42;
+
 int main()
 {
-    const char name[][8] = {"abc", "def"};
+    int num = 0;
+    char buf[8];
 
-    const char *foo = name[0];
+    printf("%s%n", "foo", &num);
+    printf("%d\n", num);
 
-    return foo[0];
+    sprintf(buf, "%s%n", "foo", &num);
+    printf("%d\n", num);
+
+    return num;
 }
