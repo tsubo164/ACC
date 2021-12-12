@@ -813,6 +813,8 @@ static struct ast_node *postfix_expression(struct parser *p)
             expect(p, ']');
             deref = new_node_(NOD_DEREF, tokpos(p));
             tree = branch_(deref, tree, NULL);
+            /* TODO find the best place to convert_ */
+            tree = convert_(p, tree);
             break;
 
         case TOK_INC:

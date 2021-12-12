@@ -304,6 +304,15 @@ int main()
         count_up(f.a + 1);
         assert(23, f.a[1]);
     }
+    {
+        /* assigning deref of an array of array char to pointer to char */
+        const char name[][8] = {"abc", "def"};
+        const char *a = name[0];
+
+        assert(97, a[0]);
+        assert(98, a[1]);
+        assert(99, a[2]);
+    }
 
     return 0;
 }

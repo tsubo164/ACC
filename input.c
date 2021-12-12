@@ -4,17 +4,11 @@
 #include <stdio.h>
 */
 
-#include <stdio.h>
 int main()
 {
-    char c = -7;
-    int a = 21;
+    const char name[][8] = {"abc", "def"};
 
-    short s = -1235;
-    long l = 1238;
+    const char *foo = name[0];
 
-    fprintf(stdout, "Hello, world!\n");
-
-    return l + s;
-    return a + c;
+    return foo[0];
 }

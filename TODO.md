@@ -24,6 +24,7 @@
   - stringize macro and string cat macro
   - string literal to stringize macro
   - `(a > 10) ? a = 42 : a = 19` => handle this (expression is not assignable)
+  - find the best place to do "array to pointer conversion"
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;
