@@ -4,20 +4,12 @@
 #include <stdio.h>
 */
 
-#include <stdio.h>
-
-int count = 42;
-
 int main()
 {
-    int num = 0;
-    char buf[8];
+    int a = 1;
+    char b = 2;
 
-    printf("%s%n", "foo", &num);
-    printf("%d\n", num);
+    a = a << b;
 
-    sprintf(buf, "%s%n", "foo", &num);
-    printf("%d\n", num);
-
-    return num;
+    return a;
 }

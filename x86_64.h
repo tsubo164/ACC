@@ -42,12 +42,14 @@ enum opecode_00 {
     CLTD_00, CQTO_00
 };
 
-enum operand_00 arg_reg_00(int n);
-enum operand_00 imm_00(long val);
-enum operand_00 mem_00(enum operand_00 reg, int offset);
-enum operand_00 symb_00(const char *sym, int id);
+extern enum operand_00 regi_00(enum operand_00 oper, enum operand_size size);
+extern enum operand_00 arg_reg_00(int n);
+extern enum operand_00 imm_00(long val);
+extern enum operand_00 mem_00(enum operand_00 reg, int offset);
+extern enum operand_00 symb_00(const char *sym, int id);
+extern enum operand_00 label_00(const char *label_name, int id);
 
-enum operand_00 label_00(const char *label_name, int id);
+extern void set_operand_size(enum operand_size size);
 extern void code1_00(FILE *fp, enum opecode_00 op);
 extern void code2_00(FILE *fp, enum opecode_00 op, enum operand_00 oper1);
 extern void code3_00(FILE *fp, enum opecode_00 op, enum operand_00 oper1, enum operand_00 oper2);

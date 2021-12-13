@@ -97,13 +97,16 @@ static void print_separator(FILE *fp)
 static void print_opecode(FILE *fp, int op, int suffix)
 {
     const char *inst = instruction_name[op];
+    int len = strlen(inst);
 
-    if (op < LEA_00)
+    if (op < LEA_00) {
         fprintf(fp, "%s%c", inst, suffix_letter[suffix]);
-    else
+        len++;
+    } else {
         fprintf(fp, "%s", inst);
+    }
 
-    opecode_len = strlen(inst);
+    opecode_len = len;
 }
 
 static void print_operand(FILE *fp, int oper, int suffix)
@@ -147,16 +150,16 @@ static void print_operand(FILE *fp, int oper, int suffix)
 
     case OPR_SYM_00:
         if (att_syntax) {
-            if (oper_symbol_id == 0)
-                fprintf(fp, "_%s(%%rip)", oper_symbol);
-            else
+            if (oper_symbol_id > 0)
                 fprintf(fp, "_%s_%d(%%rip)", oper_symbol, oper_symbol_id);
+            else
+                fprintf(fp, "_%s(%%rip)", oper_symbol);
         } else {
             const char *direc = directive[suffix];
-            if (oper_symbol_id == 0)
-                fprintf(fp, "%s ptr [_%s]", direc, oper_symbol);
-            else
+            if (oper_symbol_id > 0)
                 fprintf(fp, "%s ptr [_%s_%d]", direc, oper_symbol, oper_symbol_id);
+            else
+                fprintf(fp, "%s ptr [_%s]", direc, oper_symbol);
         }
         break;
 
@@ -170,6 +173,14 @@ static void print_operand(FILE *fp, int oper, int suffix)
     default:
         break;
     }
+}
+
+enum operand_00 regi_00(enum operand_00 oper, enum operand_size size)
+{
+    if (oper >= A__00 && oper <= R15_00 && oper % 5 == 0)
+        return oper + size;
+    else
+        return A__00;
 }
 
 enum operand_00 arg_reg_00(int n)
@@ -205,6 +216,14 @@ enum operand_00 label_00(const char *label_name, int id)
     oper_label = label_name;
     oper_label_id = id;
     return OPR_LBL_00;
+}
+
+void set_operand_size(enum operand_size size)
+{
+    if (size >= I8 && size <= I64)
+        oper_size = size;
+    else
+        oper_size = I0;
 }
 
 void code1_00(FILE *fp, enum opecode_00 op)
