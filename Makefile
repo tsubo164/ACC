@@ -6,7 +6,7 @@ LDFLAGS =
 RM      = rm -f
 
 SRCS    := ast diagnostic esc_seq gen_x64 lexer main parse preprocessor \
-					 semantics string_table symbol type
+					 semantics string_table symbol type x86_64
 
 .PHONY: all run run_cc tree pp test test2 test3 test_all clean clean2 clean3
 

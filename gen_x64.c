@@ -6,6 +6,7 @@
 #include "gen_x64.h"
 #include "type.h"
 #include "esc_seq.h"
+#include "x86_64.h"
 
 static int att_syntax = 1;
 
@@ -402,13 +403,6 @@ static int get_mem_offset(const struct ast_node *node)
     return node->sym->mem_offset;
 }
 
-static void code1(FILE *fp, int size, struct opecode op)
-{
-    const struct opecode o0 = op;
-
-    code__(fp, size, &o0, NULL, NULL);
-}
-
 /* because of the return address is already pushed when a fuction starts
  * the rbp % 0x10 should be 0x08 */
 static int stack_align = 8;
@@ -702,7 +696,7 @@ static void gen_func_epilogue(FILE *fp, const struct ast_node *node)
 {
     code3(fp, QUAD, MOV_, RBP, RSP);
     code2(fp, QUAD, POP_, RBP);
-    code1(fp, QUAD, RET_);
+    code1_00(fp, RET_00);
 }
 
 struct arg_area {
@@ -1123,9 +1117,9 @@ static void gen_div(FILE *fp, const struct ast_node *node, struct operand divide
 
     /* rax -> rdx:rax (signed extend) */
     if (is_long(node->type))
-        code1(fp, QUAD, CQTO_);
+        code1_00(fp, CQTO_00);
     else
-        code1(fp, QUAD, CLTD_);
+        code1_00(fp, CLTD_00);
 
     code2(fp, size, IDIV_, divider);
 }
@@ -1958,7 +1952,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, QUAD, POP_, RSI);
         code3(fp, size, MOV_, addr1(RSI), A_);
         /* rax -> rdx:rax */
-        code1(fp, QUAD, CLTD_);
+        code1_00(fp, CLTD_00);
         code2(fp, size, IDIV_, DI_);
         code3(fp, size, MOV_, A_, addr1(RSI));
         break;
@@ -2096,7 +2090,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3(fp, size, MOV_, A_, DI_);
         code2(fp, QUAD, POP_, RAX);
         /* rax -> rdx:rax */
-        code1(fp, QUAD, CLTD_);
+        code1_00(fp, CLTD_00);
         code2(fp, size, IDIV_, DI_);
         break;
 
