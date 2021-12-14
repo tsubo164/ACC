@@ -2023,8 +2023,11 @@ static struct ast_node *struct_declaration_list(struct parser *p)
             break;
         }
         else {
-            gettok(p);
-            syntax_error(p, "type name requires a specifier or qualifier");
+            const struct token *tok = gettok(p);
+            if (tok->kind == TOK_IDENT)
+                syntax_error(p, "unknown type name '%s'", tok->text);
+            else
+                syntax_error(p, "type name requires a specifier or qualifier");
             ungettok(p);
             break;
         }
@@ -2860,7 +2863,11 @@ static struct ast_node *extern_decl(struct parser *p)
         return declaration(p);
     } else {
         const struct token *tok = gettok(p);
-        syntax_error(p, "unknown type name '%s'", tok->text);
+
+        if (tok->kind == TOK_IDENT)
+            syntax_error(p, "unknown type name '%s'", tok->text);
+        else
+            syntax_error(p, "unexpected token");
 
         /* recover */
         for (;;) {

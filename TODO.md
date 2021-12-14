@@ -12,7 +12,6 @@
   - [x] `type.c`
 
 * TODO
-  - segf when warning at 2nd gen compiler
   - improve const qualifier for struct parameter
   - add tests for malloc()
   - add tests for assert()
@@ -42,19 +41,6 @@
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics
   - control flow check
   - lexer error
-
-* IMPLEMENTATION
-
-* BUG
-  - //typedef struct node Node;
-    struct node {
-        int id;
-        Node *next;
-    };
-    -> infinite loop
-  - { ...  } } -> infinite loop
-  - int foo(); { ...  } -> infinite loop
-  - `return g_a[2]; int i = g_a[0];` -> infinite loop
 
 * DONE
   - ++, --
@@ -127,3 +113,13 @@
   - improve options to be able to specify the output file name
   - improve lookup() in symbol.c
       - check only the current scope for local variables define
+  - //typedef struct node Node;
+    struct node {
+        int id;
+        Node *next;
+    };
+    -> infinite loop
+  - { ...  } } -> infinite loop
+  - int foo(); { ...  } -> infinite loop
+  - `return g_a[2]; int i = g_a[0];` -> infinite loop
+  - segf when warning at 2nd gen compiler

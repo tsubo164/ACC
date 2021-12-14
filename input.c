@@ -4,12 +4,18 @@
 #include <stdio.h>
 */
 
+//typedef struct node Node;
+struct node {
+    int id;
+    Node *next;
+};
+
 int main()
 {
-    int a = 1;
-    char b = 2;
+    int i;
+    return 5;
+    return g_a[2];
+    int i = g_a[0];
+}}
 
-    a = a << b;
-
-    return a;
-}
+int foo(); { int a = 3; return a;  }

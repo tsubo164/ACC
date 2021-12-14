@@ -8,14 +8,14 @@
 #include "esc_seq.h"
 
 static int att_syntax = 1;
-static const char *oper_label;
-static const char *oper_symbol;
-static int  oper_label_id;
-static int  oper_symbol_id;
-static int  oper_register;
-static long oper_immediate;
-static long oper_offset;
-static int opecode_len = 0;
+static const char *operand_label;
+static const char *operand_symbol;
+static int  operand_label_id;
+static int  operand_symbol_id;
+static int  operand_register;
+static long operand_immediate;
+static long operand_offset;
+static int  opecode_len = 0;
 /* because of the return address is already pushed when a fuction starts
  * (rbp % 0x10) == 0x08 */
 static int stack_offset = 8;
@@ -181,45 +181,45 @@ static void print_operand(FILE *fp, int oper, int suffix)
     case OPR_IMM:
         if (att_syntax)
             fprintf(fp, "$");
-        fprintf(fp, "%ld", oper_immediate);
+        fprintf(fp, "%ld", operand_immediate);
         break;
 
     case OPR_MEM:
-        reg = register_name[oper_register];
+        reg = register_name[operand_register];
         if (att_syntax) {
-            if (oper_offset == 0)
+            if (operand_offset == 0)
                 fprintf(fp, "(%%%s)", reg);
             else
-                fprintf(fp, "%ld(%%%s)", oper_offset, reg);
+                fprintf(fp, "%ld(%%%s)", operand_offset, reg);
         } else {
             const char *direc = directive[suffix];
-            if (oper_offset == 0)
+            if (operand_offset == 0)
                 fprintf(fp, "%s ptr [%s]", direc, reg);
             else
-                fprintf(fp, "%s ptr [%s%+ld]", direc, reg, oper_offset);
+                fprintf(fp, "%s ptr [%s%+ld]", direc, reg, operand_offset);
         }
         break;
 
     case OPR_SYM:
         if (att_syntax) {
-            if (oper_symbol_id < 0)
-                fprintf(fp, "_%s(%%rip)", oper_symbol);
+            if (operand_symbol_id < 0)
+                fprintf(fp, "_%s(%%rip)", operand_symbol);
             else
-                fprintf(fp, "_%s_%d(%%rip)", oper_symbol, oper_symbol_id);
+                fprintf(fp, "_%s_%d(%%rip)", operand_symbol, operand_symbol_id);
         } else {
             const char *direc = directive[suffix];
-            if (oper_symbol_id > 0)
-                fprintf(fp, "%s ptr [_%s_%d]", direc, oper_symbol, oper_symbol_id);
+            if (operand_symbol_id > 0)
+                fprintf(fp, "%s ptr [_%s_%d]", direc, operand_symbol, operand_symbol_id);
             else
-                fprintf(fp, "%s ptr [_%s]", direc, oper_symbol);
+                fprintf(fp, "%s ptr [_%s]", direc, operand_symbol);
         }
         break;
 
     case OPR_LBL:
-        if (oper_label_id < 0)
-            fprintf(fp, "_%s", oper_label);
+        if (operand_label_id < 0)
+            fprintf(fp, "_%s", operand_label);
         else
-            fprintf(fp, "_%s_%d", oper_label, oper_label_id);
+            fprintf(fp, "_%s_%d", operand_label, operand_label_id);
         break;
 
     default:
@@ -245,28 +245,28 @@ enum operand arg_reg(int index, int size)
 
 enum operand imm(long val)
 {
-    oper_immediate = val;
+    operand_immediate = val;
     return OPR_IMM;
 }
 
 enum operand mem(enum operand reg, int offset)
 {
-    oper_register = reg;
-    oper_offset = offset;
+    operand_register = reg;
+    operand_offset = offset;
     return OPR_MEM;
 }
 
 enum operand symb(const char *sym, int id)
 {
-    oper_symbol = sym;
-    oper_symbol_id = id;
+    operand_symbol = sym;
+    operand_symbol_id = id;
     return OPR_SYM;
 }
 
 enum operand label(const char *label_name, int id)
 {
-    oper_label = label_name;
-    oper_label_id = id;
+    operand_label = label_name;
+    operand_label_id = id;
     return OPR_LBL;
 }
 
@@ -309,7 +309,9 @@ void code3(FILE *fp, enum opecode op, enum operand oper1, enum operand oper2)
 
     fprintf(fp, "\n");
 }
+
 /*============================================================================*/
+
 static const char *LABEL_NAME_PREFIX = "LBB";
 static const char *STR_LIT_NAME_PREFIX = "L_str";
 
