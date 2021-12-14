@@ -55,7 +55,7 @@ static const char register_name[][8] = {
     "r15_", "r15b", "r15w", "r15d", "r15"
 };
 
-static const enum operand_00 list[] = {DI__00, SI__00, D__00, C__00, R8__00, R9__00};
+static const enum operand_00 arg_reg_list[] = {DI__00, SI__00, D__00, C__00, R8__00, R9__00};
 
 static const char directive[][8] = { "?", "byte", "word", "dword", "qword" };
 static const char suffix_letter[] = {'?', 'b', 'w', 'l', 'q'};
@@ -73,9 +73,14 @@ static const char instruction_name[][8] = {
     "cltd", "cqto"
 };
 
+static int is_register(int oper)
+{
+    return oper >= A__00 && oper <= R15_00;
+}
+
 static int get_operand_size(int oper)
 {
-    if (oper > A__00 && oper < R15_00)
+    if (is_register(oper))
         return oper % 5;
     return I0; /* '?' */
 }
@@ -122,7 +127,7 @@ static void print_operand(FILE *fp, int oper, int suffix)
 {
     const char *reg = NULL;
 
-    if (oper >= A__00 && oper <= R15_00) {
+    if (is_register(oper)) {
         const int size = oper % 5;
         if (att_syntax)
             fprintf(fp, "%%");
@@ -186,18 +191,18 @@ static void print_operand(FILE *fp, int oper, int suffix)
 
 enum operand_00 regi_00(enum operand_00 oper, enum operand_size size)
 {
-    if (oper >= A__00 && oper <= R15_00 && oper % 5 == 0)
+    if (is_register(oper) && oper % 5 == 0)
         return oper + size;
     else
         return A__00;
 }
 
-enum operand_00 arg_reg_00(int n)
+enum operand_00 arg_reg_00(int index, int size)
 {
-    if (n < 0 || n > 5)
+    if (index < 0 || index > 5)
         return A__00;
 
-    return list[n];
+    return regi_00(arg_reg_list[index], size);
 }
 
 enum operand_00 imm_00(long val)
@@ -237,10 +242,8 @@ void set_operand_size(enum operand_size size)
 
 void code1_00(FILE *fp, enum opecode_00 op)
 {
-    const int sfx = 4;
-
     print_indent(fp);
-    print_opecode(fp, op, sfx);
+    print_opecode(fp, op, I64);
 
     fprintf(fp, "\n");
 }

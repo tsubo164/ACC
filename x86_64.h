@@ -44,7 +44,7 @@ enum opecode_00 {
 };
 
 extern enum operand_00 regi_00(enum operand_00 oper, enum operand_size size);
-extern enum operand_00 arg_reg_00(int n);
+extern enum operand_00 arg_reg_00(int index, int size);
 extern enum operand_00 imm_00(long val);
 extern enum operand_00 mem_00(enum operand_00 reg, int offset);
 extern enum operand_00 symb_00(const char *sym, int id);

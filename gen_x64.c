@@ -10,15 +10,8 @@
 
 static int att_syntax = 1;
 
-static const char data_name[][8] = { "?", "byte", "word", "long", "quad" };
-
-static const char *get_data_name(int size)
-{
-    return data_name[size];
-}
-
 static const char *LABEL_NAME_PREFIX = "LBB";
-static const char *STR_LIT_NAME_PREFIX = "L.str";
+static const char *STR_LIT_NAME_PREFIX = "L_str";
 
 static enum operand_00 make_label_00(int block_id, int label_id)
 {
@@ -66,6 +59,13 @@ static int operand_size_00(const struct data_type *type)
     if (is_enum(type))
         return I32;
     return I64;
+}
+
+static const char *data_name_from_type(const struct data_type *type)
+{
+    static const char data_name[][8] = { "?", "byte", "word", "long", "quad" };
+    const int size = operand_size_00(type);
+    return data_name[size];
 }
 
 static enum operand_00 register_from_type(enum operand_00 oper, const struct data_type *type)
@@ -156,7 +156,7 @@ static void gen_func_param_list_variadic_(FILE *fp)
 
     for (i = 0; i < 6; i++) {
         const int disp = -8 * (6 - i);
-        const int reg_ = regi_00(arg_reg_00(i), I64);
+        const int reg_ = arg_reg_00(i, I64);
         code3_00(fp, MOV_00, reg_, mem_00(RBP_00, disp));
     }
 }
@@ -174,14 +174,14 @@ static int gen_store_param(FILE *fp, const struct symbol *sym, int stored_regs)
     code3_00(fp, SUB_00, imm_00(sym->mem_offset), R10_00);
 
     for (i = 0; i < N8; i++) {
-        const int reg_ = regi_00(arg_reg_00(r), I64);
+        const int reg_ = arg_reg_00(r, I64);
         code3_00(fp, MOV_00, reg_, mem_00(R10_00, offset));
         r++;
         offset += 8;
     }
 
     for (i = 0; i < N4; i++) {
-        const int reg_ = regi_00(arg_reg_00(r), I32);
+        const int reg_ = arg_reg_00(r, I32);
         code3_00(fp, MOV_00, reg_, mem_00(R10_00, offset));
         r++;
         offset += 4;
@@ -209,8 +209,7 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
             break;
 
         if (param_size <= 8 && stored_reg_count < 6) {
-            const int size = operand_size_00(sym->type);
-            const int reg_ = regi_00(arg_reg_00(stored_reg_count), size);
+            const int reg_ = arg_reg_00(stored_reg_count, operand_size_00(sym->type));
             const int disp = -1 * sym->mem_offset;
 
             code3_00(fp, MOV_00, reg_, mem_00(RBP_00, disp));
@@ -366,14 +365,14 @@ static int gen_load_arg(FILE *fp, const struct arg_area *arg, int loaded_regs)
     int i;
 
     for (i = 0; i < N8; i++) {
-        const int reg_ = regi_00(arg_reg_00(r), I64);
+        const int reg_ = arg_reg_00(r, I64);
         code3_00(fp, MOV_00, mem_00(RSP_00, arg->offset + offset), reg_);
         r++;
         offset += 8;
     }
 
     for (i = 0; i < N4; i++) {
-        const int reg_ = regi_00(arg_reg_00(r), I32);
+        const int reg_ = arg_reg_00(r, I32);
         code3_00(fp, MOV_00, mem_00(RSP_00, arg->offset + offset), reg_);
         r++;
         offset += 4;
@@ -507,7 +506,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             if (!ar->expr) {
                 /* large return value */
                 const int offset = -get_local_area_size();
-                const int reg_ = regi_00(arg_reg_00(0), I64);
+                const int reg_ = arg_reg_00(0, I64);
                 gen_comment(fp, "load address to returned value");
                 code3_00(fp, LEA_00, mem_00(RBP_00, offset), reg_);
                 loaded_reg_count++;
@@ -520,7 +519,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             if (ar->size > 8) {
                 loaded_reg_count = gen_load_arg(fp, ar, loaded_reg_count);
             } else {
-                const int reg_ = regi_00(arg_reg_00(loaded_reg_count), I64);
+                const int reg_ = arg_reg_00(loaded_reg_count, I64);
                 code3_00(fp, MOV_00, mem_00(RSP_00, ar->offset), reg_);
                 loaded_reg_count++;
             }
@@ -640,8 +639,7 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
                 code3_00(fp, MOV_00, symb_00(buf, -1), a_);
                 code3_00(fp, MOV_00, mem_00(RAX_00, 0), RAX_00);
             } else {
-                const int size = operand_size_00(node->type);
-                const int a_ = regi_00(A__00, size);
+                const int a_ = register_from_type(A__00, node->type);
                 code3_00(fp, MOV_00, symb_00(sym->name, id), a_);
             }
         }
@@ -767,9 +765,8 @@ static void gen_div(FILE *fp, const struct ast_node *node, enum operand_00 divid
 
 static void gen_preincdec(FILE *fp, const struct ast_node *node, enum opecode_00 op)
 {
-    const int size = operand_size_00(node->type);
-    const int a_ = regi_00(A__00, size);
-    const int d_ = regi_00(D__00, size);
+    const int a_ = register_from_type(A__00, node->type);
+    const int d_ = register_from_type(D__00, node->type);
 
     int stride = 1;
     if (is_pointer(node->type))
@@ -784,9 +781,8 @@ static void gen_preincdec(FILE *fp, const struct ast_node *node, enum opecode_00
 
 static void gen_postincdec(FILE *fp, const struct ast_node *node, enum opecode_00 op)
 {
-    const int size = operand_size_00(node->type);
-    const int a_ = regi_00(A__00, size);
-    const int c_ = regi_00(C__00, size);
+    const int a_ = register_from_type(A__00, node->type);
+    const int c_ = register_from_type(C__00, node->type);
 
     int stride = 1;
     if (is_pointer(node->type))
@@ -1169,8 +1165,7 @@ static long eval_const_expr__(const struct ast_node *node)
 static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
         const struct ast_node *expr)
 {
-    const int size = operand_size_00(type);
-    const char *szname = get_data_name(size);
+    const char *szname = data_name_from_type(type);
 
     if (!expr) {
         fprintf(fp, "    .%s 0\n", szname);
