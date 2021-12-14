@@ -10,145 +10,12 @@
 
 static int att_syntax = 1;
 
-enum operand_size_tag {
-    VARI = -1, /* variable based on context */
-    BYTE = 0,
-    WORD,
-    LONG,
-    QUAD
-};
-
-struct data_spec {
-    const char *suffix;
-    const char *directive;
-    const char *sizename;
-};
-
-const struct data_spec data_spec_table[] = {
-    {"b", "byte  ptr", "byte"},
-    {"w", "word  ptr", "word"},
-    {"l", "dword ptr", "long"},
-    {"q", "qword ptr", "quad"}
-};
+static const char data_name[][8] = { "?", "byte", "word", "long", "quad" };
 
 static const char *get_data_name(int size)
 {
-    return data_spec_table[size].sizename;
+    return data_name[size];
 }
-
-/* register tables */
-static const char *A__[]  = {"al",  "ax", "eax", "rax"};
-static const char *B__[]  = {"bl",  "bx", "ebx", "rbx"};
-static const char *C__[]  = {"cl",  "cx", "ecx", "rcx"};
-static const char *D__[]  = {"dl",  "dx", "edx", "rdx"};
-static const char *SI__[] = {"sil", "si", "esi", "rsi"};
-static const char *DI__[] = {"dil", "di", "edi", "rdi"};
-static const char *IP__[] = {"ipl", "ip", "eip", "rip"};
-static const char *BP__[] = {"bpl", "bp", "ebp", "rbp"};
-static const char *SP__[] = {"spl", "sp", "esp", "rsp"};
-/*
-static const char *R8__[] = {"r8b", "r8w", "r8d", "r8"};
-static const char *R9__[] = {"r9b", "r9w", "r9d", "r9"};
-*/
-static const char *R10__[] = {"r10b", "r10w", "r10d", "r10"};
-static const char *R11__[] = {"r11b", "r11w", "r11d", "r11"};
-/*
-static const char **ARG_REG__[] = {DI__, SI__, D__, C__, R8__, R9__};
-*/
-
-struct opecode {
-    const char *mnemonic;
-    int has_suffix;
-};
-
-/* opecodes */
-const struct opecode MOV_   = {"mov",   1};
-const struct opecode ADD_   = {"add",   1};
-const struct opecode SUB_   = {"sub",   1};
-const struct opecode IMUL_  = {"imul",  1};
-const struct opecode DIV_   = {"div",   1};
-const struct opecode IDIV_  = {"idiv",  1};
-const struct opecode SHL_   = {"shl",   1};
-const struct opecode SHR_   = {"shr",   1};
-const struct opecode SAR_   = {"sar",   1};
-const struct opecode OR_    = {"or",    1};
-const struct opecode XOR_   = {"xor",   1};
-const struct opecode AND_   = {"and",   1};
-const struct opecode NOT_   = {"not",   1};
-const struct opecode CMP_   = {"cmp",   1};
-const struct opecode POP_   = {"pop",   0};
-const struct opecode PUSH_  = {"push",  0};
-const struct opecode CALL_  = {"call",  0};
-const struct opecode LEA_   = {"lea",   0};
-const struct opecode RET_   = {"ret",   0};
-const struct opecode MOVSB_ = {"movsb", 1};
-const struct opecode MOVSW_ = {"movsw", 1};
-const struct opecode MOVSL_ = {"movsl", 1};
-const struct opecode MOVZB_ = {"movzb", 1};
-const struct opecode MOVZW_ = {"movzw", 1};
-
-const struct opecode JE_    = {"je",  0};
-const struct opecode JNE_   = {"jne", 0};
-const struct opecode JMP_   = {"jmp", 0};
-
-const struct opecode SETE_  = {"sete",  0};
-const struct opecode SETNE_ = {"setne", 0};
-const struct opecode SETL_  = {"setl",  0};
-const struct opecode SETG_  = {"setg",  0};
-const struct opecode SETLE_ = {"setle", 0};
-const struct opecode SETGE_ = {"setge", 0};
-const struct opecode CLTD_  = {"cltd",  0};
-const struct opecode CQTO_  = {"cqto",  0};
-
-enum operand_kind {
-    OPR_REG,
-    OPR_ADDR,
-    OPR_IMME,
-    OPR_SYM
-};
-
-struct operand {
-    int kind;
-    int size;
-    const char **reg_table;
-    const char *string;
-    long immediate;
-    int disp;
-    int label_id;
-    int block_id;
-};
-#define INIT_OPERAND {0, VARI}
-
-/* variable name registers */
-const struct operand A_  = {OPR_REG, VARI, A__};
-const struct operand B_  = {OPR_REG, VARI, B__};
-const struct operand C_  = {OPR_REG, VARI, C__};
-const struct operand D_  = {OPR_REG, VARI, D__};
-const struct operand SI_ = {OPR_REG, VARI, SI__};
-const struct operand DI_ = {OPR_REG, VARI, DI__};
-const struct operand IP_ = {OPR_REG, VARI, IP__};
-const struct operand BP_ = {OPR_REG, VARI, BP__};
-const struct operand SP_ = {OPR_REG, VARI, SP__};
-
-/* fixed name registers */
-const struct operand AL  = {OPR_REG, BYTE, A__};
-const struct operand AX  = {OPR_REG, WORD, A__};
-const struct operand EAX = {OPR_REG, LONG, A__};
-const struct operand CL  = {OPR_REG, BYTE, C__};
-
-const struct operand RAX = {OPR_REG, QUAD, A__};
-const struct operand RCX = {OPR_REG, QUAD, C__};
-const struct operand RDX = {OPR_REG, QUAD, D__};
-const struct operand RSI = {OPR_REG, QUAD, SI__};
-const struct operand RDI = {OPR_REG, QUAD, DI__};
-const struct operand RIP = {OPR_REG, QUAD, IP__};
-const struct operand RBP = {OPR_REG, QUAD, BP__};
-const struct operand RSP = {OPR_REG, QUAD, SP__};
-const struct operand R10 = {OPR_REG, QUAD, R10__};
-const struct operand R11 = {OPR_REG, QUAD, R11__};
-
-const struct operand EDX = {OPR_REG, LONG, D__};
-const struct operand EDI = {OPR_REG, LONG, DI__};
 
 static const char *LABEL_NAME_PREFIX = "LBB";
 static const char *STR_LIT_NAME_PREFIX = "L.str";
@@ -162,10 +29,10 @@ static enum operand_00 make_label_00(int block_id, int label_id)
 
 static void gen_pc_rel_addr(FILE *fp, const char *name, int label_id)
 {
-    if (label_id > 0)
-        fprintf(fp, "_%s_%d", name, label_id);
-    else
+    if (label_id < 0)
         fprintf(fp, "_%s", name);
+    else
+        fprintf(fp, "_%s_%d", name, label_id);
 }
 
 static void gen_symbol_name(FILE *fp, const char *prefix, int block_id, int label_id)
@@ -178,25 +45,10 @@ static void gen_symbol_name(FILE *fp, const char *prefix, int block_id, int labe
 
 static void gen_string_literal_name(FILE *fp, int label_id)
 {
-    if (label_id > 0)
-        fprintf(fp, "_%s_%d", STR_LIT_NAME_PREFIX, label_id);
-    else
+    if (label_id < 0)
         fprintf(fp, "_%s", STR_LIT_NAME_PREFIX);
-}
-
-static int operand_size(const struct data_type *type)
-{
-    if (is_char(type))
-        return BYTE;
-    if (is_short(type))
-        return WORD;
-    if (is_int(type))
-        return LONG;
-    if (is_long(type))
-        return QUAD;
-    if (is_enum(type))
-        return LONG;
-    return QUAD;
+    else
+        fprintf(fp, "_%s_%d", STR_LIT_NAME_PREFIX, label_id);
 }
 
 static int operand_size_00(const struct data_type *type)
@@ -225,30 +77,6 @@ static enum operand_00 register_from_type(enum operand_00 oper, const struct dat
 static int get_mem_offset(const struct ast_node *node)
 {
     return node->sym->mem_offset;
-}
-
-/* because of the return address is already pushed when a fuction starts
- * the rbp % 0x10 should be 0x08 */
-static int stack_align = 8;
-
-static void inc_stack_align(int byte)
-{
-    stack_align += byte;
-    inc_stack_pointer(byte);
-}
-
-static void dec_stack_align(int byte)
-{
-    stack_align -= byte;
-    dec_stack_pointer(byte);
-}
-
-static int need_adjust_stack_align(void)
-{
-    return !is_stack_aligned();
-    /*
-    return stack_align % 16 != 0;
-    */
 }
 
 /* forward declaration */
@@ -311,7 +139,7 @@ static void gen_add_stack_pointer(FILE *fp, int byte)
     if (!byte)
         return;
     code3_00(fp, ADD_00, imm_00(byte), RSP_00);
-    inc_stack_align(byte);
+    inc_stack_pointer(byte);
 }
 
 static void gen_sub_stack_pointer(FILE *fp, int byte)
@@ -319,7 +147,7 @@ static void gen_sub_stack_pointer(FILE *fp, int byte)
     if (!byte)
         return;
     code3_00(fp, SUB_00, imm_00(byte), RSP_00);
-    dec_stack_align(byte);
+    dec_stack_pointer(byte);
 }
 
 static void gen_func_param_list_variadic_(FILE *fp)
@@ -597,7 +425,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
     /* adjust area size */
     {
-        const int adjust = need_adjust_stack_align();
+        const int adjust = !is_stack_aligned();
 
         if ((total_area_size + 8 * adjust) % 16 != 0)
             total_area_size += 8;
@@ -1341,7 +1169,7 @@ static long eval_const_expr__(const struct ast_node *node)
 static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
         const struct ast_node *expr)
 {
-    const int size = operand_size(type);
+    const int size = operand_size_00(type);
     const char *szname = get_data_name(size);
 
     if (!expr) {
