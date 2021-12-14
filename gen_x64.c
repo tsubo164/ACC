@@ -163,16 +163,6 @@ const struct operand EDI = {OPR_REG, LONG, DI__};
 static const char *LABEL_NAME_PREFIX = "LBB";
 static const char *STR_LIT_NAME_PREFIX = "L.str";
 
-/* (base) */
-static struct operand addr1(struct operand oper)
-{
-    struct operand o = oper;
-    o.kind = OPR_ADDR;
-    o.disp = 0;
-
-    return o;
-}
-
 /* _main, _LBB1_2, _count, ... */
 static struct operand symb(const char *prefix, int block_id, int label_id)
 {
@@ -426,16 +416,6 @@ static void code2(FILE *fp, int size, struct opecode op,
         dec_stack_align(8);
 
     code__(fp, sz, &o0, &o1, NULL);
-}
-
-static void code3(FILE *fp, int size, struct opecode op,
-        struct operand oper1, struct operand oper2)
-{
-    struct opecode o0 = op;
-    struct operand o1 = oper1;
-    struct operand o2 = oper2;
-
-    code__(fp, size, &o0, &o1, &o2);
 }
 
 /* forward declaration */
@@ -1999,9 +1979,9 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->r);
         code3_00(fp, MOV_00, a_, c_);
         code2(fp, QUAD, POP_,  RDX);
-        /* TODO set_operand_size or mems(RDX, 0, sz_) or use a_ for shl? */
-        code3(fp, size, SHL_, CL, addr1(RDX));
         code3_00(fp, MOV_00, mem_00(RDX_00, 0), a_);
+        code3_00(fp, SHL_00, CL_00, a_);
+        code3_00(fp, MOV_00, a_, mem_00(RDX_00, 0));
         break;
 
     case NOD_SHR_ASSIGN:
@@ -2011,12 +1991,12 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->r);
         code3_00(fp, MOV_00, a_, c_);
         code2(fp, QUAD, POP_,  RDX);
-        /* TODO set_operand_size or mems(RDX, 0, sz_) or use a_ for shl? */
-        if (is_unsigned(node->type))
-            code3(fp, size, SHR_, CL, addr1(RDX));
-        else
-            code3(fp, size, SAR_, CL, addr1(RDX));
         code3_00(fp, MOV_00, mem_00(RDX_00, 0), a_);
+        if (is_unsigned(node->type))
+            code3_00(fp, SHR_00, CL_00, a_);
+        else
+            code3_00(fp, SAR_00, CL_00, a_);
+        code3_00(fp, MOV_00, a_, mem_00(RDX_00, 0));
         break;
 
     case NOD_OR_ASSIGN:
