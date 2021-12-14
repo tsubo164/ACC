@@ -6,10 +6,314 @@
 #include "gen_x64.h"
 #include "type.h"
 #include "esc_seq.h"
-#include "x86_64.h"
 
 static int att_syntax = 1;
+static const char *oper_label;
+static const char *oper_symbol;
+static int  oper_label_id;
+static int  oper_symbol_id;
+static int  oper_register;
+static long oper_immediate;
+static long oper_offset;
+static int opecode_len = 0;
+/* because of the return address is already pushed when a fuction starts
+ * (rbp % 0x10) == 0x08 */
+static int stack_offset = 8;
 
+enum operand_size {
+    I0, I8, I16, I32, I64
+};
+
+enum operand_00 {
+    A__00,   AL_00,   AX_00,   EAX_00,  RAX_00,
+    B__00,   BL_00,   BX_00,   EBX_00,  RBX_00,
+    C__00,   CL_00,   CX_00,   ECX_00,  RCX_00,
+    D__00,   DL_00,   DX_00,   EDX_00,  RDX_00,
+    DI__00,  DIL_00,  DI_00,   EDI_00,  RDI_00,
+    SI__00,  SIL_00,  SI_00,   ESI_00,  RSI_00,
+    BP__00,  BPL_00,  BP_00,   EBP_00,  RBP_00,
+    SP__00,  SPL_00,  SP_00,   ESP_00,  RSP_00,
+    R8__00,  R8B_00,  R8W_00,  R8D_00,  R8_00,
+    R9__00,  R9B_00,  R9W_00,  R9D_00,  R9_00,
+    R10__00, R10B_00, R10W_00, R10D_00, R10_00,
+    R11__00, R11B_00, R11W_00, R11D_00, R11_00,
+    R12__00, R12B_00, R12W_00, R12D_00, R12_00,
+    R13__00, R13B_00, R13W_00, R13D_00, R13_00,
+    R14__00, R14B_00, R14W_00, R14D_00, R14_00,
+    R15__00, R15B_00, R15W_00, R15D_00, R15_00,
+    OPR_IMM_00,
+    OPR_MEM_00,
+    OPR_LBL_00,
+    OPR_SYM_00
+};
+
+static const char register_name[][8] = {
+    "a_",   "al",   "ax",   "eax",  "rax",
+    "b_",   "bl",   "bx",   "ebx",  "rbx",
+    "c_",   "cl",   "cx",   "ecx",  "rcx",
+    "d_",   "dl",   "dx",   "edx",  "rdx",
+    "di_",  "dil",  "di",   "edi",  "rdi",
+    "si_",  "sil",  "si",   "esi",  "rsi",
+    "bp_",  "bpl",  "bp",   "ebp",  "rbp",
+    "sp_",  "spl",  "sp",   "esp",  "rsp",
+    "r8_",  "r8b",  "r8w",  "r8d",  "r8",
+    "r9_",  "r9b",  "r9w",  "r9d",  "r9",
+    "r10_", "r10b", "r10w", "r10d", "r10",
+    "r11_", "r11b", "r11w", "r11d", "r11",
+    "r12_", "r12b", "r12w", "r12d", "r12",
+    "r13_", "r13b", "r13w", "r13d", "r13",
+    "r14_", "r14b", "r14w", "r14d", "r14",
+    "r15_", "r15b", "r15w", "r15d", "r15"
+};
+
+static const enum operand_00 arg_reg_list[] = {DI__00, SI__00, D__00, C__00, R8__00, R9__00};
+
+static int is_register(int oper)
+{
+    return oper >= A__00 && oper <= R15_00;
+}
+
+enum opecode_00 {
+    MOV_00, MOVSB_00, MOVSW_00, MOVSL_00, MOVZB_00, MOVZW_00,
+    ADD_00, SUB_00, IMUL_00, DIV_00, IDIV_00,
+    SHL_00, SHR_00, SAR_00,
+    OR_00, XOR_00, AND_00, NOT_00, CMP_00,
+
+    LEA_00, PUSH_00, POP_00,
+    CALL_00, RET_00, JE_00, JNE_00, JMP_00,
+
+    SETE_00, SETNE_00, SETL_00, SETG_00, SETLE_00, SETGE_00,
+    CLTD_00, CQTO_00
+};
+
+static const char instruction_name[][8] = {
+    "mov", "movsb", "movsw", "movsl", "movzb", "movzw",
+    "add", "sub", "imul", "div", "idiv",
+    "shl", "shr", "sar",
+    "or", "xor", "and", "not", "cmp",
+
+    "lea", "push", "pop",
+    "call", "ret", "je", "jne", "jmp",
+    "sete", "setne", "setl", "setg", "setle", "setge",
+
+    "cltd", "cqto"
+};
+
+static const char directive[][8] =  {"?", "byte", "word", "dword", "qword"};
+static const char data_name[][8] =  {"?", "byte", "word", "long",  "quad"};
+static const char suffix_letter[] = {'?', 'b',    'w',    'l',     'q'};
+
+static void inc_stack_pointer(int byte)
+{
+    stack_offset += byte;
+}
+
+static void dec_stack_pointer(int byte)
+{
+    stack_offset -= byte;
+}
+
+static int is_stack_aligned(void)
+{
+    return stack_offset % 16 == 0;
+}
+
+static int get_operand_size(int oper)
+{
+    if (is_register(oper))
+        return oper % 5;
+    /* '?' */
+    return I0;
+}
+
+static void print_indent(FILE *fp)
+{
+    fprintf(fp, "    ");
+}
+
+static void print_separator(FILE *fp)
+{
+    int num = 6 - opecode_len;
+    num = num > 1 ? num : 1;
+
+    fprintf(fp, "%*s", num, " ");
+}
+
+static void print_opecode(FILE *fp, int op, int suffix)
+{
+    const char *inst = instruction_name[op];
+    int len = strlen(inst);
+
+    if (op < LEA_00) {
+        fprintf(fp, "%s%c", inst, suffix_letter[suffix]);
+        len++;
+    }
+    else if (op < JE_00) {
+        fprintf(fp, "%s%c", inst, suffix_letter[I64]);
+        len++;
+    }
+    else {
+        fprintf(fp, "%s", inst);
+    }
+
+    if (op == PUSH_00)
+        inc_stack_pointer(8);
+    if (op == POP_00)
+        dec_stack_pointer(8);
+
+    opecode_len = len;
+}
+
+static void print_operand(FILE *fp, int oper, int suffix)
+{
+    const char *reg = NULL;
+
+    if (is_register(oper)) {
+        const int size = oper % 5;
+        if (size == 0)
+            reg = register_name[oper + suffix];
+        else
+            reg = register_name[oper];
+
+        if (att_syntax)
+            fprintf(fp, "%%");
+        fprintf(fp, "%s", reg);
+        return;
+    }
+
+    switch (oper) {
+    case OPR_IMM_00:
+        if (att_syntax)
+            fprintf(fp, "$");
+        fprintf(fp, "%ld", oper_immediate);
+        break;
+
+    case OPR_MEM_00:
+        reg = register_name[oper_register];
+        if (att_syntax) {
+            if (oper_offset == 0)
+                fprintf(fp, "(%%%s)", reg);
+            else
+                fprintf(fp, "%ld(%%%s)", oper_offset, reg);
+        } else {
+            const char *direc = directive[suffix];
+            if (oper_offset == 0)
+                fprintf(fp, "%s ptr [%s]", direc, reg);
+            else
+                fprintf(fp, "%s ptr [%s%+ld]", direc, reg, oper_offset);
+        }
+        break;
+
+    case OPR_SYM_00:
+        if (att_syntax) {
+            if (oper_symbol_id < 0)
+                fprintf(fp, "_%s(%%rip)", oper_symbol);
+            else
+                fprintf(fp, "_%s_%d(%%rip)", oper_symbol, oper_symbol_id);
+        } else {
+            const char *direc = directive[suffix];
+            if (oper_symbol_id > 0)
+                fprintf(fp, "%s ptr [_%s_%d]", direc, oper_symbol, oper_symbol_id);
+            else
+                fprintf(fp, "%s ptr [_%s]", direc, oper_symbol);
+        }
+        break;
+
+    case OPR_LBL_00:
+        if (oper_label_id < 0)
+            fprintf(fp, "_%s", oper_label);
+        else
+            fprintf(fp, "_%s_%d", oper_label, oper_label_id);
+        break;
+
+    default:
+        break;
+    }
+}
+
+enum operand_00 regi_00(enum operand_00 oper, enum operand_size size)
+{
+    if (is_register(oper) && oper % 5 == 0)
+        return oper + size;
+    else
+        return A__00;
+}
+
+enum operand_00 arg_reg_00(int index, int size)
+{
+    if (index < 0 || index > 5)
+        return A__00;
+
+    return regi_00(arg_reg_list[index], size);
+}
+
+enum operand_00 imm_00(long val)
+{
+    oper_immediate = val;
+    return OPR_IMM_00;
+}
+
+enum operand_00 mem_00(enum operand_00 reg, int offset)
+{
+    oper_register = reg;
+    oper_offset = offset;
+    return OPR_MEM_00;
+}
+
+enum operand_00 symb_00(const char *sym, int id)
+{
+    oper_symbol = sym;
+    oper_symbol_id = id;
+    return OPR_SYM_00;
+}
+
+enum operand_00 label_00(const char *label_name, int id)
+{
+    oper_label = label_name;
+    oper_label_id = id;
+    return OPR_LBL_00;
+}
+
+void code1_00(FILE *fp, enum opecode_00 op)
+{
+    print_indent(fp);
+    print_opecode(fp, op, I64);
+
+    fprintf(fp, "\n");
+}
+
+void code2_00(FILE *fp, enum opecode_00 op, enum operand_00 oper1)
+{
+    const int size1 = get_operand_size(oper1);
+    const int sfx = size1;
+
+    print_indent(fp);
+    print_opecode(fp, op, sfx);
+
+    print_separator(fp);
+    print_operand(fp, oper1, sfx);
+
+    fprintf(fp, "\n");
+}
+
+void code3_00(FILE *fp, enum opecode_00 op, enum operand_00 oper1, enum operand_00 oper2)
+{
+    const int size1 = get_operand_size(oper1);
+    const int size2 = get_operand_size(oper2);
+    const int sfx = size1 > size2 ? size1 : size2;
+
+    print_indent(fp);
+    print_opecode(fp, op, sfx);
+
+    print_separator(fp);
+    print_operand(fp, oper1, sfx);
+
+    fprintf(fp, ", ");
+    print_operand(fp, oper2, sfx);
+
+    fprintf(fp, "\n");
+}
+/*============================================================================*/
 static const char *LABEL_NAME_PREFIX = "LBB";
 static const char *STR_LIT_NAME_PREFIX = "L_str";
 
@@ -20,7 +324,7 @@ static enum operand_00 make_label_00(int block_id, int label_id)
     return label_00(buf, label_id);
 }
 
-static void gen_pc_rel_addr(FILE *fp, const char *name, int label_id)
+static void gen_symbol_name(FILE *fp, const char *name, int label_id)
 {
     if (label_id < 0)
         fprintf(fp, "_%s", name);
@@ -28,7 +332,7 @@ static void gen_pc_rel_addr(FILE *fp, const char *name, int label_id)
         fprintf(fp, "_%s_%d", name, label_id);
 }
 
-static void gen_symbol_name(FILE *fp, const char *prefix, int block_id, int label_id)
+static void gen_label_name(FILE *fp, const char *prefix, int block_id, int label_id)
 {
     if (block_id < 0 && label_id < 0)
         fprintf(fp, "_%s", prefix);
@@ -63,7 +367,6 @@ static int operand_size_00(const struct data_type *type)
 
 static const char *data_name_from_type(const struct data_type *type)
 {
-    static const char data_name[][8] = { "?", "byte", "word", "long", "quad" };
     const int size = operand_size_00(type);
     return data_name[size];
 }
@@ -611,7 +914,7 @@ static void gen_func_call_builtin(FILE *fp, const struct ast_node *node)
 
 static void gen_label(FILE *fp, int block_id, int label_id)
 {
-    gen_symbol_name(fp, LABEL_NAME_PREFIX, block_id, label_id);
+    gen_label_name(fp, LABEL_NAME_PREFIX, block_id, label_id);
     fprintf(fp, ":\n");
 }
 
@@ -1187,9 +1490,9 @@ static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
             const struct symbol *sym = expr->sym;
             fprintf(fp, "    .%s ", szname);
             if (is_static(sym))
-                gen_pc_rel_addr(fp, sym->name, sym->id);
+                gen_symbol_name(fp, sym->name, sym->id);
             else
-                gen_pc_rel_addr(fp, sym->name, -1);
+                gen_symbol_name(fp, sym->name, -1);
             fprintf(fp, "\n");
         }
         break;
@@ -1200,9 +1503,9 @@ static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
             const struct symbol *sym = expr->l->sym;
             fprintf(fp, "    .%s ", szname);
             if (is_static(sym))
-                gen_pc_rel_addr(fp, sym->name, sym->id);
+                gen_symbol_name(fp, sym->name, sym->id);
             else
-                gen_pc_rel_addr(fp, sym->name, -1);
+                gen_symbol_name(fp, sym->name, -1);
             fprintf(fp, "\n");
         }
         break;
@@ -1245,10 +1548,10 @@ static void gen_object_byte(FILE *fp, const struct object_byte *obj)
         if (!is_static(sym)) {
             id = -1;
             fprintf(fp, "    .global ");
-            gen_pc_rel_addr(fp, sym->name, id);
+            gen_symbol_name(fp, sym->name, id);
             fprintf(fp, "\n");
         }
-        gen_pc_rel_addr(fp, sym->name, id);
+        gen_symbol_name(fp, sym->name, id);
         fprintf(fp, ":\n");
     }
 
