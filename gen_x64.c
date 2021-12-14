@@ -513,11 +513,10 @@ static void gen_func_param_list_variadic_(FILE *fp)
 {
     int i;
 
-    set_operand_size(I64);
-
     for (i = 0; i < 6; i++) {
         const int disp = -8 * (6 - i);
-        code3_00(fp, MOV_00, arg_reg_00(i), mem_00(RBP_00, disp));
+        const int reg_ = regi_00(arg_reg_00(i), I64);
+        code3_00(fp, MOV_00, reg_, mem_00(RBP_00, disp));
     }
 }
 
@@ -527,27 +526,27 @@ static int gen_store_param(FILE *fp, const struct symbol *sym, int stored_regs)
     const int N8 = size / 8;
     const int N4 = (size - 8 * N8) / 4;
     int offset = 0;
-    int reg = stored_regs;
+    int r = stored_regs;
     int i;
 
     code3_00(fp, MOV_00, RBP_00, R10_00);
     code3_00(fp, SUB_00, imm_00(sym->mem_offset), R10_00);
 
-    set_operand_size(I64);
     for (i = 0; i < N8; i++) {
-        code3_00(fp, MOV_00, arg_reg_00(reg), mem_00(R10_00, offset));
-        reg++;
+        const int reg_ = regi_00(arg_reg_00(r), I64);
+        code3_00(fp, MOV_00, reg_, mem_00(R10_00, offset));
+        r++;
         offset += 8;
     }
 
-    set_operand_size(I32);
     for (i = 0; i < N4; i++) {
-        code3_00(fp, MOV_00, arg_reg_00(reg), mem_00(R10_00, offset));
-        reg++;
+        const int reg_ = regi_00(arg_reg_00(r), I32);
+        code3_00(fp, MOV_00, reg_, mem_00(R10_00, offset));
+        r++;
         offset += 4;
     }
 
-    return reg;
+    return r;
 }
 
 static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
@@ -570,10 +569,10 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
 
         if (param_size <= 8 && stored_reg_count < 6) {
             const int size = operand_size_00(sym->type);
+            const int reg_ = regi_00(arg_reg_00(stored_reg_count), size);
             const int disp = -1 * sym->mem_offset;
-            set_operand_size(size);
 
-            code3_00(fp, MOV_00, arg_reg_00(stored_reg_count), mem_00(RBP_00, disp));
+            code3_00(fp, MOV_00, reg_, mem_00(RBP_00, disp));
             stored_reg_count++;
         }
         else if (param_size <= 16 && stored_reg_count < 5) {
@@ -722,24 +721,24 @@ static int gen_load_arg(FILE *fp, const struct arg_area *arg, int loaded_regs)
     const int N8 = size / 8;
     const int N4 = (size - 8 * N8) / 4;
     int offset = 0;
-    int reg = loaded_regs;
+    int r = loaded_regs;
     int i;
 
-    set_operand_size(I64);
     for (i = 0; i < N8; i++) {
-        code3_00(fp, MOV_00, mem_00(RSP_00, arg->offset + offset), arg_reg_00(reg));
-        reg++;
+        const int reg_ = regi_00(arg_reg_00(r), I64);
+        code3_00(fp, MOV_00, mem_00(RSP_00, arg->offset + offset), reg_);
+        r++;
         offset += 8;
     }
 
-    set_operand_size(I32);
     for (i = 0; i < N4; i++) {
-        code3_00(fp, MOV_00, mem_00(RSP_00, arg->offset + offset), arg_reg_00(reg));
-        reg++;
+        const int reg_ = regi_00(arg_reg_00(r), I32);
+        code3_00(fp, MOV_00, mem_00(RSP_00, arg->offset + offset), reg_);
+        r++;
         offset += 4;
     }
 
-    return reg;
+    return r;
 }
 
 static void gen_func_call(FILE *fp, const struct ast_node *node)
@@ -867,9 +866,9 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             if (!ar->expr) {
                 /* large return value */
                 const int offset = -get_local_area_size();
+                const int reg_ = regi_00(arg_reg_00(0), I64);
                 gen_comment(fp, "load address to returned value");
-                set_operand_size(I64);
-                code3_00(fp, LEA_00, mem_00(RBP_00, offset), arg_reg_00(0));
+                code3_00(fp, LEA_00, mem_00(RBP_00, offset), reg_);
                 loaded_reg_count++;
                 continue;
             }
@@ -880,9 +879,8 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             if (ar->size > 8) {
                 loaded_reg_count = gen_load_arg(fp, ar, loaded_reg_count);
             } else {
-                set_operand_size(I64);
-                code3_00(fp, MOV_00, mem_00(RSP_00, ar->offset),
-                        arg_reg_00(loaded_reg_count));
+                const int reg_ = regi_00(arg_reg_00(loaded_reg_count), I64);
+                code3_00(fp, MOV_00, mem_00(RSP_00, ar->offset), reg_);
                 loaded_reg_count++;
             }
         }
@@ -995,14 +993,15 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
             if (!strcmp(sym->name, "__stdinp") ||
                 !strcmp(sym->name, "__stdoutp") ||
                 !strcmp(sym->name, "__stderrp")) {
+                const int a_ = regi_00(A__00, I64);
                 char buf[128] = {'\0'};
                 sprintf(buf, "%s@GOTPCREL", sym->name);
-                code3_00(fp, MOV_00, symb_00(buf, 0), A__00);
+                code3_00(fp, MOV_00, symb_00(buf, 0), a_);
                 code3_00(fp, MOV_00, mem_00(RAX_00, 0), RAX_00);
             } else {
                 const int size = operand_size_00(node->type);
-                set_operand_size(size);
-                code3_00(fp, MOV_00, symb_00(sym->name, id), A__00);
+                const int a_ = regi_00(A__00, size);
+                code3_00(fp, MOV_00, symb_00(sym->name, id), a_);
             }
         }
     }
@@ -1128,32 +1127,36 @@ static void gen_div(FILE *fp, const struct ast_node *node, struct operand divide
 static void gen_preincdec(FILE *fp, const struct ast_node *node, enum opecode_00 op)
 {
     const int size = operand_size_00(node->type);
+    const int a_ = regi_00(A__00, size);
+    const int d_ = regi_00(D__00, size);
 
     int stride = 1;
     if (is_pointer(node->type))
         stride = get_size(underlying(node->type));
 
-    set_operand_size(size);
-
     gen_address(fp, node->l);
-    code3_00(fp, op, imm_00(stride), mem_00(RAX_00, 0));
-    code3_00(fp, MOV_00, mem_00(RAX_00, 0), A__00);
+    code3_00(fp, MOV_00, mem_00(RAX_00, 0), d_);
+    code3_00(fp, op, imm_00(stride), d_);
+    code3_00(fp, MOV_00, d_, mem_00(RAX_00, 0));
+    code3_00(fp, MOV_00, d_, a_);
 }
 
 static void gen_postincdec(FILE *fp, const struct ast_node *node, enum opecode_00 op)
 {
     const int size = operand_size_00(node->type);
+    const int a_ = regi_00(A__00, size);
+    const int c_ = regi_00(C__00, size);
 
     int stride = 1;
     if (is_pointer(node->type))
         stride = get_size(underlying(node->type));
 
-    set_operand_size(size);
-
     gen_address(fp, node->l);
     code3_00(fp, MOV_00, RAX_00, RDX_00);
-    code3_00(fp, MOV_00, mem_00(RAX_00, 0), A__00);
-    code3_00(fp, op, imm_00(stride), mem_00(RDX_00, 0));
+    code3_00(fp, MOV_00, mem_00(RAX_00, 0), a_);
+    code3_00(fp, MOV_00, a_, c_);
+    code3_00(fp, op, imm_00(stride), c_);
+    code3_00(fp, MOV_00, c_, mem_00(RDX_00, 0));
 }
 
 static void gen_relational(FILE *fp, const struct ast_node *node, struct opecode op)
@@ -1327,11 +1330,12 @@ static void gen_init_scalar_local(FILE *fp, const struct data_type *type,
         else
             gen_assign_struct(fp, type);
     } else {
-        const int size = operand_size_00(type);
-        set_operand_size(size);
+        const int d_ = register_from_type(D__00, type);
         /* assign zero */
-        code2(fp, QUAD, POP_,  RDX);
-        code3_00(fp, MOV_00, imm_00(0), mem_00(RAX_00, 0));
+        /* need pop to align */
+        code2(fp, QUAD, POP_,  RAX);
+        code3_00(fp, MOV_00, imm_00(0), d_);
+        code3_00(fp, MOV_00, d_, mem_00(RAX_00, 0));
     }
 }
 
