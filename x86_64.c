@@ -14,17 +14,15 @@ static long oper_offset;
 static int opecode_len = 0;
 static int stack_offset = 8;
 
-/*
-static void inc_stack_pointer(void)
+/*static*/ void inc_stack_pointer(int byte)
 {
-    stack_offset += 8;
+    stack_offset += byte;
 }
 
-static void dec_stack_pointer(void)
+/*static*/ void dec_stack_pointer(int byte)
 {
-    stack_offset -= 8;
+    stack_offset -= byte;
 }
-*/
 
 void  reset_stack_offset(void)
 {
@@ -68,9 +66,10 @@ static const char instruction_name[][8] = {
     "shl", "shr", "sar",
     "or", "xor", "and", "not", "cmp",
 
-    "lea", "pop", "push",
+    "lea", "push", "pop",
     "call", "ret", "je", "jne", "jmp",
     "sete", "setne", "setl", "setg", "setle", "setge",
+
     "cltd", "cqto"
 };
 
@@ -102,9 +101,19 @@ static void print_opecode(FILE *fp, int op, int suffix)
     if (op < LEA_00) {
         fprintf(fp, "%s%c", inst, suffix_letter[suffix]);
         len++;
-    } else {
+    }
+    else if (op < JE_00) {
+        fprintf(fp, "%s%c", inst, suffix_letter[I64]);
+        len++;
+    }
+    else {
         fprintf(fp, "%s", inst);
     }
+
+    if (op == PUSH_00)
+        inc_stack_pointer(8);
+    if (op == POP_00)
+        dec_stack_pointer(8);
 
     opecode_len = len;
 }
@@ -150,10 +159,10 @@ static void print_operand(FILE *fp, int oper, int suffix)
 
     case OPR_SYM_00:
         if (att_syntax) {
-            if (oper_symbol_id > 0)
-                fprintf(fp, "_%s_%d(%%rip)", oper_symbol, oper_symbol_id);
-            else
+            if (oper_symbol_id < 0)
                 fprintf(fp, "_%s(%%rip)", oper_symbol);
+            else
+                fprintf(fp, "_%s_%d(%%rip)", oper_symbol, oper_symbol_id);
         } else {
             const char *direc = directive[suffix];
             if (oper_symbol_id > 0)
@@ -164,8 +173,8 @@ static void print_operand(FILE *fp, int oper, int suffix)
         break;
 
     case OPR_LBL_00:
-        if (oper_label_id == 0)
-            fprintf(fp, "%s", oper_label);
+        if (oper_label_id < 0)
+            fprintf(fp, "_%s", oper_label);
         else
             fprintf(fp, "_%s_%d", oper_label, oper_label_id);
         break;

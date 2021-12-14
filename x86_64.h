@@ -36,8 +36,9 @@ enum opecode_00 {
     SHL_00, SHR_00, SAR_00,
     OR_00, XOR_00, AND_00, NOT_00, CMP_00,
 
-    LEA_00, POP_00, PUSH_00,
+    LEA_00, PUSH_00, POP_00,
     CALL_00, RET_00, JE_00, JNE_00, JMP_00,
+
     SETE_00, SETNE_00, SETL_00, SETG_00, SETLE_00, SETGE_00,
     CLTD_00, CQTO_00
 };
@@ -53,5 +54,9 @@ extern void set_operand_size(enum operand_size size);
 extern void code1_00(FILE *fp, enum opecode_00 op);
 extern void code2_00(FILE *fp, enum opecode_00 op, enum operand_00 oper1);
 extern void code3_00(FILE *fp, enum opecode_00 op, enum operand_00 oper1, enum operand_00 oper2);
+
+extern int is_stack_aligned(void);
+extern void inc_stack_pointer(int byte);
+extern void dec_stack_pointer(int byte);
 
 #endif /* _H */

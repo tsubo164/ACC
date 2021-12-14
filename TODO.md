@@ -12,6 +12,7 @@
   - [x] `type.c`
 
 * TODO
+  - segf when warning at 2nd gen compiler
   - improve const qualifier for struct parameter
   - add tests for malloc()
   - add tests for assert()
