@@ -522,7 +522,7 @@ int main()
     }
     {
         /* access to bit field */
-        /* 5 fields in 4 bytes!! */
+        /* 5 fields in 4 bytes */
         struct bitfield {
             signed int a : 5;
             signed int b : 6;
@@ -544,6 +544,22 @@ int main()
         assert(13, bf.c);
         assert(14, bf.d);
         assert(15, bf.e);
+    }
+    {
+        /* access to bit field */
+        struct bitfield {
+            signed int a : 10;
+            unsigned int b : 10;
+        } bf;
+
+        assert(4, sizeof(bf));
+
+        /* 1024 = 2^10(bit) - 1 => 0xFFFFFFFF */
+        bf.a = 1023;
+        bf.b = 1023;
+
+        assert(-1, bf.a);
+        assert(1023, bf.b);
     }
 
     return 0;

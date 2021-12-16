@@ -1,11 +1,11 @@
 /*
-#include <stdio.h>
 */
+#include <stdio.h>
 
 struct foo {
     signed int a : 5;
     signed int b : 17;
-    signed int c : 10;
+    unsigned int c : 10;
 };
 
 int main()
@@ -14,7 +14,9 @@ int main()
 
     f.a = 3;
     f.b = 31;
-    f.c = 42;
+    f.c = 1023;
+
+    printf("%d\n", f.c);
 
     return f.c;
 }
