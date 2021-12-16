@@ -22,6 +22,7 @@ struct parser {
     int decl_kind;
     const char * decl_ident;
     struct data_type *decl_type;
+    struct symbol *decl_sym;
 
     /* for enum */
     int enum_value;

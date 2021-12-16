@@ -480,16 +480,45 @@ int main()
         ICI ici2[2];
 
         assert(1, sizeof(C));
-        assert(2 , sizeof(S));
-        assert(4 , sizeof(SC));
-        assert(4 , sizeof(I));
-        assert(8 , sizeof(IC));
+        assert(2, sizeof(S));
+        assert(4, sizeof(SC));
+        assert(4, sizeof(I));
+        assert(8, sizeof(IC));
         assert(12, sizeof(ICI));
-        assert(8 , sizeof(ICS));
+        assert(8, sizeof(ICS));
         assert(16, sizeof(PC));
 
-        assert(2 , sizeof(c2));
+        assert(2, sizeof(c2));
         assert(24, sizeof(ici2));
+    }
+    {
+        /* size of struct including bit-field */
+        struct bitfield1 {
+            signed int a : 5;
+        } bf1;
+
+        struct bitfield2 {
+            signed int a : 5;
+            signed int b : 29;
+            signed int c : 10;
+        } bf2;
+
+        struct bitfield3 {
+            signed int a : 5;
+            signed int c : 10;
+            signed int b : 29;
+        } bf3;
+
+        struct bitfield4 {
+            signed int a : 5;
+            signed int b : 17;
+            signed int c : 10;
+        } bf4;
+
+        assert(4, sizeof(bf1));
+        assert(12, sizeof(bf2));
+        assert(8, sizeof(bf3));
+        assert(4, sizeof(bf4));
     }
 
     return 0;

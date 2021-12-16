@@ -152,7 +152,7 @@ static void expect_or_recover(struct parser *p, enum token_kind query)
 
 struct parser *new_parser(void)
 {
-    struct parser *p = malloc(sizeof(struct parser));
+    struct parser *p = calloc(1, sizeof(struct parser));
     int i;
 
     for (i = 0; i < TOKEN_BUFFER_SIZE; i++)
@@ -161,27 +161,6 @@ struct parser *new_parser(void)
     p->lex = new_lexer();
     p->head = 0;
     p->curr = 0;
-
-    p->decl_kind = 0;
-    p->decl_ident = NULL;
-    p->decl_type = NULL;
-
-    p->enum_value = 0;
-    p->func_sym = NULL;
-
-    p->is_typedef = 0;
-    p->is_extern = 0;
-    p->is_static = 0;
-    p->is_const = 0;
-    p->is_unsigned = 0;
-    p->is_panic_mode = 0;
-
-    p->is_sizeof_operand = 0;
-    p->is_addressof_operand = 0;
-    p->is_array_initializer = 0;
-
-    p->init_type = NULL;
-    p->init_sym = NULL;
 
     return p;
 }
@@ -431,6 +410,7 @@ static struct ast_node *convert_(struct parser *p, struct ast_node *node)
 }
 
 /* decl context */
+static void decl_set_sym(struct parser *p, struct symbol *decl_sym);
 static void define_sym(struct parser *p, struct ast_node *node)
 {
     struct symbol *sym;
@@ -447,6 +427,8 @@ static void define_sym(struct parser *p, struct ast_node *node)
 
     node->sym = sym;
     type_from_sym(node);
+
+    decl_set_sym(p, sym);
 }
 
 static void use_sym(struct parser *p, struct ast_node *ident, int sym_kind)
@@ -549,6 +531,11 @@ static void decl_set_type(struct parser *p, struct data_type *decl_type)
     p->decl_type = decl_type;
 }
 
+static void decl_set_sym(struct parser *p, struct symbol *decl_sym)
+{
+    p->decl_sym = decl_sym;
+}
+
 static int decl_is_func(struct parser *p)
 {
     return p->decl_kind == SYM_FUNC || p->decl_kind == SYM_PARAM;
@@ -559,6 +546,7 @@ static void decl_reset_context(struct parser *p)
     p->decl_kind = 0;
     p->decl_ident = NULL;
     p->decl_type = NULL;
+    p->decl_sym = NULL;
     p->is_typedef = 0;
     p->is_extern = 0;
     p->is_static = 0;
@@ -1944,6 +1932,11 @@ static struct ast_node *struct_declarator(struct parser *p)
     struct ast_node *tree = NEW_(NOD_DECLARATOR);
 
     tree->l = declarator(p);
+
+    if (consume(p, ':')) {
+        tree->r = constant_expression(p);
+        p->decl_sym->bit_width = tree->r->ival;
+    }
 
     return tree;
 }

@@ -26,12 +26,17 @@ enum symbol_kind {
 };
 
 struct symbol {
+    int id;
     int kind;
     const char *name;
     struct data_type *type;
     int scope_level;
     int mem_offset;
-    int id;
+
+    /* bit field */
+    char bit_offset;
+    char bit_width;
+
     /* TODO consider removing this by checking all symbols in tree nodes */
     struct position pos;
 
@@ -70,6 +75,7 @@ extern int is_param(const struct symbol *sym);
 extern int is_struct_tag(const struct symbol *sym);
 extern int is_union_tag(const struct symbol *sym);
 extern int is_member(const struct symbol *sym);
+extern int is_bitfield(const struct symbol *sym);
 extern int is_enum_tag(const struct symbol *sym);
 extern int is_enumerator(const struct symbol *sym);
 extern int is_case(const struct symbol *sym);

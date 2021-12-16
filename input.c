@@ -1,21 +1,25 @@
 /*
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
 */
+#include <stdio.h>
 
-//typedef struct node Node;
-struct node {
-    int id;
-    Node *next;
+struct foo {
+    signed int a : 5;
+    signed int b : 17;
+    signed int c : 10;
+    /*
+    signed int a : 5;
+    signed int b : 29;
+    signed int c : 10;
+    */
 };
 
 int main()
 {
-    int i;
-    return 5;
-    return g_a[2];
-    int i = g_a[0];
-}}
+    struct foo f;
 
-int foo(); { int a = 3; return a;  }
+    f.a = 3;
+
+    printf("sizeof f: %ld\n", sizeof f);
+
+    return f.a;
+}

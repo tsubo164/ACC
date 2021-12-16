@@ -75,6 +75,11 @@ int is_member(const struct symbol *sym)
     return sym && sym->kind == SYM_MEMBER;
 }
 
+int is_bitfield(const struct symbol *sym)
+{
+    return is_member(sym) && sym->bit_width > 0;
+}
+
 int is_enum_tag(const struct symbol *sym)
 {
     return sym && sym->kind == SYM_TAG_ENUM;
@@ -264,6 +269,8 @@ void print_symbol_table(const struct symbol_table *table)
         /* memory offset */
         if (is_global_var(sym))
             printf("%5s | ",  "*");
+        else if (is_bitfield(sym))
+            printf("*%4d | ",  sym->bit_offset);
         else
             printf("%5d | ",  sym->mem_offset);
         /* id */
@@ -312,9 +319,7 @@ static struct symbol *new_symbol(int kind, const char *name, struct data_type *t
         int scope_level)
 {
     static int next_id = 0;
-    struct symbol ini = {0};
-    struct symbol *sym = malloc(sizeof(struct symbol));
-    *sym = ini;
+    struct symbol *sym = calloc(1, sizeof(struct symbol));
 
     sym->kind = kind;
     sym->name = name;
@@ -521,6 +526,11 @@ static int is_member_of(const struct symbol *sym, const struct symbol *struct_sy
         sym->scope_level == struct_sym->scope_level + 1;
 }
 
+static int is_bitfield_of(const struct symbol *sym, const struct symbol *struct_sym)
+{
+    return is_member_of(sym, struct_sym) && is_bitfield(sym);
+}
+
 static int is_end_of_scope(const struct symbol *sym, const struct symbol *scope_owner)
 {
     if (!sym || !scope_owner)
@@ -713,6 +723,17 @@ static int align_to(int pos, int align)
     return ((pos + align - 1) / align) * align;
 }
 
+static int to_bit(int byte)
+{
+    return 8 * byte;
+}
+
+static int to_byte(int bit)
+{
+    assert(bit % 8 == 0);
+    return bit / 8;
+}
+
 void compute_func_size(struct symbol *func_sym)
 {
     struct symbol *sym;
@@ -767,35 +788,54 @@ void compute_func_size(struct symbol *func_sym)
 void compute_struct_size(struct symbol *struct_sym)
 {
     struct symbol *sym;
-    int total_offset = 0;
+    int bit_struct_size = 0;
     int struct_size = 0;
+    int bit_struct_align = 0;
     int struct_align = 0;
 
     if (is_incomplete(struct_sym->type))
         return;
 
     for (sym = struct_sym; sym; sym = sym->next) {
-        if (is_member_of(sym, struct_sym)) {
-            const int size  = get_size(sym->type);
-            const int align = get_alignment(sym->type);
+        if (is_bitfield_of(sym, struct_sym)) {
+            const int bit_size  = sym->bit_width;
+            const int bit_align = to_bit(4); /* 32 bit */
+            const int fits = bit_struct_size % bit_align + bit_size <= bit_align;
 
-            total_offset = align_to(total_offset, align);
-            sym->mem_offset = total_offset;
-            total_offset += size;
-            struct_align = align > struct_align ? align : struct_align;
+            if (fits) {
+                sym->bit_offset = bit_struct_size;
+                bit_struct_size += bit_size;
+            } else {
+                sym->bit_offset = align_to(bit_struct_size, bit_align);
+                bit_struct_size = sym->bit_offset + bit_size;
+            }
+
+            bit_struct_align = bit_align > bit_struct_align ? bit_align : bit_struct_align;
+        }
+        else if (is_member_of(sym, struct_sym)) {
+            const int bit_size  = to_bit(get_size(sym->type));
+            const int bit_align = to_bit(get_alignment(sym->type));
+
+            bit_struct_size = align_to(bit_struct_size, bit_align);
+            sym->mem_offset = to_byte(bit_struct_size);
+            bit_struct_size += bit_size;
+            bit_struct_align = bit_align > bit_struct_align ? bit_align : bit_struct_align;
         }
 
         if (is_end_of_scope(sym, struct_sym))
             break;
     }
 
-    if (struct_align == 0) {
+    if (bit_struct_align == 0) {
         /* an empty struct created by error. pretends its size is 4 */
-        total_offset = 4;
-        struct_align = 4;
+        bit_struct_size = to_bit(4);
+        bit_struct_align = to_bit(4);
     }
+    /* align to n byte */
+    bit_struct_size = align_to(bit_struct_size, bit_struct_align);
 
-    struct_size = align_to(total_offset, struct_align);
+    struct_size = align_to(to_byte(bit_struct_size), to_byte(bit_struct_align));
+    struct_align = to_byte(bit_struct_align);
 
     set_struct_size(struct_sym->type, struct_size);
     set_struct_align(struct_sym->type, struct_align);
