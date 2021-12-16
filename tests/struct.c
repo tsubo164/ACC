@@ -492,7 +492,7 @@ int main()
         assert(24, sizeof(ici2));
     }
     {
-        /* size of struct including bit-field */
+        /* size of struct including bit field */
         struct bitfield1 {
             signed int a : 5;
         } bf1;
@@ -519,6 +519,31 @@ int main()
         assert(12, sizeof(bf2));
         assert(8, sizeof(bf3));
         assert(4, sizeof(bf4));
+    }
+    {
+        /* access to bit field */
+        /* 5 fields in 4 bytes!! */
+        struct bitfield {
+            signed int a : 5;
+            signed int b : 6;
+            signed int c : 7;
+            signed int d : 8;
+            signed int e : 6;
+        } bf;
+
+        assert(4, sizeof(bf));
+
+        bf.a = 11;
+        bf.b = 12;
+        bf.c = 13;
+        bf.d = 14;
+        bf.e = 15;
+
+        assert(11, bf.a);
+        assert(12, bf.b);
+        assert(13, bf.c);
+        assert(14, bf.d);
+        assert(15, bf.e);
     }
 
     return 0;

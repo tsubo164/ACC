@@ -801,14 +801,12 @@ void compute_struct_size(struct symbol *struct_sym)
             const int al = to_bit(4); /* 32 bit */
             const int fits = max_size % al + sz <= al;
 
-            if (fits) {
-                sym->bit_offset = max_size;
-                max_size += sz;
-            } else {
-                sym->bit_offset = align_to(max_size, al);
-                max_size = sym->bit_offset + sz;
-            }
+            if (!fits)
+                max_size = align_to(max_size, al);
 
+            sym->mem_offset = max_size / al;
+            sym->bit_offset = max_size % al;
+            max_size += sz;
             max_align = al > max_align ? al : max_align;
         }
         else if (is_member_of(sym, struct_sym)) {

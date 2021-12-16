@@ -1821,6 +1821,18 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_STRUCT_REF:
         gen_address(fp, node);
         gen_load(fp, node, mem(RAX, 0), A_);
+
+        if (is_bitfield(node->r->sym)) {
+            const struct symbol *sym = node->r->sym;
+            const int sl = 32 - sym->bit_width - sym->bit_offset;
+            const int sr = 32 - sym->bit_width;
+            code3(fp, SHL, imm(sl), EAX);
+            if (is_unsigned(node->type))
+                code3(fp, SHR, imm(sr), EAX);
+            else
+                code3(fp, SAR, imm(sr), EAX);
+        }
+
         break;
 
     case NOD_CALL:
@@ -1855,8 +1867,25 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->r);
         code2(fp, POP,  RDX);
 
-        if (0)
-            gen_store(fp, node->r, A_, mem(RDX, 0));
+        if (node->l->kind == NOD_STRUCT_REF && is_bitfield(node->l->r->sym)) {
+            const struct symbol *sym = node->l->r->sym;
+            int mask;
+            mask = ~1 << (sym->bit_width - 1);
+            mask = ~mask;
+            mask <<= sym->bit_offset;
+            mask = ~mask;
+
+            gen_comment(fp, "bit field");
+            code3(fp, MOV, EAX, ECX);
+            code3(fp, MOV, ECX, R10D);
+            code3(fp, SHL, imm(sym->bit_offset), ECX);
+            code3(fp, MOV, mem(RDX, 0), EAX);
+            code3(fp, AND, imm(mask), EAX);
+            code3(fp, OR,  ECX, EAX);
+            code3(fp, MOV, EAX, mem(RDX, 0));
+            code3(fp, MOV, R10D, EAX);
+            break;
+        }
 
         /* TODO come up with better idea to cast when storing */
         if (is_long(node->type) && !is_long(node->r->type))
@@ -1867,6 +1896,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         else
             gen_assign_struct(fp, node->type);
 
+        if (0)
+            gen_store(fp, node->r, A_, mem(RDX, 0));
         break;
 
     case NOD_ADD_ASSIGN:
