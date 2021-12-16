@@ -19,7 +19,5 @@ int main()
 
     f.a = 3;
 
-    printf("sizeof f: %ld\n", sizeof f);
-
     return f.a;
 }

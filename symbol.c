@@ -753,11 +753,11 @@ void compute_func_size(struct symbol *func_sym)
                     sym->mem_offset = 8 * (6 - param_index);
                 } else {
                     /* TODO make a funtion */
-                    const int size  = get_size(sym->type);
-                    const int align = get_alignment(sym->type);
+                    const int sz = get_size(sym->type);
+                    const int al = get_alignment(sym->type);
 
-                    total_offset = align_to(total_offset, align);
-                    total_offset += size;
+                    total_offset = align_to(total_offset, al);
+                    total_offset += sz;
                     sym->mem_offset = total_offset;
                 }
             } else {
@@ -770,11 +770,11 @@ void compute_func_size(struct symbol *func_sym)
         }
         else if (is_local_var(sym)) {
             /* TODO make a funtion */
-            const int size  = get_size(sym->type);
-            const int align = get_alignment(sym->type);
+            const int sz = get_size(sym->type);
+            const int al = get_alignment(sym->type);
 
-            total_offset = align_to(total_offset, align);
-            total_offset += size;
+            total_offset = align_to(total_offset, al);
+            total_offset += sz;
             sym->mem_offset = total_offset;
         }
 
@@ -788,65 +788,66 @@ void compute_func_size(struct symbol *func_sym)
 void compute_struct_size(struct symbol *struct_sym)
 {
     struct symbol *sym;
-    int bit_struct_size = 0;
-    int struct_size = 0;
-    int bit_struct_align = 0;
-    int struct_align = 0;
+    /* compute in bit */
+    int max_size = 0;
+    int max_align = 0;
 
     if (is_incomplete(struct_sym->type))
         return;
 
     for (sym = struct_sym; sym; sym = sym->next) {
         if (is_bitfield_of(sym, struct_sym)) {
-            const int bit_size  = sym->bit_width;
-            const int bit_align = to_bit(4); /* 32 bit */
-            const int fits = bit_struct_size % bit_align + bit_size <= bit_align;
+            const int sz = sym->bit_width;
+            const int al = to_bit(4); /* 32 bit */
+            const int fits = max_size % al + sz <= al;
 
             if (fits) {
-                sym->bit_offset = bit_struct_size;
-                bit_struct_size += bit_size;
+                sym->bit_offset = max_size;
+                max_size += sz;
             } else {
-                sym->bit_offset = align_to(bit_struct_size, bit_align);
-                bit_struct_size = sym->bit_offset + bit_size;
+                sym->bit_offset = align_to(max_size, al);
+                max_size = sym->bit_offset + sz;
             }
 
-            bit_struct_align = bit_align > bit_struct_align ? bit_align : bit_struct_align;
+            max_align = al > max_align ? al : max_align;
         }
         else if (is_member_of(sym, struct_sym)) {
-            const int bit_size  = to_bit(get_size(sym->type));
-            const int bit_align = to_bit(get_alignment(sym->type));
+            const int sz = to_bit(get_size(sym->type));
+            const int al = to_bit(get_alignment(sym->type));
 
-            bit_struct_size = align_to(bit_struct_size, bit_align);
-            sym->mem_offset = to_byte(bit_struct_size);
-            bit_struct_size += bit_size;
-            bit_struct_align = bit_align > bit_struct_align ? bit_align : bit_struct_align;
+            max_size = align_to(max_size, al);
+            sym->mem_offset = to_byte(max_size);
+            max_size += sz;
+            max_align = al > max_align ? al : max_align;
         }
 
         if (is_end_of_scope(sym, struct_sym))
             break;
     }
 
-    if (bit_struct_align == 0) {
+    if (max_align == 0) {
         /* an empty struct created by error. pretends its size is 4 */
-        bit_struct_size = to_bit(4);
-        bit_struct_align = to_bit(4);
+        max_size = to_bit(4);
+        max_align = to_bit(4);
     }
     /* align to n byte */
-    bit_struct_size = align_to(bit_struct_size, bit_struct_align);
+    max_size = align_to(max_size, max_align);
 
-    struct_size = align_to(to_byte(bit_struct_size), to_byte(bit_struct_align));
-    struct_align = to_byte(bit_struct_align);
+    {
+        /* convert bits to bytes */
+        const int byte_sz = align_to(to_byte(max_size), to_byte(max_align));
+        const int byte_al = to_byte(max_align);
 
-    set_struct_size(struct_sym->type, struct_size);
-    set_struct_align(struct_sym->type, struct_align);
-    struct_sym->mem_offset = struct_size;
+        set_struct_size(struct_sym->type, byte_sz);
+        set_struct_align(struct_sym->type, byte_al);
+        struct_sym->mem_offset = byte_sz;
+    }
 }
 
 void compute_union_size(struct symbol *union_sym)
 {
     struct symbol *sym;
     int max_size = 0;
-    int union_size = 0;
     int max_align = 0;
 
     if (is_incomplete(union_sym->type))
@@ -854,12 +855,12 @@ void compute_union_size(struct symbol *union_sym)
 
     for (sym = union_sym; sym; sym = sym->next) {
         if (is_member_of(sym, union_sym)) {
-            const int size  = get_size(sym->type);
-            const int align = get_alignment(sym->type);
+            const int sz  = get_size(sym->type);
+            const int al = get_alignment(sym->type);
 
             sym->mem_offset = 0;
-            max_size = size > max_size ? size : max_size;
-            max_align = align > max_align ? align : max_align;
+            max_size = sz > max_size ? sz : max_size;
+            max_align = al > max_align ? al : max_align;
         }
 
         if (is_end_of_scope(sym, union_sym))
@@ -872,11 +873,14 @@ void compute_union_size(struct symbol *union_sym)
         max_align = 4;
     }
 
-    union_size = align_to(max_size, max_align);
+    {
+        const int union_sz = align_to(max_size, max_align);
+        const int union_al = max_align;
 
-    set_union_size(union_sym->type, union_size);
-    set_union_align(union_sym->type, max_align);
-    union_sym->mem_offset = union_size;
+        set_union_size(union_sym->type, union_sz);
+        set_union_align(union_sym->type, union_al);
+        union_sym->mem_offset = union_sz;
+    }
 }
 
 void compute_enum_size(struct symbol *enm)
