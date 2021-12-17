@@ -562,5 +562,34 @@ int main()
         assert(1023, bf.b);
     }
 
+    {
+        /* unnamed bit field */
+        struct bitfield1 {
+            signed int a : 10;
+            signed int b : 10;
+        } bf1;
+
+        struct bitfield2 {
+            signed int a : 10;
+            signed int : 0;
+            signed int b : 10;
+        } bf2;
+
+        assert(4, sizeof(bf1));
+        assert(8, sizeof(bf2));
+
+        bf1.a = 123;
+        bf1.b = 456;
+
+        assert(123, bf1.a);
+        assert(456, bf1.b);
+
+        bf2.a = -73;
+        bf2.b = -31;
+
+        assert(-73, bf2.a);
+        assert(-31, bf2.b);
+    }
+
     return 0;
 }

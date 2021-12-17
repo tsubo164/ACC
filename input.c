@@ -3,20 +3,21 @@
 #include <stdio.h>
 
 struct foo {
-    signed int a : 5;
-    signed int b : 17;
-    unsigned int c : 10;
+    signed int a : 11;
+    signed int : 4;
+    signed int b : 18;
+    signed int c : 20;
+    signed int : 0;
+    signed int d: 7;
 };
 
 int main()
 {
     struct foo f;
 
-    f.a = 3;
-    f.b = 31;
-    f.c = 1023;
+    f.c = -7;
 
     printf("%d\n", f.c);
 
-    return f.c;
+    return sizeof f;
 }

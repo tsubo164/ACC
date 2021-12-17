@@ -1931,10 +1931,21 @@ static struct ast_node *struct_declarator(struct parser *p)
 {
     struct ast_node *tree = NEW_(NOD_DECLARATOR);
 
-    tree->l = declarator(p);
+    if (nexttok(p, ':')) {
+        /* unnamed bit field. no need to reproduce the same tree structure */
+        struct ast_node *decl = decl_identifier(p);
+        define_sym(p, decl);
+        decl = branch_(new_node_(NOD_DECL_DIRECT, tokpos(p)), NULL, decl);
+        decl = branch_(new_node_(NOD_DECLARATOR, tokpos(p)), NULL, decl);
+        tree->l = decl;
+    }
+    else {
+        tree->l = declarator(p);
+    }
 
     if (consume(p, ':')) {
         tree->r = constant_expression(p);
+        p->decl_sym->is_bitfield = 1;
         p->decl_sym->bit_width = tree->r->ival;
     }
 

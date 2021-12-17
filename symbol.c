@@ -77,7 +77,7 @@ int is_member(const struct symbol *sym)
 
 int is_bitfield(const struct symbol *sym)
 {
-    return is_member(sym) && sym->bit_width > 0;
+    return is_member(sym) && sym->is_bitfield;
 }
 
 int is_enum_tag(const struct symbol *sym)
@@ -734,6 +734,16 @@ static int to_byte(int bit)
     return bit / 8;
 }
 
+static void print_bitfield(const struct symbol *sym)
+{
+    if (!is_bitfield(sym))
+        return;
+    printf("  %s:\n", sym->name);
+    printf("    bit_width:  %d\n", sym->bit_width);
+    printf("    bit_offset: %d\n", sym->bit_offset);
+    printf("    mem_offset: %d\n", sym->mem_offset);
+}
+
 void compute_func_size(struct symbol *func_sym)
 {
     struct symbol *sym;
@@ -796,7 +806,12 @@ void compute_struct_size(struct symbol *struct_sym)
         return;
 
     for (sym = struct_sym; sym; sym = sym->next) {
-        if (is_bitfield_of(sym, struct_sym)) {
+        if (is_bitfield_of(sym, struct_sym) && sym->bit_width == 0) {
+            const int al = to_bit(4); /* 32 bit */
+            /* just align to next unit and adds no padding */
+            max_size = align_to(max_size, al);
+        }
+        else if (is_bitfield_of(sym, struct_sym)) {
             const int sz = sym->bit_width;
             const int al = to_bit(4); /* 32 bit */
             const int fits = max_size % al + sz <= al;
@@ -804,7 +819,7 @@ void compute_struct_size(struct symbol *struct_sym)
             if (!fits)
                 max_size = align_to(max_size, al);
 
-            sym->mem_offset = max_size / al;
+            sym->mem_offset = (max_size / al) * 4;
             sym->bit_offset = max_size % al;
             max_size += sz;
             max_align = al > max_align ? al : max_align;
@@ -818,6 +833,8 @@ void compute_struct_size(struct symbol *struct_sym)
             max_size += sz;
             max_align = al > max_align ? al : max_align;
         }
+        if (0)
+            print_bitfield(sym);
 
         if (is_end_of_scope(sym, struct_sym))
             break;

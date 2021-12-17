@@ -33,10 +33,6 @@ struct symbol {
     int scope_level;
     int mem_offset;
 
-    /* bit field */
-    char bit_offset;
-    char bit_width;
-
     /* TODO consider removing this by checking all symbols in tree nodes */
     struct position pos;
 
@@ -54,6 +50,11 @@ struct symbol {
     char is_used;
     char is_variadic;
     char is_builtin;
+
+    /* bit field */
+    char is_bitfield;
+    char bit_offset;
+    char bit_width;
 };
 
 struct symbol_table {
