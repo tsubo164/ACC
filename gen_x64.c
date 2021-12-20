@@ -1452,8 +1452,13 @@ static void free_object_byte(struct object_byte *obj)
 {
     struct object_byte o = {0};
     int i;
-    for (i = 0; i < obj->size; i++)
-        free_memory_bit(obj->bytes[i].bit);
+    for (i = 0; i < obj->size; i++) {
+        if (obj->bytes[i].bit) {
+            free_memory_bit(obj->bytes[i].bit);
+            /* TODO improve this un-const cast */
+            free_ast_node((struct ast_node *) obj->bytes[i].init);
+        }
+    }
     free(obj->bytes);
     *obj = o;
 }
@@ -1692,6 +1697,34 @@ static void gen_initializer(FILE *fp,
         print_object(&obj);
 
     if (is_global_var(ident->sym) && !is_extern(ident->sym)) {
+        int i;
+
+        /* combine all bit fields within 4 bytes and generate an integer */
+        for (i = 0; i < obj.size; i++) {
+            struct memory_byte *byte = &obj.bytes[i];
+
+            if (byte->bit) {
+                const struct memory_bit *bit = byte->bit;
+                struct ast_node *n;
+                int byte_data = 0;
+
+                for (; bit; bit = bit->next) {
+                    int val = eval_const_expr__(bit->init);
+                    int mask;
+                    mask = ~1 << bit->width;
+                    mask = ~mask;
+
+                    val &= mask;
+                    val <<= bit->offset;
+                    byte_data |= val;
+                }
+                /* TODO improve this node will be strayed */
+                n = new_ast_node(NOD_NUM, NULL, NULL);
+                n->ival = byte_data;
+                byte->init = n;
+            }
+        }
+
         gen_object_byte(fp, &obj);
     }
     else if (is_local_var(ident->sym)) {

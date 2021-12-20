@@ -122,6 +122,18 @@ char color_list[][10] = {
 /* array 7 of string initializer with string literal */
 char days[7][4] = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
 
+/* initialize bit fields */
+struct bitfield1 {
+    signed int a : 13;
+    signed int b : 17;
+} bf1 = {-73, 991};
+
+struct bitfield2 {
+    signed int a : 11;
+    signed int : 0;
+    signed int b : 19;
+} bf2 = {-803, -73331};
+
 int main()
 {
     {
@@ -395,6 +407,17 @@ int main()
         assert('u',  days[6][1]);
         assert('n',  days[6][2]);
         assert('\0', days[6][3]);
+    }
+    {
+        /* initialize bit fields */
+        assert(4, sizeof bf1);
+        assert(8, sizeof bf2);
+
+        assert(-73, bf1.a);
+        assert(991, bf1.b);
+
+        assert(-803, bf2.a);
+        assert(-73331, bf2.b);
     }
 
     return 0;

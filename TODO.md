@@ -12,6 +12,7 @@
   - [x] `type.c`
 
 * TODO
+  - improve local and global initializer
   - improve const qualifier for struct parameter
   - add tests for malloc()
   - add tests for assert()
