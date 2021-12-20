@@ -1316,6 +1316,17 @@ static void append_new_bit(struct memory_byte *byte,
     bit->next = new_bit;
 }
 
+static void free_memory_bit(struct memory_bit *bit)
+{
+    struct memory_bit *b = bit, *tmp;
+
+    while (b) {
+        tmp = b->next;
+        free(b);
+        b = tmp;
+    }
+}
+
 static void gen_init_bit_local(FILE *fp,
         const struct ast_node *ident, int offset, const struct memory_bit *mem_bit)
 {
@@ -1440,6 +1451,9 @@ static void init_object_byte(struct object_byte *obj, const struct ast_node *ide
 static void free_object_byte(struct object_byte *obj)
 {
     struct object_byte o = {0};
+    int i;
+    for (i = 0; i < obj->size; i++)
+        free_memory_bit(obj->bytes[i].bit);
     free(obj->bytes);
     *obj = o;
 }

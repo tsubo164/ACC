@@ -48,7 +48,7 @@ struct string_table *new_string_table()
 void free_string_table(struct string_table *table)
 {
     struct table_entry *entry = NULL;
-    struct table_entry *kill = NULL;
+    struct table_entry *tmp = NULL;
     int i;
 
     if (!table)
@@ -59,9 +59,9 @@ void free_string_table(struct string_table *table)
             continue;
 
         for (entry = table->entries[i]; entry != NULL; ) {
-            kill = entry;
+            tmp = entry;
             entry = entry->next;
-            free_entry(kill);
+            free_entry(tmp);
         }
     }
 
