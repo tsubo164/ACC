@@ -561,7 +561,6 @@ int main()
         assert(-1, bf.a);
         assert(1023, bf.b);
     }
-
     {
         /* unnamed bit field */
         struct bitfield1 {
@@ -589,6 +588,28 @@ int main()
 
         assert(-73, bf2.a);
         assert(-31, bf2.b);
+    }
+    {
+        /* bit field initializers for lacal variables */
+        struct bitfield1 {
+            signed int a : 13;
+            signed int b : 17;
+        } bf1 = {-111, 239};
+
+        struct bitfield2 {
+            signed int a : 13;
+            signed int : 0;
+            signed int b : 17;
+        } bf2 = {301, -11230};
+
+        assert(4, sizeof(bf1));
+        assert(8, sizeof(bf2));
+
+        assert(-111, bf1.a);
+        assert(239, bf1.b);
+
+        assert(301, bf2.a);
+        assert(-11230, bf2.b);
     }
 
     return 0;

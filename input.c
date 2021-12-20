@@ -2,22 +2,15 @@
 */
 #include <stdio.h>
 
-struct foo {
-    signed int a : 11;
-    signed int : 4;
-    signed int b : 18;
-    signed int c : 20;
-    signed int : 0;
-    signed int d: 7;
-};
-
 int main()
 {
-    struct foo f;
+    struct bitfield2 {
+        signed int a : 10;
+        signed int b : 10;
+    } bf2 = {73, 31};
 
-    f.c = -7;
+    printf("bf2.a => %d\n", bf2.a);
+    printf("bf2.b => %d\n", bf2.b);
 
-    printf("%d\n", f.c);
-
-    return sizeof f;
+    return sizeof bf2;
 }

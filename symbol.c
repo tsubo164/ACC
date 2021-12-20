@@ -270,7 +270,7 @@ void print_symbol_table(const struct symbol_table *table)
         if (is_global_var(sym))
             printf("%5s | ",  "*");
         else if (is_bitfield(sym))
-            printf("*%4d | ",  sym->bit_offset);
+            printf("%2dw%-db%2dm | ", sym->bit_width, sym->bit_offset, sym->mem_offset);
         else
             printf("%5d | ",  sym->mem_offset);
         /* id */
@@ -763,11 +763,11 @@ void compute_func_size(struct symbol *func_sym)
                     sym->mem_offset = 8 * (6 - param_index);
                 } else {
                     /* TODO make a funtion */
-                    const int sz = get_size(sym->type);
-                    const int al = get_alignment(sym->type);
+                    const int size  = get_size(sym->type);
+                    const int align = get_alignment(sym->type);
 
-                    total_offset = align_to(total_offset, al);
-                    total_offset += sz;
+                    total_offset = align_to(total_offset, align);
+                    total_offset += size;
                     sym->mem_offset = total_offset;
                 }
             } else {
@@ -780,11 +780,11 @@ void compute_func_size(struct symbol *func_sym)
         }
         else if (is_local_var(sym)) {
             /* TODO make a funtion */
-            const int sz = get_size(sym->type);
-            const int al = get_alignment(sym->type);
+            const int size = get_size(sym->type);
+            const int align = get_alignment(sym->type);
 
-            total_offset = align_to(total_offset, al);
-            total_offset += sz;
+            total_offset = align_to(total_offset, align);
+            total_offset += size;
             sym->mem_offset = total_offset;
         }
 
@@ -807,31 +807,31 @@ void compute_struct_size(struct symbol *struct_sym)
 
     for (sym = struct_sym; sym; sym = sym->next) {
         if (is_bitfield_of(sym, struct_sym) && sym->bit_width == 0) {
-            const int al = to_bit(4); /* 32 bit */
+            const int align = to_bit(4); /* 32 bit */
             /* just align to next unit and adds no padding */
-            max_size = align_to(max_size, al);
+            max_size = align_to(max_size, align);
         }
         else if (is_bitfield_of(sym, struct_sym)) {
-            const int sz = sym->bit_width;
-            const int al = to_bit(4); /* 32 bit */
-            const int fits = max_size % al + sz <= al;
+            const int size  = sym->bit_width;
+            const int align = to_bit(4); /* 32 bit */
+            const int fits = max_size % align + size <= align;
 
             if (!fits)
-                max_size = align_to(max_size, al);
+                max_size = align_to(max_size, align);
 
-            sym->mem_offset = (max_size / al) * 4;
-            sym->bit_offset = max_size % al;
-            max_size += sz;
-            max_align = al > max_align ? al : max_align;
+            sym->mem_offset = (max_size / align) * 4;
+            sym->bit_offset = max_size % align;
+            max_size += size;
+            max_align = align > max_align ? align : max_align;
         }
         else if (is_member_of(sym, struct_sym)) {
-            const int sz = to_bit(get_size(sym->type));
-            const int al = to_bit(get_alignment(sym->type));
+            const int size = to_bit(get_size(sym->type));
+            const int align = to_bit(get_alignment(sym->type));
 
-            max_size = align_to(max_size, al);
+            max_size = align_to(max_size, align);
             sym->mem_offset = to_byte(max_size);
-            max_size += sz;
-            max_align = al > max_align ? al : max_align;
+            max_size += size;
+            max_align = align > max_align ? align : max_align;
         }
         if (0)
             print_bitfield(sym);
@@ -850,12 +850,12 @@ void compute_struct_size(struct symbol *struct_sym)
 
     {
         /* convert bits to bytes */
-        const int byte_sz = align_to(to_byte(max_size), to_byte(max_align));
-        const int byte_al = to_byte(max_align);
+        const int byte_size  = align_to(to_byte(max_size), to_byte(max_align));
+        const int byte_align = to_byte(max_align);
 
-        set_struct_size(struct_sym->type, byte_sz);
-        set_struct_align(struct_sym->type, byte_al);
-        struct_sym->mem_offset = byte_sz;
+        set_struct_size(struct_sym->type, byte_size);
+        set_struct_align(struct_sym->type, byte_align);
+        struct_sym->mem_offset = byte_size;
     }
 }
 
@@ -870,12 +870,12 @@ void compute_union_size(struct symbol *union_sym)
 
     for (sym = union_sym; sym; sym = sym->next) {
         if (is_member_of(sym, union_sym)) {
-            const int sz  = get_size(sym->type);
-            const int al = get_alignment(sym->type);
+            const int size  = get_size(sym->type);
+            const int align = get_alignment(sym->type);
 
             sym->mem_offset = 0;
-            max_size = sz > max_size ? sz : max_size;
-            max_align = al > max_align ? al : max_align;
+            max_size = size > max_size ? size : max_size;
+            max_align = align > max_align ? align : max_align;
         }
 
         if (is_end_of_scope(sym, union_sym))
@@ -889,12 +889,12 @@ void compute_union_size(struct symbol *union_sym)
     }
 
     {
-        const int union_sz = align_to(max_size, max_align);
-        const int union_al = max_align;
+        const int union_size  = align_to(max_size, max_align);
+        const int union_align = max_align;
 
-        set_union_size(union_sym->type, union_sz);
-        set_union_align(union_sym->type, union_al);
-        union_sym->mem_offset = union_sz;
+        set_union_size(union_sym->type, union_size);
+        set_union_align(union_sym->type, union_align);
+        union_sym->mem_offset = union_size;
     }
 }
 
@@ -948,6 +948,11 @@ const struct symbol *first_member(const struct symbol *sym)
     return sym->next->next;
 }
 
+static int is_bit_padding(const struct symbol *sym)
+{
+    return is_bitfield(sym) && !sym->name;
+}
+
 const struct symbol *next_member(const struct symbol *sym)
 {
     const struct symbol *memb = NULL;
@@ -959,6 +964,9 @@ const struct symbol *next_member(const struct symbol *sym)
     scope = sym->scope_level;
 
     for (memb = sym->next; memb; memb = memb->next) {
+        if (is_bit_padding(memb))
+            continue;
+
         if (is_member(memb) && memb->scope_level == scope)
             break;
 

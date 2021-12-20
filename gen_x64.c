@@ -1275,11 +1275,20 @@ static void gen_init_scalar_local(FILE *fp, const struct data_type *type,
     }
 }
 
+struct memory_bit;
+struct memory_bit {
+    const struct ast_node *init;
+    struct memory_bit *next;
+    int width;
+    int offset;
+};
+
 struct memory_byte {
     const struct ast_node *init;
     const struct data_type *type;
     int is_written;
     int written_size;
+    struct memory_bit *bit;
 };
 
 struct object_byte {
@@ -1287,6 +1296,72 @@ struct object_byte {
     struct symbol *sym;
     int size;
 };
+
+static void append_new_bit(struct memory_byte *byte,
+        int bit_width, int bit_offset)
+{
+    struct memory_bit *bit;
+    struct memory_bit *new_bit = calloc(1, sizeof(struct memory_bit));
+    new_bit->width = bit_width;
+    new_bit->offset = bit_offset;
+
+    if (!byte->bit) {
+        byte->bit = new_bit;
+        return;
+    }
+
+    for (bit = byte->bit; bit; bit = bit->next)
+        if (!bit->next)
+            break;
+    bit->next = new_bit;
+}
+
+static void gen_init_bit_local(FILE *fp,
+        const struct ast_node *ident, int offset, const struct memory_bit *mem_bit)
+{
+    const struct memory_bit *bit;
+
+    gen_comment(fp, "local bit init");
+
+    /* ident */
+    gen_address(fp, ident);
+    if (offset > 0)
+        code3(fp, ADD, imm(offset), RAX);
+    /* zero clear 4 bytes */
+    code3(fp, MOV, imm(0), ECX);
+    code3(fp, MOV, ECX, mem(RAX, 0));
+
+    for (bit = mem_bit; bit; bit = bit->next) {
+        const int bit_width = bit->width;
+        const int bit_offset = bit->offset;
+        int mask;
+        mask = ~1 << (bit_width - 1);
+        mask = ~mask;
+        mask <<= bit_offset;
+        mask = ~mask;
+
+        /* ident */
+        gen_address(fp, ident);
+        if (offset > 0)
+            code3(fp, ADD, imm(offset), RAX);
+        /* push dest addr */
+        code2(fp, PUSH, RAX);
+        /* init expr */
+        gen_code(fp, bit->init);
+        /* assign expr */
+        code2(fp, POP,  RDX);
+
+        gen_comment(fp, "assign bit field");
+        code3(fp, MOV, EAX, ECX);
+        code3(fp, MOV, ECX, R10D);
+        code3(fp, SHL, imm(bit_offset), ECX);
+        code3(fp, MOV, mem(RDX, 0), EAX);
+        code3(fp, AND, imm(mask), EAX);
+        code3(fp, OR,  ECX, EAX);
+        code3(fp, MOV, EAX, mem(RDX, 0));
+        code3(fp, MOV, R10D, EAX);
+    }
+}
 
 static void print_object(struct object_byte *obj)
 {
@@ -1296,11 +1371,18 @@ static void print_object(struct object_byte *obj)
     make_type_name(obj->sym->type, type_name);
     printf("%s %s:\n", type_name, obj->sym->name);
     for (i = 0; i < obj->size; i++) {
+        const struct memory_byte *byte = &obj->bytes[i];
         printf("    [%04d] is_written: %d written_size: %d init: %p\n",
-                i,
-                obj->bytes[i].is_written,
-                obj->bytes[i].written_size,
-                (void *) obj->bytes[i].init);
+                i, byte->is_written, byte->written_size, (void *) byte->init);
+
+        if (byte->bit) {
+            struct memory_bit *bit = byte->bit;
+            for (; bit; bit = bit->next) {
+                printf("           ");
+                printf("[%02d] bit_width: %d ---------- init: %p\n",
+                        bit->offset, bit->width, (void *) bit->init);
+            }
+        }
     }
 }
 
@@ -1320,8 +1402,12 @@ static void zero_clear_bytes(struct memory_byte *bytes, const struct data_type *
     else if (is_struct(type)) {
         const struct symbol *sym;
 
-        for (sym = first_member(type->sym); sym; sym = next_member(sym))
+        for (sym = first_member(type->sym); sym; sym = next_member(sym)) {
+            if (is_bitfield(sym))
+                append_new_bit(&bytes[sym->mem_offset],
+                        sym->bit_width, sym->bit_offset);
             zero_clear_bytes(bytes + sym->mem_offset, sym->type);
+        }
     }
     else if (is_union(type)) {
         /* initialize only the first member of union */
@@ -1344,7 +1430,7 @@ static void init_object_byte(struct object_byte *obj, const struct ast_node *ide
 {
     const int size = get_size(ident->type);
 
-    obj->bytes = (struct memory_byte *) calloc(size, sizeof(struct memory_byte));
+    obj->bytes = calloc(size, sizeof(struct memory_byte));
     obj->size = size;
     obj->sym = ident->sym;
 
@@ -1396,12 +1482,23 @@ static void assign_init(struct memory_byte *base,
                 base[i].written_size = (i == 0) ? size : 0;
                 base[i].type = expr->type;
             }
-        } else {
-            /* assign initializer to byte */
+        }
+        else {
             const int size = base->written_size;
             int i;
 
-            base->init = expr;
+            if (base->bit) {
+                /* assign initializer to bit */
+                struct memory_bit *bit;
+                for (bit = base->bit; bit; bit = bit->next)
+                    if (!bit->init)
+                        break;
+                bit->init = expr;
+            }
+            else {
+                /* assign initializer to byte */
+                base->init = expr;
+            }
 
             for (i = 0; i < size; i++)
                 base[i].is_written = 1;
@@ -1589,8 +1686,12 @@ static void gen_initializer(FILE *fp,
         for (i = 0; i < obj.size; i++) {
             const struct memory_byte *byte = &obj.bytes[i];
 
-            if (byte->written_size > 0)
-                gen_init_scalar_local(fp, byte->type, ident, i, byte->init);
+            if (byte->written_size > 0) {
+                if (byte->bit)
+                    gen_init_bit_local(fp, ident, i, byte->bit);
+                else
+                    gen_init_scalar_local(fp, byte->type, ident, i, byte->init);
+            }
         }
     }
 
