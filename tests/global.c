@@ -134,6 +134,13 @@ struct bitfield2 {
     signed int b : 19;
 } bf2 = {-803, -73331};
 
+struct bitfield3 {
+    unsigned int a : 10;
+    signed int : 0;
+    unsigned int b : 10;
+    int c;
+} bf3 = {520, 1023, -23242};
+
 int main()
 {
     {
@@ -418,6 +425,14 @@ int main()
 
         assert(-803, bf2.a);
         assert(-73331, bf2.b);
+    }
+    {
+        /* initialize unsigned bit fields */
+        assert(12, sizeof bf3);
+
+        assert(520, bf3.a);
+        assert(1023, bf3.b);
+        assert(-23242, bf3.c);
     }
 
     return 0;

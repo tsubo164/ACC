@@ -21,7 +21,6 @@
   - add include paths
   - make module for print
   - function pointer
-  - bit field
   - stringize macro and string cat macro
   - string literal to stringize macro
   - `(a > 10) ? a = 42 : a = 19` => handle this (expression is not assignable)
@@ -37,8 +36,6 @@
     - remove `NOD_DECL_*` from tree
     - add `struct declaration` to manage decl context and use it as parse param
   - make symbole table tree structure
-  - `data_tag_()` needs to be based on size of type
-  - `code[123]__()` needs to take `data_type` or tag instead of `ast_node`
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics
   - control flow check
   - lexer error
@@ -124,3 +121,6 @@
   - int foo(); { ...  } -> infinite loop
   - `return g_a[2]; int i = g_a[0];` -> infinite loop
   - segf when warning at 2nd gen compiler
+  - bit field
+  - `data_tag_()` needs to be based on size of type
+  - `code[123]__()` needs to take `data_type` or tag instead of `ast_node`

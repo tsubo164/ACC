@@ -611,6 +611,21 @@ int main()
         assert(301, bf2.a);
         assert(-11230, bf2.b);
     }
+    {
+        /* initialize unsigned bit fields */
+        struct bitfield3 {
+            unsigned int a : 10;
+            signed int : 0;
+            unsigned int b : 10;
+            int c;
+        } bf3 = {520, 1023, -23242};
+
+        assert(12, sizeof bf3);
+
+        assert(520, bf3.a);
+        assert(1023, bf3.b);
+        assert(-23242, bf3.c);
+    }
 
     return 0;
 }
