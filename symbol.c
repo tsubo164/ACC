@@ -445,7 +445,8 @@ static void link_type_to_sym(struct data_type *type, struct symbol *sym)
 {
     if (is_struct_tag(sym) ||
         is_union_tag(sym) ||
-        is_enum_tag(sym))
+        is_enum_tag(sym) ||
+        is_func(sym))
         set_symbol(type, sym);
 }
 
@@ -975,4 +976,12 @@ const struct symbol *next_member(const struct symbol *sym)
     }
 
     return memb;
+}
+
+struct data_type *return_type(const struct symbol *sym)
+{
+    if (!is_func(sym))
+        return NULL;
+
+    return underlying(sym->type);
 }

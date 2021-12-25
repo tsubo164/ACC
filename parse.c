@@ -256,9 +256,15 @@ static struct ast_node *typed_(struct ast_node *node)
 
     /* nodes with symbol */
     case NOD_DECL_IDENT:
-    case NOD_IDENT:
     case NOD_STRING:
         node->type = node->sym->type;
+        break;
+
+    case NOD_IDENT:
+        if (is_func(node->sym))
+            node->type = return_type(node->sym);
+        else
+            node->type = node->sym->type;
         break;
 
     /* logical ops */
@@ -1314,7 +1320,7 @@ static struct ast_node *assignment_expression(struct parser *p)
     case '=':
         /*
         asgn = new_node_(NOD_ASSIGN, tokpos(p));
-        retrun branch_(asgn, tree, assignment_expression(p));
+        return branch_(asgn, tree, assignment_expression(p));
         */
         return assign_(p, NOD_ASSIGN, tree);
 
@@ -2436,6 +2442,7 @@ static struct ast_node *direct_declarator(struct parser *p)
         if (!p->is_extern && !p->is_static)
             p->is_extern = 1;
 
+        p->decl_type = type_function(p->decl_type);
         decl_set_kind(p, SYM_FUNC);
         define_sym(p, ident);
         p->func_sym = ident->sym;

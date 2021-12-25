@@ -11,7 +11,8 @@ enum data_type_kind {
     DATA_TYPE_ARRAY,
     DATA_TYPE_STRUCT,
     DATA_TYPE_UNION,
-    DATA_TYPE_ENUM
+    DATA_TYPE_ENUM,
+    DATA_TYPE_FUNCTION
 };
 
 struct symbol;
@@ -21,7 +22,8 @@ struct data_type {
     int byte_size;
     int alignment;
     int array_len;
-    struct data_type *ptr_to;
+    /* type derived from */
+    struct data_type *base;
 
     /* struct, union, enum tags */
     struct symbol *sym;
@@ -66,6 +68,7 @@ extern int is_struct(const struct data_type *type);
 extern int is_union(const struct data_type *type);
 extern int is_enum(const struct data_type *type);
 extern int is_struct_or_union(const struct data_type *type);
+extern int is_function(const struct data_type *type);
 
 extern void make_type_name(const struct data_type *type, char *buf);
 extern void print_data_type(const struct data_type *type);
@@ -83,5 +86,6 @@ extern struct data_type *type_struct(void);
 extern struct data_type *type_union(void);
 extern struct data_type *type_enum(void);
 extern struct data_type *type_type_name(struct symbol *type_name);
+extern struct data_type *type_function(struct data_type *return_type);
 
 #endif /* _H */

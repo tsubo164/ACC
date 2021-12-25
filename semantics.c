@@ -478,20 +478,25 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         break;
 
     case NOD_RETURN:
-        if (!is_void(ctx->func_sym->type) && !node->l) {
-            add_error(ctx->diag, &node->pos,
-                    "non-void function '%s' should return a value", ctx->func_sym->name);
-        }
-        else if (is_void(ctx->func_sym->type) && node->l) {
-            add_error(ctx->diag, &node->l->pos,
-                    "void function '%s' should not return a value", ctx->func_sym->name);
-        }
-        else if (node->l && !is_compatible(ctx->func_sym->type, node->l->type)) {
-            make_type_name(node->l->type, type_name1);
-            make_type_name(ctx->func_sym->type, type_name2);
-            add_error(ctx->diag, &node->l->pos,
-                    "returning '%s' from a function with incompatible result type '%s'",
-                    type_name1, type_name2);
+        {
+            const struct data_type *ret_type = return_type(ctx->func_sym);
+            const char *func_name = ctx->func_sym->name;
+
+            if (!is_void(ret_type) && !node->l) {
+                add_error(ctx->diag, &node->pos,
+                        "non-void function '%s' should return a value", func_name);
+            }
+            else if (is_void(ret_type) && node->l) {
+                add_error(ctx->diag, &node->l->pos,
+                        "void function '%s' should not return a value", func_name);
+            }
+            else if (node->l && !is_compatible(ret_type, node->l->type)) {
+                make_type_name(node->l->type, type_name1);
+                make_type_name(ret_type, type_name2);
+                add_error(ctx->diag, &node->l->pos,
+                        "returning '%s' from a function with incompatible result type '%s'",
+                        type_name1, type_name2);
+            }
         }
         break;
 

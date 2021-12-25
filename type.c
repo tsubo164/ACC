@@ -6,17 +6,18 @@
 
 #define UNKNOWN_ARRAY_LENGTH -1
 
-/*                                                     Sz Al Ln Ul    Sy  */
-static struct data_type VOID_    = {DATA_TYPE_VOID,    1, 4, 1, NULL, NULL};
-static struct data_type CHAR_    = {DATA_TYPE_CHAR,    1, 1, 1, NULL, NULL};
-static struct data_type SHORT_   = {DATA_TYPE_SHORT,   2, 2, 1, NULL, NULL};
-static struct data_type INT_     = {DATA_TYPE_INT,     4, 4, 1, NULL, NULL};
-static struct data_type LONG_    = {DATA_TYPE_LONG,    8, 8, 1, NULL, NULL};
-static struct data_type POINTER_ = {DATA_TYPE_POINTER, 8, 8, 1, NULL, NULL};
-static struct data_type ARRAY_   = {DATA_TYPE_ARRAY,   0, 0, UNKNOWN_ARRAY_LENGTH, NULL, NULL};
-static struct data_type STRUCT_  = {DATA_TYPE_STRUCT,  1, 1, 1, NULL, NULL};
-static struct data_type UNION_   = {DATA_TYPE_UNION,   1, 1, 1, NULL, NULL};
-static struct data_type ENUM_    = {DATA_TYPE_ENUM,    4, 4, 1, NULL, NULL};
+/*                                                       Sz Al Ln Ul    Sy  */
+static struct data_type VOID_     = {DATA_TYPE_VOID,     1, 4, 1, NULL, NULL};
+static struct data_type CHAR_     = {DATA_TYPE_CHAR,     1, 1, 1, NULL, NULL};
+static struct data_type SHORT_    = {DATA_TYPE_SHORT,    2, 2, 1, NULL, NULL};
+static struct data_type INT_      = {DATA_TYPE_INT,      4, 4, 1, NULL, NULL};
+static struct data_type LONG_     = {DATA_TYPE_LONG,     8, 8, 1, NULL, NULL};
+static struct data_type POINTER_  = {DATA_TYPE_POINTER,  8, 8, 1, NULL, NULL};
+static struct data_type ARRAY_    = {DATA_TYPE_ARRAY,    0, 0, UNKNOWN_ARRAY_LENGTH, NULL, NULL};
+static struct data_type STRUCT_   = {DATA_TYPE_STRUCT,   1, 1, 1, NULL, NULL};
+static struct data_type UNION_    = {DATA_TYPE_UNION,    1, 1, 1, NULL, NULL};
+static struct data_type ENUM_     = {DATA_TYPE_ENUM,     4, 4, 1, NULL, NULL};
+static struct data_type FUNCTION_ = {DATA_TYPE_FUNCTION, 4, 4, 1, NULL, NULL};
 
 int get_size(const struct data_type *type)
 {
@@ -39,7 +40,7 @@ struct data_type *underlying(const struct data_type *type)
 {
     if (!type)
         return NULL;
-    return type->ptr_to;
+    return type->base;
 }
 
 struct symbol *symbol_of(const struct data_type *type)
@@ -268,6 +269,11 @@ int is_struct_or_union(const struct data_type *type)
     return is_struct(type) || is_union(type);
 }
 
+int is_function(const struct data_type *type)
+{
+    return type && type->kind == DATA_TYPE_FUNCTION;
+}
+
 static char *make_type_name_(const struct data_type *type, char *buf)
 {
     char *p = buf;
@@ -331,6 +337,30 @@ static char *make_type_name_(const struct data_type *type, char *buf)
         sprintf(p, "union %s %n", symbol_of(type)->name, &n);
         p += n;
     }
+    else if (is_function(type)) {
+        p = make_type_name_(underlying(type), p);
+        sprintf(p++, "(");
+        {
+            const struct symbol *s = first_param(symbol_of(type));
+            if (!s) {
+                sprintf(p, "void%n", &n);
+                p += n;
+            }
+            else {
+                int i = 0;
+                for (; s; s = next_param(s)) {
+                    if (i++ > 0 && *(p-1) == ' ') {
+                        *(p-1) = ',';
+                        *p++ = ' ';
+                    }
+                    p = make_type_name_(s->type, p);
+                }
+            }
+        }
+        if (*(p-1) == ' ')
+            p--;
+        sprintf(p++, ")");
+    }
 
     return p;
 }
@@ -360,7 +390,7 @@ void print_data_type(const struct data_type *type)
     printf("    kind:      %d\n", type->kind);
     printf("    byte_size: %d\n", type->byte_size);
     printf("    array_len: %d\n", type->array_len);
-    printf("    ptr_to:    %p\n", (void *) type->ptr_to);
+    printf("    base:      %p\n", (void *) type->base);
     printf("    sym:       %p\n", (void *) type->sym);
 }
 
@@ -380,7 +410,7 @@ void convert_array_to_pointer(struct data_type *type)
         convert_array_to_pointer(base);
         copy_data_type(type, &POINTER_);
 
-        type->ptr_to = base;
+        type->base = base;
         type->is_const = is_const;
     }
 }
@@ -420,7 +450,7 @@ struct data_type *type_long(void)
 struct data_type *type_pointer(struct data_type *base_type)
 {
     struct data_type *type = clone(&POINTER_);
-    type->ptr_to = base_type;
+    type->base = base_type;
     return type;
 }
 
@@ -428,7 +458,7 @@ struct data_type *type_array(struct data_type *base_type)
 {
     struct data_type *type = clone(&ARRAY_);
 
-    type->ptr_to = base_type;
+    type->base = base_type;
     type->byte_size = base_type->byte_size;
     type->alignment = base_type->alignment;
     /* type->array_len will be computed in later phase */
@@ -458,5 +488,12 @@ struct data_type *type_type_name(struct symbol *type_name)
 {
     struct data_type *type = clone(type_name->type);
     type->alias = type_name;
+    return type;
+}
+
+struct data_type *type_function(struct data_type *return_type)
+{
+    struct data_type *type = clone(&FUNCTION_);
+    type->base = return_type;
     return type;
 }

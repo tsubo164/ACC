@@ -140,4 +140,7 @@ extern const struct symbol *next_param(const struct symbol *sym);
 extern const struct symbol *first_member(const struct symbol *sym);
 extern const struct symbol *next_member(const struct symbol *sym);
 
+/* data types */
+extern struct data_type *return_type(const struct symbol *sym);
+
 #endif /* _H */

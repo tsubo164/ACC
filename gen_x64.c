@@ -497,7 +497,7 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
     int stored_reg_count = 0;
     int stack_offset = 16; /* from rbp */
 
-    if (is_large_object(func_sym->type)) {
+    if (is_large_object(return_type(func_sym))) {
         gen_comment(fp, "save address to returning value");
         code2(fp, PUSH, RDI);
         stored_reg_count++;
@@ -691,7 +691,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
     int total_area_size = 0;
 
     /* use the first register(rdi) for pointer to return value space */
-    if (is_large_object(func_sym->type))
+    if (is_large_object(return_type(func_sym)))
         arg_count++;
 
     /* allocate arg area */
@@ -840,7 +840,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
     free(args);
 
-    if (is_medium_object(func_sym->type)) {
+    if (is_medium_object(return_type(func_sym))) {
         const int offset = -get_local_area_size();
 
         gen_comment(fp, "store returned value");
