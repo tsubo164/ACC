@@ -1310,9 +1310,8 @@ static void append_new_bit(struct memory_byte *byte,
         return;
     }
 
-    for (bit = byte->bit; bit; bit = bit->next)
-        if (!bit->next)
-            break;
+    for (bit = byte->bit; bit->next; bit = bit->next)
+        ;
     bit->next = new_bit;
 }
 

@@ -16,15 +16,15 @@ static unsigned int hash_fn(const char *key)
 
 static struct table_entry *new_entry(const char *src)
 {
-    struct table_entry *entry = malloc(sizeof(struct table_entry));
+    struct table_entry *ent = malloc(sizeof(struct table_entry));
     const size_t alloc = strlen(src) + 1;
     char *dst = malloc(sizeof(char) * alloc);
 
     strncpy(dst, src, alloc);
-    entry->str = dst;
-    entry->next = NULL;
+    ent->str = dst;
+    ent->next = NULL;
 
-    return entry;
+    return ent;
 }
 
 static void free_entry(struct table_entry *entry)
@@ -47,21 +47,20 @@ struct string_table *new_string_table()
 
 void free_string_table(struct string_table *table)
 {
-    struct table_entry *entry = NULL;
-    struct table_entry *tmp = NULL;
     int i;
 
     if (!table)
         return;
 
     for (i = 0; i < HASH_SIZE; i++) {
-        if (!table->entries[i])
+        struct table_entry *ent = table->entries[i], *tmp;
+        if (!ent)
             continue;
 
-        for (entry = table->entries[i]; entry != NULL; ) {
-            tmp = entry;
-            entry = entry->next;
-            free_entry(tmp);
+        while (ent) {
+            tmp = ent->next;
+            free_entry(ent);
+            ent = tmp;
         }
     }
 
@@ -77,18 +76,16 @@ void init_string_table(struct string_table *table)
 
 const char *insert_string(struct string_table *table, const char *src)
 {
-    struct table_entry *entry = NULL;
+    struct table_entry *ent;
     const unsigned int h = hash_fn(src);
 
-    for (entry = table->entries[h]; entry != NULL; entry = entry->next) {
-        if (!strcmp(src, entry->str))
-            return entry->str;
-    }
+    for (ent = table->entries[h]; ent; ent = ent->next)
+        if (!strcmp(src, ent->str))
+            return ent->str;
 
-    entry = new_entry(src);
+    ent = new_entry(src);
+    ent->next = table->entries[h];
+    table->entries[h] = ent;
 
-    entry->next = table->entries[h];
-    table->entries[h] = entry;
-
-    return entry->str;
+    return ent->str;
 }

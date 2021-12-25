@@ -136,18 +136,18 @@ static void free_param(struct macro_param *param)
 
 static struct macro_entry *new_entry(const char *name)
 {
-    struct macro_entry *entry = malloc(sizeof(struct macro_entry));
+    struct macro_entry *ent = malloc(sizeof(struct macro_entry));
     const size_t alloc = strlen(name) + 1;
     char *dst = malloc(sizeof(char) * alloc);
 
     strncpy(dst, name, alloc);
-    entry->name = dst;
-    entry->repl = NULL;
-    entry->is_func = 0;
-    entry->params = NULL;
-    entry->next = NULL;
+    ent->name = dst;
+    ent->repl = NULL;
+    ent->is_func = 0;
+    ent->params = NULL;
+    ent->next = NULL;
 
-    return entry;
+    return ent;
 }
 
 static void free_entry(struct macro_entry *entry)
@@ -155,7 +155,6 @@ static void free_entry(struct macro_entry *entry)
     if (!entry)
         return;
 
-    free_entry(entry->next);
     free(entry->name);
     free(entry->repl);
     free_param(entry->params);
@@ -180,40 +179,47 @@ static void free_macro_table(struct macro_table *table)
     if (!table)
         return;
 
-    for (i = 0; i < PP_HASH_SIZE; i++)
-        free_entry(table->entries[i]);
+    for (i = 0; i < PP_HASH_SIZE; i++) {
+        struct macro_entry *ent = table->entries[i], *tmp;
+        if (!ent)
+            continue;
+
+        while (ent) {
+            tmp = ent->next;
+            free_entry(ent);
+            ent = tmp;
+        }
+    }
 
     free(table);
 }
 
 static struct macro_entry *lookup_macro(struct macro_table *table, const char *name)
 {
-    struct macro_entry *entry = NULL;
+    struct macro_entry *ent = NULL;
     const unsigned int h = hash_fn(name);
 
-    for (entry = table->entries[h]; entry != NULL; entry = entry->next) {
-        if (!strcmp(name, entry->name))
-            return entry;
-    }
+    for (ent = table->entries[h]; ent; ent = ent->next)
+        if (!strcmp(name, ent->name))
+            return ent;
+
     return NULL;
 }
 
 static struct macro_entry *insert_macro(struct macro_table *table, const char *name)
 {
-    struct macro_entry *entry = NULL;
+    struct macro_entry *ent = NULL;
     const unsigned int h = hash_fn(name);
 
-    for (entry = table->entries[h]; entry != NULL; entry = entry->next) {
-        if (!strcmp(name, entry->name))
-            return entry;
-    }
+    for (ent = table->entries[h]; ent; ent = ent->next)
+        if (!strcmp(name, ent->name))
+            return ent;
 
-    entry = new_entry(name);
+    ent = new_entry(name);
+    ent->next = table->entries[h];
+    table->entries[h] = ent;
 
-    entry->next = table->entries[h];
-    table->entries[h] = entry;
-
-    return entry;
+    return ent;
 }
 
 static void add_replacement(struct macro_entry *mac, const char *repl)
