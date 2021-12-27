@@ -224,7 +224,7 @@ static struct ast_node *typed_(struct ast_node *node)
         break;
 
     case NOD_CALL:
-        node->type = node->l->type;
+        node->type = return_type(node->l->sym);
         break;
 
     case NOD_CAST:
@@ -262,7 +262,7 @@ static struct ast_node *typed_(struct ast_node *node)
 
     case NOD_IDENT:
         if (is_func(node->sym))
-            node->type = return_type(node->sym);
+            node->type = type_pointer(node->sym->type);
         else
             node->type = node->sym->type;
         break;
@@ -683,6 +683,7 @@ static struct ast_node *primary_expression(struct parser *p)
     case TOK_IDENT:
         ungettok(p);
         tree = identifier(p);
+        /* TODO may not need to switch symbol kind */
         if (nexttok(p, '('))
             use_sym(p, tree, SYM_FUNC);
         else
@@ -2435,32 +2436,42 @@ static struct ast_node *direct_declarator(struct parser *p)
         tree->l = array(p);
 
     if (consume(p, '(')) {
-        /* function */
-        struct ast_node *fn = NEW_(NOD_DECL_FUNC);
+        if (!p->decl_sym) {
+            /* function */
+            struct ast_node *fn = NEW_(NOD_DECL_FUNC);
 
-        /* functions are externnal by default */
-        if (!p->is_extern && !p->is_static)
-            p->is_extern = 1;
+            /* functions are externnal by default */
+            if (!p->is_extern && !p->is_static)
+                p->is_extern = 1;
 
-        p->decl_type = type_function(p->decl_type);
-        decl_set_kind(p, SYM_FUNC);
-        define_sym(p, ident);
-        p->func_sym = ident->sym;
+            p->decl_type = type_function(p->decl_type);
+            decl_set_kind(p, SYM_FUNC);
+            define_sym(p, ident);
+            p->func_sym = ident->sym;
 
-        begin_scope(p);
-        fn->l = tree;
-        if (!nexttok(p, ')'))
-            fn->r = parameter_type_list(p);
-        tree = fn;
-        expect(p, ')');
+            begin_scope(p);
+            fn->l = tree;
+            if (!nexttok(p, ')'))
+                fn->r = parameter_type_list(p);
+            tree = fn;
+            expect(p, ')');
+        }
+        else {
+            /* function pointer */
+            p->decl_type = type_function(p->decl_type);
+            expect(p, ')');
+        }
     } else {
         /* variable, parameter, member, typedef */
         if (ident)
             define_sym(p, ident);
     }
 
-    if (placeholder)
+    if (placeholder) {
         copy_data_type(placeholder, p->decl_type);
+        /* decl_type needs to re-point to sym type */
+        p->decl_type = p->decl_sym->type;
+    }
 
     return typed_(tree);
 }
@@ -2656,7 +2667,7 @@ static struct ast_node *init_declarator(struct parser *p)
     decl = declarator(p);
 
     if (consume(p, '=')) {
-        p->init_type = p->decl_type;
+        p->init_type = p->decl_sym->type;
         p->init_sym = symbol_of(p->init_type);
 
         init = initializer(p);

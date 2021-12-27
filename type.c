@@ -150,6 +150,11 @@ static int is_compatible_underlying(const struct data_type *t1, const struct dat
     if (is_pointer(t1) && is_pointer(t2))
         return is_compatible_underlying(underlying(t1), underlying(t2));
 
+    if (is_function(t1) && is_function(t2)) {
+        /* checking return type only for now */
+        return is_compatible(underlying(t1), underlying(t2));
+    }
+
     return 0;
 }
 
@@ -308,12 +313,17 @@ static char *make_type_name_(const struct data_type *type, char *buf)
         p += n;
     }
     else if (is_pointer(type)) {
-        p = make_type_name_(underlying(type), p);
-        if (is_array(underlying(type)))
+        /* XXX need improvement to orders to write */
+        if (is_array(underlying(type)) || is_function(underlying(type))) {
             sprintf(p, "(*)%n", &n);
-        else
+            p += n;
+            p = make_type_name_(underlying(type), p);
+        }
+        else {
+            p = make_type_name_(underlying(type), p);
             sprintf(p, "*%n", &n);
-        p += n;
+            p += n;
+        }
     }
     else if (is_array(type)) {
         const struct data_type *t;

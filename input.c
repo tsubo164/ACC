@@ -2,12 +2,18 @@
 #include <stdio.h>
 */
 
-int foo(int i)
-{
-    return 2 * i;
-}
-
-int main(int argc, char **argv)
+int foo()
 {
     return 42;
+}
+
+int main()
+{
+    int (*fp)() = foo;
+    /*
+    int (*fp)();
+    */
+    fp = foo;
+
+    return foo();
 }

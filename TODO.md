@@ -25,6 +25,7 @@
   - string literal to stringize macro
   - `(a > 10) ? a = 42 : a = 19` => handle this (expression is not assignable)
   - find the best place to do "array to pointer conversion"
+  - improve `make_type_name_()` to output more readable string
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;
