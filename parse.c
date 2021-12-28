@@ -224,7 +224,8 @@ static struct ast_node *typed_(struct ast_node *node)
         break;
 
     case NOD_CALL:
-        node->type = return_type(node->l->sym);
+        /* TODO need function to get return type from function type */
+        node->type = underlying(underlying(node->l->type));
         break;
 
     case NOD_CAST:

@@ -15,6 +15,7 @@ static int  operand_symbol_id;
 static int  operand_register;
 static long operand_immediate;
 static long operand_offset;
+static int  opecode_mnem = 0;
 static int  opecode_len = 0;
 /* because of the return address is already pushed when a fuction starts
  * (rbp % 0x10) == 0x08 */
@@ -157,6 +158,11 @@ static void print_opecode(FILE *fp, int op, int suffix)
     if (op == POP)
         dec_stack_pointer(8);
 
+    if (op == CALL)
+        opecode_mnem = CALL;
+    else
+        opecode_mnem = 0;
+
     opecode_len = len;
 }
 
@@ -187,6 +193,10 @@ static void print_operand(FILE *fp, int oper, int suffix)
     case OPR_MEM:
         reg = register_name[operand_register];
         if (att_syntax) {
+            if (opecode_mnem == CALL)
+                /* indirect jump */
+                fprintf(fp, "*");
+
             if (operand_offset == 0)
                 fprintf(fp, "(%%%s)", reg);
             else
@@ -686,12 +696,13 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 {
     /* TODO divide this function */
     const struct symbol *func_sym = node->l->sym;
+    const struct data_type *ret_type = node->type;
     struct arg_area *args = NULL;
     int arg_count = node->ival;
     int total_area_size = 0;
 
     /* use the first register(rdi) for pointer to return value space */
-    if (is_large_object(return_type(func_sym)))
+    if (is_large_object(ret_type))
         arg_count++;
 
     /* allocate arg area */
@@ -832,7 +843,10 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
         /* call */
         gen_comment(fp, "call");
-        code2(fp, CALL, label(func_sym->name, -1));
+        if (is_pointer(func_sym->type))
+            code2(fp, CALL, mem(RBP, -func_sym->mem_offset));
+        else
+            code2(fp, CALL, label(func_sym->name, -1));
 
         gen_comment(fp, "free up arg area");
         gen_add_stack_pointer(fp, total_area_size);
@@ -840,7 +854,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
     free(args);
 
-    if (is_medium_object(return_type(func_sym))) {
+    if (is_medium_object(ret_type)) {
         const int offset = -get_local_area_size();
 
         gen_comment(fp, "store returned value");
@@ -947,6 +961,9 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
     }
     else if (is_enumerator(sym)) {
         code3(fp, MOV, imm(get_mem_offset(node)), EAX);
+    }
+    else if (is_func(sym)) {
+        code3(fp, LEA, symb(sym->name, -1), RAX);
     }
     else {
         const int disp = -get_mem_offset(node);

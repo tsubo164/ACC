@@ -4,7 +4,7 @@
 
 int foo()
 {
-    return 42;
+    return 24;
 }
 
 int main()
@@ -12,8 +12,9 @@ int main()
     int (*fp)() = foo;
     /*
     int (*fp)();
-    */
     fp = foo;
+    fp();
+    */
 
-    return foo();
+    return fp();
 }

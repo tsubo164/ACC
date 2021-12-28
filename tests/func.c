@@ -102,6 +102,12 @@ Coord ret_struct_by_val_with_struct_param(Coord cd, const char *s, int id)
     return c;
 }
 
+/* function pointer */
+int num()
+{
+    return 23012;
+}
+
 int main()
 {
     {
@@ -262,7 +268,6 @@ int main()
         assert(52, c.z);
     }
     {
-
         Coord c = {111, 222, 333};
 
         c = ret_struct_by_val_with_struct_param(c, "foo", 23);
@@ -270,6 +275,13 @@ int main()
         assert(134, c.x);
         assert(245, c.y);
         assert(356, c.z);
+    }
+    {
+        /* function pointer */
+        int (*fp)() = num;
+
+        assert(8, sizeof fp);
+        assert(23012, fp());
     }
 
     return 0;
