@@ -1,20 +1,23 @@
 /*
-#include <stdio.h>
 */
+#include <stdio.h>
 
-int foo()
+int twice(int i)
 {
-    return 24;
+    return 2 * i;
 }
 
 int main()
 {
-    int (*fp)() = foo;
     /*
-    int (*fp)();
+    int (*fp)(int);
+    int (*fp)() = foo;
     fp = foo;
     fp();
     */
 
+    /*
     return fp();
+    */
+    return 9;
 }

@@ -21,6 +21,8 @@
   - add include paths
   - make module for print
   - function pointer
+  - `next_param()` should return NULL after ellipsis
+  - add `struct declaration` to manage decl context and save/restore
   - stringize macro and string cat macro
   - string literal to stringize macro
   - `(a > 10) ? a = 42 : a = 19` => handle this (expression is not assignable)

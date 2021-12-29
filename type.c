@@ -359,11 +359,21 @@ static char *make_type_name_(const struct data_type *type, char *buf)
             else {
                 int i = 0;
                 for (; s; s = next_param(s)) {
-                    if (i++ > 0 && *(p-1) == ' ') {
-                        *(p-1) = ',';
+                    if (*(p-1) == ' ')
+                        p--;
+                    if (i++ > 0) {
+                        *p++ = ',';
                         *p++ = ' ';
                     }
-                    p = make_type_name_(s->type, p);
+
+                    if (is_ellipsis(s)) {
+                        sprintf(p, "...%n", &n);
+                        p += n;
+                        break;
+                    }
+                    else {
+                        p = make_type_name_(s->type, p);
+                    }
                 }
             }
         }
