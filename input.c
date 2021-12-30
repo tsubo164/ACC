@@ -1,6 +1,6 @@
 /*
-*/
 #include <stdio.h>
+*/
 
 int twice(int i)
 {
@@ -9,15 +9,7 @@ int twice(int i)
 
 int main()
 {
-    /*
     int (*fp)(int);
-    int (*fp)() = foo;
-    fp = foo;
-    fp();
-    */
 
-    /*
-    return fp();
-    */
-    return 9;
+    return twice(21);
 }

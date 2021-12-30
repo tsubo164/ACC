@@ -913,6 +913,10 @@ const struct symbol *first_param(const struct symbol *sym)
 {
     const struct symbol *param = NULL;
 
+    /* TODO temporarily need this for function pointer */
+    if (sym && sym->next && sym->next->next)
+        param = sym->next->next;
+
     if (is_func(sym))
         param = sym->next->next;
 

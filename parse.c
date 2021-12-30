@@ -545,7 +545,12 @@ static void decl_set_sym(struct parser *p, struct symbol *decl_sym)
 
 static int decl_is_func(struct parser *p)
 {
-    return p->decl_kind == SYM_FUNC || p->decl_kind == SYM_PARAM;
+    return p->decl_kind == SYM_FUNC;
+}
+
+static int decl_is_param(struct parser *p)
+{
+    return p->decl_kind == SYM_PARAM;
 }
 
 static void decl_reset_context(struct parser *p)
@@ -2309,6 +2314,10 @@ static struct ast_node *parameter_declaration(struct parser *p)
     if (!spec)
         return NULL;
 
+    /* void parameter */
+    if (is_void(p->decl_type) && !nexttok(p, '*'))
+        return NULL;
+
     decl_set_kind(p, SYM_PARAM);
     tree = new_node_(NOD_DECL_PARAM, tokpos(p));
     decl = declarator(p);
@@ -2353,20 +2362,26 @@ static struct ast_node *parameter_list(struct parser *p)
 static struct ast_node *parameter_type_list(struct parser *p)
 {
     struct ast_node *tree = NULL, *list = NULL, *elli = NULL;
+    struct data_type *tmp = p->decl_type;
+    struct symbol *tmp_sym = p->decl_sym;
+    const int decl_kind = p->decl_kind;
 
     tree = parameter_list(p);
 
-    if (!consume(p, TOK_ELLIPSIS))
-        return tree;
+    if (consume(p, TOK_ELLIPSIS)) {
+        define_ellipsis(p);
 
-    define_ellipsis(p);
+        elli = new_node_(NOD_SPEC_ELLIPSIS, tokpos(p));
+        list = new_node_(NOD_LIST, tokpos(p));
+        tree = branch_(list, tree, elli);
 
-    elli = new_node_(NOD_SPEC_ELLIPSIS, tokpos(p));
-    list = new_node_(NOD_LIST, tokpos(p));
-    tree = branch_(list, tree, elli);
+        if (elli)
+            p->func_sym->is_variadic = 1;
+    }
 
-    if (elli)
-        p->func_sym->is_variadic = 1;
+    p->decl_type = tmp;
+    p->decl_sym = tmp_sym;
+    p->decl_kind = decl_kind;
 
     return tree;
 }
@@ -2428,7 +2443,7 @@ static struct ast_node *direct_declarator(struct parser *p)
         p->decl_type = tmp;
     }
 
-    if (nexttok(p, TOK_IDENT)) {
+    if (nexttok(p, TOK_IDENT) || decl_is_param(p)) {
         ident = decl_identifier(p);
         tree->r = ident;
     }
@@ -2460,6 +2475,13 @@ static struct ast_node *direct_declarator(struct parser *p)
         else {
             /* function pointer */
             p->decl_type = type_function(p->decl_type);
+
+            begin_scope(p);
+            if (!nexttok(p, ')'))
+                /* TODO consider saving this tree to better place */
+                tree->l = parameter_type_list(p);
+            end_scope(p);
+
             expect(p, ')');
         }
     } else {
