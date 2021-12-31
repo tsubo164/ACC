@@ -445,6 +445,27 @@ static const struct ast_node *find_node(const struct ast_node *node, int node_ki
     return NULL;
 }
 
+static const struct ast_node *find_node_r(const struct ast_node *node, int node_kind)
+{
+    const struct ast_node *found = NULL;
+
+    if (!node)
+        return NULL;
+
+    if (node->kind == node_kind)
+        return node;
+
+    found = find_node_r(node->r, node_kind);
+    if (found)
+        return found;
+
+    found = find_node_r(node->l, node_kind);
+    if (found)
+        return found;
+
+    return NULL;
+}
+
 static void gen_add_stack_pointer(FILE *fp, int byte)
 {
     if (!byte)
@@ -1781,7 +1802,7 @@ static void gen_initializer_local(FILE *fp, const struct ast_node *node)
     if (!node || !node->r || node->kind != NOD_DECL_INIT)
         return;
 
-    ident = find_node(node->l, NOD_DECL_IDENT);
+    ident = find_node_r(node->l, NOD_DECL_IDENT);
 
     if (ident && is_local_var(ident->sym))
         gen_initializer(fp, ident, node->r);

@@ -9,7 +9,7 @@ int twice(int i)
 
 int main()
 {
-    int (*fp)(int);
+    int (*fp)(int) = twice;
 
-    return twice(21);
+    return fp(21);
 }

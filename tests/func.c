@@ -279,9 +279,28 @@ int main()
     {
         /* function pointer */
         int (*fp)() = num;
+        int (*fp2)();
 
         assert(8, sizeof fp);
         assert(23012, fp());
+
+        fp2 = num;
+
+        assert(8, sizeof fp2);
+        assert(23012, fp2());
+    }
+    {
+        /* function pointer with parameters */
+        long (*fp)(long) = twice_long;
+        long (*fp2)(long);
+
+        assert(8, sizeof fp);
+        assertl(246, fp(123));
+
+        fp2 = twice_long;
+
+        assert(8, sizeof fp2);
+        assertl(1998, fp2(999));
     }
 
     return 0;
