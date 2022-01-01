@@ -108,6 +108,12 @@ int num()
     return 23012;
 }
 
+/* global variables of function pointer */
+int (*function_pointer)();
+static int (*function_pointer2)() = num;
+long (*function_pointer3)(long);
+static long (*function_pointer4)(long) = twice_long;
+
 int main()
 {
     {
@@ -301,6 +307,26 @@ int main()
 
         assert(8, sizeof fp2);
         assertl(1998, fp2(999));
+    }
+    {
+        /* global variable of function pointer */
+        function_pointer = num;
+
+        assert(8, sizeof function_pointer);
+        assert(23012, function_pointer());
+
+        assert(8, sizeof function_pointer2);
+        assert(23012, function_pointer2());
+    }
+    {
+        /* global variable of function pointer with parameters */
+        function_pointer3 = twice_long;
+
+        assert(8, sizeof function_pointer3);
+        assert(982, function_pointer3(491));
+
+        assert(8, sizeof function_pointer4);
+        assertl(-306, function_pointer4(-153));
     }
 
     return 0;

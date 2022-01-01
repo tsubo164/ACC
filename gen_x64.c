@@ -212,6 +212,10 @@ static void print_operand(FILE *fp, int oper, int suffix)
 
     case OPR_SYM:
         if (att_syntax) {
+            if (opecode_mnem == CALL)
+                /* indirect jump */
+                fprintf(fp, "*");
+
             if (operand_symbol_id < 0)
                 fprintf(fp, "_%s(%%rip)", operand_symbol);
             else
@@ -864,10 +868,15 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
         /* call */
         gen_comment(fp, "call");
-        if (is_pointer(func_sym->type))
-            code2(fp, CALL, mem(RBP, -func_sym->mem_offset));
-        else
+        if (is_pointer(func_sym->type)) {
+            const int id = is_static(func_sym) ? func_sym->id : -1;
+            if (is_global_var(func_sym))
+                code2(fp, CALL, symb(func_sym->name, id));
+            else
+                code2(fp, CALL, mem(RBP, -func_sym->mem_offset));
+        } else {
             code2(fp, CALL, label(func_sym->name, -1));
+        }
 
         gen_comment(fp, "free up arg area");
         gen_add_stack_pointer(fp, total_area_size);
@@ -1646,6 +1655,12 @@ static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
                 gen_symbol_name(fp, sym->name, -1);
             fprintf(fp, "\n");
         }
+        /* initialize with function name */
+        if (expr->sym && is_func(expr->sym)) {
+            fprintf(fp, "    .%s ", szname);
+            gen_symbol_name(fp, expr->sym->name, -1);
+            fprintf(fp, "\n");
+        }
         break;
 
     case NOD_ADDR:
@@ -1789,7 +1804,7 @@ static void gen_initializer_global(FILE *fp, const struct ast_node *node)
     if (!node || node->kind != NOD_DECL_INIT)
         return;
 
-    ident = find_node(node->l, NOD_DECL_IDENT);
+    ident = find_node_r(node->l, NOD_DECL_IDENT);
 
     if (ident && is_global_var(ident->sym))
         gen_initializer(fp, ident, node->r);

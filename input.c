@@ -2,14 +2,22 @@
 #include <stdio.h>
 */
 
-int twice(int i)
+int num(void)
 {
-    return 2 * i;
+    return 112;
 }
+
+long foo(int)
+{
+    return 23;
+}
+
+int (*fp)() = num;
+
 
 int main()
 {
-    int (*fp)(int) = twice;
-
-    return fp(21);
+    fp = foo;
+    fp = num;
+    return fp();
 }
