@@ -130,7 +130,7 @@ int has_typedef_name(const struct data_type *type)
     return type->alias != NULL;
 }
 
-static int is_compatible_underlying(const struct data_type *t1, const struct data_type *t2)
+static int is_identical(const struct data_type *t1, const struct data_type *t2)
 {
     if (!t1 || !t2)
         return 0;
@@ -142,17 +142,30 @@ static int is_compatible_underlying(const struct data_type *t1, const struct dat
         return 1;
 
     if (is_struct(t1) && is_struct(t2))
-        return is_compatible(t1, t2);
+        return symbol_of(t1) == symbol_of(t2);
 
     if (is_union(t1) && is_union(t2))
-        return is_compatible(t1, t2);
+        return symbol_of(t1) == symbol_of(t2);
 
     if (is_pointer(t1) && is_pointer(t2))
-        return is_compatible_underlying(underlying(t1), underlying(t2));
+        return is_identical(underlying(t1), underlying(t2));
 
     if (is_function(t1) && is_function(t2)) {
-        /* checking return type only for now */
-        return is_compatible(underlying(t1), underlying(t2));
+        const struct symbol *s1, *s2;
+
+        /* checking return type */
+        if (!is_identical(underlying(t1), underlying(t2)))
+            return 0;
+
+        /* checking parameter types */
+        s1 = first_param(symbol_of(t1));
+        s2 = first_param(symbol_of(t2));
+
+        while (s1 && s2 && is_identical(s1->type, s2->type)) {
+            s1 = next_param(s1);
+            s2 = next_param(s2);
+        }
+        return !s1 && !s2;
     }
 
     return 0;
@@ -167,10 +180,10 @@ int is_compatible(const struct data_type *t1, const struct data_type *t2)
         return 1;
 
     if (is_struct(t1) && is_struct(t2))
-        return symbol_of(t1) == symbol_of(t2);
+        return is_identical(t1, t2);
 
     if (is_union(t1) && is_union(t2))
-        return symbol_of(t1) == symbol_of(t2);
+        return is_identical(t1, t2);
 
     /* 6.3.2.3 Pointers void * <-> T * */
     if (is_pointer(t1) && is_pointer(t2) && is_void(underlying(t2)))
@@ -179,7 +192,7 @@ int is_compatible(const struct data_type *t1, const struct data_type *t2)
         return 1;
 
     if (is_pointer(t1) && is_pointer(t2))
-        return is_compatible_underlying(underlying(t1), underlying(t2));
+        return is_identical(underlying(t1), underlying(t2));
 
     return 0;
 }

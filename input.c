@@ -7,17 +7,29 @@ int num(void)
     return 112;
 }
 
-long foo(int)
+/* check omitted param */
+int foo(int i)
 {
     return 23;
 }
 
-int (*fp)() = num;
+long bar()
+{
+    return 23;
+}
 
+int (*fp)(void) = num;
+static int (*foop)(int);
 
 int main()
 {
+    /*
     fp = foo;
+    fp = bar;
+    */
+    /*
+    */
     fp = num;
+    foop = foo;
     return fp();
 }

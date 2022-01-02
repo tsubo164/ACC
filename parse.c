@@ -2475,6 +2475,8 @@ static struct ast_node *direct_declarator(struct parser *p)
         else {
             /* function pointer */
             p->decl_type = type_function(p->decl_type);
+            /* link function sym to type */
+            set_symbol(p->decl_type, p->decl_sym);
 
             begin_scope(p);
             if (!nexttok(p, ')'))
