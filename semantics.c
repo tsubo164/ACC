@@ -432,7 +432,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             const struct symbol *tmp = ctx->param_sym;
 
             check_tree_(node->l, ctx);
-            ctx->param_sym = first_param(node->l->sym);
+            ctx->param_sym = first_param(symbol_of(underlying(node->l->type)));
             check_tree_(node->r, ctx);
 
             if (ctx->param_sym && !is_ellipsis(ctx->param_sym)) {

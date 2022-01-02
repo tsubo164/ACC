@@ -114,6 +114,10 @@ static int (*function_pointer2)() = num;
 long (*function_pointer3)(long);
 static long (*function_pointer4)(long) = twice_long;
 
+/* typedef function pointer */
+typedef int (*fn_type)() = num;
+typedef long (*fn_type2)(long) = twice_long;
+
 int main()
 {
     {
@@ -327,6 +331,21 @@ int main()
 
         assert(8, sizeof function_pointer4);
         assertl(-306, function_pointer4(-153));
+    }
+    {
+        /* typedef function pointer */
+        fn_type fp = num;
+        fn_type2 fp2 = twice_long;
+
+        assert(8, sizeof(fn_type));
+        assert(8, sizeof(fn_type2));
+
+        assert(8, sizeof fp);
+        assert(23012, fp());
+
+        assert(8, sizeof fp2);
+        assertl(462, fp2(231));
+        assertl(-1422, fp2(-711));
     }
 
     return 0;

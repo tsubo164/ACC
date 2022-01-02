@@ -2,34 +2,19 @@
 #include <stdio.h>
 */
 
-int num(void)
-{
-    return 112;
-}
-
 /* check omitted param */
 int foo(int i)
 {
-    return 23;
+    return 2 * i;
 }
 
-long bar()
-{
-    return 23;
-}
-
-int (*fp)(void) = num;
-static int (*foop)(int);
+typedef int my_int;
+typedef int (*foo_pointer)(int);
 
 int main()
 {
-    /*
-    fp = foo;
-    fp = bar;
-    */
-    /*
-    */
-    fp = num;
-    foop = foo;
-    return fp();
+    my_int i = 121;
+    foo_pointer fp = foo;
+
+    return fp(i);
 }

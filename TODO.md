@@ -12,6 +12,7 @@
   - [x] `type.c`
 
 * TODO
+  - move iteration and data types interfaces from symbol.c to type.c
   - improve local and global initializer
   - improve const qualifier for struct parameter
   - add tests for malloc()
@@ -20,7 +21,6 @@
   - add `#if 0` macro
   - add include paths
   - make module for print
-  - function pointer
   - `next_param()` should return NULL after ellipsis
   - add `struct declaration` to manage decl context and save/restore
   - stringize macro and string cat macro
@@ -127,3 +127,4 @@
   - bit field
   - `data_tag_()` needs to be based on size of type
   - `code[123]__()` needs to take `data_type` or tag instead of `ast_node`
+  - function pointer
