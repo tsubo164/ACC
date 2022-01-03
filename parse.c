@@ -422,13 +422,13 @@ static void define_sym(struct parser *p, struct ast_node *node)
 {
     struct symbol *sym;
 
-    sym = define_symbol(p->symtab, p->decl_ident, p->decl_kind, p->decl_type);
+    sym = define_symbol(p->symtab, p->decl.ident, p->decl.kind, p->decl.type);
 
-    if (p->decl_kind != SYM_TAG_STRUCT &&
-        p->decl_kind != SYM_TAG_UNION &&
-        p->decl_kind != SYM_TAG_ENUM) {
-        sym->is_extern = p->is_extern;
-        sym->is_static = p->is_static;
+    if (p->decl.kind != SYM_TAG_STRUCT &&
+        p->decl.kind != SYM_TAG_UNION &&
+        p->decl.kind != SYM_TAG_ENUM) {
+        sym->is_extern = p->decl.is_extern;
+        sym->is_static = p->decl.is_static;
     }
     sym->pos = node->pos;
 
@@ -471,7 +471,7 @@ static void define_label(struct parser *p, struct ast_node *node)
 {
     struct symbol *sym;
 
-    sym = define_label_symbol(p->symtab, p->decl_ident);
+    sym = define_label_symbol(p->symtab, p->decl.ident);
     sym->pos = node->pos;
 
     node->sym = sym;
@@ -525,44 +525,38 @@ static void end_switch(struct parser *p)
 
 static void decl_set_kind(struct parser *p, int decl_kind)
 {
-    p->decl_kind = decl_kind;
+    p->decl.kind = decl_kind;
 }
 
 static void decl_set_ident(struct parser *p, const char *decl_ident)
 {
-    p->decl_ident = decl_ident;
+    p->decl.ident = decl_ident;
 }
 
 static void decl_set_type(struct parser *p, struct data_type *decl_type)
 {
-    p->decl_type = decl_type;
+    p->decl.type = decl_type;
 }
 
 static void decl_set_sym(struct parser *p, struct symbol *decl_sym)
 {
-    p->decl_sym = decl_sym;
+    p->decl.sym = decl_sym;
 }
 
 static int decl_is_func(struct parser *p)
 {
-    return p->decl_kind == SYM_FUNC;
+    return p->decl.kind == SYM_FUNC;
 }
 
 static int decl_is_param(struct parser *p)
 {
-    return p->decl_kind == SYM_PARAM;
+    return p->decl.kind == SYM_PARAM;
 }
 
 static void decl_reset_context(struct parser *p)
 {
-    p->decl_kind = 0;
-    p->decl_ident = NULL;
-    p->decl_type = NULL;
-    p->decl_sym = NULL;
-    p->is_typedef = 0;
-    p->is_extern = 0;
-    p->is_static = 0;
-    p->is_const = 0;
+    const struct declaration ini = {0};
+    p->decl = ini;
 }
 
 static int is_type_spec(int kind)
@@ -619,7 +613,7 @@ static int is_start_of_decl(int kind)
 
 static void default_to_int(struct parser *p)
 {
-    if (!p->decl_type) {
+    if (!p->decl.type) {
         const struct token *next = gettok(p);
         decl_set_type(p, type_int());
         add_warning(p->diag, &next->pos, "type specifier missing, defaults to 'int'");
@@ -1846,7 +1840,7 @@ static struct ast_node *type_qualifier(struct parser *p)
 
     case TOK_CONST:
         tree = new_node_(NOD_QUAL_CONST, tokpos(p));
-        p->is_const = 1;
+        p->decl.is_const = 1;
         break;
 
     default:
@@ -1884,13 +1878,13 @@ static struct ast_node *specifier_qualifier_list(struct parser *p)
         tree = branch_(list, tree, spec);
     }
 
-    if (p->decl_kind != SYM_TAG_STRUCT &&
-        p->decl_kind != SYM_TAG_UNION &&
-        p->decl_kind != SYM_TAG_ENUM) {
-        set_const(p->decl_type, p->is_const);
-        set_unsigned(p->decl_type, p->is_unsigned);
-        p->is_const = 0;
-        p->is_unsigned = 0;
+    if (p->decl.kind != SYM_TAG_STRUCT &&
+        p->decl.kind != SYM_TAG_UNION &&
+        p->decl.kind != SYM_TAG_ENUM) {
+        set_const(p->decl.type, p->decl.is_const);
+        set_unsigned(p->decl.type, p->decl.is_unsigned);
+        p->decl.is_const = 0;
+        p->decl.is_unsigned = 0;
     }
 
     return tree;
@@ -1914,7 +1908,7 @@ static struct ast_node *type_name(struct parser *p)
     tree->l = spec;
     tree->r = abstract_declarator(p);
 
-    type_set(tree, p->decl_type);
+    type_set(tree, p->decl.type);
     return tree;
 }
 
@@ -1958,8 +1952,8 @@ static struct ast_node *struct_declarator(struct parser *p)
 
     if (consume(p, ':')) {
         tree->r = constant_expression(p);
-        p->decl_sym->is_bitfield = 1;
-        p->decl_sym->bit_width = tree->r->ival;
+        p->decl.sym->is_bitfield = 1;
+        p->decl.sym->bit_width = tree->r->ival;
     }
 
     return tree;
@@ -1975,7 +1969,7 @@ static struct ast_node *struct_declarator_list(struct parser *p)
     struct ast_node *tree = NULL, *list = NULL;
 
     for (;;) {
-        struct data_type *spec = p->decl_type;
+        struct data_type *spec = p->decl.type;
         struct ast_node *decl = struct_declarator(p);
         decl_set_type(p, spec);
 
@@ -2021,12 +2015,7 @@ static struct ast_node *struct_declaration(struct parser *p)
 static struct ast_node *struct_declaration_list(struct parser *p)
 {
     struct ast_node *tree = NULL, *list = NULL;
-    struct data_type *tmp = p->decl_type;
-    const int decl_kind = p->decl_kind;
-    const int is_extern = p->is_extern;
-    const int is_static = p->is_static;
-    const int is_const = p->is_const;
-    const int is_typedef = p->is_typedef;
+    const struct declaration tmp = p->decl;
 
     for (;;) {
         const int next = peektok(p);
@@ -2050,13 +2039,7 @@ static struct ast_node *struct_declaration_list(struct parser *p)
         }
     }
 
-    p->decl_type = tmp;
-    p->decl_kind = decl_kind;
-    p->is_extern = is_extern;
-    p->is_static = is_static;
-    p->is_const = is_const;
-    p->is_typedef = is_typedef;
-
+    p->decl = tmp;
     return tree;
 }
 
@@ -2101,7 +2084,7 @@ static struct ast_node *struct_or_union_specifier(struct parser *p)
     tree->l = ident;
 
     /* struct or union sym */
-    sym_kind = p->decl_kind;
+    sym_kind = p->decl.kind;
 
     if (!consume(p, '{')) {
         /* define an object of struct type */
@@ -2261,7 +2244,7 @@ static struct ast_node *type_specifier(struct parser *p)
 
     case TOK_UNSIGNED:
         tree = NEW_(NOD_SPEC_UNSIGNED);
-        p->is_unsigned = 1;
+        p->decl.is_unsigned = 1;
         break;
 
     case TOK_STRUCT:
@@ -2315,7 +2298,7 @@ static struct ast_node *parameter_declaration(struct parser *p)
         return NULL;
 
     /* void parameter */
-    if (is_void(p->decl_type) && !nexttok(p, '*'))
+    if (is_void(p->decl.type) && !nexttok(p, '*'))
         return NULL;
 
     decl_set_kind(p, SYM_PARAM);
@@ -2324,7 +2307,7 @@ static struct ast_node *parameter_declaration(struct parser *p)
 
     /* 6.7.6.3 A declaration of a parameter as "array of type"
      * shall be adjusted to "qualified pointer to type" */
-    convert_array_to_pointer(p->decl_type);
+    convert_array_to_pointer(p->decl.type);
 
     return branch_(tree, spec, decl);
 }
@@ -2362,9 +2345,7 @@ static struct ast_node *parameter_list(struct parser *p)
 static struct ast_node *parameter_type_list(struct parser *p)
 {
     struct ast_node *tree = NULL, *list = NULL, *elli = NULL;
-    struct data_type *tmp = p->decl_type;
-    struct symbol *tmp_sym = p->decl_sym;
-    const int decl_kind = p->decl_kind;
+    const struct declaration tmp = p->decl;
 
     tree = parameter_list(p);
 
@@ -2379,10 +2360,7 @@ static struct ast_node *parameter_type_list(struct parser *p)
             p->func_sym->is_variadic = 1;
     }
 
-    p->decl_type = tmp;
-    p->decl_sym = tmp_sym;
-    p->decl_kind = decl_kind;
-
+    p->decl = tmp;
     return tree;
 }
 
@@ -2404,11 +2382,11 @@ static struct ast_node *array(struct parser *p)
         expect(p, ']');
 
         tree = branch_(tree, expr, array(p));
-        decl_set_type(p, type_array(p->decl_type));
-        type_set(tree, p->decl_type);
+        decl_set_type(p, type_array(p->decl.type));
+        type_set(tree, p->decl.type);
 
         if (expr)
-            set_array_length(p->decl_type, expr->ival);
+            set_array_length(p->decl.type, expr->ival);
     }
 
     return tree;
@@ -2433,14 +2411,14 @@ static struct ast_node *direct_declarator(struct parser *p)
     tree = NEW_(NOD_DECL_DIRECT);
 
     if (consume(p, '(')) {
-        struct data_type *tmp = p->decl_type;
+        struct data_type *tmp = p->decl.type;
         placeholder = type_void();
-        p->decl_type = placeholder;
+        p->decl.type = placeholder;
 
         tree->r = declarator(p);
         expect(p, ')');
 
-        p->decl_type = tmp;
+        p->decl.type = tmp;
     }
 
     if (nexttok(p, TOK_IDENT) || decl_is_param(p)) {
@@ -2452,15 +2430,15 @@ static struct ast_node *direct_declarator(struct parser *p)
         tree->l = array(p);
 
     if (consume(p, '(')) {
-        if (!p->decl_sym) {
+        if (!p->decl.sym) {
             /* function */
             struct ast_node *fn = NEW_(NOD_DECL_FUNC);
 
             /* functions are externnal by default */
-            if (!p->is_extern && !p->is_static)
-                p->is_extern = 1;
+            if (!p->decl.is_extern && !p->decl.is_static)
+                p->decl.is_extern = 1;
 
-            p->decl_type = type_function(p->decl_type);
+            p->decl.type = type_function(p->decl.type);
             decl_set_kind(p, SYM_FUNC);
             define_sym(p, ident);
             p->func_sym = ident->sym;
@@ -2474,9 +2452,9 @@ static struct ast_node *direct_declarator(struct parser *p)
         }
         else {
             /* function pointer */
-            p->decl_type = type_function(p->decl_type);
+            p->decl.type = type_function(p->decl.type);
             /* link function sym to type */
-            set_symbol(p->decl_type, p->decl_sym);
+            set_symbol(p->decl.type, p->decl.sym);
 
             begin_scope(p);
             if (!nexttok(p, ')'))
@@ -2493,9 +2471,9 @@ static struct ast_node *direct_declarator(struct parser *p)
     }
 
     if (placeholder) {
-        copy_data_type(placeholder, p->decl_type);
-        /* decl_type needs to re-point to sym type */
-        p->decl_type = p->decl_sym->type;
+        copy_data_type(placeholder, p->decl.type);
+        /* decl.type needs to re-point to sym type */
+        p->decl.type = p->decl.sym->type;
     }
 
     return typed_(tree);
@@ -2515,7 +2493,7 @@ static struct ast_node *pointer(struct parser *p)
         /* we treat as if the first '*' is associated with type specifier */
         ptr = new_node_(NOD_SPEC_POINTER, tokpos(p));
         tree = branch_(ptr, tree, NULL);
-        decl_set_type(p, type_pointer(p->decl_type));
+        decl_set_type(p, type_pointer(p->decl.type));
     }
 
     return tree;
@@ -2692,7 +2670,7 @@ static struct ast_node *init_declarator(struct parser *p)
     decl = declarator(p);
 
     if (consume(p, '=')) {
-        p->init_type = p->decl_sym->type;
+        p->init_type = p->decl.sym->type;
         p->init_sym = symbol_of(p->init_type);
 
         init = initializer(p);
@@ -2714,7 +2692,7 @@ static struct ast_node *init_declarator_list(struct parser *p)
     struct ast_node *tree = NULL, *list = NULL;
 
     for (;;) {
-        struct data_type *spec = p->decl_type;
+        struct data_type *spec = p->decl.type;
         struct ast_node *init = init_declarator(p);
         decl_set_type(p, spec);
 
@@ -2746,17 +2724,17 @@ static struct ast_node *storage_class_specifier(struct parser *p)
 
     case TOK_TYPEDEF:
         tree = new_node_(NOD_DECL_TYPEDEF, tokpos(p));
-        p->is_typedef = 1;
+        p->decl.is_typedef = 1;
         break;
 
     case TOK_EXTERN:
         tree = new_node_(NOD_DECL_EXTERN, tokpos(p));
-        p->is_extern = 1;
+        p->decl.is_extern = 1;
         break;
 
     case TOK_STATIC:
         tree = new_node_(NOD_DECL_STATIC, tokpos(p));
-        p->is_static = 1;
+        p->decl.is_static = 1;
         break;
 
     default:
@@ -2801,16 +2779,18 @@ static struct ast_node *declaration_specifiers(struct parser *p)
 
     default_to_int(p);
 
-    if (p->decl_kind != SYM_TAG_STRUCT &&
-        p->decl_kind != SYM_TAG_UNION &&
-        p->decl_kind != SYM_TAG_ENUM) {
-        set_const(p->decl_type, p->is_const);
-        set_unsigned(p->decl_type, p->is_unsigned);
-        p->is_const = 0;
-        p->is_unsigned = 0;
+    if (p->decl.kind != SYM_TAG_STRUCT &&
+        p->decl.kind != SYM_TAG_UNION &&
+        p->decl.kind != SYM_TAG_ENUM) {
+        set_const(p->decl.type, p->decl.is_const);
+        set_unsigned(p->decl.type, p->decl.is_unsigned);
+        /* TODO improve this by storing decl before entering struct */
+        p->decl.is_const = 0;
+        p->decl.is_unsigned = 0;
     }
 
-    if (p->is_typedef == 1)
+    /* TODO improve this by storing decl before entering struct */
+    if (p->decl.is_typedef == 1)
         decl_set_kind(p, SYM_TYPEDEF);
     else
         decl_set_kind(p, SYM_VAR);

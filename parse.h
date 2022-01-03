@@ -9,6 +9,19 @@
 
 #define TOKEN_BUFFER_SIZE 4
 
+struct declaration {
+    int kind;
+    const char * ident;
+    struct data_type *type;
+    struct symbol *sym;
+
+    char is_typedef;
+    char is_extern;
+    char is_static;
+    char is_const;
+    char is_unsigned;
+};
+
 struct parser {
     struct lexer *lex;
     struct token tokbuf[TOKEN_BUFFER_SIZE];
@@ -17,23 +30,14 @@ struct parser {
     struct symbol_table *symtab;
     struct diagnostic *diag;
 
-    /* TODO may need struct declaration or parse_context */
-    /* declaration context */
-    int decl_kind;
-    const char * decl_ident;
-    struct data_type *decl_type;
-    struct symbol *decl_sym;
+    struct declaration decl;
 
     /* for enum */
     int enum_value;
     /* for function */
     struct symbol *func_sym;
 
-    int is_typedef;
-    int is_extern;
-    int is_static;
-    int is_const;
-    int is_unsigned;
+    /* error recovery */
     int is_panic_mode;
 
     /* conversion context */
