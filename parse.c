@@ -407,7 +407,6 @@ static struct ast_node *convert_(struct parser *p, struct ast_node *node)
 }
 
 /* decl context */
-static void decl_set_sym(struct parser *p, struct symbol *decl_sym);
 static void define_sym(struct parser *p, struct ast_node *node)
 {
     struct symbol *sym;
@@ -425,7 +424,7 @@ static void define_sym(struct parser *p, struct ast_node *node)
     node->sym = sym;
     node->type = node->sym->type;
 
-    decl_set_sym(p, sym);
+    p->decl.sym = sym;
 }
 
 static void use_sym(struct parser *p, struct ast_node *ident, int sym_kind)
@@ -513,26 +512,6 @@ static void end_switch(struct parser *p)
     symbol_switch_end(p->symtab);
 }
 
-static void decl_set_kind(struct parser *p, int decl_kind)
-{
-    p->decl.kind = decl_kind;
-}
-
-static void decl_set_ident(struct parser *p, const char *decl_ident)
-{
-    p->decl.ident = decl_ident;
-}
-
-static void decl_set_type(struct parser *p, struct data_type *decl_type)
-{
-    p->decl.type = decl_type;
-}
-
-static void decl_set_sym(struct parser *p, struct symbol *decl_sym)
-{
-    p->decl.sym = decl_sym;
-}
-
 static int decl_is_func(struct parser *p)
 {
     return p->decl.kind == SYM_FUNC;
@@ -605,7 +584,7 @@ static void default_to_int(struct parser *p)
 {
     if (!p->decl.type) {
         const struct token *next = gettok(p);
-        decl_set_type(p, type_int());
+        p->decl.type = type_int();
         add_warning(p->diag, &next->pos, "type specifier missing, defaults to 'int'");
         ungettok(p);
     }
@@ -1907,12 +1886,12 @@ static struct ast_node *decl_identifier(struct parser *p)
     struct ast_node *tree = NULL;
 
     if (consume(p, TOK_IDENT)) {
+        /* need to add token pos after reading an identifier */
         tree = new_node_(NOD_DECL_IDENT, tokpos(p));
         copy_token_text(p, tree);
-        decl_set_ident(p, tree->sval);
+        p->decl.ident = tree->sval;
     } else {
         tree = new_node_(NOD_DECL_IDENT, tokpos(p));
-        decl_set_ident(p, NULL);
     }
 
     return tree;
@@ -1961,7 +1940,7 @@ static struct ast_node *struct_declarator_list(struct parser *p)
     for (;;) {
         struct data_type *spec = p->decl.type;
         struct ast_node *decl = struct_declarator(p);
-        decl_set_type(p, spec);
+        p->decl.type = spec;
 
         if (!decl)
             return tree;
@@ -1988,7 +1967,7 @@ static struct ast_node *struct_declaration(struct parser *p)
     if (!spec)
         return NULL;
 
-    decl_set_kind(p, SYM_MEMBER);
+    p->decl.kind = SYM_MEMBER;
 
     tree = new_node_(NOD_DECL_MEMBER, tokpos(p));
     tree = branch_(tree, spec, struct_declarator_list(p));
@@ -2041,12 +2020,12 @@ static struct ast_node *struct_or_union(struct parser *p)
     switch (tok->kind) {
 
     case TOK_STRUCT:
-        decl_set_kind(p, SYM_TAG_STRUCT);
+        p->decl.kind = SYM_TAG_STRUCT;
         tree = NEW_(NOD_SPEC_STRUCT);
         break;
 
     case TOK_UNION:
-        decl_set_kind(p, SYM_TAG_UNION);
+        p->decl.kind = SYM_TAG_UNION;
         tree = NEW_(NOD_SPEC_UNION);
         break;
 
@@ -2079,14 +2058,14 @@ static struct ast_node *struct_or_union_specifier(struct parser *p)
     if (!consume(p, '{')) {
         /* define an object of struct type */
         use_sym(p, ident, sym_kind);
-        decl_set_type(p, ident->sym->type);
+        p->decl.type = ident->sym->type;
         return tree;
     } else {
         /* define a struct type */
         if (sym_kind == SYM_TAG_STRUCT)
-            decl_set_type(p, type_struct());
+            p->decl.type = type_struct();
         else
-            decl_set_type(p, type_union());
+            p->decl.type = type_union();
         define_sym(p, ident);
     }
 
@@ -2118,12 +2097,12 @@ static struct ast_node *enumerator(struct parser *p)
         return NULL;
     ident = decl_identifier(p);
 
-    decl_set_kind(p, SYM_ENUMERATOR);
+    p->decl.kind = SYM_ENUMERATOR;
 
     tree = NEW_(NOD_DECL_ENUMERATOR);
     tree->l = ident;
 
-    decl_set_type(p, type_int());
+    p->decl.type = type_int();
     define_sym(p, ident);
 
     if (consume(p, '=')) {
@@ -2172,7 +2151,7 @@ static struct ast_node *enum_specifier(struct parser *p)
 
     expect(p, TOK_ENUM);
 
-    decl_set_kind(p, SYM_TAG_ENUM);
+    p->decl.kind = SYM_TAG_ENUM;
 
     tree = NEW_(NOD_SPEC_ENUM);
     ident = decl_identifier(p);
@@ -2180,11 +2159,11 @@ static struct ast_node *enum_specifier(struct parser *p)
     if (!consume(p, '{')) {
         /* define an object of enum type */
         use_sym(p, ident, SYM_TAG_ENUM);
-        decl_set_type(p, ident->sym->type);
+        p->decl.type = ident->sym->type;
         return tree;
     } else {
         /* define an enum type */
-        decl_set_type(p, type_enum());
+        p->decl.type = type_enum();
         define_sym(p, ident);
     }
 
@@ -2205,27 +2184,27 @@ static struct ast_node *type_specifier(struct parser *p)
 
     case TOK_VOID:
         tree = NEW_(NOD_SPEC_VOID);
-        decl_set_type(p, type_void());
+        p->decl.type = type_void();
         break;
 
     case TOK_CHAR:
         tree = NEW_(NOD_SPEC_CHAR);
-        decl_set_type(p, type_char());
+        p->decl.type = type_char();
         break;
 
     case TOK_SHORT:
         tree = NEW_(NOD_SPEC_SHORT);
-        decl_set_type(p, type_short());
+        p->decl.type = type_short();
         break;
 
     case TOK_INT:
         tree = NEW_(NOD_SPEC_INT);
-        decl_set_type(p, type_int());
+        p->decl.type = type_int();
         break;
 
     case TOK_LONG:
         tree = NEW_(NOD_SPEC_LONG);
-        decl_set_type(p, type_long());
+        p->decl.type = type_long();
         break;
 
     case TOK_SIGNED:
@@ -2254,7 +2233,7 @@ static struct ast_node *type_specifier(struct parser *p)
 
             if (sym) {
                 tree = new_node_(NOD_SPEC_TYPE_NAME, tokpos(p));
-                decl_set_type(p, type_type_name(sym));
+                p->decl.type = type_type_name(sym);
                 break;
             }
             else {
@@ -2291,7 +2270,7 @@ static struct ast_node *parameter_declaration(struct parser *p)
     if (is_void(p->decl.type) && !nexttok(p, '*'))
         return NULL;
 
-    decl_set_kind(p, SYM_PARAM);
+    p->decl.kind = SYM_PARAM;
     tree = new_node_(NOD_DECL_PARAM, tokpos(p));
     decl = declarator(p);
 
@@ -2372,7 +2351,7 @@ static struct ast_node *array(struct parser *p)
         expect(p, ']');
 
         tree = branch_(tree, expr, array(p));
-        decl_set_type(p, type_array(p->decl.type));
+        p->decl.type = type_array(p->decl.type);
         tree->type = p->decl.type;
 
         if (expr)
@@ -2429,7 +2408,7 @@ static struct ast_node *direct_declarator(struct parser *p)
                 p->decl.is_extern = 1;
 
             p->decl.type = type_function(p->decl.type);
-            decl_set_kind(p, SYM_FUNC);
+            p->decl.kind = SYM_FUNC;
             define_sym(p, ident);
             p->func_sym = ident->sym;
 
@@ -2483,7 +2462,7 @@ static struct ast_node *pointer(struct parser *p)
         /* we treat as if the first '*' is associated with type specifier */
         ptr = new_node_(NOD_SPEC_POINTER, tokpos(p));
         tree = branch_(ptr, tree, NULL);
-        decl_set_type(p, type_pointer(p->decl.type));
+        p->decl.type = type_pointer(p->decl.type);
     }
 
     return tree;
@@ -2684,7 +2663,7 @@ static struct ast_node *init_declarator_list(struct parser *p)
     for (;;) {
         struct data_type *spec = p->decl.type;
         struct ast_node *init = init_declarator(p);
-        decl_set_type(p, spec);
+        p->decl.type = spec;
 
         if (!init)
             return tree;
@@ -2780,10 +2759,10 @@ static struct ast_node *declaration_specifiers(struct parser *p)
     }
 
     /* TODO improve this by storing decl before entering struct */
-    if (p->decl.is_typedef == 1)
-        decl_set_kind(p, SYM_TYPEDEF);
+    if (p->decl.is_typedef)
+        p->decl.kind = SYM_TYPEDEF;
     else
-        decl_set_kind(p, SYM_VAR);
+        p->decl.kind = SYM_VAR;
 
     decl = new_node_(NOD_DECL_SPEC, tokpos(p));
     return branch_(decl, tree, NULL);
