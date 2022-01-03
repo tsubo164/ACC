@@ -173,17 +173,6 @@ void free_parser(struct parser *p)
     free(p);
 }
 
-/* type */
-static void type_set(struct ast_node *node, struct data_type *type)
-{
-    node->type = type;
-}
-
-static void type_from_sym(struct ast_node *node)
-{
-    node->type = node->sym->type;
-}
-
 static struct data_type *promote_type(struct ast_node *n1, struct ast_node *n2)
 {
     if (!n1 && !n2)
@@ -409,7 +398,8 @@ static struct ast_node *convert_(struct parser *p, struct ast_node *node)
 
         struct ast_node *tree = new_node_(NOD_CAST, tokpos(p));
         tree = branch_(tree, NULL, node);
-        type_set(tree, type_pointer(underlying(node->type)));
+        tree->type = type_pointer(underlying(node->type));
+
         return tree;
     }
 
@@ -433,7 +423,7 @@ static void define_sym(struct parser *p, struct ast_node *node)
     sym->pos = node->pos;
 
     node->sym = sym;
-    type_from_sym(node);
+    node->type = node->sym->type;
 
     decl_set_sym(p, sym);
 }
@@ -444,7 +434,7 @@ static void use_sym(struct parser *p, struct ast_node *ident, int sym_kind)
 
     sym = use_symbol(p->symtab, ident->sval, sym_kind);
     ident->sym = sym;
-    type_from_sym(ident);
+    ident->type = ident->sym->type;
 }
 
 static void use_member_sym(struct parser *p,
@@ -1907,8 +1897,8 @@ static struct ast_node *type_name(struct parser *p)
     tree = NEW_(NOD_TYPE_NAME);
     tree->l = spec;
     tree->r = abstract_declarator(p);
+    tree->type = p->decl.type;
 
-    type_set(tree, p->decl.type);
     return tree;
 }
 
@@ -2383,7 +2373,7 @@ static struct ast_node *array(struct parser *p)
 
         tree = branch_(tree, expr, array(p));
         decl_set_type(p, type_array(p->decl.type));
-        type_set(tree, p->decl.type);
+        tree->type = p->decl.type;
 
         if (expr)
             set_array_length(p->decl.type, expr->ival);
@@ -2526,7 +2516,7 @@ static struct ast_node *string_initializer(struct parser *p)
         init = new_node_(NOD_INIT, tokpos(p));
         init = branch_(init, NULL, num);
         init->ival = count++;
-        type_set(init, underlying(p->init_type));
+        init->type = underlying(p->init_type);
 
         list = new_node_(NOD_LIST, tokpos(p));
         tree = branch_(list, tree, init);
@@ -2571,7 +2561,7 @@ static struct ast_node *initializer(struct parser *p)
 
     tree = new_node_(NOD_INIT, tokpos(p));
     tree = branch_(tree, NULL, init);
-    type_set(tree, p->init_type);
+    tree->type = p->init_type;
 
     return tree;
 }
