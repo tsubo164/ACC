@@ -226,6 +226,9 @@ static void check_init_(struct ast_node *node, struct tree_context *ctx)
     switch (node->kind) {
 
     case NOD_DECL_INIT:
+        /* TODO temp for new_tree */
+        if (!node->l)
+            return;
         check_init_(node->l, ctx);
         check_init_(node->r, ctx);
 

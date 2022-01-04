@@ -13,9 +13,10 @@ enum foo {
 
 struct point p;
 
-int add(int x, int y)
+struct point get_point()
 {
-    return x + y;
+    struct point p = {71, 92};
+    return p;
 }
 
 int main()

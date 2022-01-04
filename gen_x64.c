@@ -632,17 +632,14 @@ static void set_local_area_offset(const struct ast_node *node)
 
 static void gen_func_prologue(FILE *fp, const struct ast_node *node)
 {
-    const struct ast_node *ddecl = NULL;
-    const struct ast_node *ident = NULL;
+    const struct ast_node *fdecl, *func;
 
-    /* TODO define find_node_last()? */
-    ddecl = find_node(node, NOD_DECL_DIRECT);
-    ident = find_node(ddecl->r, NOD_DECL_IDENT);
-    assert(ident);
+    fdecl = find_node(node, NOD_DECL_FUNC);
+    func = find_node(fdecl->l, NOD_DECL_IDENT);
 
-    if (!is_static(ident->sym))
-        fprintf(fp, "    .global _%s\n", ident->sym->name);
-    fprintf(fp, "_%s:\n", ident->sym->name);
+    if (!is_static(func->sym))
+        fprintf(fp, "    .global _%s\n", func->sym->name);
+    fprintf(fp, "_%s:\n", func->sym->name);
     code2(fp, PUSH, RBP);
     code3(fp, MOV,  RSP, RBP);
     code3(fp, SUB, imm(get_local_area_size()), RSP);

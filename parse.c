@@ -203,8 +203,13 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_OR_ASSIGN:
     case NOD_XOR_ASSIGN:
     case NOD_AND_ASSIGN:
-    case NOD_DECL_INIT:
         node->type = node->l->type;
+        break;
+
+    case NOD_DECL_INIT:
+        /* TODO temp for new_tree */
+        if (node->l)
+            node->type = node->l->type;
         break;
 
     case NOD_SHL:
@@ -2371,14 +2376,12 @@ static struct ast_node *direct_declarator(struct parser *p)
     struct ast_node *ident = NULL;
     struct data_type *placeholder = NULL;
 
-    tree = NEW_(NOD_DECL_DIRECT);
-
     if (consume(p, '(')) {
         struct data_type *tmp = p->decl.type;
         placeholder = type_void();
         p->decl.type = placeholder;
 
-        tree->r = declarator(p);
+        tree = declarator(p);
         expect(p, ')');
 
         p->decl.type = tmp;
@@ -2386,11 +2389,11 @@ static struct ast_node *direct_declarator(struct parser *p)
 
     if (nexttok(p, TOK_IDENT) || decl_is_param(p)) {
         ident = decl_identifier(p);
-        tree->r = ident;
+        tree = ident;
     }
 
     if (nexttok(p, '['))
-        tree->l = array(p);
+        array(p);
 
     if (consume(p, '(')) {
         if (!p->decl.sym) {
@@ -2439,7 +2442,7 @@ static struct ast_node *direct_declarator(struct parser *p)
         p->decl.type = p->decl.sym->type;
     }
 
-    return typed_(tree);
+    return tree;
 }
 
 /* pointer
