@@ -2623,10 +2623,14 @@ static struct ast_node *initializer_list(struct parser *p)
  */
 static struct ast_node *init_declarator(struct parser *p)
 {
-    struct ast_node *tree = new_node_(NOD_DECL_INIT, tokpos(p));
+    struct ast_node *tree = NULL;
     struct ast_node *decl = NULL, *init = NULL;
 
     decl = declarator(p);
+    /* TODO temp for new_tree */
+    if (!decl)
+        return NULL;
+    tree = new_node_(NOD_DECL_INIT, tokpos(p));
 
     if (consume(p, '=')) {
         p->init_type = p->decl.sym->type;
@@ -2773,6 +2777,12 @@ static struct ast_node *declaration(struct parser *p)
     tree = new_node_(NOD_DECL, tokpos(p));
     tree = branch_(tree, spec, init_declarator_list(p));
 
+    /* TODO temp for new_tree */
+    if (!tree->r) {
+        expect_or_recover(p, ';');
+        return NULL;
+    }
+
     if (nexttok(p, '{')) {
         /* is func definition */
         struct ast_node *stmt = compound_statement(p);
@@ -2871,16 +2881,15 @@ static struct ast_node *extern_decl(struct parser *p)
  */
 static struct ast_node *translation_unit(struct parser *p)
 {
-    static int null_count = 0;
     struct ast_node *tree = NULL;
 
     while (!consume(p, TOK_EOF)) {
         struct ast_node *decl = extern_decl(p);
 
-        if (!decl) {
-            if (++null_count >= 5)
-                break;
-        }
+        if (!decl)
+            /* TODO temp for new_tree */
+            continue;
+
         tree = new_node(NOD_LIST, tree, decl);
     }
 

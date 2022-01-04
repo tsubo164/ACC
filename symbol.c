@@ -270,7 +270,7 @@ void print_symbol_table(const struct symbol_table *table)
         if (is_global_var(sym))
             printf("%5s | ",  "*");
         else if (is_bitfield(sym))
-            printf("%2dw%-db%2dm | ", sym->bit_width, sym->bit_offset, sym->mem_offset);
+            printf("%dw%db%dm | ", sym->bit_width, sym->bit_offset, sym->mem_offset);
         else
             printf("%5d | ",  sym->mem_offset);
         /* id */
