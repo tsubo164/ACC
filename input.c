@@ -2,19 +2,25 @@
 #include <stdio.h>
 */
 
-/* check omitted param */
-int foo(int i)
-{
-    return 2 * i;
-}
+struct point {
+    int x, y;
+    int bit : 3 + 2;
+};
 
-typedef int my_int;
-typedef int (*foo_pointer)(int);
+enum foo {
+    A = 19 + 8, B, C
+};
+
+struct point p;
+
+int add(int x, int y)
+{
+    return x + y;
+}
 
 int main()
 {
-    my_int i = 121;
-    foo_pointer fp = foo;
+    int i = 40, j = 2;
 
-    return fp(i);
+    return i + j;
 }

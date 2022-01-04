@@ -1787,12 +1787,8 @@ static struct ast_node *direct_abstract_declarator(struct parser *p)
  */
 static struct ast_node *abstract_declarator(struct parser *p)
 {
-    struct ast_node *tree = NEW_(NOD_DECLARATOR);
-
-    tree->l = pointer(p);
-    tree->r = direct_abstract_declarator(p);
-
-    return tree;
+    pointer(p);
+    return direct_abstract_declarator(p);
 }
 
 /*
@@ -1905,24 +1901,22 @@ static struct ast_node *decl_identifier(struct parser *p)
  */
 static struct ast_node *struct_declarator(struct parser *p)
 {
-    struct ast_node *tree = NEW_(NOD_DECLARATOR);
+    struct ast_node *tree = NULL;
 
     if (nexttok(p, ':')) {
-        /* unnamed bit field. no need to reproduce the same tree structure */
+        /* unnamed bit field */
         struct ast_node *decl = decl_identifier(p);
         define_sym(p, decl);
-        decl = branch_(new_node_(NOD_DECL_DIRECT, tokpos(p)), NULL, decl);
-        decl = branch_(new_node_(NOD_DECLARATOR, tokpos(p)), NULL, decl);
-        tree->l = decl;
     }
     else {
-        tree->l = declarator(p);
+        tree = declarator(p);
     }
 
     if (consume(p, ':')) {
-        tree->r = constant_expression(p);
+        struct ast_node *expr = constant_expression(p);
         p->decl.sym->is_bitfield = 1;
-        p->decl.sym->bit_width = tree->r->ival;
+        p->decl.sym->bit_width = expr->ival;
+        free_ast_node(expr);
     }
 
     return tree;
@@ -2474,12 +2468,8 @@ static struct ast_node *pointer(struct parser *p)
  */
 static struct ast_node *declarator(struct parser *p)
 {
-    struct ast_node *tree = new_node_(NOD_DECLARATOR, tokpos(p));
-
-    tree->l = pointer(p);
-    tree->r = direct_declarator(p);
-
-    return typed_(tree);
+    pointer(p);
+    return direct_declarator(p);
 }
 
 static struct ast_node *string_initializer(struct parser *p)
