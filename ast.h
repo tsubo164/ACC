@@ -80,7 +80,6 @@ enum ast_node_kind {
     NOD_TYPE_NAME,
     /* declaration */
     NOD_DECL,
-    NOD_DECL_SPEC,
     NOD_DECL_INIT,
     NOD_DECL_IDENT,
     NOD_DECL_FUNC,

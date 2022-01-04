@@ -2246,7 +2246,7 @@ static struct ast_node *type_specifier(struct parser *p)
         break;
     }
 
-    return tree;
+    return NULL;
 }
 
 /* parameter_declaration
@@ -2260,10 +2260,7 @@ static struct ast_node *parameter_declaration(struct parser *p)
     struct ast_node *spec = NULL, *decl = NULL;
 
     decl_reset_context(p);
-
     spec = declaration_specifiers(p);
-    if (!spec)
-        return NULL;
 
     /* void parameter */
     if (is_void(p->decl.type) && !nexttok(p, '*'))
@@ -2718,7 +2715,7 @@ static struct ast_node *storage_class_specifier(struct parser *p)
  */
 static struct ast_node *declaration_specifiers(struct parser *p)
 {
-    struct ast_node *tree = NULL, *decl = NULL;
+    struct ast_node *tree = NULL;
     struct ast_node *list = NULL, *spec = NULL;
 
     for (;;) {
@@ -2757,8 +2754,7 @@ static struct ast_node *declaration_specifiers(struct parser *p)
     else
         p->decl.kind = SYM_VAR;
 
-    decl = new_node_(NOD_DECL_SPEC, tokpos(p));
-    return branch_(decl, tree, NULL);
+    return NULL;
 }
 
 /*
@@ -2772,11 +2768,7 @@ static struct ast_node *declaration(struct parser *p)
     struct ast_node *spec = NULL;
 
     decl_reset_context(p);
-    /* Returning NULL doesn't mean syntax error in function scopes
-     * We can try to parse a statement instead */
     spec = declaration_specifiers(p);
-    if (!spec)
-        return NULL;
 
     tree = new_node_(NOD_DECL, tokpos(p));
     tree = branch_(tree, spec, init_declarator_list(p));
