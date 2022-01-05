@@ -34,8 +34,14 @@ int main()
 {
     int (*fp)() = num;
     int i = 19;
-    struct point p = {71, 29};
-    return p.x + p.y + i + foo + fp();
+    struct point p = {71, 29, 111};
+    struct point o = {17};
+
+    char i;
+    long q;
+    short z;
+
+    return p.x + p.y + i + foo + fp() + q;
     /*
     int i = 40, j = 2;
 

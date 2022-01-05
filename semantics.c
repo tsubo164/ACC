@@ -64,7 +64,6 @@ struct tree_context {
     int loop_depth;
     int switch_depth;
     int is_lvalue;
-    int has_init;
     int is_union;
 
     /* for initializers */
@@ -116,10 +115,6 @@ static void check_init_scalar(struct ast_node *node, struct tree_context *ctx)
                         "initializing '%s' with an expression of incompatible type '%s'",
                         type_name1, type_name2);
         }
-        break;
-
-    case NOD_DECL_INIT:
-        check_init_scalar(node->r, ctx);
         break;
 
     default:
@@ -186,7 +181,9 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
 
 static void check_initializer(struct ast_node *node, struct tree_context *ctx)
 {
-    if (!node || !node->r)
+    struct ast_node *init = node ? node->r : NULL;
+
+    if (!init)
         return;
 
     if (is_array(node->type)) {
@@ -195,10 +192,10 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
         new_ctx.index = 0;
         new_ctx.array_length = get_array_length(node->type);
 
-        check_init_array_element(node->r, &new_ctx);
+        check_init_array_element(init, &new_ctx);
     }
     else if(is_struct_or_union(node->type)) {
-        if (node->r->kind == NOD_INIT || node->r->kind == NOD_LIST) {
+        if (init->kind == NOD_INIT || init->kind == NOD_LIST) {
             /* initialized by member initializer */
             struct tree_context new_ctx = *ctx;
 
@@ -206,7 +203,7 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
             new_ctx.struct_sym = first_member(symbol_of(node->type));
             new_ctx.is_union = is_union(node->type);
 
-            check_init_struct_members(node->r, &new_ctx);
+            check_init_struct_members(init, &new_ctx);
         }
         else {
             /* initialized by struct object */
@@ -218,33 +215,6 @@ static void check_initializer(struct ast_node *node, struct tree_context *ctx)
     }
 }
 
-static void check_init_(struct ast_node *node, struct tree_context *ctx)
-{
-    if (!node)
-        return;
-
-    switch (node->kind) {
-
-    case NOD_DECL_INIT:
-        /* TODO temp for new_tree */
-        if (!node->l)
-            return;
-        check_init_(node->l, ctx);
-        check_init_(node->r, ctx);
-
-        ctx->index = 0;
-        ctx->struct_sym = node->l->type->sym;
-        check_initializer(node, ctx);
-        return;
-
-    default:
-        break;;
-    }
-
-    check_init_(node->l, ctx);
-    check_init_(node->r, ctx);
-}
-
 static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 {
     if (!node)
@@ -253,15 +223,10 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
     switch (node->kind) {
 
     /* declaration */
-    case NOD_DECL_INIT:
-        ctx->has_init = node->r ? 1 : 0;
-        check_tree_(node->l, ctx);
-        ctx->has_init = 0;
-        check_tree_(node->r, ctx);
-        return;
-
     case NOD_DECL_IDENT:
-        node->sym->is_initialized = ctx->has_init || is_global_var(node->sym);
+        /* has initializer or is a global variable */
+        node->sym->is_initialized = node->l || is_global_var(node->sym);
+
         if (is_func(node->sym))
             ctx->func_sym = node->sym;
 
@@ -285,6 +250,11 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
                         node->sym->name);
         }
 
+        if (node->l) {
+            ctx->index = 0;
+            ctx->struct_sym = node->l->type->sym;
+            check_initializer(node->l, ctx);
+        }
         break;
 
     /* TODO add sub_assign, ... */
@@ -511,13 +481,6 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
     check_tree_(node->r, ctx);
 }
 
-static void check_initializer_semantics(struct ast_node *tree, struct diagnostic *diag)
-{
-    struct tree_context ctx = {0};
-    ctx.diag = diag;
-    check_init_(tree, &ctx);
-}
-
 static void check_tree_semantics(struct ast_node *tree, struct diagnostic *diag)
 {
     struct tree_context ctx = {0};
@@ -530,9 +493,6 @@ int analyze_semantics(struct ast_node *tree,
 {
     check_tree_semantics(tree, diag);
     check_symbol_usage(table, diag);
-
-    /* needs to be called after type sizes are solved */
-    check_initializer_semantics(tree, diag);
 
     return 0;
 }
