@@ -449,27 +449,6 @@ static const struct ast_node *find_node(const struct ast_node *node, int node_ki
     return NULL;
 }
 
-static const struct ast_node *find_node_r(const struct ast_node *node, int node_kind)
-{
-    const struct ast_node *found = NULL;
-
-    if (!node)
-        return NULL;
-
-    if (node->kind == node_kind)
-        return node;
-
-    found = find_node_r(node->r, node_kind);
-    if (found)
-        return found;
-
-    found = find_node_r(node->l, node_kind);
-    if (found)
-        return found;
-
-    return NULL;
-}
-
 static void gen_add_stack_pointer(FILE *fp, int byte)
 {
     if (!byte)
@@ -1776,7 +1755,7 @@ static void gen_initializer(FILE *fp,
 
         gen_object_byte(fp, &obj);
     }
-    else if (is_local_var(ident->sym)) {
+    else if (is_local_var(ident->sym) && init) {
         int i;
 
         for (i = 0; i < obj.size; i++) {
@@ -1792,32 +1771,6 @@ static void gen_initializer(FILE *fp,
     }
 
     free_object_byte(&obj);
-}
-
-static void gen_initializer_global(FILE *fp, const struct ast_node *node)
-{
-    const struct ast_node *ident;
-
-    if (!node || node->kind != NOD_DECL_INIT)
-        return;
-
-    ident = find_node_r(node->l, NOD_DECL_IDENT);
-
-    if (ident && is_global_var(ident->sym))
-        gen_initializer(fp, ident, node->r);
-}
-
-static void gen_initializer_local(FILE *fp, const struct ast_node *node)
-{
-    const struct ast_node *ident;
-
-    if (!node || !node->r || node->kind != NOD_DECL_INIT)
-        return;
-
-    ident = find_node_r(node->l, NOD_DECL_IDENT);
-
-    if (ident && is_local_var(ident->sym))
-        gen_initializer(fp, ident, node->r);
 }
 
 static void gen_code(FILE *fp, const struct ast_node *node)
@@ -2011,8 +1964,14 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             gen_address(fp, node);
         break;
 
+    /* TODO temp for new_tree */
     case NOD_DECL_INIT:
-        gen_initializer_local(fp, node);
+        gen_code(fp, node->l);
+        break;
+
+    case NOD_DECL_IDENT:
+        if (is_local_var(node->sym) && node->l)
+            gen_initializer(fp, node, node->l);
         break;
 
     case NOD_STRUCT_REF:
@@ -2461,8 +2420,9 @@ static void gen_global_vars(FILE *fp, const struct ast_node *node)
     if (!node)
         return;
 
-    if (node->kind == NOD_DECL_INIT) {
-        gen_initializer_global(fp, node);
+    if (node->kind == NOD_DECL_IDENT) {
+        if (is_global_var(node->sym))
+            gen_initializer(fp, node, node->l);
         return;
     }
 

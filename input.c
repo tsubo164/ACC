@@ -4,15 +4,17 @@
 
 struct point {
     int x, y;
+    /*
     int bit : 3 + 2;
+    */
 };
 
+int foo = 3;
 /*
 struct point;
 enum foo {
     A = 19 + 8, B, C
 };
-*/
 
 struct point p;
 
@@ -21,10 +23,19 @@ struct point get_point()
     struct point p = {71, 92};
     return p;
 }
+*/
+int num()
+{
+    return 12;
+}
+
 
 int main()
 {
-    return 42;
+    int (*fp)() = num;
+    int i = 19;
+    struct point p = {71, 29};
+    return p.x + p.y + i + foo + fp();
     /*
     int i = 40, j = 2;
 

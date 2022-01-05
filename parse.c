@@ -2422,7 +2422,7 @@ static struct ast_node *direct_declarator(struct parser *p)
             begin_scope(p);
             if (!nexttok(p, ')'))
                 /* TODO consider saving this tree to better place */
-                tree->l = parameter_type_list(p);
+                tree->r = parameter_type_list(p);
             end_scope(p);
 
             expect(p, ')');
@@ -2617,6 +2617,21 @@ static struct ast_node *initializer_list(struct parser *p)
     return tree;
 }
 
+static struct ast_node *clone_tree(struct ast_node *node)
+{
+    struct ast_node *n;
+    if (!node)
+        return NULL;
+
+    n = malloc(sizeof(struct ast_node));
+    *n = *node;
+
+    n->l = clone_tree(node->l);
+    n->r = clone_tree(node->r);
+
+    return n;
+}
+
 /* init_declarator
  *     declarator
  *     declarator '=' initializer
@@ -2640,6 +2655,9 @@ static struct ast_node *init_declarator(struct parser *p)
 
         p->init_type = NULL;
         p->init_sym = NULL;
+
+        /* TODO temp for new_tree */
+        decl->l = clone_tree(init);
     }
 
     return branch_(tree, decl, init);
