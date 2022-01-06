@@ -2389,8 +2389,6 @@ static struct ast_node *direct_declarator(struct parser *p)
     if (consume(p, '(')) {
         if (!p->decl.sym) {
             /* function */
-            struct ast_node *fn = NEW_(NOD_DECL_FUNC);
-
             /* functions are externnal by default */
             if (!p->decl.is_extern && !p->decl.is_static)
                 p->decl.is_extern = 1;
@@ -2401,10 +2399,8 @@ static struct ast_node *direct_declarator(struct parser *p)
             p->func_sym = ident->sym;
 
             begin_scope(p);
-            fn->l = tree;
             if (!nexttok(p, ')'))
-                fn->r = parameter_type_list(p);
-            tree = fn;
+                parameter_type_list(p);
             expect(p, ')');
         }
         else {

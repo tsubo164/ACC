@@ -390,11 +390,8 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         return;
 
     /* function */
-    case NOD_DECL_FUNC:
-        ctx->func_sym = NULL;
-        break;
-
     case NOD_FUNC_DEF:
+        ctx->func_sym = NULL;
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
         ctx->func_sym = NULL;

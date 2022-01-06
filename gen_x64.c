@@ -558,10 +558,8 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
 
 static void gen_func_param_list(FILE *fp, const struct ast_node *node)
 {
-    const struct ast_node *fdecl, *func;
-
-    fdecl = find_node(node, NOD_DECL_FUNC);
-    func = find_node(fdecl->l, NOD_DECL_IDENT);
+    const struct ast_node *func;
+    func = find_node(node, NOD_DECL_IDENT);
 
     if (is_variadic(func->sym))
         gen_func_param_list_variadic_(fp);
@@ -593,12 +591,11 @@ static int get_local_area_size(void)
 
 static void set_local_area_offset(const struct ast_node *node)
 {
-    const struct ast_node *fdecl, *func;
+    const struct ast_node *func;
     int local_var_size = 0;
     int ret_val_size = 0;
 
-    fdecl = find_node(node->l, NOD_DECL_FUNC);
-    func = find_node(fdecl->l, NOD_DECL_IDENT);
+    func = find_node(node->l, NOD_DECL_IDENT);
 
     local_var_size = get_mem_offset(func);
 
@@ -611,10 +608,8 @@ static void set_local_area_offset(const struct ast_node *node)
 
 static void gen_func_prologue(FILE *fp, const struct ast_node *node)
 {
-    const struct ast_node *fdecl, *func;
-
-    fdecl = find_node(node, NOD_DECL_FUNC);
-    func = find_node(fdecl->l, NOD_DECL_IDENT);
+    const struct ast_node *func;
+    func = find_node(node, NOD_DECL_IDENT);
 
     if (!is_static(func->sym))
         fprintf(fp, "    .global _%s\n", func->sym->name);

@@ -120,7 +120,6 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_TYPE_NAME: return "NOD_TYPE_NAME";
     case NOD_DECL: return "NOD_DECL";
     case NOD_DECL_IDENT: return "NOD_DECL_IDENT";
-    case NOD_DECL_FUNC: return "NOD_DECL_FUNC";
     case NOD_DECL_PARAM: return "NOD_DECL_PARAM";
     case NOD_DECL_MEMBER: return "NOD_DECL_MEMBER";
     case NOD_DECL_ENUMERATOR: return "NOD_DECL_ENUMERATOR";
@@ -205,7 +204,7 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         printf(" ");
         printf(TERMINAL_COLOR_GREEN);
         printf(TERMINAL_DECORATION_BOLD);
-        printf("%s", tree->sval);
+        printf("%s", tree->sym->name);
         printf(TERMINAL_DECORATION_RESET);
         printf(TERMINAL_COLOR_RESET);
         break;

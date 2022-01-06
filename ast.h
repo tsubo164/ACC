@@ -81,7 +81,6 @@ enum ast_node_kind {
     /* declaration */
     NOD_DECL,
     NOD_DECL_IDENT,
-    NOD_DECL_FUNC,
     NOD_DECL_PARAM,
     NOD_DECL_MEMBER,
     NOD_DECL_ENUMERATOR,

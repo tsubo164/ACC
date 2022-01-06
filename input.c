@@ -29,6 +29,10 @@ int num()
     return 12;
 }
 
+int add(int x, int y)
+{
+    return x + y;
+}
 
 int main()
 {
