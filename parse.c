@@ -1457,6 +1457,8 @@ static struct ast_node *for_statement(struct parser *p)
     expect(p, TOK_FOR);
     expect(p, '(');
     pre  = expression_statement(p);
+    if (!pre)
+        pre = NEW_(NOD_NOP);
     cond = expression_statement(p);
     if (!cond)
         cond = new_node_num(1, tokpos(p));

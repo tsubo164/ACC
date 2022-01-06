@@ -6,6 +6,7 @@
 #include "type.h"
 
 enum ast_node_kind {
+    NOD_NOP,
     /* list */
     NOD_LIST,
     NOD_COMPOUND,

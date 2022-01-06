@@ -50,6 +50,7 @@ const char *node_to_string(const struct ast_node *node)
         return "null";
 
     switch (node->kind) {
+    case NOD_NOP: return "NOD_NOP";
     case NOD_LIST: return "NOD_LIST";
     case NOD_COMPOUND: return "NOD_COMPOUND";
     case NOD_BREAK: return "NOD_BREAK";
@@ -156,15 +157,14 @@ static void print_type(const struct data_type *type)
 static void print_tree_recursive(const struct ast_node *tree, int depth)
 {
     int i;
+
+    if (!tree)
+        return;
+
     for (i = 0; i < depth; i++) {
         printf("  ");
     }
     printf("%d. ", depth);
-
-    if (!tree) {
-        printf("(null)\n");
-        return;
-    }
 
     if (tree->sym != NULL || tree->kind == NOD_NUM) {
         printf(TERMINAL_COLOR_CYAN);

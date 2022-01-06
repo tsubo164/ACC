@@ -36,6 +36,7 @@ int add(int x, int y)
 
 int main()
 {
+    /*
     int a, b, c;
     int (*fp)() = num;
     int i = 19;
@@ -47,9 +48,10 @@ int main()
     short z;
 
     return p.x + p.y + i + foo + fp() + q;
-    /*
-    int i = 40, j = 2;
-
-    return i + j;
     */
+    int i = 0;
+    for (;; i++)
+        if (i > 5)
+            break;
+    return 9;
 }
