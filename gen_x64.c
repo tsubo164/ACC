@@ -1788,7 +1788,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_LIST:
     case NOD_COMPOUND:
-    case NOD_DECL:
         gen_code(fp, node->l);
         gen_code(fp, node->r);
         break;

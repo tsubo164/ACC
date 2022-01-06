@@ -79,7 +79,6 @@ enum ast_node_kind {
     NOD_CONST_EXPR,
     NOD_TYPE_NAME,
     /* declaration */
-    NOD_DECL,
     NOD_DECL_IDENT,
     NOD_DECL_PARAM,
     NOD_DECL_MEMBER,

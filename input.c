@@ -36,6 +36,7 @@ int add(int x, int y)
 
 int main()
 {
+    int a, b, c;
     int (*fp)() = num;
     int i = 19;
     struct point p = {71, 29, 111};

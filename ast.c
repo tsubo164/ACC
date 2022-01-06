@@ -118,7 +118,6 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_STRING: return "NOD_STRING";
     case NOD_CONST_EXPR: return "NOD_CONST_EXPR";
     case NOD_TYPE_NAME: return "NOD_TYPE_NAME";
-    case NOD_DECL: return "NOD_DECL";
     case NOD_DECL_IDENT: return "NOD_DECL_IDENT";
     case NOD_DECL_PARAM: return "NOD_DECL_PARAM";
     case NOD_DECL_MEMBER: return "NOD_DECL_MEMBER";

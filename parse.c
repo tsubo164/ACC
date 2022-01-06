@@ -3,6 +3,29 @@
 #include <stdarg.h>
 #include "parse.h"
 
+struct ast_list {
+    struct ast_node *head, *tail;
+};
+
+void append(struct ast_list *list, struct ast_node *node)
+{
+    struct ast_node *n = new_ast_node(NOD_LIST, NULL, NULL);
+    if (0) {
+        /* append to tail */
+        n->l = node;
+        if (list->head)
+            list->tail->r = n;
+        else
+            list->head = n;
+        list->tail = n;
+    } else {
+        /* insert to head */
+        n->r = node;
+        n->l = list->head;
+        list->head = n;
+    }
+}
+
 /* XXX */
 #define NEW_(kind) new_node(kind, NULL, NULL)
 static struct ast_node *new_node(enum ast_node_kind kind,
@@ -270,7 +293,6 @@ static struct ast_node *typed_(struct ast_node *node)
         break;
 
     /* nodes without type */
-    case NOD_DECL:
     case NOD_LIST:
     case NOD_COMPOUND:
         break;
@@ -2654,7 +2676,7 @@ static struct ast_node *init_declarator(struct parser *p)
  */
 static struct ast_node *init_declarator_list(struct parser *p)
 {
-    struct ast_node *tree = NULL, *list = NULL;
+    struct ast_list list = {0};
 
     for (;;) {
         struct data_type *spec = p->decl.type;
@@ -2662,14 +2684,15 @@ static struct ast_node *init_declarator_list(struct parser *p)
         p->decl.type = spec;
 
         if (!init)
-            return tree;
+            break;
 
-        list = new_node_(NOD_LIST, tokpos(p));
-        tree = branch_(list, tree, init);
+        append(&list, init);
 
         if (!consume(p, ','))
-            return tree;
+            break;
     }
+
+    return list.head;
 }
 
 /*
@@ -2776,11 +2799,10 @@ static struct ast_node *declaration(struct parser *p)
     decl_reset_context(p);
     spec = declaration_specifiers(p);
 
-    tree = new_node_(NOD_DECL, tokpos(p));
-    tree = branch_(tree, spec, init_declarator_list(p));
+    tree = init_declarator_list(p);
 
-    /* TODO temp for new_tree */
-    if (!tree->r) {
+    /* TODO combine if statement with one below if possible */
+    if (!tree) {
         expect_or_recover(p, ';');
         return NULL;
     }
