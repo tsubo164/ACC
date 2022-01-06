@@ -1964,11 +1964,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             gen_address(fp, node);
         break;
 
-    /* TODO temp for new_tree */
-    case NOD_DECL_INIT:
-        gen_code(fp, node->l);
-        break;
-
     case NOD_DECL_IDENT:
         if (is_local_var(node->sym) && node->l)
             gen_initializer(fp, node, node->l);

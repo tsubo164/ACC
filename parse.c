@@ -206,12 +206,6 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = node->l->type;
         break;
 
-    case NOD_DECL_INIT:
-        /* TODO temp for new_tree */
-        if (node->l)
-            node->type = node->l->type;
-        break;
-
     case NOD_SHL:
     case NOD_SHR:
         node->type = node->l->type;
@@ -2617,6 +2611,7 @@ static struct ast_node *initializer_list(struct parser *p)
     return tree;
 }
 
+/*
 static struct ast_node *clone_tree(struct ast_node *node)
 {
     struct ast_node *n;
@@ -2631,6 +2626,7 @@ static struct ast_node *clone_tree(struct ast_node *node)
 
     return n;
 }
+*/
 
 /* init_declarator
  *     declarator
@@ -2638,29 +2634,21 @@ static struct ast_node *clone_tree(struct ast_node *node)
  */
 static struct ast_node *init_declarator(struct parser *p)
 {
-    struct ast_node *tree = NULL;
-    struct ast_node *decl = NULL, *init = NULL;
+    struct ast_node *decl = NULL;
 
     decl = declarator(p);
-    /* TODO temp for new_tree */
-    if (!decl)
-        return NULL;
-    tree = new_node_(NOD_DECL_INIT, tokpos(p));
 
     if (consume(p, '=')) {
         p->init_type = p->decl.sym->type;
         p->init_sym = symbol_of(p->init_type);
 
-        init = initializer(p);
+        decl->l = initializer(p);
 
         p->init_type = NULL;
         p->init_sym = NULL;
-
-        /* TODO temp for new_tree */
-        decl->l = clone_tree(init);
     }
 
-    return branch_(tree, decl, init);
+    return typed_(decl);
 }
 
 /*
