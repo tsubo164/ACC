@@ -37,12 +37,13 @@ int add(int x, int y)
 
 int main()
 {
+    char a = 19;
+    short b[2] = {11, 22};
     /*
-    int i = 19;
     int a[2] = {11, 22, 33};
     struct point p = {71, 29, 111, 9};
-    */
     int a[1][3] = {{111, 222, 99}, {333, 444, 99}};
+    */
     /*
     int a, b, c;
     int (*fp)() = num;
