@@ -614,11 +614,12 @@ static void default_to_int(struct parser *p)
 /*
  * forward declarations
  */
+struct initializer_context;
 static struct ast_node *statement(struct parser *p);
 static struct ast_node *expression(struct parser *p);
 static struct ast_node *unary_expression(struct parser *p);
 static struct ast_node *assignment_expression(struct parser *p);
-static struct ast_node *initializer_list(struct parser *p);
+static struct ast_node *initializer_list(struct parser *p, struct initializer_context *init);
 static struct ast_node *decl_identifier(struct parser *p);
 static struct ast_node *type_name(struct parser *p);
 static struct ast_node *pointer(struct parser *p);
@@ -2513,8 +2514,11 @@ static struct ast_node *string_initializer(struct parser *p)
 }
 
 struct initializer_context {
+    struct data_type *parent_type;
     struct data_type *type;
     struct symbol *sym;
+    int mem_offset;
+    int length;
     int index;
 };
 
@@ -2532,7 +2536,7 @@ static struct ast_node *initializer(struct parser *p, struct initializer_context
 
     p->is_array_initializer = is_array(p->init_type);
     if (consume(p, '{')) {
-        expr = initializer_list(p);
+        expr = initializer_list(p, init);
         desi = NEW_(NOD_DESIG);
         expect(p, '}');
     }
@@ -2548,7 +2552,10 @@ static struct ast_node *initializer(struct parser *p, struct initializer_context
         expr = assignment_expression(p);
         desi = NEW_(NOD_DESIG);
 
-        desi->type = init->type;
+        if (init->type) {
+            desi->type = init->type;
+            desi->ival = init->mem_offset;
+        }
     }
     p->is_array_initializer = 0;
 
@@ -2602,14 +2609,41 @@ static int initializer_byte_offset(struct parser *p,
         return 0;
 }
 
+static struct initializer_context child_initializer(const struct initializer_context *parent)
+{
+    struct initializer_context child = {0};
+
+    child.parent_type = parent->type;
+
+    if (is_array(parent->type)) {
+        child.type = underlying(parent->type);
+        child.length = get_array_length(parent->type);
+    }
+
+    return child;
+}
+
+static void next_initializer(struct initializer_context *child)
+{
+    if (is_array(child->parent_type)) {
+        child->index++;
+        if (child->index >= child->length) {
+            child->type = NULL;
+            child->mem_offset = 0;
+        } else {
+            child->mem_offset = get_size(child->type) * child->index;
+        }
+    }
+}
+
 /*
  * initializer_list
  *     initializer
  *     initializer_list ',' initializer
  */
-static struct ast_node *initializer_list(struct parser *p)
+static struct ast_node *initializer_list(struct parser *p, struct initializer_context *init)
 {
-    struct initializer_context init = {0};
+    struct initializer_context child_init = child_initializer(init);
     struct ast_node *tree = NULL;
     int count = 0;
 
@@ -2619,7 +2653,7 @@ static struct ast_node *initializer_list(struct parser *p)
     for (;;) {
         struct ast_node *node = NULL, *list = NULL;
 
-        node = initializer(p, &init);
+        node = initializer(p, &child_init);
 
         if (!node)
             break;
@@ -2628,6 +2662,8 @@ static struct ast_node *initializer_list(struct parser *p)
         node->ival = initializer_byte_offset(p, parent, count);
         p->init_type = initializer_next_type(p, parent);
         count++;
+
+        next_initializer(&child_init);
 
         list = new_node_(NOD_LIST, tokpos(p));
         tree = branch_(list, tree, node);
