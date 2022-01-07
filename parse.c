@@ -614,12 +614,10 @@ static void default_to_int(struct parser *p)
 /*
  * forward declarations
  */
-struct initializer_context;
 static struct ast_node *statement(struct parser *p);
 static struct ast_node *expression(struct parser *p);
 static struct ast_node *unary_expression(struct parser *p);
 static struct ast_node *assignment_expression(struct parser *p);
-static struct ast_node *initializer_list(struct parser *p, struct initializer_context *init);
 static struct ast_node *decl_identifier(struct parser *p);
 static struct ast_node *type_name(struct parser *p);
 static struct ast_node *pointer(struct parser *p);
@@ -2516,11 +2514,14 @@ static struct ast_node *string_initializer(struct parser *p)
 struct initializer_context {
     struct data_type *parent_type;
     struct data_type *type;
-    struct symbol *sym;
+    const struct symbol *member;
     int mem_offset;
-    int length;
     int index;
+    int length;
+    int has_length;
 };
+
+static struct ast_node *initializer_list(struct parser *p, struct initializer_context *init);
 
 /*
  * initializer
@@ -2576,7 +2577,7 @@ static struct data_type *initializer_child_type(struct parser *p,
     }
     else if (is_struct_or_union(parent)) {
         p->init_sym = first_member(symbol_of(parent));
-        return p->init_sym->type;
+        return p->init_sym ? p->init_sym->type : NULL;
     }
     else {
         return parent;
@@ -2609,6 +2610,13 @@ static int initializer_byte_offset(struct parser *p,
         return 0;
 }
 
+static struct initializer_context root_initializer(struct data_type *type)
+{
+    struct initializer_context root = {0};
+    root.type = type;
+    return root;
+}
+
 static struct initializer_context child_initializer(const struct initializer_context *parent)
 {
     struct initializer_context child = {0};
@@ -2618,6 +2626,11 @@ static struct initializer_context child_initializer(const struct initializer_con
     if (is_array(parent->type)) {
         child.type = underlying(parent->type);
         child.length = get_array_length(parent->type);
+        child.has_length = !has_unkown_array_length(parent->type);
+    }
+    else if (is_struct_or_union(parent->type)) {
+        child.member = first_member(symbol_of(parent->type));
+        child.type = child.member->type ? child.member->type : NULL;
     }
 
     return child;
@@ -2627,11 +2640,21 @@ static void next_initializer(struct initializer_context *child)
 {
     if (is_array(child->parent_type)) {
         child->index++;
-        if (child->index >= child->length) {
+        if (child->index < child->length || !child->has_length) {
+            child->mem_offset = get_size(child->type) * child->index;
+        } else {
             child->type = NULL;
             child->mem_offset = 0;
+        }
+    }
+    else if (is_struct_or_union(child->parent_type)) {
+        child->member = next_member(child->member);
+        if (child->member) {
+            child->type = child->member->type;
+            child->mem_offset = child->member->mem_offset;
         } else {
-            child->mem_offset = get_size(child->type) * child->index;
+            child->type = NULL;
+            child->mem_offset = 0;
         }
     }
 }
@@ -2680,23 +2703,6 @@ static struct ast_node *initializer_list(struct parser *p, struct initializer_co
     return tree;
 }
 
-/*
-static struct ast_node *clone_tree(struct ast_node *node)
-{
-    struct ast_node *n;
-    if (!node)
-        return NULL;
-
-    n = malloc(sizeof(struct ast_node));
-    *n = *node;
-
-    n->l = clone_tree(node->l);
-    n->r = clone_tree(node->r);
-
-    return n;
-}
-*/
-
 /* init_declarator
  *     declarator
  *     declarator '=' initializer
@@ -2708,9 +2714,7 @@ static struct ast_node *init_declarator(struct parser *p)
     decl = declarator(p);
 
     if (consume(p, '=')) {
-        struct initializer_context init = {0};
-        init.type = p->decl.sym->type;
-        init.sym = symbol_of(init.type);
+        struct initializer_context init = root_initializer(p->decl.sym->type);
 
         p->init_type = p->decl.sym->type;
         p->init_sym = symbol_of(p->init_type);

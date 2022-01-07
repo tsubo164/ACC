@@ -2,12 +2,12 @@
 #include <stdio.h>
 */
 
-    /*
 struct point {
     long x, y;
+    /*
     char c;
-};
     */
+};
 
 /*
 int foo = 3;
@@ -38,8 +38,11 @@ int main()
 {
     char a = 19;
     short b[2] = {11, 22, 33};
-    /*
+    short c[] = {11, 22, 33};
     struct point p = {71, 29, 111};
+    /*
+    */
+    /*
     int a[2] = {11, 22, 33};
     int a[1][3] = {{111, 222, 99}, {333, 444, 99}};
     */
