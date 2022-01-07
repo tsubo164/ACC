@@ -127,6 +127,7 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_DECL_EXTERN: return "NOD_DECL_EXTERN";
     case NOD_DECL_STATIC: return "NOD_DECL_STATIC";
     case NOD_INIT: return "NOD_INIT";
+    case NOD_DESIG: return "NOD_DESIG";
     case NOD_QUAL_CONST: return "NOD_QUAL_CONST";
     case NOD_SPEC_VOID: return "NOD_SPEC_VOID";
     case NOD_SPEC_CHAR: return "NOD_SPEC_CHAR";
@@ -196,6 +197,15 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         print_type(tree->type);
     printf(TERMINAL_COLOR_RESET);
 
+    if (tree->sym != NULL && tree->kind == NOD_DESIG) {
+        printf(" ");
+        printf(TERMINAL_COLOR_GREEN);
+        printf(TERMINAL_DECORATION_BOLD);
+        printf("%s", tree->sym->name);
+        printf(TERMINAL_DECORATION_RESET);
+        printf(TERMINAL_COLOR_RESET);
+    }
+
     switch (tree->kind) {
 
     case NOD_DECL_IDENT:
@@ -208,6 +218,7 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
         printf(TERMINAL_COLOR_RESET);
         break;
 
+    case NOD_DESIG:
     case NOD_INIT:
     case NOD_NUM:
     case NOD_CONST_EXPR:

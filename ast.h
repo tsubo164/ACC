@@ -89,6 +89,7 @@ enum ast_node_kind {
     NOD_DECL_STATIC,
     /* initializer */
     NOD_INIT,
+    NOD_DESIG,
     /* type qualifier */
     NOD_QUAL_CONST,
     /* type specifier */

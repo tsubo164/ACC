@@ -1493,7 +1493,6 @@ static void assign_init(struct memory_byte *base,
             /* move cursor by designator */
             const int offset = expr->ival;
 
-            assign_init(base, type, expr->l);
             assign_init(base + offset, underlying(type), expr->r);
         }
         break;

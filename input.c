@@ -3,14 +3,15 @@
 */
 
 struct point {
-    int x, y;
+    long x, y;
+    char c;
     /*
     int bit : 3 + 2;
     */
 };
 
-int foo = 3;
 /*
+int foo = 3;
 struct point;
 enum foo {
     A = 19 + 8, B, C
@@ -23,7 +24,6 @@ struct point get_point()
     struct point p = {71, 92};
     return p;
 }
-*/
 int num()
 {
     return 12;
@@ -33,9 +33,16 @@ int add(int x, int y)
 {
     return x + y;
 }
+*/
 
 int main()
 {
+    /*
+    int i = 19;
+    int a[2] = {11, 22, 33};
+    struct point p = {71, 29, 111, 9};
+    */
+    int a[1][3] = {{111, 222, 99}, {333, 444, 99}};
     /*
     int a, b, c;
     int (*fp)() = num;
@@ -49,9 +56,11 @@ int main()
 
     return p.x + p.y + i + foo + fp() + q;
     */
+    /*
     int i = 0;
     for (;; i++)
         if (i > 5)
             break;
     return 9;
+    */
 }

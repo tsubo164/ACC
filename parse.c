@@ -2522,11 +2522,12 @@ static struct ast_node *initializer(struct parser *p)
 {
     /* ',' at the end of list is handled by initializer_list */
     struct ast_node *tree = NULL;
-    struct ast_node *init = NULL;
+    struct ast_node *init = NULL, *desi = NULL;
 
     p->is_array_initializer = is_array(p->init_type);
     if (consume(p, '{')) {
         init = initializer_list(p);
+        desi = NEW_(NOD_DESIG);
         expect(p, '}');
     }
     else if (is_array(p->init_type) && nexttok(p, TOK_STRING_LITERAL)) {
@@ -2539,11 +2540,14 @@ static struct ast_node *initializer(struct parser *p)
     }
     else {
         init = assignment_expression(p);
+        desi = NEW_(NOD_DESIG);
     }
     p->is_array_initializer = 0;
 
     tree = new_node_(NOD_INIT, tokpos(p));
-    tree = branch_(tree, NULL, init);
+    tree->l = desi;
+    tree->r = init;
+
     tree->type = p->init_type;
 
     return tree;
