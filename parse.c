@@ -2485,39 +2485,6 @@ static struct ast_node *declarator(struct parser *p)
     return direct_declarator(p);
 }
 
-static struct ast_node *string_initializer(struct parser *p)
-{
-    struct ast_node *list = NULL, *init = NULL, *desi = NULL, *num = NULL;
-    struct ast_node *tree = NULL;
-    const struct token *tok = gettok(p);
-    const char *ch = tok->text;
-    int count = 0;
-
-    do {
-        num = new_node_num(*ch, tokpos(p));
-
-        desi = new_node_(NOD_DESIG, tokpos(p));
-        desi->ival = count++;
-        desi->type = underlying(p->init_type);
-
-        init = new_node_(NOD_INIT, tokpos(p));
-        init->l = desi;
-        init->r = num;
-
-        init->ival = count;
-        init->type = underlying(p->init_type);
-
-        list = new_node_(NOD_LIST, tokpos(p));
-        tree = branch_(list, tree, init);
-        /* check null character at last since it needs to be added */
-    } while (*ch++);
-
-    if (has_unkown_array_length(p->init_type))
-        set_array_length(p->init_type, count);
-
-    return tree;
-}
-
 struct initializer_context {
     struct data_type *parent_type;
     struct data_type *type;
@@ -2529,6 +2496,8 @@ struct initializer_context {
 };
 
 static struct ast_node *initializer_list(struct parser *p, struct initializer_context *init);
+static struct ast_node *string_initializer(struct parser *p,
+        struct initializer_context *parent);
 
 /*
  * initializer
@@ -2542,18 +2511,17 @@ static struct ast_node *initializer(struct parser *p, struct initializer_context
     struct ast_node *tree = NULL;
     struct ast_node *expr = NULL, *desi = NULL;
 
-    p->is_array_initializer = is_array(p->init_type);
+    p->is_array_initializer = is_array(init->type);
     if (consume(p, '{')) {
         expr = initializer_list(p, init);
         expect(p, '}');
     }
-    else if (is_array(p->init_type) && nexttok(p, TOK_STRING_LITERAL)) {
-        if (!is_char(underlying(p->init_type))) {
+    else if (is_array(init->type) && nexttok(p, TOK_STRING_LITERAL)) {
+        if (!is_char(underlying(init->type)))
             /* TODO improve message */
             syntax_error(p, "initializing wide char array with non-wide string literal");
-        }
         /* initializing array of char with string literal */
-        expr = string_initializer(p);
+        expr = string_initializer(p, init);
     }
     else {
         expr = assignment_expression(p);
@@ -2570,50 +2538,7 @@ static struct ast_node *initializer(struct parser *p, struct initializer_context
     tree->l = desi;
     tree->r = expr;
 
-    tree->type = p->init_type;
-
     return tree;
-}
-
-static struct data_type *initializer_child_type(struct parser *p,
-        struct data_type *parent)
-{
-    if (is_array(parent)) {
-        return underlying(parent);
-    }
-    else if (is_struct_or_union(parent)) {
-        p->init_sym = first_member(symbol_of(parent));
-        return p->init_sym ? p->init_sym->type : NULL;
-    }
-    else {
-        return parent;
-    }
-}
-
-static struct data_type *initializer_next_type(struct parser *p,
-        struct data_type *parent)
-{
-    if (is_array(parent)) {
-        return p->init_type;
-    }
-    else if (is_struct_or_union(parent)) {
-        p->init_sym = next_member(p->init_sym);
-        return p->init_sym ? p->init_sym->type : NULL;
-    }
-    else {
-        return p->init_type;
-    }
-}
-
-static int initializer_byte_offset(struct parser *p,
-        struct data_type *parent, int index)
-{
-    if (is_array(parent))
-        return get_size(p->init_type) * index;
-    else if (is_struct_or_union(parent))
-        return p->init_sym ? p->init_sym->mem_offset : 0;
-    else
-        return 0;
 }
 
 static struct initializer_context root_initializer(struct data_type *type)
@@ -2670,14 +2595,10 @@ static void next_initializer(struct initializer_context *child)
  *     initializer
  *     initializer_list ',' initializer
  */
-static struct ast_node *initializer_list(struct parser *p, struct initializer_context *init)
+static struct ast_node *initializer_list(struct parser *p, struct initializer_context *parent)
 {
-    struct initializer_context child_init = child_initializer(init);
+    struct initializer_context child_init = child_initializer(parent);
     struct ast_node *tree = NULL;
-    int count = 0;
-
-    struct data_type *parent = p->init_type;
-    p->init_type = initializer_child_type(p, parent);
 
     for (;;) {
         struct ast_node *node = NULL, *list = NULL;
@@ -2687,24 +2608,50 @@ static struct ast_node *initializer_list(struct parser *p, struct initializer_co
         if (!node)
             break;
 
-        /* byte offset from the beginning of the list */
-        node->ival = initializer_byte_offset(p, parent, count);
-        p->init_type = initializer_next_type(p, parent);
-        count++;
-
-        next_initializer(&child_init);
-
         list = new_node_(NOD_LIST, tokpos(p));
         tree = branch_(list, tree, node);
+
+        next_initializer(&child_init);
 
         if (!consume(p, ','))
             break;
     }
 
-    p->init_type = parent;
+    if (has_unkown_array_length(parent->type))
+        set_array_length(parent->type, child_init.index);
 
-    if (has_unkown_array_length(p->init_type))
-        set_array_length(p->init_type, count);
+    return tree;
+}
+
+static struct ast_node *string_initializer(struct parser *p,
+        struct initializer_context *parent)
+{
+    struct initializer_context child_init = child_initializer(parent);
+    struct ast_node *list = NULL, *init = NULL, *desi = NULL, *num = NULL;
+    struct ast_node *tree = NULL;
+    const struct token *tok = gettok(p);
+    const char *ch = tok->text;
+
+    do {
+        num = new_node_num(*ch, tokpos(p));
+
+        desi = new_node_(NOD_DESIG, tokpos(p));
+        desi->ival = child_init.index * get_size(child_init.type);
+        desi->type = child_init.type;
+
+        init = new_node_(NOD_INIT, tokpos(p));
+        init->l = desi;
+        init->r = num;
+
+        list = new_node_(NOD_LIST, tokpos(p));
+        tree = branch_(list, tree, init);
+
+        next_initializer(&child_init);
+        /* check null character at last since it needs to be added */
+    } while (*ch++);
+
+    if (has_unkown_array_length(parent->type))
+        set_array_length(parent->type, child_init.index);
 
     return tree;
 }
@@ -2721,14 +2668,7 @@ static struct ast_node *init_declarator(struct parser *p)
 
     if (consume(p, '=')) {
         struct initializer_context init = root_initializer(p->decl.sym->type);
-
-        p->init_type = p->decl.sym->type;
-        p->init_sym = symbol_of(p->init_type);
-
         decl->l = initializer(p, &init);
-
-        p->init_type = NULL;
-        p->init_sym = NULL;
     }
 
     return typed_(decl);

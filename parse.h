@@ -44,10 +44,6 @@ struct parser {
     int is_sizeof_operand;
     int is_addressof_operand;
     int is_array_initializer;
-
-    /* for initializer */
-    struct data_type *init_type;
-    const struct symbol *init_sym;
 };
 
 extern struct parser *new_parser(void);
