@@ -2655,7 +2655,7 @@ static void next_initializer(struct initializer_context *child)
     }
     else if (is_struct_or_union(child->parent_type)) {
         child->member = next_member(child->member);
-        if (child->member) {
+        if (child->member && !is_union(child->parent_type)) {
             child->type = child->member->type;
             child->mem_offset = child->member->mem_offset;
         } else {

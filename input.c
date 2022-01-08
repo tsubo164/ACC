@@ -9,6 +9,11 @@ struct point {
     */
 };
 
+union foo {
+    int i;
+    char *s;
+};
+
 /*
 int foo = 3;
 struct point;
@@ -36,18 +41,20 @@ int add(int x, int y)
 
 int main()
 {
+    int *i = 2;
+    short b[2] = {11, 22, 33};
+    struct point p = {71, 29, 111};
+    union foo u = {71, "abc"};
     /*
     char a = 19;
-    short b[2] = {11, 22, 33};
     short c[] = {11, 22, 33};
-    struct point p = {71, 29, 111};
     */
     /*
     int a[2] = {11, 22, 33};
     int d[1][3] = {{111, 222, 99}, {333, 444, 99}};
-    */
     int a[2][2] = {{11, 22}, {44, 55}};
     char name[] = "abc";
+    */
     /*
     int a, b, c;
     int (*fp)() = num;

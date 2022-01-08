@@ -65,11 +65,6 @@ struct tree_context {
     int switch_depth;
     int is_lvalue;
     int is_union;
-
-    /* for initializers */
-    const struct symbol *struct_sym;
-    int array_length;
-    int index;
 };
 
 static void check_initializer(struct ast_node *node, struct tree_context *ctx);
@@ -96,11 +91,11 @@ static void check_init_scalar(struct ast_node *node, struct tree_context *ctx)
     switch (node->kind) {
 
     case NOD_INIT:
-        t1 = node->type;
+        t1 = node->l->type;
         t2 = node->r->type;
 
         /* integer zero to pointer */
-        if (is_pointer(node->type) && is_integer_zero(node->r))
+        if (is_pointer(t1) && is_integer_zero(node->r))
             return;
 
         if (!is_compatible(t1, t2)) {
@@ -130,14 +125,13 @@ static void check_init_array_element(struct ast_node *node, struct tree_context 
     switch (node->kind) {
 
     case NOD_INIT:
-        if (ctx->index >= ctx->array_length) {
+        if (is_void(node->l->type)) {
             add_error(ctx->diag, &node->pos,
                     "excess elements in array initializer");
             break;
         }
 
         check_initializer(node, ctx);
-        ctx->index++;
         break;
 
     case NOD_LIST:
@@ -158,7 +152,7 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
     switch (node->kind) {
 
     case NOD_INIT:
-        if (!ctx->struct_sym) {
+        if (is_void(node->l->type)) {
             add_error(ctx->diag, &node->pos,
                     "excess elements in %s initializer",
                     ctx->is_union ? "union" : "struct");
@@ -166,7 +160,6 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
         }
 
         check_initializer(node, ctx);
-        ctx->struct_sym = ctx->is_union ? NULL : next_member(ctx->struct_sym);
         break;
 
     case NOD_LIST:
@@ -181,29 +174,24 @@ static void check_init_struct_members(struct ast_node *node, struct tree_context
 
 static void check_initializer(struct ast_node *node, struct tree_context *ctx)
 {
-    struct ast_node *init = node ? node->r : NULL;
+    struct ast_node *desi = node ? node->l : NULL;
+    struct ast_node *expr = node ? node->r : NULL;
 
-    if (!init)
+    if (!desi || !expr)
         return;
 
-    if (is_array(node->type)) {
+    if (is_array(desi->type)) {
         struct tree_context new_ctx = *ctx;
 
-        new_ctx.index = 0;
-        new_ctx.array_length = get_array_length(node->type);
-
-        check_init_array_element(init, &new_ctx);
+        check_init_array_element(expr, &new_ctx);
     }
-    else if(is_struct_or_union(node->type)) {
-        if (init->kind == NOD_INIT || init->kind == NOD_LIST) {
+    else if(is_struct_or_union(desi->type)) {
+        if (expr->kind == NOD_INIT || expr->kind == NOD_LIST) {
             /* initialized by member initializer */
             struct tree_context new_ctx = *ctx;
+            new_ctx.is_union = is_union(desi->type);
 
-            new_ctx.index = 0;
-            new_ctx.struct_sym = first_member(symbol_of(node->type));
-            new_ctx.is_union = is_union(node->type);
-
-            check_init_struct_members(init, &new_ctx);
+            check_init_struct_members(expr, &new_ctx);
         }
         else {
             /* initialized by struct object */
@@ -250,11 +238,9 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
                         node->sym->name);
         }
 
-        if (node->l) {
-            ctx->index = 0;
-            ctx->struct_sym = node->l->type->sym;
+        if (node->l)
             check_initializer(node->l, ctx);
-        }
+
         break;
 
     /* TODO add sub_assign, ... */
