@@ -2487,7 +2487,7 @@ static struct ast_node *declarator(struct parser *p)
 
 static struct ast_node *string_initializer(struct parser *p)
 {
-    struct ast_node *list = NULL, *init = NULL, *num = NULL;
+    struct ast_node *list = NULL, *init = NULL, *desi = NULL, *num = NULL;
     struct ast_node *tree = NULL;
     const struct token *tok = gettok(p);
     const char *ch = tok->text;
@@ -2495,9 +2495,16 @@ static struct ast_node *string_initializer(struct parser *p)
 
     do {
         num = new_node_num(*ch, tokpos(p));
+
+        desi = new_node_(NOD_DESIG, tokpos(p));
+        desi->ival = count++;
+        desi->type = underlying(p->init_type);
+
         init = new_node_(NOD_INIT, tokpos(p));
-        init = branch_(init, NULL, num);
-        init->ival = count++;
+        init->l = desi;
+        init->r = num;
+
+        init->ival = count;
         init->type = underlying(p->init_type);
 
         list = new_node_(NOD_LIST, tokpos(p));
@@ -2538,7 +2545,6 @@ static struct ast_node *initializer(struct parser *p, struct initializer_context
     p->is_array_initializer = is_array(p->init_type);
     if (consume(p, '{')) {
         expr = initializer_list(p, init);
-        desi = NEW_(NOD_DESIG);
         expect(p, '}');
     }
     else if (is_array(p->init_type) && nexttok(p, TOK_STRING_LITERAL)) {
@@ -2551,14 +2557,14 @@ static struct ast_node *initializer(struct parser *p, struct initializer_context
     }
     else {
         expr = assignment_expression(p);
-        desi = NEW_(NOD_DESIG);
-
-        if (init->type) {
-            desi->type = init->type;
-            desi->ival = init->mem_offset;
-        }
     }
     p->is_array_initializer = 0;
+
+    desi = new_node_(NOD_DESIG, tokpos(p));
+    if (init->type) {
+        desi->type = init->type;
+        desi->ival = init->mem_offset;
+    }
 
     tree = new_node_(NOD_INIT, tokpos(p));
     tree->l = desi;

@@ -1491,7 +1491,7 @@ static void assign_init(struct memory_byte *base,
     case NOD_INIT:
         {
             /* move cursor by designator */
-            const int offset = expr->ival;
+            const int offset = expr->l->ival;
 
             assign_init(base + offset, underlying(type), expr->r);
         }
