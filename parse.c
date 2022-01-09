@@ -621,7 +621,7 @@ static struct ast_node *assignment_expression(struct parser *p);
 static struct ast_node *decl_identifier(struct parser *p);
 static struct ast_node *type_name(struct parser *p);
 static struct ast_node *pointer(struct parser *p);
-static struct ast_node *type_specifier(struct parser *p);
+static void type_specifier(struct parser *p, struct declaration *decl);
 static struct ast_node *declaration_specifiers(struct parser *p, struct declaration *decl);
 static struct ast_node *declarator(struct parser *p);
 static struct ast_node *declaration_list(struct parser *p);
@@ -1854,7 +1854,7 @@ static struct ast_node *specifier_qualifier_list(struct parser *p, struct declar
             type_qualifier(p, decl);
         else
         if (is_type_spec(next))
-            spec = type_specifier(p);
+            type_specifier(p, decl);
         else
             break;
 
@@ -2188,56 +2188,54 @@ static struct ast_node *enum_specifier(struct parser *p)
     return tree;
 }
 
-static struct ast_node *type_specifier(struct parser *p)
+static void type_specifier(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL;
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
 
     case TOK_VOID:
-        tree = NEW_(NOD_SPEC_VOID);
         p->decl.type = type_void();
+        decl->type = type_void();
         break;
 
     case TOK_CHAR:
-        tree = NEW_(NOD_SPEC_CHAR);
         p->decl.type = type_char();
+        decl->type = type_char();
         break;
 
     case TOK_SHORT:
-        tree = NEW_(NOD_SPEC_SHORT);
         p->decl.type = type_short();
+        decl->type = type_short();
         break;
 
     case TOK_INT:
-        tree = NEW_(NOD_SPEC_INT);
         p->decl.type = type_int();
+        decl->type = type_int();
         break;
 
     case TOK_LONG:
-        tree = NEW_(NOD_SPEC_LONG);
         p->decl.type = type_long();
+        decl->type = type_long();
         break;
 
     case TOK_SIGNED:
-        tree = NEW_(NOD_SPEC_SIGNED);
         break;
 
     case TOK_UNSIGNED:
-        tree = NEW_(NOD_SPEC_UNSIGNED);
         p->decl.is_unsigned = 1;
+        decl->is_unsigned = 1;
         break;
 
     case TOK_STRUCT:
     case TOK_UNION:
         ungettok(p);
-        tree = struct_or_union_specifier(p);
+        struct_or_union_specifier(p);
         break;
 
     case TOK_ENUM:
         ungettok(p);
-        tree = enum_specifier(p);
+        enum_specifier(p);
         break;
 
     case TOK_TYPE_NAME:
@@ -2245,8 +2243,8 @@ static struct ast_node *type_specifier(struct parser *p)
             struct symbol *sym = find_type_name_symbol(p->symtab, tok->text);
 
             if (sym) {
-                tree = new_node_(NOD_SPEC_TYPE_NAME, tokpos(p));
                 p->decl.type = type_type_name(sym);
+                decl->type = type_type_name(sym);
                 break;
             }
             else {
@@ -2259,8 +2257,6 @@ static struct ast_node *type_specifier(struct parser *p)
         /* assert */
         break;
     }
-
-    return NULL;
 }
 
 /* parameter_declaration
@@ -2757,7 +2753,7 @@ static struct ast_node *declaration_specifiers(struct parser *p, struct declarat
             type_qualifier(p, decl);
         else
         if (is_type_spec(next))
-            spec = type_specifier(p);
+            type_specifier(p, decl);
         else
             break;
 
