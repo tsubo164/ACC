@@ -1818,24 +1818,21 @@ static struct ast_node *abstract_declarator(struct parser *p)
  *     TOK_CONST
  *     TOK_VOLATILE
  */
-static struct ast_node *type_qualifier(struct parser *p)
+static void type_qualifier(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL;
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
 
     case TOK_CONST:
-        tree = new_node_(NOD_QUAL_CONST, tokpos(p));
         p->decl.is_const = 1;
+        decl->is_const = 1;
         break;
 
     default:
         ungettok(p);
         break;
     }
-
-    return tree;
 }
 
 /*
@@ -1845,7 +1842,7 @@ static struct ast_node *type_qualifier(struct parser *p)
  *     type_qualifier specifier_qualifier_list
  *     type_qualifier
  */
-static struct ast_node *specifier_qualifier_list(struct parser *p)
+static struct ast_node *specifier_qualifier_list(struct parser *p, struct declaration *decl)
 {
     struct ast_node *tree = NULL;
     struct ast_node *list = NULL, *spec = NULL;
@@ -1854,7 +1851,7 @@ static struct ast_node *specifier_qualifier_list(struct parser *p)
         const int next = peektok(p);
 
         if (is_type_qual(next))
-            spec = type_qualifier(p);
+            type_qualifier(p, decl);
         else
         if (is_type_spec(next))
             spec = type_specifier(p);
@@ -1886,10 +1883,9 @@ static struct ast_node *type_name(struct parser *p)
 {
     struct ast_node *tree = NULL;
     struct ast_node *spec = NULL;
+    struct declaration decl = {0};
 
-    spec = specifier_qualifier_list(p);
-    if (!spec)
-        return NULL;
+    specifier_qualifier_list(p, &decl);
 
     tree = NEW_(NOD_TYPE_NAME);
     tree->l = spec;
@@ -1976,10 +1972,11 @@ static struct ast_node *struct_declarator_list(struct parser *p)
 static struct ast_node *struct_declaration(struct parser *p)
 {
     struct ast_node *tree = NULL, *spec = NULL;
+    struct declaration decl = {0};
 
     decl_reset_context(p);
 
-    spec = specifier_qualifier_list(p);
+    spec = specifier_qualifier_list(p, &decl);
     if (!spec)
         return NULL;
 
@@ -2757,7 +2754,7 @@ static struct ast_node *declaration_specifiers(struct parser *p, struct declarat
             storage_class_specifier(p, decl);
         else
         if (is_type_qual(next))
-            spec = type_qualifier(p);
+            type_qualifier(p, decl);
         else
         if (is_type_spec(next))
             spec = type_specifier(p);
