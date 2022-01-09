@@ -622,7 +622,7 @@ static struct ast_node *decl_identifier(struct parser *p);
 static struct ast_node *type_name(struct parser *p);
 static struct ast_node *pointer(struct parser *p);
 static struct ast_node *type_specifier(struct parser *p);
-static struct ast_node *declaration_specifiers(struct parser *p);
+static struct ast_node *declaration_specifiers(struct parser *p, struct declaration *decl);
 static struct ast_node *declarator(struct parser *p);
 static struct ast_node *declaration_list(struct parser *p);
 static struct ast_node *statement_list(struct parser *p);
@@ -2274,10 +2274,11 @@ static struct ast_node *type_specifier(struct parser *p)
 static struct ast_node *parameter_declaration(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    struct ast_node *spec = NULL, *decl = NULL;
+    struct ast_node *spec = NULL, *decl__ = NULL;
+    struct declaration decl = {0};
 
     decl_reset_context(p);
-    spec = declaration_specifiers(p);
+    spec = declaration_specifiers(p, &decl);
 
     /* void parameter */
     if (is_void(p->decl.type) && !nexttok(p, '*'))
@@ -2285,13 +2286,13 @@ static struct ast_node *parameter_declaration(struct parser *p)
 
     p->decl.kind = SYM_PARAM;
     tree = new_node_(NOD_DECL_PARAM, tokpos(p));
-    decl = declarator(p);
+    decl__ = declarator(p);
 
     /* 6.7.6.3 A declaration of a parameter as "array of type"
      * shall be adjusted to "qualified pointer to type" */
     convert_array_to_pointer(p->decl.type);
 
-    return branch_(tree, spec, decl);
+    return branch_(tree, spec, decl__);
 }
 
 /*
@@ -2708,34 +2709,31 @@ static struct ast_node *init_declarator_list(struct parser *p)
  *     TOK_AUTO
  *     TOK_REGISTER
  */
-static struct ast_node *storage_class_specifier(struct parser *p)
+static void storage_class_specifier(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL;
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
 
     case TOK_TYPEDEF:
-        tree = new_node_(NOD_DECL_TYPEDEF, tokpos(p));
         p->decl.is_typedef = 1;
+        decl->is_typedef = 1;
         break;
 
     case TOK_EXTERN:
-        tree = new_node_(NOD_DECL_EXTERN, tokpos(p));
         p->decl.is_extern = 1;
+        decl->is_extern = 1;
         break;
 
     case TOK_STATIC:
-        tree = new_node_(NOD_DECL_STATIC, tokpos(p));
         p->decl.is_static = 1;
+        decl->is_static = 1;
         break;
 
     default:
         ungettok(p);
         break;
     }
-
-    return tree;
 }
 
 /*
@@ -2747,7 +2745,7 @@ static struct ast_node *storage_class_specifier(struct parser *p)
  *     type_qualifier
  *     type_qualifier declaration_specifiers
  */
-static struct ast_node *declaration_specifiers(struct parser *p)
+static struct ast_node *declaration_specifiers(struct parser *p, struct declaration *decl)
 {
     struct ast_node *tree = NULL;
     struct ast_node *list = NULL, *spec = NULL;
@@ -2756,7 +2754,7 @@ static struct ast_node *declaration_specifiers(struct parser *p)
         const int next = peektok(p);
 
         if (is_storage_class_spec(next))
-            spec = storage_class_specifier(p);
+            storage_class_specifier(p, decl);
         else
         if (is_type_qual(next))
             spec = type_qualifier(p);
@@ -2800,9 +2798,10 @@ static struct ast_node *declaration(struct parser *p)
 {
     struct ast_node *tree = NULL;
     struct ast_node *spec = NULL;
+    struct declaration decl = {0};
 
     decl_reset_context(p);
-    spec = declaration_specifiers(p);
+    spec = declaration_specifiers(p, &decl);
 
     tree = init_declarator_list(p);
 
