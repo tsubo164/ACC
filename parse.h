@@ -14,6 +14,7 @@ struct declaration {
     const char * ident;
     struct data_type *type;
     struct symbol *sym;
+    struct position pos;
 
     char is_typedef;
     char is_extern;

@@ -623,7 +623,7 @@ static struct ast_node *type_name(struct parser *p);
 static struct ast_node *pointer(struct parser *p);
 static void type_specifier(struct parser *p, struct declaration *decl);
 static struct ast_node *declaration_specifiers(struct parser *p, struct declaration *decl);
-static struct ast_node *declarator(struct parser *p);
+static struct ast_node *declarator(struct parser *p, struct declaration *decl);
 static struct ast_node *declaration_list(struct parser *p);
 static struct ast_node *statement_list(struct parser *p);
 
@@ -1908,6 +1908,8 @@ static struct ast_node *decl_identifier(struct parser *p)
         tree = new_node_(NOD_DECL_IDENT, tokpos(p));
     }
 
+    p->decl.pos = *tokpos(p);
+
     return tree;
 }
 
@@ -1925,7 +1927,7 @@ static void struct_declarator(struct parser *p, struct declaration *decl)
         define_sym(p, decl__);
     }
     else {
-        declarator(p);
+        declarator(p, decl);
     }
 
     if (consume(p, ':')) {
@@ -2253,7 +2255,7 @@ static struct ast_node *parameter_declaration(struct parser *p)
 
     p->decl.kind = SYM_PARAM;
     tree = new_node_(NOD_DECL_PARAM, tokpos(p));
-    decl__ = declarator(p);
+    decl__ = declarator(p, &decl);
 
     /* 6.7.6.3 A declaration of a parameter as "array of type"
      * shall be adjusted to "qualified pointer to type" */
@@ -2352,7 +2354,7 @@ static struct ast_node *array(struct parser *p)
  *     direct_declarator '(' identifier_list ')'
  *     direct_declarator '(' ')'
  */
-static struct ast_node *direct_declarator(struct parser *p)
+static struct ast_node *direct_declarator(struct parser *p, struct declaration *decl)
 {
     struct ast_node *tree = NULL;
     struct ast_node *ident = NULL;
@@ -2363,7 +2365,7 @@ static struct ast_node *direct_declarator(struct parser *p)
         placeholder = type_void();
         p->decl.type = placeholder;
 
-        tree = declarator(p);
+        tree = declarator(p, decl);
         expect(p, ')');
 
         p->decl.type = tmp;
@@ -2447,10 +2449,10 @@ static struct ast_node *pointer(struct parser *p)
  *     pointer direct_declarator
  *     direct_declarator
  */
-static struct ast_node *declarator(struct parser *p)
+static struct ast_node *declarator(struct parser *p, struct declaration *decl)
 {
     pointer(p);
-    return direct_declarator(p);
+    return direct_declarator(p, decl);
 }
 
 struct initializer_context {
@@ -2628,18 +2630,18 @@ static struct ast_node *string_initializer(struct parser *p,
  *     declarator
  *     declarator '=' initializer
  */
-static struct ast_node *init_declarator(struct parser *p)
+static struct ast_node *init_declarator(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *decl = NULL;
+    struct ast_node *decl__ = NULL;
 
-    decl = declarator(p);
+    decl__ = declarator(p, decl);
 
     if (consume(p, '=')) {
         struct initializer_context init = root_initializer(p->decl.sym->type);
-        decl->l = initializer(p, &init);
+        decl__->l = initializer(p, &init);
     }
 
-    return typed_(decl);
+    return typed_(decl__);
 }
 
 /*
@@ -2647,13 +2649,14 @@ static struct ast_node *init_declarator(struct parser *p)
  *     init_declarator
  *     init_declarator_list ',' init_declarator
  */
-static struct ast_node *init_declarator_list(struct parser *p)
+static struct ast_node *init_declarator_list(struct parser *p, struct declaration *decl)
 {
     struct ast_list list = {0};
 
     for (;;) {
+        struct declaration child_decl = *decl;
         struct data_type *spec = p->decl.type;
-        struct ast_node *init = init_declarator(p);
+        struct ast_node *init = init_declarator(p, &child_decl);
         p->decl.type = spec;
 
         if (!init)
@@ -2770,7 +2773,7 @@ static struct ast_node *declaration(struct parser *p)
     decl_reset_context(p);
     spec = declaration_specifiers(p, &decl);
 
-    tree = init_declarator_list(p);
+    tree = init_declarator_list(p, &decl);
 
     /* TODO combine if statement with one below if possible */
     if (!tree) {

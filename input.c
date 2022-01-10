@@ -41,11 +41,14 @@ int add(int x, int y)
 
 int main()
 {
+    int a = 32;
+
+    return 0;
+    /*
     int *i = 2;
     short b[2] = {11, 22, 33};
     struct point p = {71, 29, 111};
     union foo u = {71, "abc"};
-    /*
     char a = 19;
     short c[] = {11, 22, 33};
     */
