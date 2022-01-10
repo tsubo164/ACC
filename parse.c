@@ -1917,17 +1917,15 @@ static struct ast_node *decl_identifier(struct parser *p)
  *     ':' constant_expression
  *     declarator ':' constant_expression
  */
-static struct ast_node *struct_declarator(struct parser *p)
+static void struct_declarator(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL;
-
     if (nexttok(p, ':')) {
         /* unnamed bit field */
-        struct ast_node *decl = decl_identifier(p);
-        define_sym(p, decl);
+        struct ast_node *decl__ = decl_identifier(p);
+        define_sym(p, decl__);
     }
     else {
-        tree = declarator(p);
+        declarator(p);
     }
 
     if (consume(p, ':')) {
@@ -1936,8 +1934,6 @@ static struct ast_node *struct_declarator(struct parser *p)
         p->decl.sym->bit_width = expr->ival;
         free_ast_node(expr);
     }
-
-    return tree;
 }
 
 /*
@@ -1945,23 +1941,15 @@ static struct ast_node *struct_declarator(struct parser *p)
  *     struct_declarator
  *     struct_declarator_list ',' struct_declarator
  */
-static struct ast_node *struct_declarator_list(struct parser *p)
+static void struct_declarator_list(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL, *list = NULL;
-
     for (;;) {
         struct data_type *spec = p->decl.type;
-        struct ast_node *decl = struct_declarator(p);
+        struct_declarator(p, decl);
         p->decl.type = spec;
 
-        if (!decl)
-            return tree;
-
-        list = new_node_(NOD_LIST, tokpos(p));
-        tree = branch_(list, tree, decl);
-
         if (!consume(p, ','))
-            return tree;
+            return;
     }
 }
 
@@ -1969,24 +1957,20 @@ static struct ast_node *struct_declarator_list(struct parser *p)
  * struct_declaration
  *     specifier_qualifier_list struct_declarator_list ';'
  */
-static struct ast_node *struct_declaration(struct parser *p)
+static void struct_declaration(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL, *spec = NULL;
-    struct declaration decl = {0};
+    struct declaration child_decl = {0};
 
     decl_reset_context(p);
 
-    spec = specifier_qualifier_list(p, &decl);
-    if (!spec)
-        return NULL;
+    specifier_qualifier_list(p, &child_decl);
 
     p->decl.kind = SYM_MEMBER;
+    decl->kind = SYM_MEMBER;
 
-    tree = new_node_(NOD_DECL_MEMBER, tokpos(p));
-    tree = branch_(tree, spec, struct_declarator_list(p));
+    struct_declarator_list(p, decl);
 
     expect(p, ';');
-    return tree;
 }
 
 /*
@@ -1994,18 +1978,15 @@ static struct ast_node *struct_declaration(struct parser *p)
  *     struct_declaration
  *     struct_declaration_list struct_declaration
  */
-static struct ast_node *struct_declaration_list(struct parser *p)
+static void struct_declaration_list(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL, *list = NULL;
     const struct declaration tmp = p->decl;
 
     for (;;) {
         const int next = peektok(p);
 
         if (is_type_spec_qual(next)) {
-            struct ast_node *decl = struct_declaration(p);
-            list = new_node_(NOD_LIST, tokpos(p));
-            tree = branch_(list, tree, decl);
+            struct_declaration(p, decl);
         }
         else if (next == '}' || next == TOK_EOF) {
             break;
@@ -2022,31 +2003,28 @@ static struct ast_node *struct_declaration_list(struct parser *p)
     }
 
     p->decl = tmp;
-    return tree;
 }
 
-static struct ast_node *struct_or_union(struct parser *p)
+static void struct_or_union(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL;
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
 
     case TOK_STRUCT:
         p->decl.kind = SYM_TAG_STRUCT;
-        tree = NEW_(NOD_SPEC_STRUCT);
+        decl->kind = SYM_TAG_STRUCT;
         break;
 
     case TOK_UNION:
         p->decl.kind = SYM_TAG_UNION;
-        tree = NEW_(NOD_SPEC_UNION);
+        decl->kind = SYM_TAG_UNION;
         break;
 
     default:
         /* TODO error */
         break;
     }
-    return tree;
 }
 
 /*
@@ -2055,15 +2033,13 @@ static struct ast_node *struct_or_union(struct parser *p)
  *     struct_or_union '{' struct_declaration_list '}'
  *     struct_or_union TK_IDENT
  */
-static struct ast_node *struct_or_union_specifier(struct parser *p)
+static void struct_or_union_specifier(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL;
     struct ast_node *ident = NULL;
     int sym_kind;
 
-    tree = struct_or_union(p);
+    struct_or_union(p, decl);
     ident = decl_identifier(p);
-    tree->l = ident;
 
     /* struct or union sym */
     sym_kind = p->decl.kind;
@@ -2072,18 +2048,23 @@ static struct ast_node *struct_or_union_specifier(struct parser *p)
         /* define an object of struct type */
         use_sym(p, ident, sym_kind);
         p->decl.type = ident->sym->type;
-        return tree;
+        decl->type = ident->sym->type;
+        return;
     } else {
         /* define a struct type */
         if (sym_kind == SYM_TAG_STRUCT)
             p->decl.type = type_struct();
         else
             p->decl.type = type_union();
+        if (sym_kind == SYM_TAG_STRUCT)
+            decl->type = type_struct();
+        else
+            decl->type = type_union();
         define_sym(p, ident);
     }
 
     begin_scope(p);
-    tree->r = struct_declaration_list(p);
+    struct_declaration_list(p, decl);
     end_scope(p);
 
     expect(p, '}');
@@ -2092,8 +2073,6 @@ static struct ast_node *struct_or_union_specifier(struct parser *p)
         compute_struct_size(ident->type->sym);
     else
         compute_union_size(ident->type->sym);
-
-    return tree;
 }
 
 /*
@@ -2225,7 +2204,7 @@ static void type_specifier(struct parser *p, struct declaration *decl)
     case TOK_STRUCT:
     case TOK_UNION:
         ungettok(p);
-        struct_or_union_specifier(p);
+        struct_or_union_specifier(p, decl);
         break;
 
     case TOK_ENUM:
