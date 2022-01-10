@@ -2101,21 +2101,23 @@ static struct ast_node *struct_or_union_specifier(struct parser *p)
  *     TOK_IDENT
  *     TOK_IDENT '=' constant_expression
  */
-static struct ast_node *enumerator(struct parser *p)
+static void enumerator(struct parser *p, struct declaration *decl)
 {
     struct ast_node *tree = NULL;
     struct ast_node *ident = NULL;
 
     if (!nexttok(p, TOK_IDENT))
-        return NULL;
+        return;
     ident = decl_identifier(p);
 
     p->decl.kind = SYM_ENUMERATOR;
+    decl->kind = SYM_ENUMERATOR;
 
     tree = NEW_(NOD_DECL_ENUMERATOR);
     tree->l = ident;
 
     p->decl.type = type_int();
+    decl->type = type_int();
     define_sym(p, ident);
 
     if (consume(p, '=')) {
@@ -2124,7 +2126,7 @@ static struct ast_node *enumerator(struct parser *p)
     }
 
     ident->sym->mem_offset = p->enum_value++;
-    return tree;
+    free_ast_node(tree);
 }
 
 /*
@@ -2132,22 +2134,16 @@ static struct ast_node *enumerator(struct parser *p)
  *     enumerator
  *     enumerator_list ',' enumerator
  */
-static struct ast_node *enumerator_list(struct parser *p)
+static void enumerator_list(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL;
-
     p->enum_value = 0;
 
     for (;;) {
-        struct ast_node *enu = enumerator(p);
-
-        if (!enu)
-            return tree;
-
-        tree = new_node(NOD_LIST, tree, enu);
+        struct declaration child_decl = {0};
+        enumerator(p, &child_decl);
 
         if (!consume(p, ','))
-            return tree;
+            return;
     }
 }
 
@@ -2157,35 +2153,34 @@ static struct ast_node *enumerator_list(struct parser *p)
  *     TOK_ENUM TOK_IDENT '{' enumerator_list '}'
  *     TOK_ENUM TOK_IDENT
  */
-static struct ast_node *enum_specifier(struct parser *p)
+static void enum_specifier(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL;
     struct ast_node *ident = NULL;
 
     expect(p, TOK_ENUM);
 
     p->decl.kind = SYM_TAG_ENUM;
+    decl->kind = SYM_TAG_ENUM;
 
-    tree = NEW_(NOD_SPEC_ENUM);
     ident = decl_identifier(p);
 
     if (!consume(p, '{')) {
         /* define an object of enum type */
         use_sym(p, ident, SYM_TAG_ENUM);
         p->decl.type = ident->sym->type;
-        return tree;
+        decl->type = ident->sym->type;
+        return;
     } else {
         /* define an enum type */
         p->decl.type = type_enum();
+        decl->type = type_enum();
         define_sym(p, ident);
     }
 
-    tree->r = enumerator_list(p);
+    enumerator_list(p, decl);
 
     expect(p, '}');
     compute_enum_size(ident->sym);
-
-    return tree;
 }
 
 static void type_specifier(struct parser *p, struct declaration *decl)
@@ -2235,7 +2230,7 @@ static void type_specifier(struct parser *p, struct declaration *decl)
 
     case TOK_ENUM:
         ungettok(p);
-        enum_specifier(p);
+        enum_specifier(p, decl);
         break;
 
     case TOK_TYPE_NAME:
