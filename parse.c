@@ -2240,28 +2240,23 @@ static void type_specifier(struct parser *p, struct declaration *decl)
  *     declaration_specifiers abstract_declarator
  *     declaration_specifiers
  */
-static struct ast_node *parameter_declaration(struct parser *p)
+static void parameter_declaration(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL;
-    struct ast_node *spec = NULL, *decl__ = NULL;
-    struct declaration decl = {0};
+    struct declaration child_decl = {0};
 
     decl_reset_context(p);
-    spec = declaration_specifiers(p, &decl);
+    declaration_specifiers(p, &child_decl);
 
     /* void parameter */
     if (is_void(p->decl.type) && !nexttok(p, '*'))
-        return NULL;
+        return;
 
     p->decl.kind = SYM_PARAM;
-    tree = new_node_(NOD_DECL_PARAM, tokpos(p));
-    decl__ = declarator(p, &decl);
+    declarator(p, &child_decl);
 
     /* 6.7.6.3 A declaration of a parameter as "array of type"
      * shall be adjusted to "qualified pointer to type" */
     convert_array_to_pointer(p->decl.type);
-
-    return branch_(tree, spec, decl__);
 }
 
 /*
@@ -2269,23 +2264,15 @@ static struct ast_node *parameter_declaration(struct parser *p)
  *     parameter_declaration
  *     parameter_list ',' parameter_declaration
  */
-static struct ast_node *parameter_list(struct parser *p)
+static void parameter_list(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL, *list = NULL;
-
     for (;;) {
-        struct ast_node *param = parameter_declaration(p);
-
-        if (!param)
-            return tree;
-
-        list = new_node_(NOD_LIST, tokpos(p));
-        tree = branch_(list, tree, param);
+        parameter_declaration(p, decl);
 
         if (!consume(p, ','))
-            return tree;
+            return;
         if (nexttok(p, TOK_ELLIPSIS))
-            return tree;
+            return;
     }
 }
 
@@ -2294,12 +2281,12 @@ static struct ast_node *parameter_list(struct parser *p)
  *     parameter_list
  *     parameter_type_list ',' TOK_ELLIPSIS
  */
-static struct ast_node *parameter_type_list(struct parser *p)
+static void parameter_type_list(struct parser *p, struct declaration *decl)
 {
     struct ast_node *tree = NULL, *list = NULL, *elli = NULL;
     const struct declaration tmp = p->decl;
 
-    tree = parameter_list(p);
+    parameter_list(p, decl);
 
     if (consume(p, TOK_ELLIPSIS)) {
         define_ellipsis(p);
@@ -2313,7 +2300,6 @@ static struct ast_node *parameter_type_list(struct parser *p)
     }
 
     p->decl = tmp;
-    return tree;
 }
 
 /*
@@ -2393,7 +2379,7 @@ static struct ast_node *direct_declarator(struct parser *p, struct declaration *
 
             begin_scope(p);
             if (!nexttok(p, ')'))
-                parameter_type_list(p);
+                parameter_type_list(p, decl);
             expect(p, ')');
         }
         else {
@@ -2405,7 +2391,7 @@ static struct ast_node *direct_declarator(struct parser *p, struct declaration *
             begin_scope(p);
             if (!nexttok(p, ')'))
                 /* TODO consider saving this tree to better place */
-                tree->r = parameter_type_list(p);
+                parameter_type_list(p, decl);
             end_scope(p);
 
             expect(p, ')');
