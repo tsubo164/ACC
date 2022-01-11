@@ -620,7 +620,7 @@ static struct ast_node *unary_expression(struct parser *p);
 static struct ast_node *assignment_expression(struct parser *p);
 static struct ast_node *decl_identifier(struct parser *p);
 static struct ast_node *type_name(struct parser *p);
-static struct ast_node *pointer(struct parser *p);
+static void pointer(struct parser *p, struct declaration *decl);
 static void type_specifier(struct parser *p, struct declaration *decl);
 static struct ast_node *declaration_specifiers(struct parser *p, struct declaration *decl);
 static struct ast_node *declarator(struct parser *p, struct declaration *decl);
@@ -1807,9 +1807,9 @@ static struct ast_node *direct_abstract_declarator(struct parser *p)
  *     direct_abstract_declarator
  *     pointer direct_abstract_declarator
  */
-static struct ast_node *abstract_declarator(struct parser *p)
+static struct ast_node *abstract_declarator(struct parser *p, struct declaration *decl)
 {
-    pointer(p);
+    pointer(p, decl);
     return direct_abstract_declarator(p);
 }
 
@@ -1889,7 +1889,7 @@ static struct ast_node *type_name(struct parser *p)
 
     tree = NEW_(NOD_TYPE_NAME);
     tree->l = spec;
-    tree->r = abstract_declarator(p);
+    tree->r = abstract_declarator(p, &decl);
     tree->type = p->decl.type;
 
     return tree;
@@ -2308,26 +2308,25 @@ static void parameter_type_list(struct parser *p, struct declaration *decl)
  *     '[' constant_expression ']'
  *     array '[' constant_expression ']'
  */
-static struct ast_node *array(struct parser *p)
+static void array(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL;
     struct ast_node *expr = NULL;
 
     if (consume(p, '[')) {
-        tree = new_node_(NOD_SPEC_ARRAY, tokpos(p));
         if (!nexttok(p, ']'))
             expr = constant_expression(p);
         expect(p, ']');
 
-        tree = branch_(tree, expr, array(p));
+        array(p, decl);
         p->decl.type = type_array(p->decl.type);
-        tree->type = p->decl.type;
+        decl->type = type_array(decl->type);
 
-        if (expr)
+        if (expr) {
             set_array_length(p->decl.type, expr->ival);
+            set_array_length(decl->type, expr->ival);
+            free_ast_node(expr);
+        }
     }
-
-    return tree;
 }
 
 /*
@@ -2363,7 +2362,7 @@ static struct ast_node *direct_declarator(struct parser *p, struct declaration *
     }
 
     if (nexttok(p, '['))
-        array(p);
+        array(p, decl);
 
     if (consume(p, '(')) {
         if (!p->decl.sym) {
@@ -2417,18 +2416,13 @@ static struct ast_node *direct_declarator(struct parser *p, struct declaration *
  *     '*' pointer
  *     '*' type_qualifier_list pointer
  */
-static struct ast_node *pointer(struct parser *p)
+static void pointer(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL, *ptr = NULL;
-
     while (consume(p, '*')) {
         /* we treat as if the first '*' is associated with type specifier */
-        ptr = new_node_(NOD_SPEC_POINTER, tokpos(p));
-        tree = branch_(ptr, tree, NULL);
         p->decl.type = type_pointer(p->decl.type);
+        decl->type = type_pointer(decl->type);
     }
-
-    return tree;
 }
 
 /* declarator
@@ -2437,7 +2431,7 @@ static struct ast_node *pointer(struct parser *p)
  */
 static struct ast_node *declarator(struct parser *p, struct declaration *decl)
 {
-    pointer(p);
+    pointer(p, decl);
     return direct_declarator(p, decl);
 }
 
