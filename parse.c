@@ -448,6 +448,19 @@ static void define_sym(struct parser *p, struct ast_node *node)
     p->decl.sym = sym;
 }
 
+static void define_sym2(struct parser *p, struct declaration *decl)
+{
+    struct symbol *sym;
+
+    sym = define_symbol(p->symtab, decl->ident, decl->kind, decl->type);
+
+    sym->is_extern = decl->is_extern;
+    sym->is_static = decl->is_static;
+    sym->pos = decl->pos;
+
+    decl->sym = sym;
+}
+
 static void use_sym(struct parser *p, struct ast_node *ident, int sym_kind)
 {
     struct symbol *sym;
@@ -455,6 +468,15 @@ static void use_sym(struct parser *p, struct ast_node *ident, int sym_kind)
     sym = use_symbol(p->symtab, ident->sval, sym_kind);
     ident->sym = sym;
     ident->type = ident->sym->type;
+}
+
+static void use_sym2(struct parser *p, struct declaration *decl)
+{
+    struct symbol *sym;
+
+    sym = use_symbol(p->symtab, decl->ident, decl->kind);
+    decl->sym = sym;
+    decl->type = sym->type;
 }
 
 static void use_member_sym(struct parser *p,
@@ -1913,6 +1935,22 @@ static struct ast_node *decl_identifier(struct parser *p)
     return tree;
 }
 
+static void decl_identifier2(struct parser *p, struct declaration *decl)
+{
+    const struct token *tok = NULL;
+
+    if (consume(p, TOK_IDENT)) {
+        tok = current_token(p);
+        decl->ident = tok->text;
+    } else {
+        tok = current_token(p);
+        decl->ident = NULL;
+    }
+
+    /* need to add token pos after reading an identifier */
+    p->decl.pos = tok->pos;
+}
+
 /*
  * struct_declarator
  *     declarator
@@ -2082,32 +2120,25 @@ static void struct_or_union_specifier(struct parser *p, struct declaration *decl
  *     TOK_IDENT
  *     TOK_IDENT '=' constant_expression
  */
-static void enumerator(struct parser *p, struct declaration *decl)
+static int enumerator(struct parser *p, struct declaration *decl, int next_value)
 {
-    struct ast_node *tree = NULL;
-    struct ast_node *ident = NULL;
+    int val = next_value;
 
     if (!nexttok(p, TOK_IDENT))
-        return;
-    ident = decl_identifier(p);
+        return 0;
+    decl_identifier2(p, decl);
 
-    p->decl.kind = SYM_ENUMERATOR;
-    decl->kind = SYM_ENUMERATOR;
-
-    tree = NEW_(NOD_DECL_ENUMERATOR);
-    tree->l = ident;
-
-    p->decl.type = type_int();
     decl->type = type_int();
-    define_sym(p, ident);
+    define_sym2(p, decl);
 
     if (consume(p, '=')) {
-        tree->r = constant_expression(p);
-        p->enum_value = tree->r->ival;
+        struct ast_node *expr = constant_expression(p);
+        val = expr->ival;
+        free_ast_node(expr);
     }
 
-    ident->sym->mem_offset = p->enum_value++;
-    free_ast_node(tree);
+    decl->sym->mem_offset = val;
+    return val + 1;
 }
 
 /*
@@ -2117,15 +2148,12 @@ static void enumerator(struct parser *p, struct declaration *decl)
  */
 static void enumerator_list(struct parser *p, struct declaration *decl)
 {
-    p->enum_value = 0;
+    int next_value = 0;
 
-    for (;;) {
-        struct declaration child_decl = {0};
-        enumerator(p, &child_decl);
-
-        if (!consume(p, ','))
-            return;
-    }
+    do {
+        struct declaration child_decl = {SYM_ENUMERATOR};
+        next_value = enumerator(p, &child_decl, next_value);
+    } while (consume(p, ','));
 }
 
 /*
@@ -2136,32 +2164,27 @@ static void enumerator_list(struct parser *p, struct declaration *decl)
  */
 static void enum_specifier(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *ident = NULL;
-
     expect(p, TOK_ENUM);
 
-    p->decl.kind = SYM_TAG_ENUM;
     decl->kind = SYM_TAG_ENUM;
-
-    ident = decl_identifier(p);
+    decl_identifier2(p, decl);
 
     if (!consume(p, '{')) {
         /* define an object of enum type */
-        use_sym(p, ident, SYM_TAG_ENUM);
-        p->decl.type = ident->sym->type;
-        decl->type = ident->sym->type;
+        use_sym2(p, decl);
+        p->decl = *decl; /* TODO temp for new decl */
         return;
     } else {
         /* define an enum type */
-        p->decl.type = type_enum();
         decl->type = type_enum();
-        define_sym(p, ident);
+        define_sym2(p, decl);
     }
 
     enumerator_list(p, decl);
 
     expect(p, '}');
-    compute_enum_size(ident->sym);
+    compute_enum_size(decl->sym);
+    p->decl = *decl; /* TODO temp for new decl */
 }
 
 static void type_specifier(struct parser *p, struct declaration *decl)
@@ -2389,7 +2412,6 @@ static struct ast_node *direct_declarator(struct parser *p, struct declaration *
 
             begin_scope(p);
             if (!nexttok(p, ')'))
-                /* TODO consider saving this tree to better place */
                 parameter_type_list(p, decl);
             end_scope(p);
 

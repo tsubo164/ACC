@@ -11,16 +11,18 @@
 
 struct declaration {
     int kind;
-    const char * ident;
+    const char *ident;
     struct data_type *type;
     struct symbol *sym;
     struct position pos;
 
+    /* type qualifier */
+    char is_const;
+    char is_unsigned;
+    /* storage class */
     char is_typedef;
     char is_extern;
     char is_static;
-    char is_const;
-    char is_unsigned;
 };
 
 struct parser {
@@ -33,8 +35,6 @@ struct parser {
 
     struct declaration decl;
 
-    /* for enum */
-    int enum_value;
     /* for function */
     struct symbol *func_sym;
 
