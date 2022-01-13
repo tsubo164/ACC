@@ -646,6 +646,7 @@ static void pointer(struct parser *p, struct declaration *decl);
 static void type_specifier(struct parser *p, struct declaration *decl);
 static struct ast_node *declaration_specifiers(struct parser *p, struct declaration *decl);
 static struct ast_node *declarator(struct parser *p, struct declaration *decl);
+static void declarator2(struct parser *p, struct declaration *decl);
 static struct ast_node *declaration_list(struct parser *p);
 static struct ast_node *statement_list(struct parser *p);
 
@@ -2162,29 +2163,28 @@ static void enumerator_list(struct parser *p, struct declaration *decl)
  *     TOK_ENUM TOK_IDENT '{' enumerator_list '}'
  *     TOK_ENUM TOK_IDENT
  */
-static void enum_specifier(struct parser *p, struct declaration *decl)
+static struct data_type *enum_specifier(struct parser *p)
 {
-    expect(p, TOK_ENUM);
+    struct declaration decl = {SYM_TAG_ENUM};
 
-    decl->kind = SYM_TAG_ENUM;
-    decl_identifier2(p, decl);
+    expect(p, TOK_ENUM);
+    decl_identifier2(p, &decl);
 
     if (!consume(p, '{')) {
         /* define an object of enum type */
-        use_sym2(p, decl);
-        p->decl = *decl; /* TODO temp for new decl */
-        return;
+        use_sym2(p, &decl);
+        return decl.type;
     } else {
         /* define an enum type */
-        decl->type = type_enum();
-        define_sym2(p, decl);
+        decl.type = type_enum();
+        define_sym2(p, &decl);
     }
 
-    enumerator_list(p, decl);
+    enumerator_list(p, &decl);
 
     expect(p, '}');
-    compute_enum_size(decl->sym);
-    p->decl = *decl; /* TODO temp for new decl */
+    compute_enum_size(decl.sym);
+    return decl.type;
 }
 
 static void type_specifier(struct parser *p, struct declaration *decl)
@@ -2234,7 +2234,8 @@ static void type_specifier(struct parser *p, struct declaration *decl)
 
     case TOK_ENUM:
         ungettok(p);
-        enum_specifier(p, decl);
+        decl->type = enum_specifier(p);
+        p->decl.type = decl->type;
         break;
 
     case TOK_TYPE_NAME:
@@ -2265,21 +2266,21 @@ static void type_specifier(struct parser *p, struct declaration *decl)
  */
 static void parameter_declaration(struct parser *p, struct declaration *decl)
 {
-    struct declaration child_decl = {0};
-
-    decl_reset_context(p);
-    declaration_specifiers(p, &child_decl);
+    declaration_specifiers(p, decl);
 
     /* void parameter */
-    if (is_void(p->decl.type) && !nexttok(p, '*'))
+    if (is_void(decl->type) && !nexttok(p, '*'))
         return;
 
-    p->decl.kind = SYM_PARAM;
-    declarator(p, &child_decl);
+    /* TODO temp for new_tree */
+    /* TODO look for the way to remove this.
+     * declaration_specifiers() could override this above */
+    decl->kind = SYM_PARAM;
+    declarator2(p, decl);
 
     /* 6.7.6.3 A declaration of a parameter as "array of type"
      * shall be adjusted to "qualified pointer to type" */
-    convert_array_to_pointer(p->decl.type);
+    convert_array_to_pointer(decl->type);
 }
 
 /*
@@ -2290,7 +2291,8 @@ static void parameter_declaration(struct parser *p, struct declaration *decl)
 static void parameter_list(struct parser *p, struct declaration *decl)
 {
     for (;;) {
-        parameter_declaration(p, decl);
+        struct declaration child_decl = {SYM_PARAM};
+        parameter_declaration(p, &child_decl);
 
         if (!consume(p, ','))
             return;
@@ -2432,6 +2434,74 @@ static struct ast_node *direct_declarator(struct parser *p, struct declaration *
     return tree;
 }
 
+static void direct_declarator2(struct parser *p, struct declaration *decl)
+{
+    struct ast_node *ident = NULL;
+    struct data_type *placeholder = NULL;
+
+    if (consume(p, '(')) {
+        struct data_type *tmp = decl->type;
+        placeholder = type_void();
+        decl->type = placeholder;
+
+        declarator2(p, decl);
+        expect(p, ')');
+
+        decl->type = tmp;
+    }
+
+    if (nexttok(p, TOK_IDENT) || decl_is_param(p)) {
+        decl_identifier2(p, decl);
+    }
+
+    if (nexttok(p, '['))
+        array(p, decl);
+
+    if (consume(p, '(')) {
+        if (!p->decl.sym) {
+            /* function */
+            /* functions are externnal by default */
+            if (!p->decl.is_extern && !p->decl.is_static)
+                p->decl.is_extern = 1;
+
+            p->decl.type = type_function(p->decl.type);
+            p->decl.kind = SYM_FUNC;
+            define_sym(p, ident);
+            p->func_sym = ident->sym;
+
+            begin_scope(p);
+            if (!nexttok(p, ')'))
+                parameter_type_list(p, decl);
+            expect(p, ')');
+        }
+        else {
+            /* function pointer */
+            p->decl.type = type_function(p->decl.type);
+            /* link function sym to type */
+            set_symbol(p->decl.type, p->decl.sym);
+
+            begin_scope(p);
+            if (!nexttok(p, ')'))
+                parameter_type_list(p, decl);
+            end_scope(p);
+
+            expect(p, ')');
+        }
+    } else {
+        /* variable, parameter, member, typedef */
+        /*
+        if (ident)
+        */
+            define_sym2(p, decl);
+    }
+
+    if (placeholder) {
+        copy_data_type(placeholder, decl->type);
+        /* decl.type needs to re-point to sym type */
+        decl->type = decl->sym->type;
+    }
+}
+
 /* pointer
  *     '*'
  *     '*' type_qualifier_list
@@ -2447,6 +2517,13 @@ static void pointer(struct parser *p, struct declaration *decl)
     }
 }
 
+static void pointer2(struct parser *p, struct declaration *decl)
+{
+    while (consume(p, '*'))
+        /* we treat as if the first '*' is associated with type specifier */
+        decl->type = type_pointer(decl->type);
+}
+
 /* declarator
  *     pointer direct_declarator
  *     direct_declarator
@@ -2455,6 +2532,12 @@ static struct ast_node *declarator(struct parser *p, struct declaration *decl)
 {
     pointer(p, decl);
     return direct_declarator(p, decl);
+}
+
+static void declarator2(struct parser *p, struct declaration *decl)
+{
+    pointer2(p, decl);
+    direct_declarator2(p, decl);
 }
 
 struct initializer_context {
