@@ -2016,8 +2016,7 @@ static void struct_declaration(struct parser *p, struct declaration *decl)
     expect(p, ';');
 }
 
-/*
- * struct_declaration_list
+/* struct_declaration_list
  *     struct_declaration
  *     struct_declaration_list struct_declaration
  */
@@ -2029,8 +2028,8 @@ static void struct_declaration_list(struct parser *p, struct declaration *decl)
         const int next = peektok(p);
 
         if (is_type_spec_qual(next)) {
-            struct declaration child_decl = {SYM_MEMBER};
-            struct_declaration(p, &child_decl);
+            struct declaration member_decl = {SYM_MEMBER};
+            struct_declaration(p, &member_decl);
         }
         else if (next == '}' || next == TOK_EOF) {
             break;
@@ -2049,6 +2048,10 @@ static void struct_declaration_list(struct parser *p, struct declaration *decl)
     p->decl = tmp;
 }
 
+/* struct_or_union
+ *     TOK_STRUCT
+ *     TOK_UNION
+ */
 static int struct_or_union(struct parser *p)
 {
     const struct token *tok = gettok(p);
@@ -2064,8 +2067,23 @@ static int struct_or_union(struct parser *p)
     }
 }
 
-/*
- * struct_or_union_specifier
+static struct data_type *type_struct_or_union(int sym_kind)
+{
+    if (sym_kind == SYM_TAG_STRUCT)
+        return type_struct();
+    else
+        return type_union();
+}
+
+static void compute_struct_or_union_size(struct declaration *decl)
+{
+    if (decl->kind == SYM_TAG_STRUCT)
+        compute_struct_size(decl->type->sym);
+    else
+        compute_union_size(decl->type->sym);
+}
+
+/* struct_or_union_specifier
  *     struct_or_union TK_IDENT '{' struct_declaration_list '}'
  *     struct_or_union '{' struct_declaration_list '}'
  *     struct_or_union TK_IDENT
@@ -2083,10 +2101,7 @@ static struct data_type *struct_or_union_specifier(struct parser *p)
         return decl.type;
     } else {
         /* define a struct type */
-        if (decl.kind == SYM_TAG_STRUCT)
-            decl.type = type_struct();
-        else
-            decl.type = type_union();
+        decl.type = type_struct_or_union(decl.kind);
         define_sym2(p, &decl);
     }
 
@@ -2095,11 +2110,7 @@ static struct data_type *struct_or_union_specifier(struct parser *p)
     end_scope(p);
 
     expect(p, '}');
-
-    if (decl.kind == SYM_TAG_STRUCT)
-        compute_struct_size(decl.type->sym);
-    else
-        compute_union_size(decl.type->sym);
+    compute_struct_or_union_size(&decl);
 
     return decl.type;
 }
@@ -2140,8 +2151,8 @@ static void enumerator_list(struct parser *p, struct declaration *decl)
     int next_value = 0;
 
     do {
-        struct declaration child_decl = {SYM_ENUMERATOR};
-        next_value = enumerator(p, &child_decl, next_value);
+        struct declaration enumerator_decl = {SYM_ENUMERATOR};
+        next_value = enumerator(p, &enumerator_decl, next_value);
     } while (consume(p, ','));
 }
 
@@ -2172,9 +2183,16 @@ static struct data_type *enum_specifier(struct parser *p)
 
     expect(p, '}');
     compute_enum_size(decl.sym);
+
     return decl.type;
 }
 
+/* type_specifier
+ *     TOK_VOID TOK_CHAR TOK_SHORT TOK_INT TOK_LONG TOK_FLOAT TOK_DOUBLE
+ *     TOK_SIGNED TOK_UNSIGNED TOK_TYPE_NAME
+ *     struct_or_union_specifier
+ *     enum_specifier
+ */
 static void type_specifier(struct parser *p, struct declaration *decl)
 {
     const struct token *tok = gettok(p);
@@ -2272,16 +2290,15 @@ static void parameter_declaration(struct parser *p, struct declaration *decl)
     convert_array_to_pointer(decl->type);
 }
 
-/*
- * parameter_list
+/* parameter_list
  *     parameter_declaration
  *     parameter_list ',' parameter_declaration
  */
 static void parameter_list(struct parser *p, struct declaration *decl)
 {
     for (;;) {
-        struct declaration child_decl = {SYM_PARAM};
-        parameter_declaration(p, &child_decl);
+        struct declaration param_decl = {SYM_PARAM};
+        parameter_declaration(p, &param_decl);
 
         if (!consume(p, ','))
             return;
@@ -2290,8 +2307,7 @@ static void parameter_list(struct parser *p, struct declaration *decl)
     }
 }
 
-/*
- * parameter_type_list
+/* parameter_type_list
  *     parameter_list
  *     parameter_type_list ',' TOK_ELLIPSIS
  */
