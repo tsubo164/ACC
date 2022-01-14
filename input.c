@@ -1,19 +1,17 @@
 /*
 #include <stdio.h>
 */
+#include <stdio.h>
 
-static int q = 22;
-extern void foo();
-
-enum alpha { A, B, C = 19 };
-
-enum length {
-    ARRAY_LENGTH = 3
-};
+struct bitfield3 {
+    unsigned int a : 10;
+    signed int : 0;
+    unsigned int b : 10;
+    int c;
+} bf3 = {520, 1023, -23242};
 
 int main()
 {
-    int a = 32;
-
-    return a + B;
+    printf("bf3.a %d\n", bf3.a);
+    return 3;
 }

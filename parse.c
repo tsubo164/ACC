@@ -1985,8 +1985,9 @@ static void struct_declarator(struct parser *p, struct declaration *decl)
 static void struct_declarator_list(struct parser *p, struct declaration *decl)
 {
     for (;;) {
+        struct declaration child_decl = *decl;
         struct data_type *spec = p->decl.type;
-        struct_declarator(p, decl);
+        struct_declarator(p, &child_decl);
         p->decl.type = spec;
 
         if (!consume(p, ','))
@@ -2000,11 +2001,9 @@ static void struct_declarator_list(struct parser *p, struct declaration *decl)
  */
 static void struct_declaration(struct parser *p, struct declaration *decl)
 {
-    struct declaration child_decl = {0};
-
     decl_reset_context(p);
 
-    specifier_qualifier_list(p, &child_decl);
+    specifier_qualifier_list(p, decl);
 
     p->decl.kind = SYM_MEMBER;
     decl->kind = SYM_MEMBER;
@@ -2027,7 +2026,8 @@ static void struct_declaration_list(struct parser *p, struct declaration *decl)
         const int next = peektok(p);
 
         if (is_type_spec_qual(next)) {
-            struct_declaration(p, decl);
+            struct declaration child_decl = {SYM_MEMBER};
+            struct_declaration(p, &child_decl);
         }
         else if (next == '}' || next == TOK_EOF) {
             break;
