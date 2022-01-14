@@ -459,6 +459,9 @@ static void define_sym2(struct parser *p, struct declaration *decl)
     sym->pos = decl->pos;
 
     decl->sym = sym;
+    /* TODO sym->type could be different than input decl->type
+     * typedef could discard input. find better way */
+    decl->type = sym->type;
 }
 
 static void use_sym(struct parser *p, struct ast_node *ident, int sym_kind)
@@ -2046,25 +2049,18 @@ static void struct_declaration_list(struct parser *p, struct declaration *decl)
     p->decl = tmp;
 }
 
-static void struct_or_union(struct parser *p, struct declaration *decl)
+static int struct_or_union(struct parser *p)
 {
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
-
     case TOK_STRUCT:
-        p->decl.kind = SYM_TAG_STRUCT;
-        decl->kind = SYM_TAG_STRUCT;
-        break;
-
+        return SYM_TAG_STRUCT;
     case TOK_UNION:
-        p->decl.kind = SYM_TAG_UNION;
-        decl->kind = SYM_TAG_UNION;
-        break;
-
+        return SYM_TAG_UNION;
     default:
         /* TODO error */
-        break;
+        return -1;
     }
 }
 
@@ -2074,46 +2070,38 @@ static void struct_or_union(struct parser *p, struct declaration *decl)
  *     struct_or_union '{' struct_declaration_list '}'
  *     struct_or_union TK_IDENT
  */
-static void struct_or_union_specifier(struct parser *p, struct declaration *decl)
+static struct data_type *struct_or_union_specifier(struct parser *p)
 {
-    struct ast_node *ident = NULL;
-    int sym_kind;
+    struct declaration decl = {SYM_TAG_STRUCT};
 
-    struct_or_union(p, decl);
-    ident = decl_identifier(p);
-
-    /* struct or union sym */
-    sym_kind = p->decl.kind;
+    decl.kind = struct_or_union(p);
+    decl_identifier2(p, &decl);
 
     if (!consume(p, '{')) {
         /* define an object of struct type */
-        use_sym(p, ident, sym_kind);
-        p->decl.type = ident->sym->type;
-        decl->type = ident->sym->type;
-        return;
+        use_sym2(p, &decl);
+        return decl.type;
     } else {
         /* define a struct type */
-        if (sym_kind == SYM_TAG_STRUCT)
-            p->decl.type = type_struct();
+        if (decl.kind == SYM_TAG_STRUCT)
+            decl.type = type_struct();
         else
-            p->decl.type = type_union();
-        if (sym_kind == SYM_TAG_STRUCT)
-            decl->type = type_struct();
-        else
-            decl->type = type_union();
-        define_sym(p, ident);
+            decl.type = type_union();
+        define_sym2(p, &decl);
     }
 
     begin_scope(p);
-    struct_declaration_list(p, decl);
+    struct_declaration_list(p, &decl);
     end_scope(p);
 
     expect(p, '}');
 
-    if (sym_kind == SYM_TAG_STRUCT)
-        compute_struct_size(ident->type->sym);
+    if (decl.kind == SYM_TAG_STRUCT)
+        compute_struct_size(decl.type->sym);
     else
-        compute_union_size(ident->type->sym);
+        compute_union_size(decl.type->sym);
+
+    return decl.type;
 }
 
 /*
@@ -2229,7 +2217,8 @@ static void type_specifier(struct parser *p, struct declaration *decl)
     case TOK_STRUCT:
     case TOK_UNION:
         ungettok(p);
-        struct_or_union_specifier(p, decl);
+        decl->type = struct_or_union_specifier(p);
+        p->decl.type = decl->type;
         break;
 
     case TOK_ENUM:
