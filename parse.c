@@ -1868,11 +1868,8 @@ static void type_qualifier(struct parser *p, struct declaration *decl)
  *     type_qualifier specifier_qualifier_list
  *     type_qualifier
  */
-static struct ast_node *specifier_qualifier_list(struct parser *p, struct declaration *decl)
+static void specifier_qualifier_list(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL;
-    struct ast_node *list = NULL, *spec = NULL;
-
     for (;;) {
         const int next = peektok(p);
 
@@ -1883,9 +1880,6 @@ static struct ast_node *specifier_qualifier_list(struct parser *p, struct declar
             type_specifier(p, decl);
         else
             break;
-
-        list = new_node_(NOD_LIST, tokpos(p));
-        tree = branch_(list, tree, spec);
     }
 
     if (p->decl.kind != SYM_TAG_STRUCT &&
@@ -1897,7 +1891,8 @@ static struct ast_node *specifier_qualifier_list(struct parser *p, struct declar
         p->decl.is_unsigned = 0;
     }
 
-    return tree;
+    set_const(decl->type, decl->is_const);
+    set_unsigned(decl->type, decl->is_unsigned);
 }
 
 /*
@@ -1952,11 +1947,10 @@ static void decl_identifier2(struct parser *p, struct declaration *decl)
     }
 
     /* need to add token pos after reading an identifier */
-    p->decl.pos = tok->pos;
+    decl->pos = tok->pos;
 }
 
-/*
- * struct_declarator
+/* struct_declarator
  *     declarator
  *     ':' constant_expression
  *     declarator ':' constant_expression
@@ -1965,54 +1959,40 @@ static void struct_declarator(struct parser *p, struct declaration *decl)
 {
     if (nexttok(p, ':')) {
         /* unnamed bit field */
-        struct ast_node *decl__ = decl_identifier(p);
-        define_sym(p, decl__);
+        decl_identifier2(p, decl);
+        define_sym2(p, decl);
     }
     else {
-        declarator(p, decl);
+        declarator2(p, decl);
     }
 
     if (consume(p, ':')) {
         struct ast_node *expr = constant_expression(p);
-        p->decl.sym->is_bitfield = 1;
-        p->decl.sym->bit_width = expr->ival;
+        decl->sym->is_bitfield = 1;
+        decl->sym->bit_width = expr->ival;
         free_ast_node(expr);
     }
 }
 
-/*
- * struct_declarator_list
+/* struct_declarator_list
  *     struct_declarator
  *     struct_declarator_list ',' struct_declarator
  */
 static void struct_declarator_list(struct parser *p, struct declaration *decl)
 {
-    for (;;) {
-        struct declaration child_decl = *decl;
-        struct data_type *spec = p->decl.type;
-        struct_declarator(p, &child_decl);
-        p->decl.type = spec;
-
-        if (!consume(p, ','))
-            return;
-    }
+    do {
+        struct declaration sd = *decl;
+        struct_declarator(p, &sd);
+    } while (consume(p, ','));
 }
 
-/*
- * struct_declaration
+/* struct_declaration
  *     specifier_qualifier_list struct_declarator_list ';'
  */
 static void struct_declaration(struct parser *p, struct declaration *decl)
 {
-    decl_reset_context(p);
-
     specifier_qualifier_list(p, decl);
-
-    p->decl.kind = SYM_MEMBER;
-    decl->kind = SYM_MEMBER;
-
     struct_declarator_list(p, decl);
-
     expect(p, ';');
 }
 
@@ -2022,8 +2002,6 @@ static void struct_declaration(struct parser *p, struct declaration *decl)
  */
 static void struct_declaration_list(struct parser *p, struct declaration *decl)
 {
-    const struct declaration tmp = p->decl;
-
     for (;;) {
         const int next = peektok(p);
 
@@ -2044,8 +2022,6 @@ static void struct_declaration_list(struct parser *p, struct declaration *decl)
             break;
         }
     }
-
-    p->decl = tmp;
 }
 
 /* struct_or_union
