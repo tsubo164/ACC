@@ -29,8 +29,8 @@ struct foo {
 
 int main()
 {
-    /*
     char (f);
+    /*
     */
     enum length {
         ARRAY_LENGTH = 3

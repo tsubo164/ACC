@@ -2307,8 +2307,7 @@ static void parameter_type_list(struct parser *p, struct declaration *decl)
     p->decl = tmp;
 }
 
-/*
- * array
+/* array
  *     '[' ']'
  *     '[' constant_expression ']'
  *     array '[' constant_expression ']'
@@ -2334,8 +2333,7 @@ static void array(struct parser *p, struct declaration *decl)
     }
 }
 
-/*
- * direct_declarator
+/* direct_declarator
  *     TOK_IDENT
  *     '(' declarator ')'
  *     direct_declarator '[' constant_expression ']'
@@ -2429,12 +2427,8 @@ static void direct_declarator2(struct parser *p, struct declaration *decl)
         decl->type = tmp;
     }
 
-    /*
-    if (nexttok(p, TOK_IDENT) || decl_is_param(p)) {
-    */
-    if (nexttok(p, TOK_IDENT)) {
+    if (nexttok(p, TOK_IDENT))
         decl_identifier2(p, decl);
-    }
 
     if (nexttok(p, '['))
         array(p, decl);
@@ -2474,11 +2468,13 @@ static void direct_declarator2(struct parser *p, struct declaration *decl)
         }
     } else {
         /* variable, parameter, member, typedef */
-        /*
-        if (decl->ident)
-        */
-        if (!decl->sym || decl->kind == SYM_PARAM)
-            define_sym2(p, decl);
+        if (decl->kind == SYM_VAR) {
+            if (decl->ident && !decl->sym)
+                define_sym2(p, decl);
+        } else {
+            if (!decl->sym)
+                define_sym2(p, decl);
+        }
     }
 
     if (placeholder) {
@@ -2703,52 +2699,23 @@ static struct ast_node *string_initializer(struct parser *p,
  */
 static struct ast_node *init_declarator(struct parser *p, struct declaration *decl)
 {
-    /*
-    struct ast_node *decl__ = NULL;
-
-    decl__ = declarator(p, decl);
-
-    if (consume(p, '=')) {
-        struct initializer_context init = root_initializer(p->decl.sym->type);
-        decl__->l = initializer(p, &init);
-    }
-
-    return typed_(decl__);
-    */
-    struct ast_node *decl__ = NULL;
     struct ast_node *tree = NULL;
-    struct position pos;
-    struct data_type *type;
-    struct symbol *sym;
 
-    if (1) {
-        decl__ = declarator(p, decl);
-        if (!decl__)
-            return NULL;
-        pos = decl__->pos;
-        type = decl__->type;
-        sym = decl__->sym;
-    } else {
-        declarator2(p, decl);
-        if (!decl->ident) {
-            return NULL;
-        }
-        pos = decl->pos;
-        type = decl->type;
-        sym = decl->sym;
-    }
+    declarator2(p, decl);
 
-    tree = new_node_(NOD_DECL_IDENT, &pos);
-    tree->type = type;
-    tree->sym = sym;
-    decl__ = tree;
+    if (!decl->ident)
+        return NULL;
+
+    tree = new_node_(NOD_DECL_IDENT, &decl->pos);
+    tree->type = decl->type;
+    tree->sym = decl->sym;
 
     if (consume(p, '=')) {
-        struct initializer_context init = root_initializer(sym->type);
-        decl__->l = initializer(p, &init);
+        struct initializer_context init = root_initializer(decl->sym->type);
+        tree->l = initializer(p, &init);
     }
 
-    return typed_(decl__);
+    return typed_(tree);
 }
 
 /*
