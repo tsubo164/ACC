@@ -2416,7 +2416,6 @@ static struct ast_node *direct_declarator(struct parser *p, struct declaration *
 
 static void direct_declarator2(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *ident = NULL;
     struct data_type *placeholder = NULL;
 
     if (consume(p, '(')) {
@@ -2430,7 +2429,10 @@ static void direct_declarator2(struct parser *p, struct declaration *decl)
         decl->type = tmp;
     }
 
+    /*
     if (nexttok(p, TOK_IDENT) || decl_is_param(p)) {
+    */
+    if (nexttok(p, TOK_IDENT)) {
         decl_identifier2(p, decl);
     }
 
@@ -2438,27 +2440,30 @@ static void direct_declarator2(struct parser *p, struct declaration *decl)
         array(p, decl);
 
     if (consume(p, '(')) {
-        if (!p->decl.sym) {
+        if (!decl->sym) {
             /* function */
             /* functions are externnal by default */
-            if (!p->decl.is_extern && !p->decl.is_static)
-                p->decl.is_extern = 1;
+            if (!decl->is_extern && !decl->is_static)
+                decl->is_extern = 1;
 
-            p->decl.type = type_function(p->decl.type);
-            p->decl.kind = SYM_FUNC;
-            define_sym(p, ident);
-            p->func_sym = ident->sym;
+            decl->type = type_function(decl->type);
+            decl->kind = SYM_FUNC;
+            define_sym2(p, decl);
+            p->func_sym = decl->sym;
 
             begin_scope(p);
             if (!nexttok(p, ')'))
                 parameter_type_list(p, decl);
             expect(p, ')');
+
+            /* TODO temp for new_tree */
+            p->decl = *decl;
         }
         else {
             /* function pointer */
-            p->decl.type = type_function(p->decl.type);
+            decl->type = type_function(decl->type);
             /* link function sym to type */
-            set_symbol(p->decl.type, p->decl.sym);
+            set_symbol(decl->type, decl->sym);
 
             begin_scope(p);
             if (!nexttok(p, ')'))
@@ -2470,8 +2475,9 @@ static void direct_declarator2(struct parser *p, struct declaration *decl)
     } else {
         /* variable, parameter, member, typedef */
         /*
-        if (ident)
+        if (decl->ident)
         */
+        if (!decl->sym || decl->kind == SYM_PARAM)
             define_sym2(p, decl);
     }
 
@@ -2697,12 +2703,48 @@ static struct ast_node *string_initializer(struct parser *p,
  */
 static struct ast_node *init_declarator(struct parser *p, struct declaration *decl)
 {
+    /*
     struct ast_node *decl__ = NULL;
 
     decl__ = declarator(p, decl);
 
     if (consume(p, '=')) {
         struct initializer_context init = root_initializer(p->decl.sym->type);
+        decl__->l = initializer(p, &init);
+    }
+
+    return typed_(decl__);
+    */
+    struct ast_node *decl__ = NULL;
+    struct ast_node *tree = NULL;
+    struct position pos;
+    struct data_type *type;
+    struct symbol *sym;
+
+    if (1) {
+        decl__ = declarator(p, decl);
+        if (!decl__)
+            return NULL;
+        pos = decl__->pos;
+        type = decl__->type;
+        sym = decl__->sym;
+    } else {
+        declarator2(p, decl);
+        if (!decl->ident) {
+            return NULL;
+        }
+        pos = decl->pos;
+        type = decl->type;
+        sym = decl->sym;
+    }
+
+    tree = new_node_(NOD_DECL_IDENT, &pos);
+    tree->type = type;
+    tree->sym = sym;
+    decl__ = tree;
+
+    if (consume(p, '=')) {
+        struct initializer_context init = root_initializer(sym->type);
         decl__->l = initializer(p, &init);
     }
 
@@ -2824,6 +2866,9 @@ static struct ast_node *declaration(struct parser *p)
         expect_or_recover(p, ';');
         return NULL;
     }
+            /* TODO temp for new decl */
+            if (tree && tree->r)
+                tree->type = tree->r->type;
 
     if (nexttok(p, '{')) {
         /* is func definition */

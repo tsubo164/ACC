@@ -2,23 +2,46 @@
 #include <stdio.h>
 */
 
+
 /*
-enum hoge;
-
-//enum hoge h;
-
-void fuga(enum hoge h)
+int strcmp(const char *s1, const char *s2);
+void foo()
 {
+    int a;
+}
+
+long twice_long(long l)
+{
+    return 2 * l;
+}
+
+static long (*function_pointer4)(long) = twice_long;
+char Y;
+
+int add(int X, int Y)
+{
+    return X + Y;
 }
 */
-
-struct foo;
-
 struct foo {
-    int f, g;
+    int x, y;
 };
 
 int main()
 {
-    return 3;
+    /*
+    char (f);
+    */
+    enum length {
+        ARRAY_LENGTH = 3
+    };
+    /*
+
+    function_pointer4 = (void *)0;
+
+    int x = 39, y = 3;
+
+    return x + y;
+    */
+    return 13;
 }
