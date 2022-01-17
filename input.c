@@ -29,7 +29,7 @@ struct foo {
 
 int main()
 {
-    char (f);
+    char (f), g, *h;
     /*
     */
     enum length {

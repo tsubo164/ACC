@@ -360,6 +360,10 @@ static char *make_type_name_(const struct data_type *type, char *buf)
         sprintf(p, "union %s %n", symbol_of(type)->name, &n);
         p += n;
     }
+    else if (is_enum(type)) {
+        sprintf(p, "enum %s %n", symbol_of(type)->name, &n);
+        p += n;
+    }
     else if (is_function(type)) {
         p = make_type_name_(underlying(type), p);
         sprintf(p++, "(");
