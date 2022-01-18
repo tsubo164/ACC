@@ -9,22 +9,6 @@
 
 #define TOKEN_BUFFER_SIZE 4
 
-struct declaration {
-    int kind;
-    const char *ident;
-    struct data_type *type;
-    struct symbol *sym;
-    struct position pos;
-
-    /* type qualifier */
-    char is_const;
-    char is_unsigned;
-    /* storage class */
-    char is_typedef;
-    char is_extern;
-    char is_static;
-};
-
 struct parser {
     struct lexer *lex;
     struct token tokbuf[TOKEN_BUFFER_SIZE];
@@ -32,8 +16,6 @@ struct parser {
 
     struct symbol_table *symtab;
     struct diagnostic *diag;
-
-    struct declaration decl;
 
     /* for function */
     struct symbol *func_sym;

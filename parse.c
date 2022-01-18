@@ -437,6 +437,22 @@ static struct ast_node *convert_(struct parser *p, struct ast_node *node)
 }
 
 /* decl context */
+struct declaration {
+    int kind;
+    const char *ident;
+    struct data_type *type;
+    struct symbol *sym;
+    struct position pos;
+
+    /* type qualifier */
+    char is_const;
+    char is_unsigned;
+    /* storage class */
+    char is_typedef;
+    char is_extern;
+    char is_static;
+};
+
 static void define_sym(struct parser *p, struct declaration *decl)
 {
     struct symbol *sym;
@@ -547,12 +563,6 @@ static void end_switch(struct parser *p)
     symbol_switch_end(p->symtab);
 }
 
-static void decl_reset_context(struct parser *p)
-{
-    const struct declaration ini = {0};
-    p->decl = ini;
-}
-
 static int is_type_spec(int kind)
 {
     switch (kind) {
@@ -605,19 +615,18 @@ static int is_start_of_decl(int kind)
     return is_type_spec_qual(kind) || is_storage_class_spec(kind);
 }
 
-static void default_to_int(struct parser *p, struct declaration *decl)
+static struct data_type *default_to_int(struct parser *p, struct data_type *type)
 {
-    if (!decl->type) {
+    if (!type) {
         const struct token *next = gettok(p);
-        decl->type = type_int();
         add_warning(p->diag, &next->pos, "type specifier missing, defaults to 'int'");
         ungettok(p);
+        return type_int();
     }
+    return type;
 }
 
-/*
- * forward declarations
- */
+/* forward declarations */
 static struct ast_node *statement(struct parser *p);
 static struct ast_node *expression(struct parser *p);
 static struct ast_node *unary_expression(struct parser *p);
@@ -631,8 +640,7 @@ static void decl_identifier(struct parser *p, struct declaration *decl);
 static struct ast_node *declaration_list(struct parser *p);
 static struct ast_node *statement_list(struct parser *p);
 
-/*
- * identifier
+/* identifier
  *     TOK_IDENT
  */
 static struct ast_node *identifier(struct parser *p)
@@ -648,8 +656,7 @@ static struct ast_node *identifier(struct parser *p)
     return tree;
 }
 
-/*
- * primary_expression
+/* primary_expression
  *     TOK_NUM
  *     TOK_IDENT
  *     '(' expression ')'
@@ -1719,8 +1726,7 @@ static struct ast_node *null_statement(struct parser *p)
     return NULL;
 }
 
-/*
- * statement
+/* statement
  *     labeled_statement
  *     compound_statement
  *     expression_statement
@@ -1730,8 +1736,6 @@ static struct ast_node *null_statement(struct parser *p)
  */
 static struct ast_node *statement(struct parser *p)
 {
-    decl_reset_context(p);
-
     switch (peektok(p)) {
 
     case TOK_FOR:
@@ -1838,8 +1842,7 @@ static void type_qualifier(struct parser *p, struct declaration *decl)
     }
 }
 
-/*
- * specifier_qualifier_list
+/* specifier_qualifier_list
  *     type_specifier specifier_qualifier_list
  *     type_specifier
  *     type_qualifier specifier_qualifier_list
@@ -1857,15 +1860,6 @@ static void specifier_qualifier_list(struct parser *p, struct declaration *decl)
             type_specifier(p, decl);
         else
             break;
-    }
-
-    if (p->decl.kind != SYM_TAG_STRUCT &&
-        p->decl.kind != SYM_TAG_UNION &&
-        p->decl.kind != SYM_TAG_ENUM) {
-        set_const(p->decl.type, p->decl.is_const);
-        set_unsigned(p->decl.type, p->decl.is_unsigned);
-        p->decl.is_const = 0;
-        p->decl.is_unsigned = 0;
     }
 
     set_const(decl->type, decl->is_const);
@@ -2049,8 +2043,7 @@ static struct data_type *struct_or_union_specifier(struct parser *p)
     return decl.type;
 }
 
-/*
- * enumerator
+/* enumerator
  *     TOK_IDENT
  *     TOK_IDENT '=' constant_expression
  */
@@ -2075,8 +2068,7 @@ static int enumerator(struct parser *p, struct declaration *decl, int next_value
     return val + 1;
 }
 
-/*
- * enumerator_list
+/* enumerator_list
  *     enumerator
  *     enumerator_list ',' enumerator
  */
@@ -2090,8 +2082,7 @@ static void enumerator_list(struct parser *p, struct declaration *decl)
     } while (consume(p, ','));
 }
 
-/*
- * enum_specifier
+/* enum_specifier
  *     TOK_ENUM '{' enumerator_list '}'
  *     TOK_ENUM TOK_IDENT '{' enumerator_list '}'
  *     TOK_ENUM TOK_IDENT
@@ -2134,27 +2125,22 @@ static void type_specifier(struct parser *p, struct declaration *decl)
     switch (tok->kind) {
 
     case TOK_VOID:
-        p->decl.type = type_void();
         decl->type = type_void();
         break;
 
     case TOK_CHAR:
-        p->decl.type = type_char();
         decl->type = type_char();
         break;
 
     case TOK_SHORT:
-        p->decl.type = type_short();
         decl->type = type_short();
         break;
 
     case TOK_INT:
-        p->decl.type = type_int();
         decl->type = type_int();
         break;
 
     case TOK_LONG:
-        p->decl.type = type_long();
         decl->type = type_long();
         break;
 
@@ -2162,7 +2148,6 @@ static void type_specifier(struct parser *p, struct declaration *decl)
         break;
 
     case TOK_UNSIGNED:
-        p->decl.is_unsigned = 1;
         decl->is_unsigned = 1;
         break;
 
@@ -2170,13 +2155,11 @@ static void type_specifier(struct parser *p, struct declaration *decl)
     case TOK_UNION:
         ungettok(p);
         decl->type = struct_or_union_specifier(p);
-        p->decl.type = decl->type;
         break;
 
     case TOK_ENUM:
         ungettok(p);
         decl->type = enum_specifier(p);
-        p->decl.type = decl->type;
         break;
 
     case TOK_TYPE_NAME:
@@ -2184,7 +2167,6 @@ static void type_specifier(struct parser *p, struct declaration *decl)
             struct symbol *sym = find_type_name_symbol(p->symtab, tok->text);
 
             if (sym) {
-                p->decl.type = type_type_name(sym);
                 decl->type = type_type_name(sym);
                 break;
             }
@@ -2248,7 +2230,6 @@ static void parameter_list(struct parser *p, struct declaration *decl)
 static void parameter_type_list(struct parser *p, struct declaration *decl)
 {
     struct ast_node *tree = NULL, *list = NULL, *elli = NULL;
-    const struct declaration tmp = p->decl;
 
     parameter_list(p, decl);
 
@@ -2262,8 +2243,6 @@ static void parameter_type_list(struct parser *p, struct declaration *decl)
         if (elli)
             p->func_sym->is_variadic = 1;
     }
-
-    p->decl = tmp;
 }
 
 /* array
@@ -2281,11 +2260,9 @@ static void array(struct parser *p, struct declaration *decl)
         expect(p, ']');
 
         array(p, decl);
-        p->decl.type = type_array(p->decl.type);
         decl->type = type_array(decl->type);
 
         if (expr) {
-            set_array_length(p->decl.type, expr->ival);
             set_array_length(decl->type, expr->ival);
             free_ast_node(expr);
         }
@@ -2338,9 +2315,6 @@ static void direct_declarator(struct parser *p, struct declaration *decl)
             if (!nexttok(p, ')'))
                 parameter_type_list(p, decl);
             expect(p, ')');
-
-            /* TODO temp for new_tree */
-            p->decl = *decl;
         }
         else {
             /* function pointer */
@@ -2383,16 +2357,8 @@ static void pointer(struct parser *p, struct declaration *decl)
 {
     while (consume(p, '*')) {
         /* we treat as if the first '*' is associated with type specifier */
-        p->decl.type = type_pointer(p->decl.type);
         decl->type = type_pointer(decl->type);
     }
-}
-
-static void pointer2(struct parser *p, struct declaration *decl)
-{
-    while (consume(p, '*'))
-        /* we treat as if the first '*' is associated with type specifier */
-        decl->type = type_pointer(decl->type);
 }
 
 /* declarator
@@ -2401,7 +2367,7 @@ static void pointer2(struct parser *p, struct declaration *decl)
  */
 static void declarator(struct parser *p, struct declaration *decl)
 {
-    pointer2(p, decl);
+    pointer(p, decl);
     direct_declarator(p, decl);
 }
 
@@ -2609,9 +2575,7 @@ static struct ast_node *init_declarator_list(struct parser *p, struct declaratio
 
     for (;;) {
         struct declaration child_decl = *decl;
-        struct data_type *spec = p->decl.type;
         struct ast_node *init = init_declarator(p, &child_decl);
-        p->decl.type = spec;
 
         if (!init)
             break;
@@ -2681,7 +2645,7 @@ static void declaration_specifiers(struct parser *p, struct declaration *decl)
             break;
     }
 
-    default_to_int(p, decl);
+    decl->type = default_to_int(p, decl->type);
 
     set_const(decl->type, decl->is_const);
     set_unsigned(decl->type, decl->is_unsigned);
