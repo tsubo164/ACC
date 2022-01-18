@@ -472,16 +472,17 @@ static struct symbol *use_member_sym(struct parser *p,
     return use_struct_member_symbol(p->symtab, symbol_of(struct_type), member_name);
 }
 
-static void define_case(struct parser *p, struct ast_node *node, int kind, int case_value)
+static struct symbol *define_case(struct parser *p,
+        int kind, int case_value, const struct position *pos)
 {
     struct symbol *sym;
 
     sym = define_case_symbol(p->symtab, kind, case_value);
     /* TODO come up with better place to put this or even
      * consider removing pos from sym */
-    sym->pos = node->pos;
+    sym->pos = *pos;
 
-    node->sym = sym;
+    return sym;
 }
 
 static void define_label(struct parser *p, struct declaration *decl)
@@ -1636,7 +1637,7 @@ static struct ast_node *case_statement(struct parser *p)
 
     tree = new_node_(NOD_CASE, &valpos);
     tree = branch_(tree, expr, NULL);
-    define_case(p, tree, SYM_CASE, expr->ival);
+    tree->sym = define_case(p, SYM_CASE, expr->ival, &valpos);
 
     tree->r = statement(p);
     return tree;
@@ -1661,7 +1662,7 @@ static struct ast_node *default_statement(struct parser *p)
 
     tree = new_node_(NOD_DEFAULT, &defpos);
     tree = branch_(tree, NULL, NULL);
-    define_case(p, tree, SYM_DEFAULT, no_case_value);
+    tree->sym = define_case(p, SYM_DEFAULT, no_case_value, &defpos);
 
     tree->r = statement(p);
     return tree;
