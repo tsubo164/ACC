@@ -347,6 +347,13 @@ static struct ast_node *new_node_num(int num, const struct position *pos)
     return typed_(node);
 }
 
+static struct ast_node *new_node_decl_ident(struct symbol *sym, const struct position *pos)
+{
+    struct ast_node *node = new_node_(NOD_DECL_IDENT, pos);
+    node->sym = sym;
+    return typed_(node);
+}
+
 static int eval_const_expr(const struct ast_node *node, struct parser *p)
 {
     int l, r;
@@ -484,14 +491,14 @@ static void define_case(struct parser *p, struct ast_node *node, int kind, int c
     node->sym = sym;
 }
 
-static void define_label(struct parser *p, struct ast_node *node)
+static void define_label(struct parser *p, struct declaration *decl)
 {
     struct symbol *sym;
 
-    sym = define_label_symbol(p->symtab, p->decl.ident);
-    sym->pos = node->pos;
+    sym = define_label_symbol(p->symtab, decl->ident);
+    sym->pos = decl->pos;
 
-    node->sym = sym;
+    decl->sym = sym;
 }
 
 static void use_label(struct parser *p, struct ast_node *node)
@@ -615,12 +622,12 @@ static struct ast_node *statement(struct parser *p);
 static struct ast_node *expression(struct parser *p);
 static struct ast_node *unary_expression(struct parser *p);
 static struct ast_node *assignment_expression(struct parser *p);
-static struct ast_node *decl_identifier(struct parser *p);
 static struct ast_node *type_name(struct parser *p);
 static void pointer(struct parser *p, struct declaration *decl);
 static void type_specifier(struct parser *p, struct declaration *decl);
 static void declaration_specifiers(struct parser *p, struct declaration *decl);
 static void declarator(struct parser *p, struct declaration *decl);
+static void decl_identifier(struct parser *p, struct declaration *decl);
 static struct ast_node *declaration_list(struct parser *p);
 static struct ast_node *statement_list(struct parser *p);
 
@@ -1681,8 +1688,7 @@ static struct ast_node *default_statement(struct parser *p)
     return tree;
 }
 
-/*
- * labeled_statement
+/* labeled_statement
  *     TOK_IDENT ':' statement
  */
 static struct ast_node *labeled_statement(struct parser *p)
@@ -1690,20 +1696,21 @@ static struct ast_node *labeled_statement(struct parser *p)
     /* this statement is actually for only goto statement
      * case and default statements are defined separately */
     struct ast_node *tree = NULL;
-    struct ast_node *ident = NULL;
+    struct declaration decl = {0};
 
-    ident = decl_identifier(p);
+    decl_identifier(p, &decl);
     expect(p, ':');
 
-    tree = new_node(NOD_LABEL, ident, NULL);
-    define_label(p, tree->l);
+    define_label(p, &decl);
 
+    tree = NEW_(NOD_LABEL);
+    tree->l = new_node_decl_ident(decl.sym, &decl.pos);
     tree->r = statement(p);
+
     return tree;
 }
 
-/*
- * null_statement
+/* null_statement
  *     ';'
  */
 static struct ast_node *null_statement(struct parser *p)
@@ -1865,8 +1872,7 @@ static void specifier_qualifier_list(struct parser *p, struct declaration *decl)
     set_unsigned(decl->type, decl->is_unsigned);
 }
 
-/*
- * type_name
+/* type_name
  *     specifier_qualifier_list
  *     specifier_qualifier_list abstract_declarator
  */
@@ -1881,30 +1887,12 @@ static struct ast_node *type_name(struct parser *p)
     tree = NEW_(NOD_TYPE_NAME);
     tree->l = spec;
     tree->r = abstract_declarator(p, &decl);
-    tree->type = p->decl.type;
+    tree->type = decl.type;
 
     return tree;
 }
 
-static struct ast_node *decl_identifier(struct parser *p)
-{
-    struct ast_node *tree = NULL;
-
-    if (consume(p, TOK_IDENT)) {
-        /* need to add token pos after reading an identifier */
-        tree = new_node_(NOD_DECL_IDENT, tokpos(p));
-        copy_token_text(p, tree);
-        p->decl.ident = tree->sval;
-    } else {
-        tree = new_node_(NOD_DECL_IDENT, tokpos(p));
-    }
-
-    p->decl.pos = *tokpos(p);
-
-    return tree;
-}
-
-static void decl_identifier2(struct parser *p, struct declaration *decl)
+static void decl_identifier(struct parser *p, struct declaration *decl)
 {
     const struct token *tok = NULL;
 
@@ -1929,7 +1917,7 @@ static void struct_declarator(struct parser *p, struct declaration *decl)
 {
     if (nexttok(p, ':')) {
         /* unnamed bit field */
-        decl_identifier2(p, decl);
+        decl_identifier(p, decl);
         define_sym(p, decl);
     }
     else {
@@ -2039,7 +2027,7 @@ static struct data_type *struct_or_union_specifier(struct parser *p)
     struct declaration decl = {SYM_TAG_STRUCT};
 
     decl.kind = struct_or_union(p);
-    decl_identifier2(p, &decl);
+    decl_identifier(p, &decl);
 
     if (!consume(p, '{')) {
         /* define an object of struct type */
@@ -2072,7 +2060,7 @@ static int enumerator(struct parser *p, struct declaration *decl, int next_value
 
     if (!nexttok(p, TOK_IDENT))
         return 0;
-    decl_identifier2(p, decl);
+    decl_identifier(p, decl);
 
     decl->type = type_int();
     define_sym(p, decl);
@@ -2113,7 +2101,7 @@ static struct data_type *enum_specifier(struct parser *p)
     struct declaration decl = {SYM_TAG_ENUM};
 
     expect(p, TOK_ENUM);
-    decl_identifier2(p, &decl);
+    decl_identifier(p, &decl);
 
     if (!consume(p, '{')) {
         /* define an object of enum type */
@@ -2329,7 +2317,7 @@ static void direct_declarator(struct parser *p, struct declaration *decl)
     }
 
     if (nexttok(p, TOK_IDENT))
-        decl_identifier2(p, decl);
+        decl_identifier(p, decl);
 
     if (nexttok(p, '['))
         array(p, decl);
@@ -2601,9 +2589,7 @@ static struct ast_node *init_declarator(struct parser *p, struct declaration *de
     if (!decl->ident)
         return NULL;
 
-    tree = new_node_(NOD_DECL_IDENT, &decl->pos);
-    tree->type = decl->type;
-    tree->sym = decl->sym;
+    tree = new_node_decl_ident(decl->sym, &decl->pos);
 
     if (consume(p, '=')) {
         struct initializer_context init = root_initializer(decl->sym->type);
@@ -2613,8 +2599,7 @@ static struct ast_node *init_declarator(struct parser *p, struct declaration *de
     return typed_(tree);
 }
 
-/*
- * init_declarator_list
+/* init_declarator_list
  *     init_declarator
  *     init_declarator_list ',' init_declarator
  */
@@ -2640,8 +2625,7 @@ static struct ast_node *init_declarator_list(struct parser *p, struct declaratio
     return list.head;
 }
 
-/*
- * storage_class_specifier
+/* storage_class_specifier
  *     TOK_TYPEDEF
  *     TOK_EXTERN
  *     TOK_STATIC
@@ -2672,8 +2656,7 @@ static void storage_class_specifier(struct parser *p, struct declaration *decl)
     }
 }
 
-/*
- * declaration_specifiers
+/* declaration_specifiers
  *     storage_class_specifier
  *     storage_class_specifier declaration_specifiers
  *     type_specifier
@@ -2707,8 +2690,7 @@ static void declaration_specifiers(struct parser *p, struct declaration *decl)
         decl->kind = SYM_TYPEDEF;
 }
 
-/*
- * declaration
+/* declaration
  *     declaration_specifiers ';'
  *     declaration_specifiers init_declarator_list ';'
  */
@@ -2816,8 +2798,7 @@ static struct ast_node *extern_decl(struct parser *p)
     }
 }
 
-/*
- * translation_unit
+/* translation_unit
  *     extern_declaration
  *     translation_unit extern_declaration
  */
