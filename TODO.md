@@ -24,7 +24,6 @@
   - add include paths
   - make module for print
   - `next_param()` should return NULL after ellipsis
-  - add `struct declaration` to manage decl context and save/restore
   - stringize macro and string cat macro
   - string literal to stringize macro
   - `(a > 10) ? a = 42 : a = 19` => handle this (expression is not assignable)
@@ -36,10 +35,6 @@
     - `int *p = ptr + 1 // legal if global`
     - `int i = j + 1 // illegal even if global`
     - `struct Point p = q` is not supported
-  - simplify ast
-    - remove `NOD_SPEC_*` from tree
-    - remove `NOD_DECL_*` from tree
-    - add `struct declaration` to manage decl context and use it as parse param
   - make symbole table tree structure
   - set `is_used` in parser => remove `check_symbol_usage()` from semantics
   - control flow check
@@ -130,3 +125,8 @@
   - `data_tag_()` needs to be based on size of type
   - `code[123]__()` needs to take `data_type` or tag instead of `ast_node`
   - function pointer
+  - simplify ast
+    - remove `NOD_SPEC_*` from tree
+    - remove `NOD_DECL_*` from tree
+    - add `struct declaration` to manage decl context and use it as parse param
+  - add `struct declaration` to manage decl context and save/restore

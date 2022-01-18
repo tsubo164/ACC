@@ -2230,6 +2230,7 @@ static void parameter_list(struct parser *p, struct declaration *decl)
 static void parameter_type_list(struct parser *p, struct declaration *decl)
 {
     struct ast_node *tree = NULL, *list = NULL, *elli = NULL;
+    struct symbol *func_sym = symbol_of(decl->type);
 
     parameter_list(p, decl);
 
@@ -2241,7 +2242,7 @@ static void parameter_type_list(struct parser *p, struct declaration *decl)
         tree = branch_(list, tree, elli);
 
         if (elli)
-            p->func_sym->is_variadic = 1;
+            func_sym->is_variadic = 1;
     }
 }
 
@@ -2309,7 +2310,6 @@ static void direct_declarator(struct parser *p, struct declaration *decl)
             decl->type = type_function(decl->type);
             decl->kind = SYM_FUNC;
             define_sym(p, decl);
-            p->func_sym = decl->sym;
 
             begin_scope(p);
             if (!nexttok(p, ')'))
@@ -2673,19 +2673,19 @@ static struct ast_node *declaration(struct parser *p)
     else if (nexttok(p, '{')) {
         /* a function is being defined */
         struct ast_node *stmt = compound_statement(p);
+        struct symbol *func_sym = symbol_of(tree->type);
         tree = new_node(NOD_FUNC_DEF, tree, stmt);
         use_label(p, stmt);
         end_scope(p);
-        compute_func_size(p->func_sym);
-        p->func_sym = NULL;
+        compute_func_size(func_sym);
         return tree;
     }
     else if (is_function(tree->type)) {
         /* a function prototype is declared. unflag its (re)definition */
-        p->func_sym->is_defined = 0;
-        p->func_sym->is_redefined = 0;
+        struct symbol *func_sym = symbol_of(tree->type);
+        func_sym->is_defined = 0;
+        func_sym->is_redefined = 0;
         end_scope(p);
-        p->func_sym = NULL;
     }
 
     expect_or_recover(p, ';');

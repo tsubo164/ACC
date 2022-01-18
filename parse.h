@@ -17,9 +17,6 @@ struct parser {
     struct symbol_table *symtab;
     struct diagnostic *diag;
 
-    /* for function */
-    struct symbol *func_sym;
-
     /* error recovery */
     int is_panic_mode;
 
