@@ -78,18 +78,6 @@ static struct ast_node *new_node_(enum ast_node_kind kind, const struct position
     return node;
 }
 
-static void copy_token_text(struct parser *p, struct ast_node *node)
-{
-    const struct token *tok = current_token(p);
-    node->sval = tok->text;
-}
-
-static void copy_token_ival(struct parser *p, struct ast_node *node)
-{
-    const struct token *tok = current_token(p);
-    node->ival = tok->value;
-}
-
 static const struct token *consume(struct parser *p, int token_kind)
 {
     const struct token *tok = gettok(p);
@@ -340,7 +328,7 @@ static struct ast_node *branch_(struct ast_node *node,
     return typed_(node);
 }
 
-static struct ast_node *new_node_num(int num, const struct position *pos)
+static struct ast_node *new_node_num(long num, const struct position *pos)
 {
     struct ast_node *node = new_node_(NOD_NUM, pos);
     node->ival = num;
@@ -478,12 +466,10 @@ static struct symbol *use_sym(struct parser *p, const char *ident, int sym_kind)
     return sym;
 }
 
-static void use_member_sym(struct parser *p,
-        const struct data_type *struct_type, struct ast_node *node)
+static struct symbol *use_member_sym(struct parser *p,
+        const struct data_type *struct_type, const char *member_name)
 {
-    const char *member_name = node->sval;
-
-    node->sym = use_struct_member_symbol(p->symtab, symbol_of(struct_type), member_name);
+    return use_struct_member_symbol(p->symtab, symbol_of(struct_type), member_name);
 }
 
 static void define_case(struct parser *p, struct ast_node *node, int kind, int case_value)
@@ -521,12 +507,13 @@ static void use_label(struct parser *p, struct ast_node *node)
     use_label(p, node->r);
 }
 
-static void define_string(struct parser *p, struct ast_node *node)
+static struct symbol *define_string(struct parser *p, const char *str)
 {
     struct symbol *sym;
 
-    sym = define_string_symbol(p->symtab, node->sval);
-    node->sym = sym;
+    sym = define_string_symbol(p->symtab, str);
+
+    return sym;
 }
 
 static void define_ellipsis(struct parser *p)
@@ -642,7 +629,7 @@ static struct ast_node *identifier(struct parser *p)
         return NULL;
 
     tree = new_node_(NOD_IDENT, tokpos(p));
-    copy_token_text(p, tree);
+    tree->sval = current_token(p)->text;
 
     return tree;
 }
@@ -661,25 +648,18 @@ static struct ast_node *primary_expression(struct parser *p)
     switch (tok->kind) {
 
     case TOK_NUM:
-        tree = new_node_(NOD_NUM, tokpos(p));
-        copy_token_text(p, tree);
-        copy_token_ival(p, tree);
-        return typed_(tree);
+        return new_node_num(tok->value, tokpos(p));
 
     case TOK_STRING_LITERAL:
         tree = new_node_(NOD_STRING, tokpos(p));
-        copy_token_text(p, tree);
-        define_string(p, tree);
+        tree->sym = define_string(p, tok->text);
         return convert_(p, typed_(tree));
 
     case TOK_IDENT:
         ungettok(p);
         tree = identifier(p);
-        if (nexttok(p, '('))
-            sym_kind = SYM_FUNC;
-        else
-            sym_kind = SYM_VAR;
-        tree->sym = use_sym(p, tree->sval, sym_kind);
+        sym_kind = nexttok(p, '(') ? SYM_FUNC : SYM_VAR;
+        tree->sym = use_sym(p, tok->text, sym_kind);
         return convert_(p, typed_(tree));
 
     case '(':
@@ -746,7 +726,7 @@ static struct ast_node *struct_ref(struct parser *p, struct ast_node *strc)
     ref = new_node_(NOD_STRUCT_REF, tokpos(p));
 
     member = identifier(p);
-    use_member_sym(p, strc->type, member);
+    member->sym = use_member_sym(p, strc->type, current_token(p)->text);
     typed_(member);
 
     ref = branch_(ref, strc, member);
