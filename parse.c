@@ -469,22 +469,13 @@ static void define_sym(struct parser *p, struct declaration *decl)
     decl->type = sym->type;
 }
 
-static void use_sym(struct parser *p, struct ast_node *ident, int sym_kind)
+static struct symbol *use_sym(struct parser *p, const char *ident, int sym_kind)
 {
     struct symbol *sym;
 
-    sym = use_symbol(p->symtab, ident->sval, sym_kind);
-    ident->sym = sym;
-    ident->type = ident->sym->type;
-}
+    sym = use_symbol(p->symtab, ident, sym_kind);
 
-static void use_sym2(struct parser *p, struct declaration *decl)
-{
-    struct symbol *sym;
-
-    sym = use_symbol(p->symtab, decl->ident, decl->kind);
-    decl->sym = sym;
-    decl->type = sym->type;
+    return sym;
 }
 
 static void use_member_sym(struct parser *p,
@@ -665,6 +656,7 @@ static struct ast_node *primary_expression(struct parser *p)
 {
     struct ast_node *tree = NULL;
     const struct token *tok = gettok(p);
+    int sym_kind;
 
     switch (tok->kind) {
 
@@ -683,11 +675,11 @@ static struct ast_node *primary_expression(struct parser *p)
     case TOK_IDENT:
         ungettok(p);
         tree = identifier(p);
-        /* TODO may not need to switch symbol kind */
         if (nexttok(p, '('))
-            use_sym(p, tree, SYM_FUNC);
+            sym_kind = SYM_FUNC;
         else
-            use_sym(p, tree, SYM_VAR);
+            sym_kind = SYM_VAR;
+        tree->sym = use_sym(p, tree->sval, sym_kind);
         return convert_(p, typed_(tree));
 
     case '(':
@@ -2025,8 +2017,8 @@ static struct data_type *struct_or_union_specifier(struct parser *p)
 
     if (!consume(p, '{')) {
         /* define an object of struct type */
-        use_sym2(p, &decl);
-        return decl.type;
+        struct symbol *sym = use_sym(p, decl.ident, decl.kind);
+        return sym->type;
     } else {
         /* define a struct type */
         decl.type = type_struct_or_union(decl.kind);
@@ -2096,8 +2088,8 @@ static struct data_type *enum_specifier(struct parser *p)
 
     if (!consume(p, '{')) {
         /* define an object of enum type */
-        use_sym2(p, &decl);
-        return decl.type;
+        struct symbol *sym = use_sym(p, decl.ident, decl.kind);
+        return sym->type;
     } else {
         /* define an enum type */
         decl.type = type_enum();
