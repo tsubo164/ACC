@@ -488,7 +488,7 @@ struct symbol *define_symbol(struct symbol_table *table,
 
     new_sym = push_symbol(table, name, kind, defined_type);
 
-    new_sym->is_defined = 1;
+    new_sym->is_defined = !already_defined;
     new_sym->is_redefined = already_defined;
     new_sym->orig = orig;
     link_type_to_sym(defined_type, new_sym);
@@ -620,8 +620,16 @@ struct symbol *define_label_symbol(struct symbol_table *table, const char *label
 
     for (sym = table->tail; sym; sym = sym->prev) {
         if (match_name(sym, label)) {
-            already_defined = 1;
-            orig = get_origin(sym);
+            if (!sym->is_defined) {
+                /* label used first, then defined */
+                sym->is_defined = 1;
+                return sym;
+            } else {
+                /* re-defined */
+                already_defined = 1;
+                orig = get_origin(sym);
+                break;
+            }
         }
 
         /* reached function sym */
@@ -630,7 +638,7 @@ struct symbol *define_label_symbol(struct symbol_table *table, const char *label
     }
 
     new_sym = push_symbol(table, label, SYM_LABEL, type_int());
-    new_sym->is_defined = 1;
+    new_sym->is_defined = !already_defined;
     new_sym->is_redefined = already_defined;
     new_sym->orig = orig;
 
@@ -642,7 +650,7 @@ struct symbol *use_label_symbol(struct symbol_table *table, const char *label)
     struct symbol *sym;
 
     for (sym = table->tail; sym; sym = sym->prev) {
-        if (match_name(sym, label))
+        if (match_name(sym, label) && !sym->is_redefined)
             return sym;
 
         /* reached function sym */

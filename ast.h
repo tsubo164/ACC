@@ -118,7 +118,6 @@ struct ast_node {
     struct ast_node *r;
 
     long ival;
-    const char *sval;
     struct position pos;
 };
 

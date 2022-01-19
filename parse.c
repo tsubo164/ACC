@@ -495,17 +495,9 @@ static void define_label(struct parser *p, struct declaration *decl)
     decl->sym = sym;
 }
 
-static void use_label(struct parser *p, struct ast_node *node)
+static struct symbol *use_label(struct parser *p, const char *label)
 {
-    if (!node)
-        return;
-
-    if (node->kind == NOD_GOTO) {
-        struct ast_node *label = node->l;
-        label->sym = use_label_symbol(p->symtab, label->sval);
-    }
-    use_label(p, node->l);
-    use_label(p, node->r);
+    return use_label_symbol(p->symtab, label);
 }
 
 static struct symbol *define_string(struct parser *p, const char *str)
@@ -624,15 +616,10 @@ static struct ast_node *statement_list(struct parser *p);
  */
 static struct ast_node *identifier(struct parser *p)
 {
-    struct ast_node *tree = NULL;
-
     if (!consume(p, TOK_IDENT))
         return NULL;
 
-    tree = new_node_(NOD_IDENT, tokpos(p));
-    tree->sval = current_token(p)->text;
-
-    return tree;
+    return new_node_(NOD_IDENT, tokpos(p));
 }
 
 /* primary_expression
@@ -1555,17 +1542,14 @@ static struct ast_node *return_statement(struct parser *p)
  */
 static struct ast_node *goto_statement(struct parser *p)
 {
-    struct ast_node *tree = NULL;
     struct ast_node *ident = NULL;
 
     expect(p, TOK_GOTO);
     ident = identifier(p);
+    ident->sym = use_label(p, current_token(p)->text);
     expect(p, ';');
 
-    tree = new_node(NOD_GOTO, ident, NULL);
-    /* check usage of label symbol in semantics as we need to see all
-     * label declarations in advance */
-    return tree;
+    return new_node(NOD_GOTO, ident, NULL);
 }
 
 /*
@@ -2648,7 +2632,6 @@ static struct ast_node *declaration(struct parser *p)
         struct ast_node *stmt = compound_statement(p);
         struct symbol *func_sym = symbol_of(tree->type);
         tree = new_node(NOD_FUNC_DEF, tree, stmt);
-        use_label(p, stmt);
         end_scope(p);
         compute_func_size(func_sym);
         return tree;
