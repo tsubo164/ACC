@@ -2144,10 +2144,6 @@ static void parameter_declaration(struct parser *p, struct declaration *decl)
     if (is_void(decl->type) && !nexttok(p, '*'))
         return;
 
-    /* TODO temp for new_tree */
-    /* TODO look for the way to remove this.
-     * declaration_specifiers() could override this above */
-    decl->kind = SYM_PARAM;
     declarator(p, decl);
 
     /* 6.7.6.3 A declaration of a parameter as "array of type"
@@ -2716,19 +2712,18 @@ static struct ast_node *extern_decl(struct parser *p)
  */
 static struct ast_node *translation_unit(struct parser *p)
 {
-    struct ast_node *tree = NULL;
+    struct ast_list list = {0};
 
     while (!consume(p, TOK_EOF)) {
         struct ast_node *decl = extern_decl(p);
 
         if (!decl)
-            /* TODO temp for new_tree */
             continue;
 
-        tree = new_node(NOD_LIST, tree, decl);
+        append(&list, decl);
     }
 
-    return tree;
+    return list.head;
 }
 
 struct ast_node *parse_text(struct parser *p, const char *text,

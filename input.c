@@ -2,33 +2,17 @@
 #include <stdio.h>
 */
 
-struct foo {
-    int x, y, z;
+struct point {
+    int x, y;
 };
 
-int bar(char c);
+char a;
+short b;
+int c;
+long d;
 
 int main()
 {
-    int a = 10;
-
-    goto start;
-
-start:
-    if (a < 3)
-        goto final;
-
-final:
-    return sizeof(struct foo );
-
-    goto bar;
-
-start:
+    int f, g, h;
     return 0;
-    /*
-    */
-foo:
-    return 0;
-
-    goto start;
 }

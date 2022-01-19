@@ -428,27 +428,6 @@ static int is_large_object(const struct data_type *type)
     return get_size(type) > 16;
 }
 
-static const struct ast_node *find_node(const struct ast_node *node, int node_kind)
-{
-    const struct ast_node *found = NULL;
-
-    if (!node)
-        return NULL;
-
-    if (node->kind == node_kind)
-        return node;
-
-    found = find_node(node->l, node_kind);
-    if (found)
-        return found;
-
-    found = find_node(node->r, node_kind);
-    if (found)
-        return found;
-
-    return NULL;
-}
-
 static void gen_add_stack_pointer(FILE *fp, int byte)
 {
     if (!byte)
@@ -558,8 +537,7 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
 
 static void gen_func_param_list(FILE *fp, const struct ast_node *node)
 {
-    const struct ast_node *func;
-    func = find_node(node, NOD_DECL_IDENT);
+    const struct ast_node *func = node->l;
 
     if (is_variadic(func->sym))
         gen_func_param_list_variadic_(fp);
@@ -591,11 +569,9 @@ static int get_local_area_size(void)
 
 static void set_local_area_offset(const struct ast_node *node)
 {
-    const struct ast_node *func;
+    const struct ast_node *func = node->l->l;
     int local_var_size = 0;
     int ret_val_size = 0;
-
-    func = find_node(node->l, NOD_DECL_IDENT);
 
     local_var_size = get_mem_offset(func);
 
@@ -608,8 +584,7 @@ static void set_local_area_offset(const struct ast_node *node)
 
 static void gen_func_prologue(FILE *fp, const struct ast_node *node)
 {
-    const struct ast_node *func;
-    func = find_node(node, NOD_DECL_IDENT);
+    const struct ast_node *func = node->l;
 
     if (!is_static(func->sym))
         fprintf(fp, "    .global _%s\n", func->sym->name);
@@ -621,14 +596,7 @@ static void gen_func_prologue(FILE *fp, const struct ast_node *node)
 
 static void gen_func_body(FILE *fp, const struct ast_node *node)
 {
-    const struct ast_node *body = NULL;
-
-    if (0)
-        body = find_node(node, NOD_COMPOUND);
-        /* TODO assert(body) */
-    body = node;
-
-    gen_code(fp, body);
+    gen_code(fp, node);
 }
 
 static void gen_func_epilogue(FILE *fp, const struct ast_node *node)
