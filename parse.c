@@ -485,14 +485,9 @@ static struct symbol *define_case(struct parser *p,
     return sym;
 }
 
-static void define_label(struct parser *p, struct declaration *decl)
+static struct symbol *define_label(struct parser *p, const char *label)
 {
-    struct symbol *sym;
-
-    sym = define_label_symbol(p->symtab, decl->ident);
-    sym->pos = decl->pos;
-
-    decl->sym = sym;
+    return define_label_symbol(p->symtab, label);
 }
 
 static struct symbol *use_label(struct parser *p, const char *label)
@@ -502,11 +497,7 @@ static struct symbol *use_label(struct parser *p, const char *label)
 
 static struct symbol *define_string(struct parser *p, const char *str)
 {
-    struct symbol *sym;
-
-    sym = define_string_symbol(p->symtab, str);
-
-    return sym;
+    return define_string_symbol(p->symtab, str);
 }
 
 static void define_ellipsis(struct parser *p)
@@ -1665,7 +1656,8 @@ static struct ast_node *labeled_statement(struct parser *p)
     decl_identifier(p, &decl);
     expect(p, ':');
 
-    define_label(p, &decl);
+    decl.sym = define_label(p, decl.ident);
+    decl.sym->pos = decl.pos;
 
     tree = NEW_(NOD_LABEL);
     tree->l = new_node_decl_ident(decl.sym, &decl.pos);
