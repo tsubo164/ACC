@@ -598,7 +598,7 @@ static struct ast_node *unary_expression(struct parser *p);
 static struct ast_node *assignment_expression(struct parser *p);
 static struct ast_node *type_name(struct parser *p);
 static void pointer(struct parser *p, struct declaration *decl);
-static void type_specifier(struct parser *p, struct declaration *decl);
+static struct data_type *type_specifier(struct parser *p, struct data_type *type, int *sign);
 static void declaration_specifiers(struct parser *p, struct declaration *decl);
 static void declarator(struct parser *p, struct declaration *decl);
 static void decl_identifier(struct parser *p, struct declaration *decl);
@@ -1800,7 +1800,8 @@ static int type_qualifier(struct parser *p, int qual)
  */
 static void specifier_qualifier_list(struct parser *p, struct declaration *decl)
 {
-    int qual = 0;
+    struct data_type *type = NULL;
+    int qual = 0, sign = 1;
 
     for (;;) {
         const int next = peektok(p);
@@ -1809,7 +1810,7 @@ static void specifier_qualifier_list(struct parser *p, struct declaration *decl)
             qual = type_qualifier(p, qual);
         else
         if (is_type_spec(next))
-            type_specifier(p, decl);
+            type = type_specifier(p, type, &sign);
         else
             break;
     }
@@ -1818,6 +1819,9 @@ static void specifier_qualifier_list(struct parser *p, struct declaration *decl)
     switch (qual) {
     case CONST: decl->is_const = 1; break;
     }
+    decl->type = type;
+    decl->is_unsigned = sign == 0;
+    /*------------------------*/
 
     set_const(decl->type, decl->is_const);
     set_unsigned(decl->type, decl->is_unsigned);
@@ -2075,67 +2079,53 @@ static struct data_type *enum_specifier(struct parser *p)
  *     struct_or_union_specifier
  *     enum_specifier
  */
-static void type_specifier(struct parser *p, struct declaration *decl)
+static struct data_type *type_specifier(struct parser *p, struct data_type *type, int *sign)
 {
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
 
     case TOK_VOID:
-        decl->type = type_void();
-        break;
+        return type_void();
 
     case TOK_CHAR:
-        decl->type = type_char();
-        break;
+        return type_char();
 
     case TOK_SHORT:
-        decl->type = type_short();
-        break;
+        return type_short();
 
     case TOK_INT:
-        decl->type = type_int();
-        break;
+        return type_int();
 
     case TOK_LONG:
-        decl->type = type_long();
-        break;
+        return type_long();
 
     case TOK_SIGNED:
-        break;
+        *sign = 1;
+        return type;
 
     case TOK_UNSIGNED:
-        decl->is_unsigned = 1;
-        break;
+        *sign = 0;
+        return type;
 
     case TOK_STRUCT:
     case TOK_UNION:
         ungettok(p);
-        decl->type = struct_or_union_specifier(p);
-        break;
+        return struct_or_union_specifier(p);
 
     case TOK_ENUM:
         ungettok(p);
-        decl->type = enum_specifier(p);
-        break;
+        return enum_specifier(p);
 
     case TOK_TYPE_NAME:
         {
             struct symbol *sym = find_type_name_symbol(p->symtab, tok->text);
-
-            if (sym) {
-                decl->type = type_type_name(sym);
-                break;
-            }
-            else {
-                /* assert */
-            }
+            return type_type_name(sym);
         }
-        break;
 
     default:
         /* assert */
-        break;
+        return NULL;
     }
 }
 
@@ -2576,7 +2566,8 @@ static int storage_class_specifier(struct parser *p, int sclass)
  */
 static void declaration_specifiers(struct parser *p, struct declaration *decl)
 {
-    int sclass = 0, qual = 0;
+    int sclass = 0, qual = 0, sign = 1;
+    struct data_type *type = NULL;
 
     for (;;) {
         const int next = peektok(p);
@@ -2588,7 +2579,7 @@ static void declaration_specifiers(struct parser *p, struct declaration *decl)
             qual = type_qualifier(p, qual);
         else
         if (is_type_spec(next))
-            type_specifier(p, decl);
+            type = type_specifier(p, type, &sign);
         else
             break;
     }
@@ -2602,6 +2593,9 @@ static void declaration_specifiers(struct parser *p, struct declaration *decl)
     switch (qual) {
     case CONST: decl->is_const = 1; break;
     }
+    decl->type = type;
+    decl->is_unsigned = sign == 0;
+    /*------------------------*/
 
     decl->type = default_to_int(p, decl->type);
 
