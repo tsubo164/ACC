@@ -442,6 +442,7 @@ struct declaration {
 };
 
 enum storage_class { TYPEDEF = 1, EXTERN, STATIC };
+enum type_qual { CONST = 1 };
 
 static void define_sym(struct parser *p, struct declaration *decl)
 {
@@ -1777,19 +1778,17 @@ static struct ast_node *abstract_declarator(struct parser *p, struct declaration
  *     TOK_CONST
  *     TOK_VOLATILE
  */
-static void type_qualifier(struct parser *p, struct declaration *decl)
+static int type_qualifier(struct parser *p, int qual)
 {
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
-
     case TOK_CONST:
-        decl->is_const = 1;
-        break;
+        return CONST;
 
     default:
         ungettok(p);
-        break;
+        return 0;
     }
 }
 
@@ -1801,16 +1800,23 @@ static void type_qualifier(struct parser *p, struct declaration *decl)
  */
 static void specifier_qualifier_list(struct parser *p, struct declaration *decl)
 {
+    int qual = 0;
+
     for (;;) {
         const int next = peektok(p);
 
         if (is_type_qual(next))
-            type_qualifier(p, decl);
+            qual = type_qualifier(p, qual);
         else
         if (is_type_spec(next))
             type_specifier(p, decl);
         else
             break;
+    }
+
+    /* TODO temp for new_decl */
+    switch (qual) {
+    case CONST: decl->is_const = 1; break;
     }
 
     set_const(decl->type, decl->is_const);
@@ -2570,7 +2576,7 @@ static int storage_class_specifier(struct parser *p, int sclass)
  */
 static void declaration_specifiers(struct parser *p, struct declaration *decl)
 {
-    int sclass = 0;
+    int sclass = 0, qual = 0;
 
     for (;;) {
         const int next = peektok(p);
@@ -2579,7 +2585,7 @@ static void declaration_specifiers(struct parser *p, struct declaration *decl)
             sclass = storage_class_specifier(p, sclass);
         else
         if (is_type_qual(next))
-            type_qualifier(p, decl);
+            qual = type_qualifier(p, qual);
         else
         if (is_type_spec(next))
             type_specifier(p, decl);
@@ -2592,6 +2598,9 @@ static void declaration_specifiers(struct parser *p, struct declaration *decl)
     case TYPEDEF: decl->is_typedef = 1; break;
     case EXTERN:  decl->is_extern  = 1; break;
     case STATIC:  decl->is_static  = 1; break;
+    }
+    switch (qual) {
+    case CONST: decl->is_const = 1; break;
     }
 
     decl->type = default_to_int(p, decl->type);
