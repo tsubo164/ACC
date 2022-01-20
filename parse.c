@@ -599,7 +599,7 @@ static struct ast_node *assignment_expression(struct parser *p);
 static struct ast_node *type_name(struct parser *p);
 static void pointer(struct parser *p, struct declaration *decl);
 static struct data_type *type_specifier(struct parser *p, struct data_type *type, int *sign);
-static void declaration_specifiers(struct parser *p, struct declaration *decl);
+static struct data_type *declaration_specifiers(struct parser *p, int *sclass);
 static void declarator(struct parser *p, struct declaration *decl);
 static void decl_identifier(struct parser *p, struct declaration *decl);
 static struct ast_node *declaration_list(struct parser *p);
@@ -2136,7 +2136,20 @@ static struct data_type *type_specifier(struct parser *p, struct data_type *type
  */
 static void parameter_declaration(struct parser *p, struct declaration *decl)
 {
-    declaration_specifiers(p, decl);
+    struct data_type *type = NULL;
+    int sclass = 0;
+
+    type = declaration_specifiers(p, &sclass);
+    /* TODO temp for new_decl */
+    decl->type = type;
+    switch (sclass) {
+    case TYPEDEF: decl->is_typedef = 1; break;
+    case EXTERN:  decl->is_extern  = 1; break;
+    case STATIC:  decl->is_static  = 1; break;
+    }
+    if (decl->is_typedef)
+        decl->kind = SYM_TYPEDEF;
+    /*------------------------*/
 
     /* void parameter */
     if (is_void(decl->type) && !nexttok(p, '*'))
@@ -2564,16 +2577,16 @@ static int storage_class_specifier(struct parser *p, int sclass)
  *     type_qualifier
  *     type_qualifier declaration_specifiers
  */
-static void declaration_specifiers(struct parser *p, struct declaration *decl)
+static struct data_type *declaration_specifiers(struct parser *p, int *sclass)
 {
-    int sclass = 0, qual = 0, sign = 1;
+    int sc = 0, qual = 0, sign = 1;
     struct data_type *type = NULL;
 
     for (;;) {
         const int next = peektok(p);
 
         if (is_storage_class_spec(next))
-            sclass = storage_class_specifier(p, sclass);
+            sc = storage_class_specifier(p, sc);
         else
         if (is_type_qual(next))
             qual = type_qualifier(p, qual);
@@ -2584,26 +2597,13 @@ static void declaration_specifiers(struct parser *p, struct declaration *decl)
             break;
     }
 
-    /* TODO temp for new_decl */
-    switch (sclass) {
-    case TYPEDEF: decl->is_typedef = 1; break;
-    case EXTERN:  decl->is_extern  = 1; break;
-    case STATIC:  decl->is_static  = 1; break;
-    }
-    switch (qual) {
-    case CONST: decl->is_const = 1; break;
-    }
-    decl->type = type;
-    decl->is_unsigned = sign == 0;
-    /*------------------------*/
+    type = default_to_int(p, type);
 
-    decl->type = default_to_int(p, decl->type);
+    set_const(type, qual == CONST);
+    set_unsigned(type, sign == 0);
 
-    set_const(decl->type, decl->is_const);
-    set_unsigned(decl->type, decl->is_unsigned);
-
-    if (decl->is_typedef)
-        decl->kind = SYM_TYPEDEF;
+    *sclass = sc;
+    return type;
 }
 
 /* declaration
@@ -2613,9 +2613,21 @@ static void declaration_specifiers(struct parser *p, struct declaration *decl)
 static struct ast_node *declaration(struct parser *p)
 {
     struct ast_node *tree = NULL;
+    struct data_type *type = NULL;
     struct declaration decl = {SYM_VAR};
+    int sclass = 0;
 
-    declaration_specifiers(p, &decl);
+    type = declaration_specifiers(p, &sclass);
+    /* TODO temp for new_decl */
+    decl.type = type;
+    switch (sclass) {
+    case TYPEDEF: decl.is_typedef = 1; break;
+    case EXTERN:  decl.is_extern  = 1; break;
+    case STATIC:  decl.is_static  = 1; break;
+    }
+    if (decl.is_typedef)
+        decl.kind = SYM_TYPEDEF;
+    /*------------------------*/
 
     tree = init_declarator_list(p, &decl);
 
