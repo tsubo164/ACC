@@ -441,6 +441,8 @@ struct declaration {
     char is_static;
 };
 
+enum storage_class { TYPEDEF = 1, EXTERN, STATIC };
+
 static void define_sym(struct parser *p, struct declaration *decl)
 {
     struct symbol *sym;
@@ -2534,27 +2536,27 @@ static struct ast_node *init_declarator_list(struct parser *p, struct declaratio
  *     TOK_AUTO
  *     TOK_REGISTER
  */
-static void storage_class_specifier(struct parser *p, struct declaration *decl)
+static int storage_class_specifier(struct parser *p, int sclass)
 {
     const struct token *tok = gettok(p);
 
-    switch (tok->kind) {
+    if (sclass > 0)
+        /* error */
+        return 0;
 
+    switch (tok->kind) {
     case TOK_TYPEDEF:
-        decl->is_typedef = 1;
-        break;
+        return TYPEDEF;
 
     case TOK_EXTERN:
-        decl->is_extern = 1;
-        break;
+        return EXTERN;
 
     case TOK_STATIC:
-        decl->is_static = 1;
-        break;
+        return STATIC;
 
     default:
         ungettok(p);
-        break;
+        return 0;
     }
 }
 
@@ -2568,11 +2570,13 @@ static void storage_class_specifier(struct parser *p, struct declaration *decl)
  */
 static void declaration_specifiers(struct parser *p, struct declaration *decl)
 {
+    int sclass = 0;
+
     for (;;) {
         const int next = peektok(p);
 
         if (is_storage_class_spec(next))
-            storage_class_specifier(p, decl);
+            sclass = storage_class_specifier(p, sclass);
         else
         if (is_type_qual(next))
             type_qualifier(p, decl);
@@ -2581,6 +2585,13 @@ static void declaration_specifiers(struct parser *p, struct declaration *decl)
             type_specifier(p, decl);
         else
             break;
+    }
+
+    /* TODO temp for new_decl */
+    switch (sclass) {
+    case TYPEDEF: decl->is_typedef = 1; break;
+    case EXTERN:  decl->is_extern  = 1; break;
+    case STATIC:  decl->is_static  = 1; break;
     }
 
     decl->type = default_to_int(p, decl->type);
