@@ -459,6 +459,16 @@ static void define_sym(struct parser *p, struct declaration *decl)
      * typedef could discard input. find better way */
     decl->type = sym->type;
 }
+static struct symbol *define_sym2(struct parser *p,
+        const char *ident, struct data_type *type, int kind, const struct position *pos)
+{
+    struct symbol *sym;
+
+    sym = define_symbol(p->symtab, ident, kind, type);
+    sym->pos = *pos;
+
+    return sym;
+}
 
 static struct symbol *use_sym(struct parser *p, const char *ident, int sym_kind)
 {
@@ -598,9 +608,11 @@ static struct ast_node *unary_expression(struct parser *p);
 static struct ast_node *assignment_expression(struct parser *p);
 static struct ast_node *type_name(struct parser *p);
 static void pointer(struct parser *p, struct declaration *decl);
+static struct data_type *pointer2(struct parser *p, struct data_type *type);
 static struct data_type *type_specifier(struct parser *p, struct data_type *type, int *sign);
 static struct data_type *declaration_specifiers(struct parser *p, int *sclass);
 static void declarator(struct parser *p, struct declaration *decl);
+static struct symbol *declarator2(struct parser *p, struct data_type *type, int kind);
 static void decl_identifier(struct parser *p, struct declaration *decl);
 static struct ast_node *declaration_list(struct parser *p);
 static struct ast_node *statement_list(struct parser *p);
@@ -1862,6 +1874,23 @@ static void decl_identifier(struct parser *p, struct declaration *decl)
     /* need to add token pos after reading an identifier */
     decl->pos = tok->pos;
 }
+static const char *decl_identifier2(struct parser *p, struct position *pos)
+{
+    const char *ident = NULL;
+    const struct token *tok = NULL;
+
+    if (consume(p, TOK_IDENT)) {
+        tok = current_token(p);
+        ident = tok->text;
+    } else {
+        tok = current_token(p);
+        ident = NULL;
+    }
+
+    /* need to add token pos after reading an identifier */
+    *pos = tok->pos;
+    return ident;
+}
 
 /* struct_declarator
  *     declarator
@@ -2134,43 +2163,35 @@ static struct data_type *type_specifier(struct parser *p, struct data_type *type
  *     declaration_specifiers abstract_declarator
  *     declaration_specifiers
  */
-static void parameter_declaration(struct parser *p, struct declaration *decl)
+static struct symbol *parameter_declaration(struct parser *p)
 {
+    struct symbol *sym = NULL;
     struct data_type *type = NULL;
     int sclass = 0;
 
     type = declaration_specifiers(p, &sclass);
-    /* TODO temp for new_decl */
-    decl->type = type;
-    switch (sclass) {
-    case TYPEDEF: decl->is_typedef = 1; break;
-    case EXTERN:  decl->is_extern  = 1; break;
-    case STATIC:  decl->is_static  = 1; break;
-    }
-    if (decl->is_typedef)
-        decl->kind = SYM_TYPEDEF;
-    /*------------------------*/
 
     /* void parameter */
-    if (is_void(decl->type) && !nexttok(p, '*'))
-        return;
+    if (is_void(type) && !nexttok(p, '*'))
+        return NULL;
 
-    declarator(p, decl);
+    sym = declarator2(p, type, SYM_PARAM);
 
     /* 6.7.6.3 A declaration of a parameter as "array of type"
      * shall be adjusted to "qualified pointer to type" */
-    convert_array_to_pointer(decl->type);
+    convert_array_to_pointer(sym->type);
+
+    return sym;
 }
 
 /* parameter_list
  *     parameter_declaration
  *     parameter_list ',' parameter_declaration
  */
-static void parameter_list(struct parser *p, struct declaration *decl)
+static void parameter_list(struct parser *p)
 {
     for (;;) {
-        struct declaration param_decl = {SYM_PARAM};
-        parameter_declaration(p, &param_decl);
+        parameter_declaration(p);
 
         if (!consume(p, ','))
             return;
@@ -2187,7 +2208,7 @@ static void parameter_type_list(struct parser *p, struct declaration *decl)
 {
     struct symbol *func_sym = symbol_of(decl->type);
 
-    parameter_list(p, decl);
+    parameter_list(p);
 
     if (consume(p, TOK_ELLIPSIS)) {
         define_ellipsis(p);
@@ -2217,6 +2238,28 @@ static void array(struct parser *p, struct declaration *decl)
             free_ast_node(expr);
         }
     }
+}
+
+static struct data_type *array2(struct parser *p, struct data_type *type)
+{
+    struct ast_node *expr = NULL;
+    struct data_type *t = type;
+
+    if (consume(p, '[')) {
+        if (!nexttok(p, ']'))
+            expr = constant_expression(p);
+        expect(p, ']');
+
+        t = array2(p, t);
+        t = type_array(t);
+
+        if (expr) {
+            set_array_length(t, expr->ival);
+            free_ast_node(expr);
+        }
+    }
+
+    return t;
 }
 
 /* direct_declarator
@@ -2295,6 +2338,83 @@ static void direct_declarator(struct parser *p, struct declaration *decl)
         decl->type = decl->sym->type;
     }
 }
+static struct symbol *direct_declarator2(struct parser *p, struct data_type *type, int kind)
+{
+    struct data_type *placeholder = NULL;
+    struct symbol *sym = NULL;
+    struct position pos = {0};
+    const char *ident = NULL;
+
+    if (consume(p, '(')) {
+        struct data_type *tmp = type;
+        placeholder = type_void();
+        type = placeholder;
+
+        sym = declarator2(p, type, kind);
+        expect(p, ')');
+
+        type = tmp;
+    }
+
+    if (nexttok(p, TOK_IDENT))
+        ident = decl_identifier2(p, &pos);
+
+    if (nexttok(p, '['))
+        type = array2(p, type);
+
+    if (consume(p, '(')) {
+        if (!sym) {
+            /* TODO temp for new_decl */
+            struct declaration decl = {0};
+            /* function */
+            /* TODO functions are externnal by default */
+
+            type = type_function(type);
+            sym = define_sym2(p, ident, type, SYM_FUNC, &pos);
+
+            /* TODO temp for new_decl */
+            decl.type = sym->type;
+
+            begin_scope(p);
+            if (!nexttok(p, ')'))
+                parameter_type_list(p, &decl);
+            expect(p, ')');
+        }
+        else {
+            /* TODO temp for new_decl */
+            struct declaration decl = {0};
+            /* function pointer */
+            type = type_function(type);
+            /* link function sym to type */
+            set_symbol(type, sym);
+
+            /* TODO temp for new_decl */
+            decl.kind = kind;
+
+            begin_scope(p);
+            if (!nexttok(p, ')'))
+                parameter_type_list(p, &decl);
+            end_scope(p);
+
+            expect(p, ')');
+        }
+    } else {
+        /* variable, parameter, member, typedef */
+        if (kind == SYM_VAR) {
+            if (ident && !sym)
+                sym = define_sym2(p, ident, type, SYM_VAR, &pos);
+        } else {
+            if (!sym)
+                sym = define_sym2(p, ident, type, kind, &pos);
+        }
+    }
+
+    if (placeholder)
+        copy_data_type(placeholder, type);
+
+    return sym;
+}
+
 
 /* pointer
  *     '*'
@@ -2309,6 +2429,15 @@ static void pointer(struct parser *p, struct declaration *decl)
         decl->type = type_pointer(decl->type);
     }
 }
+static struct data_type *pointer2(struct parser *p, struct data_type *type)
+{
+    struct data_type *t = type;
+
+    while (consume(p, '*'))
+        t = type_pointer(t);
+
+    return t;
+}
 
 /* declarator
  *     pointer direct_declarator
@@ -2318,6 +2447,12 @@ static void declarator(struct parser *p, struct declaration *decl)
 {
     pointer(p, decl);
     direct_declarator(p, decl);
+}
+static struct symbol *declarator2(struct parser *p, struct data_type *type, int kind)
+{
+    struct data_type *t = type;
+    t = pointer2(p, t);
+    return direct_declarator2(p, t, kind);
 }
 
 struct initializer_context {

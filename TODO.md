@@ -28,6 +28,7 @@
   - `(a > 10) ? a = 42 : a = 19` => handle this (expression is not assignable)
   - find the best place to do "array to pointer conversion"
   - improve `make_type_name_()` to output more readable string
+  - in `array()` use loop instead of recursive function call
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;

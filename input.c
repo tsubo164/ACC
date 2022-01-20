@@ -2,17 +2,17 @@
 #include <stdio.h>
 */
 
-struct point {
-    int x, y;
-};
+int array_to_pointer(int a[1])
+{
+    return *a;
+}
 
-char a;
-short b;
-int c;
-long d;
+int array_to_pointer2(char a[1][1])
+{
+    return **a;
+}
 
 int main()
 {
-    int f, g, h;
     return 0;
 }
