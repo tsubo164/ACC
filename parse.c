@@ -2174,20 +2174,13 @@ static void parameter_list(struct parser *p, struct declaration *decl)
  */
 static void parameter_type_list(struct parser *p, struct declaration *decl)
 {
-    struct ast_node *tree = NULL, *list = NULL, *elli = NULL;
     struct symbol *func_sym = symbol_of(decl->type);
 
     parameter_list(p, decl);
 
     if (consume(p, TOK_ELLIPSIS)) {
         define_ellipsis(p);
-
-        elli = new_node_(NOD_SPEC_ELLIPSIS, tokpos(p));
-        list = new_node_(NOD_LIST, tokpos(p));
-        tree = branch_(list, tree, elli);
-
-        if (elli)
-            func_sym->is_variadic = 1;
+        func_sym->is_variadic = 1;
     }
 }
 

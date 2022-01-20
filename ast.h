@@ -81,32 +81,9 @@ enum ast_node_kind {
     NOD_TYPE_NAME,
     /* declaration */
     NOD_DECL_IDENT,
-    NOD_DECL_PARAM,
-    NOD_DECL_MEMBER,
-    NOD_DECL_ENUMERATOR,
-    NOD_DECL_TYPEDEF,
-    NOD_DECL_EXTERN,
-    NOD_DECL_STATIC,
     /* initializer */
     NOD_INIT,
-    NOD_DESIG,
-    /* type qualifier */
-    NOD_QUAL_CONST,
-    /* type specifier */
-    NOD_SPEC_VOID,
-    NOD_SPEC_CHAR,
-    NOD_SPEC_SHORT,
-    NOD_SPEC_INT,
-    NOD_SPEC_LONG,
-    NOD_SPEC_SIGNED,
-    NOD_SPEC_UNSIGNED,
-    NOD_SPEC_POINTER,
-    NOD_SPEC_ARRAY,
-    NOD_SPEC_STRUCT,
-    NOD_SPEC_UNION,
-    NOD_SPEC_ENUM,
-    NOD_SPEC_TYPE_NAME,
-    NOD_SPEC_ELLIPSIS
+    NOD_DESIG
 };
 
 struct ast_node {

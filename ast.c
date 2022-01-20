@@ -114,29 +114,8 @@ const char *node_to_string(const struct ast_node *node)
     case NOD_CONST_EXPR: return "NOD_CONST_EXPR";
     case NOD_TYPE_NAME: return "NOD_TYPE_NAME";
     case NOD_DECL_IDENT: return "NOD_DECL_IDENT";
-    case NOD_DECL_PARAM: return "NOD_DECL_PARAM";
-    case NOD_DECL_MEMBER: return "NOD_DECL_MEMBER";
-    case NOD_DECL_ENUMERATOR: return "NOD_DECL_ENUMERATOR";
-    case NOD_DECL_TYPEDEF: return "NOD_DECL_TYPEDEF";
-    case NOD_DECL_EXTERN: return "NOD_DECL_EXTERN";
-    case NOD_DECL_STATIC: return "NOD_DECL_STATIC";
     case NOD_INIT: return "NOD_INIT";
     case NOD_DESIG: return "NOD_DESIG";
-    case NOD_QUAL_CONST: return "NOD_QUAL_CONST";
-    case NOD_SPEC_VOID: return "NOD_SPEC_VOID";
-    case NOD_SPEC_CHAR: return "NOD_SPEC_CHAR";
-    case NOD_SPEC_SHORT: return "NOD_SPEC_SHORT";
-    case NOD_SPEC_INT: return "NOD_SPEC_INT";
-    case NOD_SPEC_LONG: return "NOD_SPEC_LONG";
-    case NOD_SPEC_SIGNED: return "NOD_SPEC_SIGNED";
-    case NOD_SPEC_UNSIGNED: return "NOD_SPEC_UNSIGNED";
-    case NOD_SPEC_POINTER: return "NOD_SPEC_POINTER";
-    case NOD_SPEC_ARRAY: return "NOD_SPEC_ARRAY";
-    case NOD_SPEC_STRUCT: return "NOD_SPEC_STRUCT";
-    case NOD_SPEC_UNION: return "NOD_SPEC_UNION";
-    case NOD_SPEC_ENUM: return "NOD_SPEC_ENUM";
-    case NOD_SPEC_TYPE_NAME: return "NOD_SPEC_TYPE_NAME";
-    case NOD_SPEC_ELLIPSIS: return "NOD_SPEC_ELLIPSIS";
     default: return "**unknown**";
     }
 }
@@ -163,13 +142,6 @@ static void print_tree_recursive(const struct ast_node *tree, int depth)
 
     if (tree->sym != NULL || tree->kind == NOD_NUM) {
         printf(TERMINAL_COLOR_CYAN);
-        printf(TERMINAL_DECORATION_BOLD);
-            printf("%s", node_to_string(tree));
-        printf(TERMINAL_DECORATION_RESET);
-        printf(TERMINAL_COLOR_RESET);
-    }
-    else if (tree->kind >= NOD_SPEC_VOID) {
-        printf(TERMINAL_COLOR_RED);
         printf(TERMINAL_DECORATION_BOLD);
             printf("%s", node_to_string(tree));
         printf(TERMINAL_DECORATION_RESET);
