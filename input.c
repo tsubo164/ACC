@@ -2,17 +2,28 @@
 #include <stdio.h>
 */
 
-int array_to_pointer(int a[1])
+/*
+void assert(int expected, int actual);
+int g_count = 12;
+*/
+int num()
 {
-    return *a;
+    return 23;
 }
 
-int array_to_pointer2(char a[1][1])
-{
-    return **a;
-}
 
 int main()
 {
+    /*
+    assert(1, 1);
+    */
+    int (*fp2)();
+
+    fp2 = num;
+
     return 0;
+    /*
+    return num();
+    return g_count;
+    */
 }

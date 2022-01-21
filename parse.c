@@ -335,9 +335,9 @@ static struct ast_node *new_node_num(long num, const struct position *pos)
     return typed_(node);
 }
 
-static struct ast_node *new_node_decl_ident(struct symbol *sym, const struct position *pos)
+static struct ast_node *new_node_decl_ident(struct symbol *sym)
 {
-    struct ast_node *node = new_node_(NOD_DECL_IDENT, pos);
+    struct ast_node *node = new_node_(NOD_DECL_IDENT, &sym->pos);
     node->sym = sym;
     return typed_(node);
 }
@@ -1675,7 +1675,7 @@ static struct ast_node *labeled_statement(struct parser *p)
     decl.sym->pos = decl.pos;
 
     tree = NEW_(NOD_LABEL);
-    tree->l = new_node_decl_ident(decl.sym, &decl.pos);
+    tree->l = new_node_decl_ident(decl.sym);
     tree->r = statement(p);
 
     return tree;
@@ -2399,7 +2399,7 @@ static struct symbol *direct_declarator2(struct parser *p, struct data_type *typ
     }
 
     if (placeholder)
-        copy_data_type(placeholder, sym->type);
+        copy_data_type(placeholder, type);
 
     return sym;
 }
@@ -2619,19 +2619,26 @@ static struct ast_node *string_initializer(struct parser *p,
  *     declarator
  *     declarator '=' initializer
  */
-static struct ast_node *init_declarator(struct parser *p, struct declaration *decl)
+static struct ast_node *init_declarator(struct parser *p, struct data_type *type, int sclass)
 {
     struct ast_node *tree = NULL;
+    const int kind = (sclass == TYPEDEF) ? SYM_TYPEDEF : SYM_VAR;
+    struct symbol *sym = declarator2(p, type, kind);
 
-    declarator(p, decl);
-
-    if (!decl->ident)
+    if (!sym)
         return NULL;
 
-    tree = new_node_decl_ident(decl->sym, &decl->pos);
+    sym->is_extern = sclass == EXTERN;
+    sym->is_static = sclass == STATIC;
+
+    if (is_func(sym) && !is_extern(sym) && !is_static(sym))
+        /* functions are externnal by default */
+        sym->is_extern = 1;
+
+    tree = new_node_decl_ident(sym);
 
     if (consume(p, '=')) {
-        struct initializer_context init = root_initializer(decl->sym->type);
+        struct initializer_context init = root_initializer(sym->type);
         tree->l = initializer(p, &init);
     }
 
@@ -2642,13 +2649,13 @@ static struct ast_node *init_declarator(struct parser *p, struct declaration *de
  *     init_declarator
  *     init_declarator_list ',' init_declarator
  */
-static struct ast_node *init_declarator_list(struct parser *p, struct declaration *decl)
+static struct ast_node *init_declarator_list(struct parser *p,
+        struct data_type *type, int sclass)
 {
     struct ast_list list = {0};
 
     for (;;) {
-        struct declaration child_decl = *decl;
-        struct ast_node *init = init_declarator(p, &child_decl);
+        struct ast_node *init = init_declarator(p, type, sclass);
 
         if (!init)
             break;
@@ -2738,22 +2745,10 @@ static struct ast_node *declaration(struct parser *p)
 {
     struct ast_node *tree = NULL;
     struct data_type *type = NULL;
-    struct declaration decl = {SYM_VAR};
     int sclass = 0;
 
     type = declaration_specifiers(p, &sclass);
-    /* TODO temp for new_decl */
-    decl.type = type;
-    switch (sclass) {
-    case TYPEDEF: decl.is_typedef = 1; break;
-    case EXTERN:  decl.is_extern  = 1; break;
-    case STATIC:  decl.is_static  = 1; break;
-    }
-    if (decl.is_typedef)
-        decl.kind = SYM_TYPEDEF;
-    /*------------------------*/
-
-    tree = init_declarator_list(p, &decl);
+    tree = init_declarator_list(p, type, sclass);
 
     if (!tree) {
         /* no object is declared */
