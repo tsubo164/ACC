@@ -1766,11 +1766,9 @@ static struct ast_node *statement(struct parser *p)
  *     direct_abstract_declarator '(' ')'
  *     direct_abstract_declarator '(' parameter_type_list ')'
  */
-static struct ast_node *direct_abstract_declarator(struct parser *p)
+static struct data_type *direct_abstract_declarator(struct parser *p, struct data_type *type)
 {
-    struct ast_node *tree = NULL;
-
-    return tree;
+    return type;
 }
 
 /* abstract_declarator
@@ -1778,10 +1776,11 @@ static struct ast_node *direct_abstract_declarator(struct parser *p)
  *     direct_abstract_declarator
  *     pointer direct_abstract_declarator
  */
-static struct ast_node *abstract_declarator(struct parser *p, struct declaration *decl)
+static struct data_type *abstract_declarator(struct parser *p, struct data_type *type)
 {
-    pointer(p, decl);
-    return direct_abstract_declarator(p);
+    struct data_type *t = type;
+    t = pointer2(p, type);
+    return direct_abstract_declarator(p, t);
 }
 
 /* type_qualifier
@@ -1838,15 +1837,13 @@ static struct data_type *specifier_qualifier_list(struct parser *p)
 static struct ast_node *type_name(struct parser *p)
 {
     struct ast_node *tree = NULL;
-    struct ast_node *spec = NULL;
-    struct declaration decl = {0};
+    struct data_type *type = NULL;
 
-    decl.type = specifier_qualifier_list(p);
+    type = specifier_qualifier_list(p);
+    type = abstract_declarator(p, type);
 
     tree = NEW_(NOD_TYPE_NAME);
-    tree->l = spec;
-    tree->r = abstract_declarator(p, &decl);
-    tree->type = decl.type;
+    tree->type = type;
 
     return tree;
 }
