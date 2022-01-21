@@ -2007,8 +2007,11 @@ static struct data_type *struct_or_union_specifier(struct parser *p)
 {
     struct data_type *type = NULL;
     struct position pos = {0};
-    const int kind = struct_or_union(p);
-    const char *ident = decl_identifier2(p, &pos);
+    const char *ident = NULL;
+    int kind;
+
+    kind = struct_or_union(p);
+    ident = decl_identifier2(p, &pos);
 
     if (!consume(p, '{')) {
         /* define an object of struct type */
@@ -2038,16 +2041,18 @@ static struct data_type *struct_or_union_specifier(struct parser *p)
  *     TOK_IDENT
  *     TOK_IDENT '=' constant_expression
  */
-static int enumerator(struct parser *p, struct declaration *decl, int next_value)
+static int enumerator(struct parser *p, int next_value)
 {
+    struct symbol *sym = NULL;
+    struct position pos = {0};
+    const char *ident = NULL;
     int val = next_value;
 
     if (!nexttok(p, TOK_IDENT))
         return 0;
-    decl_identifier(p, decl);
 
-    decl->type = type_int();
-    define_sym(p, decl);
+    ident = decl_identifier2(p, &pos);
+    sym = define_sym2(p, ident, type_int(), SYM_ENUMERATOR, &pos);
 
     if (consume(p, '=')) {
         struct ast_node *expr = constant_expression(p);
@@ -2055,7 +2060,7 @@ static int enumerator(struct parser *p, struct declaration *decl, int next_value
         free_ast_node(expr);
     }
 
-    decl->sym->mem_offset = val;
+    sym->mem_offset = val;
     return val + 1;
 }
 
@@ -2063,13 +2068,12 @@ static int enumerator(struct parser *p, struct declaration *decl, int next_value
  *     enumerator
  *     enumerator_list ',' enumerator
  */
-static void enumerator_list(struct parser *p, struct declaration *decl)
+static void enumerator_list(struct parser *p)
 {
     int next_value = 0;
 
     do {
-        struct declaration enumerator_decl = {SYM_ENUMERATOR};
-        next_value = enumerator(p, &enumerator_decl, next_value);
+        next_value = enumerator(p, next_value);
     } while (consume(p, ','));
 }
 
@@ -2080,27 +2084,30 @@ static void enumerator_list(struct parser *p, struct declaration *decl)
  */
 static struct data_type *enum_specifier(struct parser *p)
 {
-    struct declaration decl = {SYM_TAG_ENUM};
+    struct data_type *type = NULL;
+    struct position pos = {0};
+    const char *ident = NULL;
 
     expect(p, TOK_ENUM);
-    decl_identifier(p, &decl);
+    ident = decl_identifier2(p, &pos);
 
     if (!consume(p, '{')) {
         /* define an object of enum type */
-        struct symbol *sym = use_sym(p, decl.ident, decl.kind);
+        struct symbol *sym = use_sym(p, ident, SYM_TAG_ENUM);
         return sym->type;
     } else {
         /* define an enum type */
-        decl.type = type_enum();
-        define_sym(p, &decl);
+        struct symbol *sym;
+        type = type_enum();
+        sym = define_sym2(p, ident, type, SYM_TAG_ENUM, &pos);
     }
 
-    enumerator_list(p, &decl);
+    enumerator_list(p);
 
     expect(p, '}');
-    compute_enum_size(decl.sym);
+    compute_enum_size(type->sym);
 
-    return decl.type;
+    return type;
 }
 
 /* type_specifier
