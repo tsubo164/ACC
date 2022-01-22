@@ -659,3 +659,38 @@ void compute_struct_size_(struct data_type *type)
         symbol_of(type)->mem_offset = byte_size;
     }
 }
+
+void compute_union_size_(struct data_type *type)
+{
+    struct member *memb = NULL;
+    int max_size = 0;
+    int max_align = 0;
+
+    if (is_incomplete(type))
+        return;
+
+    for (memb = type->members; memb; memb = memb->next) {
+        struct symbol *sym = memb->sym;
+        const int size  = get_size(sym->type);
+        const int align = get_alignment(sym->type);
+
+        sym->mem_offset = 0;
+        max_size = size > max_size ? size : max_size;
+        max_align = align > max_align ? align : max_align;
+    }
+
+    if (max_align == 0) {
+        /* an empty union created by error. pretends its size is 4 */
+        max_size = 4;
+        max_align = 4;
+    }
+
+    {
+        const int union_size  = align_to(max_size, max_align);
+        const int union_align = max_align;
+
+        set_union_size(type, union_size);
+        set_union_align(type, union_align);
+        symbol_of(type)->mem_offset = union_size;
+    }
+}
