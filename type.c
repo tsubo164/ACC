@@ -570,29 +570,6 @@ void add_member_list(struct data_type *type, struct member *head)
     type->members = head;
 }
 
-static int is_scope_end(const struct symbol *sym)
-{
-    return sym && sym->kind == SYM_SCOPE_END;
-}
-
-static int is_end_of_scope(const struct symbol *sym, const struct symbol *scope_owner)
-{
-    if (!sym || !scope_owner)
-        return 0;
-
-    return is_scope_end(sym) && sym->scope_level == scope_owner->scope_level;
-}
-
-static int is_member_of(const struct symbol *sym, const struct symbol *struct_sym)
-{
-    /* inside of struct is one level upper than struct scope */
-    if (!sym || !struct_sym)
-        return 0;
-
-    return is_member(sym) &&
-        sym->scope_level == struct_sym->scope_level + 1;
-}
-
 static int align_to(int pos, int align)
 {
     assert(align > 0);
@@ -610,11 +587,6 @@ static int to_byte(int bit)
     return bit / 8;
 }
 
-static int is_bitfield_of(const struct symbol *sym, const struct symbol *struct_sym)
-{
-    return is_member_of(sym, struct_sym) && is_bitfield(sym);
-}
-
 static void print_bitfield(const struct symbol *sym)
 {
     if (!is_bitfield(sym))
@@ -627,23 +599,23 @@ static void print_bitfield(const struct symbol *sym)
 
 void compute_struct_size_(struct data_type *type)
 {
-    struct symbol *struct_sym = symbol_of(type);
-
-    struct symbol *sym;
+    struct member *memb = NULL;
     /* compute in bit */
     int max_size = 0;
     int max_align = 0;
 
-    if (is_incomplete(struct_sym->type))
+    if (is_incomplete(type))
         return;
 
-    for (sym = struct_sym; sym; sym = sym->next) {
-        if (is_bitfield_of(sym, struct_sym) && sym->bit_width == 0) {
+    for (memb = type->members; memb; memb = memb->next) {
+        struct symbol *sym = memb->sym;
+
+        if (is_bitfield(sym) && sym->bit_width == 0) {
             const int align = to_bit(4); /* 32 bit */
             /* just align to next unit and adds no padding */
             max_size = align_to(max_size, align);
         }
-        else if (is_bitfield_of(sym, struct_sym)) {
+        else if (is_bitfield(sym)) {
             const int size  = sym->bit_width;
             const int align = to_bit(4); /* 32 bit */
             const int fits = max_size % align + size <= align;
@@ -656,7 +628,7 @@ void compute_struct_size_(struct data_type *type)
             max_size += size;
             max_align = align > max_align ? align : max_align;
         }
-        else if (is_member_of(sym, struct_sym)) {
+        else {
             const int size = to_bit(get_size(sym->type));
             const int align = to_bit(get_alignment(sym->type));
 
@@ -667,9 +639,6 @@ void compute_struct_size_(struct data_type *type)
         }
         if (0)
             print_bitfield(sym);
-
-        if (is_end_of_scope(sym, struct_sym))
-            break;
     }
 
     if (max_align == 0) {
@@ -685,8 +654,8 @@ void compute_struct_size_(struct data_type *type)
         const int byte_size  = align_to(to_byte(max_size), to_byte(max_align));
         const int byte_align = to_byte(max_align);
 
-        set_struct_size(struct_sym->type, byte_size);
-        set_struct_align(struct_sym->type, byte_align);
-        struct_sym->mem_offset = byte_size;
+        set_struct_size(type, byte_size);
+        set_struct_align(type, byte_align);
+        symbol_of(type)->mem_offset = byte_size;
     }
 }

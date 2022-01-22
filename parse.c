@@ -1964,7 +1964,7 @@ static struct data_type *type_struct_or_union(int kind)
 static void compute_struct_or_union_size(struct data_type *type, int kind)
 {
     if (kind == SYM_TAG_STRUCT)
-        compute_struct_size(type->sym);
+        compute_struct_size_(type);
     else
         compute_union_size(type->sym);
 }
