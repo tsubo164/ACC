@@ -488,9 +488,9 @@ static struct symbol *define_string(struct parser *p, const char *str)
     return define_string_symbol(p->symtab, str);
 }
 
-static void define_ellipsis(struct parser *p)
+static struct symbol *define_ellipsis(struct parser *p)
 {
-    define_ellipsis_symbol(p->symtab);
+    return define_ellipsis_symbol(p->symtab);
 }
 
 static void begin_scope(struct parser *p)
@@ -1876,14 +1876,14 @@ static struct symbol *struct_declarator(struct parser *p, struct data_type *type
  */
 static struct member *struct_declarator_list(struct parser *p, struct data_type *type)
 {
-    struct member *head = NULL;
+    struct member *membs = NULL;
 
     do {
         struct symbol *sym = struct_declarator(p, type);
-        head = append_member(head, new_member(sym));
+        membs = append_member(membs, new_member(sym));
     } while (consume(p, ','));
 
-    return head;
+    return membs;
 }
 
 /* struct_declaration
@@ -1908,14 +1908,14 @@ static struct member *struct_declaration(struct parser *p)
  */
 static struct member *struct_declaration_list(struct parser *p)
 {
-    struct member *head = NULL;
+    struct member *membs = NULL;
 
     for (;;) {
         const int next = peektok(p);
 
         if (is_type_spec_qual(next)) {
-            struct member *membs = struct_declaration(p);
-            head = append_member(head, membs);
+            struct member *m = struct_declaration(p);
+            membs = append_member(membs, m);
         }
         else if (next == '}' || next == TOK_EOF) {
             break;
@@ -1931,7 +1931,7 @@ static struct member *struct_declaration_list(struct parser *p)
         }
     }
 
-    return head;
+    return membs;
 }
 
 /* struct_or_union
@@ -2169,32 +2169,41 @@ static struct symbol *parameter_declaration(struct parser *p)
  *     parameter_declaration
  *     parameter_list ',' parameter_declaration
  */
-static void parameter_list(struct parser *p)
+static struct parameter *parameter_list(struct parser *p)
 {
+    struct parameter *params = NULL;
+
     for (;;) {
-        parameter_declaration(p);
+        struct symbol *sym = parameter_declaration(p);
+        params = append_parameter(params, new_parameter(sym));
 
         if (!consume(p, ','))
-            return;
+            break;
         if (nexttok(p, TOK_ELLIPSIS))
-            return;
+            break;
     }
+
+    return params;
 }
 
 /* parameter_type_list
  *     parameter_list
  *     parameter_type_list ',' TOK_ELLIPSIS
  */
-static void parameter_type_list(struct parser *p, struct data_type *func)
+static struct parameter *parameter_type_list(struct parser *p, struct data_type *func)
 {
+    struct parameter *params = NULL;
     struct symbol *func_sym = symbol_of(func);
 
-    parameter_list(p);
+    params = parameter_list(p);
 
     if (consume(p, TOK_ELLIPSIS)) {
-        define_ellipsis(p);
+        struct symbol *sym = define_ellipsis(p);
+        params = append_parameter(params, new_parameter(sym));
         func_sym->is_variadic = 1;
     }
+
+    return params;
 }
 
 /* array
@@ -2258,6 +2267,7 @@ static struct symbol *direct_declarator(struct parser *p, struct data_type *type
         type = array(p, type);
 
     if (consume(p, '(')) {
+        struct parameter *params = NULL;
         if (!sym) {
             /* function */
             type = type_function(type);
@@ -2265,8 +2275,9 @@ static struct symbol *direct_declarator(struct parser *p, struct data_type *type
 
             begin_scope(p);
             if (!nexttok(p, ')'))
-                parameter_type_list(p, sym->type);
+                params = parameter_type_list(p, sym->type);
             expect(p, ')');
+            add_parameter_list(type, params);
         }
         else {
             /* function pointer */
@@ -2276,10 +2287,11 @@ static struct symbol *direct_declarator(struct parser *p, struct data_type *type
 
             begin_scope(p);
             if (!nexttok(p, ')'))
-                parameter_type_list(p, sym->type);
+                params = parameter_type_list(p, sym->type);
             end_scope(p);
 
             expect(p, ')');
+            add_parameter_list(type, params);
         }
     } else {
         /* variable, parameter, member, typedef */

@@ -22,6 +22,11 @@ struct member {
     struct symbol *sym;
 };
 
+struct parameter {
+    struct parameter *next;
+    struct symbol *sym;
+};
+
 struct data_type {
     int kind;
     int byte_size;
@@ -36,6 +41,7 @@ struct data_type {
     struct symbol *alias;
 
     struct member *members;
+    struct parameter *parameters;
 
     char is_const;
     char is_unsigned;
@@ -96,8 +102,12 @@ extern struct data_type *type_type_name(struct symbol *type_name);
 extern struct data_type *type_function(struct data_type *return_type);
 
 extern struct member *new_member(struct symbol *sym);
-extern struct member *append_member(struct member *head, struct member *mem);
+extern struct member *append_member(struct member *head, struct member *memb);
 extern void add_member_list(struct data_type *type, struct member *head);
+extern struct parameter *new_parameter(struct symbol *sym);
+extern struct parameter *append_parameter(struct parameter *head, struct parameter *param);
+extern void add_parameter_list(struct data_type *type, struct parameter *head);
+
 extern void compute_struct_size_(struct data_type *type);
 extern void compute_union_size_(struct data_type *type);
 extern void compute_enum_size_(struct data_type *type);

@@ -7,6 +7,11 @@ struct foo {
     char c, d;
 };
 
+int add(int x, int y, int z)
+{
+    return x + y + z;
+}
+
 int main()
 {
     return sizeof(int);

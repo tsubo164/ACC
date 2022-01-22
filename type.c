@@ -538,27 +538,27 @@ struct data_type *type_function(struct data_type *return_type)
 
 struct member *new_member(struct symbol *sym)
 {
-    struct member *mem = NULL;
+    struct member *memb = NULL;
 
     if (!sym)
         return NULL;
 
-    mem = calloc(1, sizeof(struct member));
-    mem->sym = sym;
+    memb = calloc(1, sizeof(struct member));
+    memb->sym = sym;
 
-    return mem;
+    return memb;
 }
 
-struct member *append_member(struct member *head, struct member *mem)
+struct member *append_member(struct member *head, struct member *memb)
 {
     struct member *m = NULL;
 
     if (!head)
-        return mem;
+        return memb;
 
     for (m = head; m->next; m = m->next)
         ;
-    m->next = mem;
+    m->next = memb;
 
     return head;
 }
@@ -568,6 +568,40 @@ void add_member_list(struct data_type *type, struct member *head)
     if (!is_struct_or_union(type))
         return;
     type->members = head;
+}
+
+struct parameter *new_parameter(struct symbol *sym)
+{
+    struct parameter *param = NULL;
+
+    if (!sym)
+        return NULL;
+
+    param = calloc(1, sizeof(struct parameter));
+    param->sym = sym;
+
+    return param;
+}
+
+struct parameter *append_parameter(struct parameter *head, struct parameter *param)
+{
+    struct parameter *p = NULL;
+
+    if (!head)
+        return param;
+
+    for (p = head; p->next; p = p->next)
+        ;
+    p->next = param;
+
+    return head;
+}
+
+void add_parameter_list(struct data_type *type, struct parameter *head)
+{
+    if (!is_function(type))
+        return;
+    type->parameters = head;
 }
 
 static int align_to(int pos, int align)
