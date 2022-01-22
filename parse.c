@@ -2340,7 +2340,7 @@ static struct symbol *declarator(struct parser *p, struct data_type *type, int k
 struct initializer_context {
     struct data_type *parent_type;
     struct data_type *type;
-    const struct symbol *member;
+    const struct member *member;
     int mem_offset;
     int index;
     int length;
@@ -2412,8 +2412,8 @@ static struct initializer_context child_initializer(const struct initializer_con
         child.has_length = !has_unkown_array_length(parent->type);
     }
     else if (is_struct_or_union(parent->type)) {
-        child.member = first_member(symbol_of(parent->type));
-        child.type = child.member->type ? child.member->type : NULL;
+        child.member = first_member_(parent->type);
+        child.type = child.member->sym->type;
     }
 
     return child;
@@ -2431,10 +2431,10 @@ static void next_initializer(struct initializer_context *child)
         }
     }
     else if (is_struct_or_union(child->parent_type)) {
-        child->member = next_member(child->member);
+        child->member = next_member_(child->member);
         if (child->member && !is_union(child->parent_type)) {
-            child->type = child->member->type;
-            child->mem_offset = child->member->mem_offset;
+            child->type = child->member->sym->type;
+            child->mem_offset = child->member->sym->mem_offset;
         } else {
             child->type = NULL;
             child->mem_offset = 0;

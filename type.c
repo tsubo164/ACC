@@ -604,6 +604,40 @@ void add_parameter_list(struct data_type *type, struct parameter *head)
     type->parameters = head;
 }
 
+const struct member *first_member_(const struct data_type *type)
+{
+    if (!is_struct_or_union(type))
+        return NULL;
+
+    if (is_incomplete(type))
+        return NULL;
+
+    return type->members;
+}
+
+static int is_bit_padding(const struct symbol *sym)
+{
+    return is_bitfield(sym) && !sym->name;
+}
+
+const struct member *next_member_(const struct member *memb)
+{
+    const struct member *m;
+
+    for (m = memb->next; m; m = m->next) {
+        if (is_bit_padding(m->sym))
+            continue;
+        break;
+    }
+
+    return m;
+}
+
+/*
+const struct parameter *first_param_(const struct data_type *type)
+const struct parameter *next_param_(const struct parameter *param)
+*/
+
 static int align_to(int pos, int align)
 {
     assert(align > 0);

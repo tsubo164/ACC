@@ -1396,9 +1396,10 @@ static void zero_clear_bytes(struct memory_byte *bytes, const struct data_type *
         }
     }
     else if (is_struct(type)) {
-        const struct symbol *sym;
+        const struct member *m;
+        for (m = first_member_(type); m; m = next_member_(m)) {
+            const struct symbol *sym = m->sym;
 
-        for (sym = first_member(type->sym); sym; sym = next_member(sym)) {
             if (is_bitfield(sym))
                 append_new_bit(&bytes[sym->mem_offset],
                         sym->bit_width, sym->bit_offset);
@@ -1406,9 +1407,8 @@ static void zero_clear_bytes(struct memory_byte *bytes, const struct data_type *
         }
     }
     else if (is_union(type)) {
-        /* initialize only the first member of union */
-        const struct symbol *sym = first_member(type->sym);
-        zero_clear_bytes(bytes, sym->type);
+        const struct member *m = first_member_(type);
+        zero_clear_bytes(bytes, m->sym->type);
     }
     else {
         /* scalar */
