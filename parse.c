@@ -1874,35 +1874,48 @@ static struct symbol *struct_declarator(struct parser *p, struct data_type *type
  *     struct_declarator
  *     struct_declarator_list ',' struct_declarator
  */
-static void struct_declarator_list(struct parser *p, struct data_type *type)
+static struct member *struct_declarator_list(struct parser *p, struct data_type *type)
 {
+    struct member *head = NULL;
+
     do {
-        struct_declarator(p, type);
+        struct symbol *sym = struct_declarator(p, type);
+        head = append_member(head, new_member(sym));
     } while (consume(p, ','));
+
+    return head;
 }
 
 /* struct_declaration
  *     specifier_qualifier_list struct_declarator_list ';'
  */
-static void struct_declaration(struct parser *p)
+static struct member *struct_declaration(struct parser *p)
 {
+    struct member *membs = NULL;
     struct data_type *type = NULL;
+
     type = specifier_qualifier_list(p);
-    struct_declarator_list(p, type);
+    membs = struct_declarator_list(p, type);
+
     expect(p, ';');
+
+    return membs;
 }
 
 /* struct_declaration_list
  *     struct_declaration
  *     struct_declaration_list struct_declaration
  */
-static void struct_declaration_list(struct parser *p)
+static struct member *struct_declaration_list(struct parser *p)
 {
+    struct member *head = NULL;
+
     for (;;) {
         const int next = peektok(p);
 
         if (is_type_spec_qual(next)) {
-            struct_declaration(p);
+            struct member *membs = struct_declaration(p);
+            head = append_member(head, membs);
         }
         else if (next == '}' || next == TOK_EOF) {
             break;
@@ -1917,6 +1930,8 @@ static void struct_declaration_list(struct parser *p)
             break;
         }
     }
+
+    return head;
 }
 
 /* struct_or_union
@@ -1961,6 +1976,7 @@ static void compute_struct_or_union_size(struct data_type *type, int kind)
  */
 static struct data_type *struct_or_union_specifier(struct parser *p)
 {
+    struct member *membs = NULL;
     struct data_type *type = NULL;
     struct position pos = {0};
     const char *ident = NULL;
@@ -1984,7 +2000,8 @@ static struct data_type *struct_or_union_specifier(struct parser *p)
     }
 
     begin_scope(p);
-    struct_declaration_list(p);
+    membs = struct_declaration_list(p);
+    add_member_list(type, membs);
     end_scope(p);
 
     expect(p, '}');

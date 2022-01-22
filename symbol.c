@@ -540,7 +540,6 @@ static int is_end_of_scope(const struct symbol *sym, const struct symbol *scope_
     return is_scope_end(sym) && sym->scope_level == scope_owner->scope_level;
 }
 
-
 static struct symbol *find_struct_member(struct symbol *struct_sym, const char *name)
 {
     struct symbol *sym;

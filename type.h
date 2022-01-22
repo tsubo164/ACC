@@ -17,6 +17,11 @@ enum data_type_kind {
 
 struct symbol;
 
+struct member {
+    struct member *next;
+    struct symbol *sym;
+};
+
 struct data_type {
     int kind;
     int byte_size;
@@ -29,6 +34,8 @@ struct data_type {
     struct symbol *sym;
     /* typedefs */
     struct symbol *alias;
+
+    struct member *members;
 
     char is_const;
     char is_unsigned;
@@ -87,5 +94,10 @@ extern struct data_type *type_union(void);
 extern struct data_type *type_enum(void);
 extern struct data_type *type_type_name(struct symbol *type_name);
 extern struct data_type *type_function(struct data_type *return_type);
+
+extern struct member *new_member(struct symbol *sym);
+extern struct member *append_member(struct member *head, struct member *mem);
+extern void add_member_list(struct data_type *type, struct member *head);
+extern void compute_struct_size_(struct data_type *type);
 
 #endif /* _H */
