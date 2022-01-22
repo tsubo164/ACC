@@ -631,6 +631,74 @@ static void print_bitfield(const struct symbol *sym)
     printf("    mem_offset: %d\n", sym->mem_offset);
 }
 
+static int compute_offset(const struct data_type *type, int total_offset)
+{
+    int offset = total_offset;
+    const int size  = get_size(type);
+    const int align = get_alignment(type);
+
+    offset = align_to(offset, align);
+    offset += size;
+
+    return offset;
+}
+
+static int compute_param_size(struct parameter *params, int total_offset, int variadic)
+{
+    struct parameter *p;
+    int param_index = 0;
+    int offset = total_offset;
+
+    for (p = params; p; p = p->next) {
+        struct symbol *sym = p->sym;
+
+        if (param_index < 6) {
+            if (variadic) {
+                /* store to var_list.reg_save_area */
+                sym->mem_offset = 8 * (6 - param_index);
+            } else {
+                offset = compute_offset(sym->type, offset);
+                sym->mem_offset = offset;
+            }
+        } else {
+            int stack_index = param_index - 6;
+            /* return address and original rbp (8 + 8 = 16 bytes)
+             * is on top of arguments */
+            sym->mem_offset = -(16 + 8 * stack_index);
+        }
+        param_index++;
+    }
+
+    return offset;
+}
+
+void compute_func_size_(struct data_type *type)
+{
+    struct symbol *func_sym = symbol_of(type);
+    struct symbol *sym;
+    const int variadic = is_variadic(func_sym);
+    int total_offset = 0;
+
+    if (variadic)
+        /* the size of reg_save_area (8 bytes * 6 registers) */
+        total_offset += 48;
+
+    total_offset = compute_param_size(type->parameters, total_offset, variadic);
+
+    for (sym = func_sym; sym; sym = sym->next) {
+
+        if (is_local_var(sym)) {
+            total_offset = compute_offset(sym->type, total_offset);
+            sym->mem_offset = total_offset;
+        }
+
+        if (sym->kind == SYM_SCOPE_END && sym->scope_level == 0)
+            break;
+    }
+
+    func_sym->mem_offset = align_to(total_offset, 16);
+}
+
 void compute_struct_size_(struct data_type *type)
 {
     struct member *memb = NULL;

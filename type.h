@@ -108,6 +108,7 @@ extern struct parameter *new_parameter(struct symbol *sym);
 extern struct parameter *append_parameter(struct parameter *head, struct parameter *param);
 extern void add_parameter_list(struct data_type *type, struct parameter *head);
 
+extern void compute_func_size_(struct data_type *type);
 extern void compute_struct_size_(struct data_type *type);
 extern void compute_union_size_(struct data_type *type);
 extern void compute_enum_size_(struct data_type *type);

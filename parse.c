@@ -2649,10 +2649,10 @@ static struct ast_node *declaration(struct parser *p)
     else if (nexttok(p, '{')) {
         /* a function is being defined */
         struct ast_node *stmt = compound_statement(p);
-        struct symbol *func_sym = symbol_of(tree->type);
+        struct data_type *func_type = tree->type;
         tree = new_node(NOD_FUNC_DEF, tree, stmt);
         end_scope(p);
-        compute_func_size(func_sym);
+        compute_func_size_(func_type);
         return tree;
     }
     else if (is_function(tree->type)) {
