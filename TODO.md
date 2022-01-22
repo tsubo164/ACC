@@ -12,6 +12,7 @@
   - [x] `type.c`
 
 * TODO
+  - move `is_variadic` to type.c
   - fix compile error 'assert(!"unreachable code");'
   - move iteration and data types interfaces from symbol.c to type.c
   - improve local and global initializer

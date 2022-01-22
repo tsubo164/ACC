@@ -60,7 +60,7 @@ static int check_symbol_usage(struct symbol_table *table, struct diagnostic *dia
 struct tree_context {
     struct diagnostic *diag;
     const struct symbol *func_sym;
-    const struct symbol *param_sym;
+    const struct parameter *param;
     int loop_depth;
     int switch_depth;
     int is_lvalue;
@@ -385,36 +385,36 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
     case NOD_CALL:
         {
-            const struct symbol *tmp = ctx->param_sym;
+            const struct parameter *tmp = ctx->param;
 
             check_tree_(node->l, ctx);
-            ctx->param_sym = first_param(symbol_of(underlying(node->l->type)));
+            ctx->param = first_param_(underlying(node->l->type));
             check_tree_(node->r, ctx);
 
-            if (ctx->param_sym && !is_ellipsis(ctx->param_sym)) {
+            if (ctx->param && !is_ellipsis(ctx->param->sym)) {
                 const struct position *pos = node->r ? &node->r->pos : &node->pos;
                 add_error(ctx->diag, pos, "too few arguments to function call");
             }
 
-            ctx->param_sym = tmp;
+            ctx->param = tmp;
             return;
         }
 
     case NOD_ARG:
-        if (!ctx->param_sym) {
+        if (!ctx->param) {
             add_error(ctx->diag, &node->pos, "too many arguments to function call");
             return;
         }
 
-        if (!is_compatible(node->type, ctx->param_sym->type) &&
-            !is_ellipsis(ctx->param_sym)) {
+        if (!is_compatible(node->type, ctx->param->sym->type) &&
+            !is_ellipsis(ctx->param->sym)) {
             make_type_name(node->type, type_name1);
-            make_type_name(ctx->param_sym->type, type_name2);
+            make_type_name(ctx->param->sym->type, type_name2);
             add_error(ctx->diag, &node->pos,
                     "passing '%s' to parameter of incompatible type '%s'",
                     type_name1, type_name2);
         }
-        ctx->param_sym = next_param(ctx->param_sym);
+        ctx->param = next_param_(ctx->param);
 
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);

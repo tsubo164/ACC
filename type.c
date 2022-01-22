@@ -152,21 +152,21 @@ static int is_identical(const struct data_type *t1, const struct data_type *t2)
         return is_identical(underlying(t1), underlying(t2));
 
     if (is_function(t1) && is_function(t2)) {
-        const struct symbol *s1, *s2;
+        const struct parameter *p1, *p2;
 
         /* checking return type */
         if (!is_identical(underlying(t1), underlying(t2)))
             return 0;
 
         /* checking parameter types */
-        s1 = first_param(symbol_of(t1));
-        s2 = first_param(symbol_of(t2));
+        p1 = first_param_(t1);
+        p2 = first_param_(t2);
 
-        while (s1 && s2 && is_identical(s1->type, s2->type)) {
-            s1 = next_param(s1);
-            s2 = next_param(s2);
+        while (p1 && p2 && is_identical(p1->sym->type, p2->sym->type)) {
+            p1 = next_param_(p1);
+            p2 = next_param_(p2);
         }
-        return !s1 && !s2;
+        return !p1 && !p2;
     }
 
     return 0;
@@ -633,10 +633,25 @@ const struct member *next_member_(const struct member *memb)
     return m;
 }
 
-/*
 const struct parameter *first_param_(const struct data_type *type)
+{
+    if (!is_function(type))
+        return NULL;
+
+    return type->parameters;
+}
+
 const struct parameter *next_param_(const struct parameter *param)
-*/
+{
+    if (!param)
+        return NULL;
+
+    /* TODO reconsider returning NULL */
+    if (is_ellipsis(param->sym))
+        return param;
+
+    return param->next;
+}
 
 static int align_to(int pos, int align)
 {

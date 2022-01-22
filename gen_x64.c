@@ -484,9 +484,10 @@ static int gen_store_param(FILE *fp, const struct symbol *sym, int stored_regs)
     return r;
 }
 
-static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
+static void gen_func_param_list_(FILE *fp, const struct data_type *func_type)
 {
-    const struct symbol *sym;
+    const struct symbol *func_sym = symbol_of(func_type);
+    const struct parameter *p;
     int stored_reg_count = 0;
     int stack_offset = 16; /* from rbp */
 
@@ -496,7 +497,8 @@ static void gen_func_param_list_(FILE *fp, const struct symbol *func_sym)
         stored_reg_count++;
     }
 
-    for (sym = first_param(func_sym); sym; sym = next_param(sym)) {
+    for (p = first_param_(func_type); p; p = next_param_(p)) {
+        const struct symbol *sym = p->sym;
         const int param_size = get_size(sym->type);
 
         if (is_ellipsis(sym))
@@ -542,7 +544,7 @@ static void gen_func_param_list(FILE *fp, const struct ast_node *node)
     if (is_variadic(func->sym))
         gen_func_param_list_variadic_(fp);
     else
-        gen_func_param_list_(fp, func->sym);
+        gen_func_param_list_(fp, func->type);
 }
 
 static int local_area_size = 0;
