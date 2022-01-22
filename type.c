@@ -694,3 +694,8 @@ void compute_union_size_(struct data_type *type)
         symbol_of(type)->mem_offset = union_size;
     }
 }
+
+void compute_enum_size_(struct data_type *type)
+{
+    symbol_of(type)->mem_offset = get_size(type);
+}

@@ -2078,7 +2078,7 @@ static struct data_type *enum_specifier(struct parser *p)
     enumerator_list(p);
 
     expect(p, '}');
-    compute_enum_size(type->sym);
+    compute_enum_size_(type);
 
     return type;
 }

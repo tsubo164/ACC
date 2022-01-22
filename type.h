@@ -100,5 +100,6 @@ extern struct member *append_member(struct member *head, struct member *mem);
 extern void add_member_list(struct data_type *type, struct member *head);
 extern void compute_struct_size_(struct data_type *type);
 extern void compute_union_size_(struct data_type *type);
+extern void compute_enum_size_(struct data_type *type);
 
 #endif /* _H */
