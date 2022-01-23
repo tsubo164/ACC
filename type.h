@@ -122,4 +122,6 @@ extern void compute_struct_size_(struct data_type *type);
 extern void compute_union_size_(struct data_type *type);
 extern void compute_enum_size_(struct data_type *type);
 
+extern struct data_type *return_type_(const struct data_type *type);
+
 #endif /* _H */

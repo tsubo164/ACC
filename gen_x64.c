@@ -486,12 +486,11 @@ static int gen_store_param(FILE *fp, const struct symbol *sym, int stored_regs)
 
 static void gen_func_param_list_(FILE *fp, const struct data_type *func_type)
 {
-    const struct symbol *func_sym = symbol_of(func_type);
     const struct parameter *p;
     int stored_reg_count = 0;
     int stack_offset = 16; /* from rbp */
 
-    if (is_large_object(return_type(func_sym))) {
+    if (is_large_object(return_type_(func_type))) {
         gen_comment(fp, "save address to returning value");
         code2(fp, PUSH, RDI);
         stored_reg_count++;

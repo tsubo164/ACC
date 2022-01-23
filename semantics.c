@@ -59,7 +59,7 @@ static int check_symbol_usage(struct symbol_table *table, struct diagnostic *dia
 
 struct tree_context {
     struct diagnostic *diag;
-    const struct symbol *func_sym;
+    const struct data_type *func_type;
     const struct parameter *param;
     int loop_depth;
     int switch_depth;
@@ -215,8 +215,8 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         /* has initializer or is a global variable */
         node->sym->is_initialized = node->l || is_global_var(node->sym);
 
-        if (is_func(node->sym))
-            ctx->func_sym = node->sym;
+        if (is_function(node->type))
+            ctx->func_type = node->type;
 
         if (is_incomplete(node->sym->type) &&
                 (is_local_var(node->sym) || is_global_var(node->sym))) {
@@ -377,10 +377,10 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
     /* function */
     case NOD_FUNC_DEF:
-        ctx->func_sym = NULL;
+        ctx->func_type = NULL;
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
-        ctx->func_sym = NULL;
+        ctx->func_type = NULL;
         return;
 
     case NOD_CALL:
@@ -435,8 +435,8 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
     case NOD_RETURN:
         {
-            const struct data_type *ret_type = return_type(ctx->func_sym);
-            const char *func_name = ctx->func_sym->name;
+            const struct data_type *ret_type = return_type_(ctx->func_type);
+            const char *func_name = ctx->func_type->sym->name;
 
             if (!is_void(ret_type) && !node->l) {
                 add_error(ctx->diag, &node->pos,

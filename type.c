@@ -897,3 +897,11 @@ void compute_enum_size_(struct data_type *type)
 {
     symbol_of(type)->mem_offset = get_size(type);
 }
+
+struct data_type *return_type_(const struct data_type *type)
+{
+    if (!is_function(type))
+        return NULL;
+
+    return underlying(type);
+}
