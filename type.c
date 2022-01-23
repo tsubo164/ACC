@@ -19,6 +19,7 @@ static struct data_type STRUCT_   = {DATA_TYPE_STRUCT,   1, 1, 1, NULL, NULL};
 static struct data_type UNION_    = {DATA_TYPE_UNION,    1, 1, 1, NULL, NULL};
 static struct data_type ENUM_     = {DATA_TYPE_ENUM,     4, 4, 1, NULL, NULL};
 static struct data_type FUNCTION_ = {DATA_TYPE_FUNCTION, 4, 4, 1, NULL, NULL};
+static struct data_type PLACEHOLDER_ = {DATA_TYPE_PLACEHOLDER, 0, 0, 0, NULL, NULL};
 
 int get_size(const struct data_type *type)
 {
@@ -321,6 +322,25 @@ int is_function(const struct data_type *type)
     return type && type->kind == DATA_TYPE_FUNCTION;
 }
 
+int is_placeholder(const struct data_type *type)
+{
+    return type && type->kind == DATA_TYPE_PLACEHOLDER;
+}
+
+struct data_type *swap_placeholder(struct data_type *head, struct data_type *type)
+{
+    struct data_type *t;
+
+    if (is_placeholder(head))
+        return type;
+
+    for (t = head; !is_placeholder(underlying(t)); t = underlying(t))
+        ;
+    t->base = type;
+
+    return head;
+}
+
 static char *make_type_name_(const struct data_type *type, char *buf)
 {
     char *p = buf;
@@ -554,6 +574,12 @@ struct data_type *type_function(struct data_type *return_type)
 {
     struct data_type *type = clone(&FUNCTION_);
     type->base = return_type;
+    return type;
+}
+
+struct data_type *type_placeholder(void)
+{
+    struct data_type *type = clone(&PLACEHOLDER_);
     return type;
 }
 

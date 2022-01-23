@@ -2253,7 +2253,7 @@ static struct symbol *direct_declarator(struct parser *p, struct data_type *type
 
     if (consume(p, '(')) {
         struct data_type *tmp = type;
-        placeholder = type_void();
+        placeholder = type_placeholder();
         type = placeholder;
 
         sym = declarator(p, type, kind);
@@ -2307,7 +2307,7 @@ static struct symbol *direct_declarator(struct parser *p, struct data_type *type
     }
 
     if (placeholder)
-        copy_data_type(placeholder, type);
+        sym->type = swap_placeholder(sym->type, type);
 
     return sym;
 }

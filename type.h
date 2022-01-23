@@ -12,7 +12,8 @@ enum data_type_kind {
     DATA_TYPE_STRUCT,
     DATA_TYPE_UNION,
     DATA_TYPE_ENUM,
-    DATA_TYPE_FUNCTION
+    DATA_TYPE_FUNCTION,
+    DATA_TYPE_PLACEHOLDER
 };
 
 struct symbol;
@@ -82,7 +83,9 @@ extern int is_union(const struct data_type *type);
 extern int is_enum(const struct data_type *type);
 extern int is_struct_or_union(const struct data_type *type);
 extern int is_function(const struct data_type *type);
+extern int is_placeholder(const struct data_type *type);
 
+extern struct data_type *swap_placeholder(struct data_type *head, struct data_type *type);
 extern void make_type_name(const struct data_type *type, char *buf);
 extern void print_data_type(const struct data_type *type);
 extern void copy_data_type(struct data_type *dst, const struct data_type *src);
@@ -100,6 +103,7 @@ extern struct data_type *type_union(void);
 extern struct data_type *type_enum(void);
 extern struct data_type *type_type_name(struct symbol *type_name);
 extern struct data_type *type_function(struct data_type *return_type);
+extern struct data_type *type_placeholder(void);
 
 extern struct member *new_member(struct symbol *sym);
 extern struct member *append_member(struct member *head, struct member *memb);
