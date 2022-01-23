@@ -1798,8 +1798,10 @@ static struct data_type *specifier_qualifier_list(struct parser *p)
             break;
     }
 
-    set_const(type, qual == CONST);
-    set_unsigned(type, sign == 0);
+    if (qual == CONST)
+        type = make_const(type);
+    if (sign == 0)
+        type = make_unsigned(type);
 
     return type;
 }
@@ -2623,8 +2625,10 @@ static struct data_type *declaration_specifiers(struct parser *p, int *sclass)
 
     type = default_to_int(p, type);
 
-    set_const(type, qual == CONST);
-    set_unsigned(type, sign == 0);
+    if (qual == CONST)
+        type = make_const(type);
+    if (sign == 0)
+        type = make_unsigned(type);
 
     *sclass = sc;
     return type;

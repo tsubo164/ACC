@@ -89,14 +89,42 @@ void set_symbol(struct data_type *type, struct symbol *sym)
     type->sym = sym;
 }
 
-void set_const(struct data_type *type, int is_const)
+static struct data_type *clone(const struct data_type *orig)
 {
-    type->is_const = is_const;
+    struct data_type *type = malloc(sizeof(struct data_type));
+    *type = *orig;
+    return type;
 }
 
-void set_unsigned(struct data_type *type, int is_unsigned)
+static int is_cloned(const struct data_type *type)
 {
-    type->is_unsigned = is_unsigned;
+    return type->is_const || type->is_unsigned;
+}
+
+struct data_type *make_const(struct data_type *orig)
+{
+    struct data_type *type;
+
+    if (!is_cloned(orig))
+        type = clone(orig);
+    else
+        type = orig;
+
+    type->is_const = 1;
+    return type;
+}
+
+struct data_type *make_unsigned(struct data_type *orig)
+{
+    struct data_type *type;
+
+    if (!is_cloned(orig))
+        type = clone(orig);
+    else
+        type = orig;
+
+    type->is_unsigned = 1;
+    return type;
 }
 
 struct data_type *promote(struct data_type *t1, struct data_type *t2)
@@ -451,13 +479,6 @@ void convert_array_to_pointer(struct data_type *type)
         type->base = base;
         type->is_const = is_const;
     }
-}
-
-static struct data_type *clone(const struct data_type *orig)
-{
-    struct data_type *type = malloc(sizeof(struct data_type));
-    *type = *orig;
-    return type;
 }
 
 struct data_type *type_void(void)

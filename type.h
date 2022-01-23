@@ -59,8 +59,8 @@ extern void set_struct_align(struct data_type *type, int align);
 extern void set_union_size(struct data_type *type, int size);
 extern void set_union_align(struct data_type *type, int align);
 extern void set_symbol(struct data_type *type, struct symbol *sym);
-extern void set_const(struct data_type *type, int is_const);
-extern void set_unsigned(struct data_type *type, int is_unsigned);
+extern struct data_type *make_const(struct data_type *orig);
+extern struct data_type *make_unsigned(struct data_type *orig);
 
 extern struct data_type *promote(struct data_type *t1, struct data_type *t2);
 extern int has_unkown_array_length(const struct data_type *type);
