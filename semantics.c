@@ -388,7 +388,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             const struct parameter *tmp = ctx->param;
 
             check_tree_(node->l, ctx);
-            ctx->param = first_param_(underlying(node->l->type));
+            ctx->param = first_param(underlying(node->l->type));
             check_tree_(node->r, ctx);
 
             if (ctx->param && !is_ellipsis(ctx->param->sym)) {
@@ -414,7 +414,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
                     "passing '%s' to parameter of incompatible type '%s'",
                     type_name1, type_name2);
         }
-        ctx->param = next_param_(ctx->param);
+        ctx->param = next_param(ctx->param);
 
         check_tree_(node->l, ctx);
         check_tree_(node->r, ctx);
@@ -435,7 +435,7 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
 
     case NOD_RETURN:
         {
-            const struct data_type *ret_type = return_type_(ctx->func_type);
+            const struct data_type *ret_type = return_type(ctx->func_type);
             const char *func_name = ctx->func_type->sym->name;
 
             if (!is_void(ret_type) && !node->l) {

@@ -188,12 +188,12 @@ static int is_identical(const struct data_type *t1, const struct data_type *t2)
             return 0;
 
         /* checking parameter types */
-        p1 = first_param_(t1);
-        p2 = first_param_(t2);
+        p1 = first_param(t1);
+        p2 = first_param(t2);
 
         while (p1 && p2 && is_identical(p1->sym->type, p2->sym->type)) {
-            p1 = next_param_(p1);
-            p2 = next_param_(p2);
+            p1 = next_param(p1);
+            p2 = next_param(p2);
         }
         return !p1 && !p2;
     }
@@ -417,14 +417,14 @@ static char *make_type_name_(const struct data_type *type, char *buf)
         p = make_type_name_(underlying(type), p);
         sprintf(p++, "(");
         {
-            const struct symbol *s = first_param(symbol_of(type));
-            if (!s) {
+            const struct parameter *param = first_param(type);
+            if (!param) {
                 sprintf(p, "void%n", &n);
                 p += n;
             }
             else {
                 int i = 0;
-                for (; s; s = next_param(s)) {
+                for (; param; param = next_param(param)) {
                     if (*(p-1) == ' ')
                         p--;
                     if (i++ > 0) {
@@ -432,13 +432,13 @@ static char *make_type_name_(const struct data_type *type, char *buf)
                         *p++ = ' ';
                     }
 
-                    if (is_ellipsis(s)) {
+                    if (is_ellipsis(param->sym)) {
                         sprintf(p, "...%n", &n);
                         p += n;
                         break;
                     }
                     else {
-                        p = make_type_name_(s->type, p);
+                        p = make_type_name_(param->sym->type, p);
                     }
                 }
             }
@@ -620,7 +620,7 @@ const struct member *find_member(const struct data_type *type, const char *name)
 {
     const struct member *m;
 
-    for (m = first_member_(type); m; m = next_member_(m))
+    for (m = first_member(type); m; m = next_member(m))
         if (!strcmp(m->sym->name, name))
             break;
 
@@ -661,7 +661,7 @@ void add_parameter_list(struct data_type *type, struct parameter *head)
     type->parameters = head;
 }
 
-const struct member *first_member_(const struct data_type *type)
+const struct member *first_member(const struct data_type *type)
 {
     if (!is_struct_or_union(type))
         return NULL;
@@ -677,7 +677,7 @@ static int is_bit_padding(const struct symbol *sym)
     return is_bitfield(sym) && !sym->name;
 }
 
-const struct member *next_member_(const struct member *memb)
+const struct member *next_member(const struct member *memb)
 {
     const struct member *m;
 
@@ -690,7 +690,7 @@ const struct member *next_member_(const struct member *memb)
     return m;
 }
 
-const struct parameter *first_param_(const struct data_type *type)
+const struct parameter *first_param(const struct data_type *type)
 {
     if (!is_function(type))
         return NULL;
@@ -698,7 +698,7 @@ const struct parameter *first_param_(const struct data_type *type)
     return type->parameters;
 }
 
-const struct parameter *next_param_(const struct parameter *param)
+const struct parameter *next_param(const struct parameter *param)
 {
     if (!param)
         return NULL;
@@ -778,7 +778,7 @@ static int compute_param_size(const struct parameter *params, int total_offset, 
     return offset;
 }
 
-void compute_func_size_(struct data_type *type)
+void compute_func_size(struct data_type *type)
 {
     struct symbol *func_sym = symbol_of(type);
     struct symbol *sym;
@@ -805,7 +805,7 @@ void compute_func_size_(struct data_type *type)
     func_sym->mem_offset = align_to(total_offset, 16);
 }
 
-void compute_struct_size_(struct data_type *type)
+void compute_struct_size(struct data_type *type)
 {
     struct member *memb = NULL;
     /* compute in bit */
@@ -869,7 +869,7 @@ void compute_struct_size_(struct data_type *type)
     }
 }
 
-void compute_union_size_(struct data_type *type)
+void compute_union_size(struct data_type *type)
 {
     struct member *memb = NULL;
     int max_size = 0;
@@ -904,12 +904,12 @@ void compute_union_size_(struct data_type *type)
     }
 }
 
-void compute_enum_size_(struct data_type *type)
+void compute_enum_size(struct data_type *type)
 {
     symbol_of(type)->mem_offset = get_size(type);
 }
 
-struct data_type *return_type_(const struct data_type *type)
+struct data_type *return_type(const struct data_type *type)
 {
     if (!is_function(type))
         return NULL;

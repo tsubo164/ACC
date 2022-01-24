@@ -1976,9 +1976,9 @@ static struct data_type *type_struct_or_union(int kind)
 static void compute_struct_or_union_size(struct data_type *type, int kind)
 {
     if (kind == SYM_TAG_STRUCT)
-        compute_struct_size_(type);
+        compute_struct_size(type);
     else
-        compute_union_size_(type);
+        compute_union_size(type);
 }
 
 /* struct_or_union_specifier
@@ -2090,7 +2090,7 @@ static struct data_type *enum_specifier(struct parser *p)
     enumerator_list(p);
 
     expect(p, '}');
-    compute_enum_size_(type);
+    compute_enum_size(type);
 
     return type;
 }
@@ -2424,7 +2424,7 @@ static struct initializer_context child_initializer(const struct initializer_con
         child.has_length = !has_unkown_array_length(parent->type);
     }
     else if (is_struct_or_union(parent->type)) {
-        child.member = first_member_(parent->type);
+        child.member = first_member(parent->type);
         child.type = child.member->sym->type;
     }
 
@@ -2443,7 +2443,7 @@ static void next_initializer(struct initializer_context *child)
         }
     }
     else if (is_struct_or_union(child->parent_type)) {
-        child->member = next_member_(child->member);
+        child->member = next_member(child->member);
         if (child->member && !is_union(child->parent_type)) {
             child->type = child->member->sym->type;
             child->mem_offset = child->member->sym->mem_offset;
@@ -2666,7 +2666,7 @@ static struct ast_node *declaration(struct parser *p)
         struct data_type *func_type = tree->type;
         tree = new_node(NOD_FUNC_DEF, tree, stmt);
         end_scope(p);
-        compute_func_size_(func_type);
+        compute_func_size(func_type);
         return tree;
     }
     else if (is_function(tree->type)) {

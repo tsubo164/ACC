@@ -127,20 +127,4 @@ extern void symbol_scope_end(struct symbol_table *table);
 extern void symbol_switch_begin(struct symbol_table *table);
 extern void symbol_switch_end(struct symbol_table *table);
 
-/* sizes */
-extern void compute_func_size(struct symbol *func);
-extern void compute_struct_size(struct symbol *strc);
-extern void compute_union_size(struct symbol *strc);
-extern void compute_enum_size(struct symbol *enm);
-extern void compute_type_name_size(struct symbol *type_name);
-
-/* iteration */
-extern const struct symbol *first_param(const struct symbol *sym);
-extern const struct symbol *next_param(const struct symbol *sym);
-extern const struct symbol *first_member(const struct symbol *sym);
-extern const struct symbol *next_member(const struct symbol *sym);
-
-/* data types */
-extern struct data_type *return_type(const struct symbol *sym);
-
 #endif /* _H */

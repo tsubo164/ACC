@@ -490,13 +490,13 @@ static void gen_func_param_list_(FILE *fp, const struct data_type *func_type)
     int stored_reg_count = 0;
     int stack_offset = 16; /* from rbp */
 
-    if (is_large_object(return_type_(func_type))) {
+    if (is_large_object(return_type(func_type))) {
         gen_comment(fp, "save address to returning value");
         code2(fp, PUSH, RDI);
         stored_reg_count++;
     }
 
-    for (p = first_param_(func_type); p; p = next_param_(p)) {
+    for (p = first_param(func_type); p; p = next_param(p)) {
         const struct symbol *sym = p->sym;
         const int param_size = get_size(sym->type);
 
@@ -1398,7 +1398,7 @@ static void zero_clear_bytes(struct memory_byte *bytes, const struct data_type *
     }
     else if (is_struct(type)) {
         const struct member *m;
-        for (m = first_member_(type); m; m = next_member_(m)) {
+        for (m = first_member(type); m; m = next_member(m)) {
             const struct symbol *sym = m->sym;
 
             if (is_bitfield(sym))
@@ -1408,7 +1408,7 @@ static void zero_clear_bytes(struct memory_byte *bytes, const struct data_type *
         }
     }
     else if (is_union(type)) {
-        const struct member *m = first_member_(type);
+        const struct member *m = first_member(type);
         zero_clear_bytes(bytes, m->sym->type);
     }
     else {
