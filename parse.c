@@ -451,7 +451,17 @@ static struct symbol *use_sym(struct parser *p, const char *ident, int sym_kind)
 static struct symbol *use_member_sym(struct parser *p,
         const struct data_type *struct_type, const char *member_name)
 {
-    return use_struct_member_symbol(p->symtab, symbol_of(struct_type), member_name);
+    const struct member *m = find_member(struct_type, member_name);
+
+    if (!m) {
+        /* creates undefined member symbol */
+        struct symbol *sym;
+        sym = define_sym(p, member_name, type_int(), SYM_MEMBER, tokpos(p));
+        sym->is_defined = 0;
+        return sym;
+    }
+
+    return m->sym;
 }
 
 static struct symbol *define_case(struct parser *p,
@@ -2162,7 +2172,7 @@ static struct symbol *parameter_declaration(struct parser *p)
 
     /* 6.7.6.3 A declaration of a parameter as "array of type"
      * shall be adjusted to "qualified pointer to type" */
-    convert_array_to_pointer(sym->type);
+    sym->type = convert_array_to_pointer(sym->type);
 
     return sym;
 }

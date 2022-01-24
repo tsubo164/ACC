@@ -89,7 +89,7 @@ extern struct data_type *swap_placeholder(struct data_type *head, struct data_ty
 extern void make_type_name(const struct data_type *type, char *buf);
 extern void print_data_type(const struct data_type *type);
 extern void copy_data_type(struct data_type *dst, const struct data_type *src);
-extern void convert_array_to_pointer(struct data_type *type);
+extern struct data_type *convert_array_to_pointer(struct data_type *type);
 
 extern struct data_type *type_void(void);
 extern struct data_type *type_char(void);
@@ -108,6 +108,7 @@ extern struct data_type *type_placeholder(void);
 extern struct member *new_member(struct symbol *sym);
 extern struct member *append_member(struct member *head, struct member *memb);
 extern void add_member_list(struct data_type *type, struct member *head);
+extern const struct member *find_member(const struct data_type *type, const char *name);
 extern struct parameter *new_parameter(struct symbol *sym);
 extern struct parameter *append_parameter(struct parameter *head, struct parameter *param);
 extern void add_parameter_list(struct data_type *type, struct parameter *head);

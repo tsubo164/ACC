@@ -487,18 +487,19 @@ void copy_data_type(struct data_type *dst, const struct data_type *src)
     *dst = *src;
 }
 
-void convert_array_to_pointer(struct data_type *type)
+struct data_type *convert_array_to_pointer(struct data_type *type)
 {
     if (is_array(type)) {
         struct data_type *base = underlying(type);
         const int is_const = type->is_const;
 
-        convert_array_to_pointer(base);
-        copy_data_type(type, &POINTER_);
+        base = convert_array_to_pointer(base);
 
-        type->base = base;
+        type = type_pointer(base);
         type->is_const = is_const;
     }
+
+    return type;
 }
 
 struct data_type *type_void(void)
@@ -565,9 +566,7 @@ struct data_type *type_enum(void)
 
 struct data_type *type_type_name(struct symbol *type_name)
 {
-    struct data_type *type = clone(type_name->type);
-    type->alias = type_name;
-    return type;
+    return type_name->type;
 }
 
 struct data_type *type_function(struct data_type *return_type)
@@ -615,6 +614,17 @@ void add_member_list(struct data_type *type, struct member *head)
     if (!is_struct_or_union(type))
         return;
     type->members = head;
+}
+
+const struct member *find_member(const struct data_type *type, const char *name)
+{
+    const struct member *m;
+
+    for (m = first_member_(type); m; m = next_member_(m))
+        if (!strcmp(m->sym->name, name))
+            break;
+
+    return m;
 }
 
 struct parameter *new_parameter(struct symbol *sym)
@@ -739,9 +749,9 @@ static int compute_offset(const struct data_type *type, int total_offset)
     return offset;
 }
 
-static int compute_param_size(struct parameter *params, int total_offset, int variadic)
+static int compute_param_size(const struct parameter *params, int total_offset, int variadic)
 {
-    struct parameter *p;
+    const struct parameter *p;
     int param_index = 0;
     int offset = total_offset;
 
@@ -805,6 +815,7 @@ void compute_struct_size_(struct data_type *type)
     if (is_incomplete(type))
         return;
 
+    /* can not use next_member as it skips unnamed bit-field */
     for (memb = type->members; memb; memb = memb->next) {
         struct symbol *sym = memb->sym;
 

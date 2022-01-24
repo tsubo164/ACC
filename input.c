@@ -2,41 +2,37 @@
 #include <stdio.h>
 */
 
-    /*
-struct foo {
-    int x, y;
-    char c, d;
-};
-
-int add(int x, int y, int z)
-{
-    return "foo";
-    return x + y + z;
-}
-    */
-
-int num()
-{
-    return 23012;
-}
-
-int main()
-{
-    int (*fp)() = num;
-
-    return sizeof(int);
-}
-
-void copyi(int *d, const int *s)
-{
-    *d = *s;
-}
-
-struct data_type {
+typedef struct {
+    void *p;
     int i;
-};
+} Foo[1];
 
-void copy_data_type(struct data_type *dst, const struct data_type *src)
-{
-    *dst = *src;
+/* array parameter overrides type objects with pointer type */
+void foo(Foo f);
+/*
+*/
+
+typedef int Int;
+
+int main() {
+    typedef struct node Node;
+
+    struct node {
+        int id;
+        Node *next;
+        /*
+        struct node *next;
+        */
+    };
+
+    Node n0 = {9};
+    /* typedef creates another data_type object */
+    /*
+    struct node n0 = {9};
+    */
+    Node n1;
+
+    n0.next->id = 42;;
+
+    return sizeof(Foo);
 }
