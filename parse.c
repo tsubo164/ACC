@@ -470,8 +470,6 @@ static struct symbol *define_case(struct parser *p,
     struct symbol *sym;
 
     sym = define_case_symbol(p->symtab, kind, case_value);
-    /* TODO come up with better place to put this or even
-     * consider removing pos from sym */
     sym->pos = *pos;
 
     return sym;

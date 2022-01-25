@@ -33,7 +33,7 @@ struct symbol {
     int scope_level;
     int mem_offset;
 
-    /* TODO consider removing this by checking all symbols in tree nodes */
+    /* defined pos */
     struct position pos;
 
     struct symbol *next;
@@ -96,32 +96,28 @@ extern struct symbol_table *new_symbol_table(void);
 extern void free_symbol_table(struct symbol_table *table);
 extern void print_symbol_table(const struct symbol_table *table);
 
-/* general symobl */
+/* general symbol */
 extern struct symbol *define_symbol(struct symbol_table *table,
         const char *name, int kind, struct data_type *type);
 extern struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind);
 
-/* struct member symobl */
-struct symbol *use_struct_member_symbol(struct symbol_table *table,
-        struct symbol *strct, const char *member);
-
-/* case symobl */
+/* case symbol */
 extern struct symbol *define_case_symbol(struct symbol_table *table, int kind, int case_value);
 
-/* label symobl */
+/* label symbol */
 extern struct symbol *define_label_symbol(struct symbol_table *table, const char *label);
 extern struct symbol *use_label_symbol(struct symbol_table *table, const char *label);
 
-/* string symobl */
+/* string symbol */
 extern struct symbol *define_string_symbol(struct symbol_table *table, const char *str);
 
-/* type name symobl */
+/* type name symbol */
 extern struct symbol *find_type_name_symbol(struct symbol_table *table, const char *name);
 
-/* ellipsis symobl */
+/* ellipsis symbol */
 extern struct symbol *define_ellipsis_symbol(struct symbol_table *table);
 
-/* scope symobl */
+/* scope symbol */
 extern void symbol_scope_begin(struct symbol_table *table);
 extern void symbol_scope_end(struct symbol_table *table);
 extern void symbol_switch_begin(struct symbol_table *table);

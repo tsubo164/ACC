@@ -145,11 +145,6 @@ static int is_scope_begin(const struct symbol *sym)
     return sym && sym->kind == SYM_SCOPE_BEGIN;
 }
 
-static int is_scope_end(const struct symbol *sym)
-{
-    return sym && sym->kind == SYM_SCOPE_END;
-}
-
 struct symbol_table *new_symbol_table(void)
 {
     struct symbol_table *table;
@@ -513,58 +508,6 @@ struct symbol *use_symbol(struct symbol_table *table, const char *name, int kind
         sym = push_symbol(table, name, kind, type);
         link_type_to_sym(type, sym);
     }
-
-    return sym;
-}
-
-static int is_member_of(const struct symbol *sym, const struct symbol *struct_sym)
-{
-    /* inside of struct is one level upper than struct scope */
-    if (!sym || !struct_sym)
-        return 0;
-
-    return is_member(sym) &&
-        sym->scope_level == struct_sym->scope_level + 1;
-}
-
-static int is_end_of_scope(const struct symbol *sym, const struct symbol *scope_owner)
-{
-    if (!sym || !scope_owner)
-        return 0;
-
-    return is_scope_end(sym) && sym->scope_level == scope_owner->scope_level;
-}
-
-static struct symbol *find_struct_member(struct symbol *struct_sym, const char *name)
-{
-    struct symbol *sym;
-
-    if (!struct_sym)
-        return NULL;
-
-    if (is_incomplete(struct_sym->type))
-        return NULL;
-
-    for (sym = struct_sym; sym; sym = sym->next) {
-        if (!is_member_of(sym, struct_sym))
-            continue;
-
-        if (match_name(sym, name))
-            return sym;
-
-        if (is_end_of_scope(sym, struct_sym))
-            break;
-    }
-    return NULL;
-}
-
-struct symbol *use_struct_member_symbol(struct symbol_table *table,
-        struct symbol *struct_sym, const char *name)
-{
-    struct symbol *sym = find_struct_member(struct_sym, name);
-
-    if (!sym)
-        sym = push_symbol(table, name, SYM_MEMBER, type_int());
 
     return sym;
 }
