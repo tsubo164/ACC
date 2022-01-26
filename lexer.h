@@ -37,6 +37,7 @@ enum token_kind {
     TOK_SHORT,
     TOK_INT,
     TOK_LONG,
+    TOK_FLOAT,
     TOK_SIGNED,
     TOK_UNSIGNED,
     TOK_TYPE_NAME,

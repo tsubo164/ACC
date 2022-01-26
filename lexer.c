@@ -98,6 +98,8 @@ static void keyword_or_identifier(struct token *tok)
         tok->kind = TOK_INT;
     else if (!strcmp(text, "long"))
         tok->kind = TOK_LONG;
+    else if (!strcmp(text, "float"))
+        tok->kind = TOK_FLOAT;
     else if (!strcmp(text, "signed"))
         tok->kind = TOK_SIGNED;
     else if (!strcmp(text, "unsigned"))
@@ -619,6 +621,7 @@ void print_token(const struct token *tok)
     case TOK_SHORT:
     case TOK_INT:
     case TOK_LONG:
+    case TOK_FLOAT:
     case TOK_SIGNED:
     case TOK_UNSIGNED:
     case TOK_TYPE_NAME:

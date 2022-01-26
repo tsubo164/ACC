@@ -529,6 +529,7 @@ static int is_type_spec(int kind)
     case TOK_SHORT:
     case TOK_INT:
     case TOK_LONG:
+    case TOK_FLOAT:
     case TOK_SIGNED:
     case TOK_UNSIGNED:
     case TOK_STRUCT:
@@ -2119,6 +2120,9 @@ static struct data_type *type_specifier(struct parser *p, struct data_type *type
 
     case TOK_LONG:
         return type_long();
+
+    case TOK_FLOAT:
+        return type_float();
 
     case TOK_SIGNED:
         *sign = 1;

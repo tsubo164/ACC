@@ -13,6 +13,7 @@ static struct data_type CHAR_     = {DATA_TYPE_CHAR,     1, 1, 1, NULL, NULL};
 static struct data_type SHORT_    = {DATA_TYPE_SHORT,    2, 2, 1, NULL, NULL};
 static struct data_type INT_      = {DATA_TYPE_INT,      4, 4, 1, NULL, NULL};
 static struct data_type LONG_     = {DATA_TYPE_LONG,     8, 8, 1, NULL, NULL};
+static struct data_type FLOAT_    = {DATA_TYPE_FLOAT,    4, 4, 1, NULL, NULL};
 static struct data_type POINTER_  = {DATA_TYPE_POINTER,  8, 8, 1, NULL, NULL};
 static struct data_type ARRAY_    = {DATA_TYPE_ARRAY,    0, 0, UNKNOWN_ARRAY_LENGTH, NULL, NULL};
 static struct data_type STRUCT_   = {DATA_TYPE_STRUCT,   1, 1, 1, NULL, NULL};
@@ -287,6 +288,11 @@ int is_long(const struct data_type *type)
     return type && type->kind == DATA_TYPE_LONG;
 }
 
+int is_float(const struct data_type *type)
+{
+    return type && type->kind == DATA_TYPE_FLOAT;
+}
+
 int is_pointer(const struct data_type *type)
 {
     return type && type->kind == DATA_TYPE_POINTER;
@@ -372,6 +378,10 @@ static char *make_type_name_(const struct data_type *type, char *buf)
     }
     else if (is_long(type)) {
         sprintf(p, "long %n", &n);
+        p += n;
+    }
+    else if (is_float(type)) {
+        sprintf(p, "float %n", &n);
         p += n;
     }
     else if (is_pointer(type)) {
@@ -525,6 +535,11 @@ struct data_type *type_int(void)
 struct data_type *type_long(void)
 {
     return clone(&LONG_);
+}
+
+struct data_type *type_float(void)
+{
+    return clone(&FLOAT_);
 }
 
 struct data_type *type_pointer(struct data_type *base_type)
