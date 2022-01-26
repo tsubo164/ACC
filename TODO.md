@@ -14,15 +14,13 @@
 * TODO
   - move `is_variadic` to type.c
   - move `bit_width` to `struct member` ?
-  - remove `data_type.alias`
+  - remove `data_type.alias` ?
   - fix compile error 'assert(!"unreachable code");'
-  - move iteration and data types interfaces from symbol.c to type.c
   - improve local and global initializer
   - improve const qualifier for struct parameter
   - add tests for malloc()
   - add tests for assert()
   - `__FILE__` and `__LINE__` macros for assert()
-  - add `#if 0` macro
   - add include paths
   - make module for print
   - `next_param()` should return NULL after ellipsis
@@ -32,6 +30,7 @@
   - find the best place to do "array to pointer conversion"
   - improve `make_type_name_()` to output more readable string
   - in `array()` use loop instead of recursive function call
+  - add `#if const expression`
 
 * OPTIONAL
   - init global var with const expr that has address of global variables;
@@ -134,3 +133,5 @@
     - add `struct declaration` to manage decl context and use it as parse param
   - add `struct declaration` to manage decl context and save/restore
   - check if still need `node->sval` -> removed
+  - add `#if 0` macro
+  - move iteration and data types interfaces from symbol.c to type.c

@@ -2,9 +2,12 @@
 #include <stdio.h>
 */
 
-int main() {
-    const char *foo = "abc";
-    const char *bar = "abc";
 
-    return sizeof(foo);
+int main() {
+    int foo = 19;
+#if 0
+    foo = 42;
+#endif
+
+    return foo;
 }

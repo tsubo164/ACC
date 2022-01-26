@@ -611,10 +611,14 @@ file_path_error:
     return;
 }
 
-static void const_expression(struct preprocessor *pp)
+static int const_expression(struct preprocessor *pp)
 {
     static char expr[128] = {'\0'};
     token(pp, expr);
+
+    if (expr[0] == '0' && expr[1] == '\0')
+        return 0;
+    return 1;
 }
 
 static void include_line(struct preprocessor *pp)
@@ -631,8 +635,11 @@ static void include_line(struct preprocessor *pp)
 
 static void if_part(struct preprocessor *pp)
 {
-    const_expression(pp);
+    const int val = const_expression(pp);
     new_line(pp);
+
+    if (!val)
+        pp->skip_depth++;
 }
 
 static void ifdef_part(struct preprocessor *pp)

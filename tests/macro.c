@@ -101,6 +101,14 @@ int main()
 
         assert(0, strcmp("The comma operator has the lowest precedence of any C operator and acts as a sequence point", s));
     }
+    {
+        /* if 0 */
+        int a = 19;
+#if 0
+        a = 42;
+#endif
+        assert(19, a);
+    }
 
     return 0;
 }
