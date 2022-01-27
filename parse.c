@@ -293,6 +293,10 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = node->ival >> 32 ? type_long() : type_int();
         break;
 
+    case NOD_FPNUM:
+        node->type = type_float();
+        break;
+
     /* pionter arithmetic */
     case NOD_SUB:
         if (is_pointer(node->l->type) && is_pointer(node->r->type))
@@ -332,6 +336,13 @@ static struct ast_node *new_node_num(long num, const struct position *pos)
 {
     struct ast_node *node = new_node_(NOD_NUM, pos);
     node->ival = num;
+    return typed_(node);
+}
+
+static struct ast_node *new_node_fpnum(float num, const struct position *pos)
+{
+    struct ast_node *node = new_node_(NOD_FPNUM, pos);
+    node->fval = num;
     return typed_(node);
 }
 
@@ -625,6 +636,9 @@ static struct ast_node *primary_expression(struct parser *p)
 
     case TOK_NUM:
         return new_node_num(tok->value, tokpos(p));
+
+    case TOK_FPNUM:
+        return new_node_fpnum(tok->fpnum, tokpos(p));
 
     case TOK_STRING_LITERAL:
         tree = new_node_(NOD_STRING, tokpos(p));

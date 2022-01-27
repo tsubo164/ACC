@@ -8,6 +8,7 @@ enum token_kind {
     TOK_UNKNOWN = -1,
     TOK_END_OF_ASCII = 127,
     TOK_NUM,
+    TOK_FPNUM,
     TOK_IDENT,
     TOK_STRING_LITERAL,
     /* keywords */
@@ -74,6 +75,7 @@ enum token_kind {
 struct token {
     int kind;
     long value;
+    float fpnum;
     const char *text;
     struct position pos;
 };

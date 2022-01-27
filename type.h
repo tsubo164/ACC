@@ -70,6 +70,7 @@ extern int has_typedef_name(const struct data_type *type);
 extern int is_compatible(const struct data_type *t1, const struct data_type *t2);
 extern int is_incomplete(const struct data_type *type);
 extern int is_integer(const struct data_type *type);
+extern int is_fpnum(const struct data_type *type);
 extern int is_const(const struct data_type *type);
 extern int is_unsigned(const struct data_type *type);
 extern int is_void(const struct data_type *type);

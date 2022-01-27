@@ -76,6 +76,7 @@ enum ast_node_kind {
     /* primary */
     NOD_IDENT,
     NOD_NUM,
+    NOD_FPNUM,
     NOD_STRING,
     NOD_CONST_EXPR,
     NOD_TYPE_NAME,
@@ -95,6 +96,7 @@ struct ast_node {
     struct ast_node *r;
 
     long ival;
+    float fval;
     struct position pos;
 };
 

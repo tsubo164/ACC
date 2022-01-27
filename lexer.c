@@ -125,6 +125,7 @@ void init_token(struct token *tok)
 {
     tok->kind = TOK_UNKNOWN;
     tok->value = 0;
+    tok->fpnum = 0;
     tok->text = NULL;
 
     init_position(&tok->pos);
@@ -275,11 +276,15 @@ static void scan_number(struct lexer *l, struct token *tok)
 {
     static char buf[128] = {'\0'};
     char *p = buf;
+    int is_fp = 0;
 
     for (;;) {
         const int c = readc(l);
 
-        if (isdigit(c)) {
+        if (c == '.')
+            is_fp = 1;
+
+        if (isdigit(c) || c == '.') {
             *p++ = c;
             continue;
         }
@@ -287,8 +292,13 @@ static void scan_number(struct lexer *l, struct token *tok)
             *p = '\0';
             unreadc(l, c);
             tok->text = make_text(l, buf);
-            tok->kind = TOK_NUM;
-            tok->value = strtol(tok->text, &p, 10);
+            if (is_fp) {
+                tok->kind = TOK_FPNUM;
+                tok->fpnum = strtof(tok->text, &p);
+            } else {
+                tok->kind = TOK_NUM;
+                tok->value = strtol(tok->text, &p, 10);
+            }
             return;
         }
     }
@@ -592,6 +602,7 @@ void print_token(const struct token *tok)
 
     switch (tok->kind) {
     case TOK_NUM:
+    case TOK_FPNUM:
     case TOK_IDENT:
     case TOK_STRING_LITERAL:
          /* keywords */

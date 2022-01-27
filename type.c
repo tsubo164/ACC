@@ -210,6 +210,15 @@ int is_compatible(const struct data_type *t1, const struct data_type *t2)
     if (is_integer(t1) && is_integer(t2))
         return 1;
 
+    if (is_integer(t1) && is_float(t2))
+        return 1;
+
+    if (is_float(t1) && is_integer(t2))
+        return 1;
+
+    if (is_float(t1) && is_float(t2))
+        return 1;
+
     if (is_struct(t1) && is_struct(t2))
         return is_identical(t1, t2);
 
@@ -249,6 +258,13 @@ int is_integer(const struct data_type *type)
         is_long(type))
         return 1;
     if (is_enum(type))
+        return 1;
+    return 0;
+}
+
+int is_fpnum(const struct data_type *type)
+{
+    if (is_float(type))
         return 1;
     return 0;
 }
