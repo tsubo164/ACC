@@ -5,28 +5,19 @@
 #include <stdio.h>
 
 /*
-float num(float f)
+void foo(float f)
 {
-    return 3 * f;
 }
 */
-float foo(float f)
-{
-    return f;
-}
 
 int main() {
-    /*
-    int i = 3;
-    */
     float f;
 
-    f = 3;
+    f = 19;
+
+    printf("%g\n", f);
 
     /*
-    f = i;
-    printf("%f\n", f);
-    f = num(f);
     foo(f);
     */
 

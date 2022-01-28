@@ -490,6 +490,8 @@ static void gen_func_param_list_(FILE *fp, const struct data_type *func_type)
     int stored_reg_count = 0;
     int stack_offset = 16; /* from rbp */
 
+    int next_fp = 0;
+
     if (is_large_object(return_type(func_type))) {
         gen_comment(fp, "save address to returning value");
         code2(fp, PUSH, RDI);
@@ -500,8 +502,17 @@ static void gen_func_param_list_(FILE *fp, const struct data_type *func_type)
         const struct symbol *sym = p->sym;
         const int param_size = get_size(sym->type);
 
+        const struct data_type *param_type = sym->type;
+
         if (is_ellipsis(sym))
             break;
+
+        if (is_fpnum(param_type)) {
+            const int disp = -1 * sym->mem_offset;
+            fprintf(fp, "    movss  %%xmm%d, %d(%%rbp)\n", next_fp, disp);
+            next_fp++;
+            continue;
+        }
 
         if (param_size <= 8 && stored_reg_count < 6) {
             const int reg_ = arg_reg(stored_reg_count, operand_size(sym->type));
@@ -686,6 +697,9 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             arg->expr = arg_node->l;
             type_size = get_size(arg->expr->type);
 
+            if (is_fpnum(arg->expr->type))
+                arg->is_fp = 1;
+
             /* 8 byte align */
             arg->size = align_to(type_size, 8);
             total_area_size += arg->size;
@@ -711,12 +725,23 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         int used_reg_count = 0;
         int i;
 
+        int used_fp = 0;
+
         for (i = 0; i < arg_count; i++) {
             struct arg_area *arg = &args[i];
 
             /* skip for return value */
             if (!arg->expr)
                 continue;
+
+            if (arg->is_fp) {
+                if (arg->size == 8 && used_fp < 6) {
+                    reg_offset -= arg->size;
+                    arg->offset = reg_offset;
+                    used_fp++;
+                }
+                continue;
+            }
 
             if (arg->size == 8 && used_reg_count < 6) {
                 reg_offset -= arg->size;
@@ -748,6 +773,8 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         int loaded_reg_count = 0;
         int i;
 
+        int loaded_fp = 0;
+
         gen_comment(fp, "allocate arg area");
         gen_sub_stack_pointer(fp, total_area_size);
 
@@ -759,6 +786,12 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 continue;
 
             gen_code(fp, args[i].expr);
+
+            if (args[i].is_fp) {
+                fprintf(fp, "    movss  %%xmm0, %d(%%rsp)\n", args[i].offset);
+                continue;
+            }
+
             if (args[i].size > 8) {
                 gen_store_arg(fp, &args[i]);
             } else {
@@ -786,6 +819,13 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             if (ar->pass_by_stack)
                 continue;
 
+            if (args[i].is_fp) {
+                fprintf(fp, "    movss  %d(%%rsp), %%xmm%d\n", args[i].offset, loaded_fp);
+                fprintf(fp, "    cvtss2sd  %%xmm%d, %%xmm%d\n", loaded_fp, loaded_fp);
+                loaded_fp++;
+                continue;
+            }
+
             if (ar->size > 8) {
                 loaded_reg_count = gen_load_arg(fp, ar, loaded_reg_count);
             } else {
@@ -797,7 +837,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
         /* number of fp */
         if (is_variadic(func_sym))
-            code3(fp, MOV, imm(0), EAX);
+            code3(fp, MOV, imm(loaded_fp), AL);
 
         /* call */
         gen_comment(fp, "call");
@@ -933,6 +973,9 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
 
         if (is_array(node->type))
             code3(fp, LEA, mem(RBP, disp), RAX);
+        else if (is_fpnum(node->type)) {
+            fprintf(fp, "    movss  %d(%%rbp), %%xmm0\n", disp);
+        }
         else
             gen_load(fp, node, mem(RBP, disp), A_);
     }
