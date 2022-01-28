@@ -611,7 +611,8 @@ struct arg_area {
     const struct ast_node *expr;
     int offset;
     int size;
-    int pass_by_reg;
+    char pass_by_stack;
+    char is_fp;
 };
 
 static void print_arg_area(const struct arg_area *args, int count)
@@ -619,8 +620,8 @@ static void print_arg_area(const struct arg_area *args, int count)
     int i;
     for (i = 0; i < count; i++) {
         const struct arg_area *a = &args[i];
-        printf("* %2d | size: %d, offset: %d, pass_by_reg: %d\n",
-                i, a->size, a->offset, a->pass_by_reg);
+        printf("* %2d | size: %d, offset: %d, pass_by_stack: %d, is_fp: %d\n",
+                i, a->size, a->offset, a->pass_by_stack, a->is_fp);
     }
 }
 
@@ -671,18 +672,12 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         arg_count++;
 
     /* allocate arg area */
-    args = malloc(arg_count * sizeof(struct arg_area));
+    args = calloc(arg_count, sizeof(struct arg_area));
 
     /* compute total arg area size */
     {
         const struct ast_node *list = node->r;
         struct arg_area *arg = &args[arg_count - 1];
-        int i;
-
-        for (i = 0; i < arg_count; i++) {
-            const struct arg_area zero = {NULL, 0, 0, 0};
-            args[0] = zero;
-        }
 
         for (; list; list = list->l) {
             const struct ast_node *arg_node = list->r;
@@ -727,7 +722,6 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 reg_offset -= arg->size;
 
                 arg->offset = reg_offset;
-                arg->pass_by_reg = 1;
 
                 used_reg_count++;
             }
@@ -735,13 +729,12 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 reg_offset -= arg->size;
 
                 arg->offset = reg_offset;
-                arg->pass_by_reg = 1;
 
                 used_reg_count += 2;
             }
             else {
                 arg->offset = mem_offset;
-                arg->pass_by_reg = 0;
+                arg->pass_by_stack = 1;
 
                 mem_offset += arg->size;
             }
@@ -790,7 +783,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 continue;
             }
 
-            if (!ar->pass_by_reg)
+            if (ar->pass_by_stack)
                 continue;
 
             if (ar->size > 8) {
@@ -1016,18 +1009,19 @@ static void gen_load(FILE *fp, const struct ast_node *node,
     }
 }
 
-static void gen_store(FILE *fp, const struct ast_node *node,
-        enum operand regist, enum operand addr)
+static void gen_store_a_d(FILE *fp, const struct data_type *type)
 {
-    const int reg_ = register_from_type(regist, node->type);
+    const int a_ = register_from_type(A_, type);
 
-    gen_comment(fp, "store");
-    if (is_char(node->type) || is_short(node->type) || is_int(node->type)) {
-        gen_comment(fp, "cast");
-        gen_cast(fp, node);
+    if (is_small_object(type)) {
+        if (is_float(type))
+            fprintf(fp, "    movss  %%xmm0, (%%rdx)\n");
+        else
+            code3(fp, MOV, a_, mem(RDX, 0));
     }
-
-    code3(fp, MOV, reg_, addr);
+    else {
+        gen_assign_struct(fp, type);
+    }
 }
 
 static void gen_div(FILE *fp, const struct ast_node *node, enum operand divider)
@@ -1205,6 +1199,34 @@ static void gen_cast(FILE *fp, const struct ast_node *node)
             code3(fp, MOV,   EAX, EAX);
         else
             code3(fp, MOVSL, EAX, RAX);
+    }
+}
+
+static void gen_convert_a(FILE *fp, const struct data_type *src, const struct data_type *dst)
+{
+    if (is_long(dst)) {
+        if (is_char(src)) {
+            if (is_unsigned(src))
+                code3(fp, MOVZB, AL, RAX);
+            else
+                code3(fp, MOVSB, AL, RAX);
+        }
+        else if (is_short(src)) {
+            if (is_unsigned(src))
+                code3(fp, MOVZW, AX, RAX);
+            else
+                code3(fp, MOVSW, AX, RAX);
+        }
+        else if (is_int(src)) {
+            if (is_unsigned(src))
+                code3(fp, MOV,   EAX, EAX);
+            else
+                code3(fp, MOVSL, EAX, RAX);
+        }
+    }
+    else if (is_int(src)) {
+        if (is_float(dst))
+            fprintf(fp, "    cvtsi2ssl  %%eax, %%xmm0\n");
     }
 }
 
@@ -2000,17 +2022,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             break;
         }
 
-        /* TODO come up with better idea to cast when storing */
-        if (is_long(node->type) && !is_long(node->r->type))
-            gen_cast(fp, node->r);
-
-        if (is_small_object(node->type))
-            code3(fp, MOV, a_, mem(RDX, 0));
-        else
-            gen_assign_struct(fp, node->type);
-
-        if (0)
-            gen_store(fp, node->r, A_, mem(RDX, 0));
+        gen_convert_a(fp, node->r->type, node->l->type);
+        gen_store_a_d(fp, node->l->type);
         break;
 
     case NOD_ADD_ASSIGN:
