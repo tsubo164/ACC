@@ -399,8 +399,12 @@ static void gen_code(FILE *fp, const struct ast_node *node);
 static void gen_address(FILE *fp, const struct ast_node *node);
 static void gen_load(FILE *fp, const struct ast_node *node,
         enum operand addr, enum operand regist);
+static void gen_store_a(FILE *fp, const struct data_type *type,
+        enum operand addr, int offset);
 static void gen_cast(FILE *fp, const struct ast_node *node);
 static void gen_assign_struct(FILE *fp, const struct data_type *type);
+static void gen_copy_large_object(FILE *fp, const struct data_type *type,
+        enum operand addr, int offset);
 
 static void gen_comment(FILE *fp, const char *cmt)
 {
@@ -525,21 +529,10 @@ static void gen_func_param_list_(FILE *fp, const struct data_type *func_type)
             stored_reg_count = gen_store_param(fp, sym, stored_reg_count);
         }
         else {
-            gen_comment(fp, "save rdi and rdx arg");
-            code3(fp, MOV, RDI, R10);
-            code3(fp, MOV, RDX, R11);
-
             /* src from stack */
             code3(fp, MOV, RBP, RAX);
             code3(fp, ADD, imm(stack_offset), RAX);
-            /* dst from local */
-            code3(fp, MOV, RBP, RDX);
-            code3(fp, SUB, imm(sym->mem_offset), RDX);
-            gen_assign_struct(fp, sym->type);
-
-            gen_comment(fp, "restore rdi and rdx arg");
-            code3(fp, MOV, R10, RDI);
-            code3(fp, MOV, R11, RDX);
+            gen_copy_large_object(fp, sym->type, RBP, -sym->mem_offset);
 
             /* 8 byte align */
             stack_offset += align_to(param_size, 8);
@@ -634,13 +627,6 @@ static void print_arg_area(const struct arg_area *args, int count)
         printf("* %2d | size: %d, offset: %d, pass_by_stack: %d, is_fp: %d\n",
                 i, a->size, a->offset, a->pass_by_stack, a->is_fp);
     }
-}
-
-static void gen_store_arg(FILE *fp, const struct arg_area *arg)
-{
-    code3(fp, MOV, RSP, RDX);
-    code3(fp, ADD, imm(arg->offset), RDX);
-    gen_assign_struct(fp, arg->expr->type);
 }
 
 static int gen_load_arg(FILE *fp, const struct arg_area *arg, int loaded_regs)
@@ -781,32 +767,34 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         /* eval arg expr */
         gen_comment(fp, "store args");
         for (i = 0; i < arg_count; i++) {
+            struct arg_area *arg = &args[i];
+
             /* skip for return value */
-            if (!args[i].expr)
+            if (!arg->expr)
                 continue;
 
-            gen_code(fp, args[i].expr);
+            gen_code(fp, arg->expr);
 
-            if (args[i].is_fp) {
-                fprintf(fp, "    movss  %%xmm0, %d(%%rsp)\n", args[i].offset);
+            if (arg->is_fp) {
+                gen_store_a(fp, arg->expr->type, RSP, arg->offset);
                 continue;
             }
 
-            if (args[i].size > 8) {
-                gen_store_arg(fp, &args[i]);
+            if (arg->size > 8) {
+                gen_store_a(fp, arg->expr->type, RSP, arg->offset);
             } else {
                 /* sign extensions on parameter passing */
-                gen_cast(fp, args[i].expr);
-                code3(fp, MOV, RAX, mem(RSP, args[i].offset));
+                gen_cast(fp, arg->expr);
+                code3(fp, MOV, RAX, mem(RSP, arg->offset));
             }
         }
 
         /* load to registers */
         gen_comment(fp, "load args");
         for (i = 0; i < arg_count && loaded_reg_count < 6; i++) {
-            struct arg_area *ar = &args[i];
+            struct arg_area *arg = &args[i];
 
-            if (!ar->expr) {
+            if (!arg->expr) {
                 /* large return value */
                 const int offset = -get_local_area_size();
                 const int reg_ = arg_reg(0, I64);
@@ -816,21 +804,21 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 continue;
             }
 
-            if (ar->pass_by_stack)
+            if (arg->pass_by_stack)
                 continue;
 
-            if (args[i].is_fp) {
-                fprintf(fp, "    movss  %d(%%rsp), %%xmm%d\n", args[i].offset, loaded_fp);
+            if (arg->is_fp) {
+                fprintf(fp, "    movss  %d(%%rsp), %%xmm%d\n", arg->offset, loaded_fp);
                 fprintf(fp, "    cvtss2sd  %%xmm%d, %%xmm%d\n", loaded_fp, loaded_fp);
                 loaded_fp++;
                 continue;
             }
 
-            if (ar->size > 8) {
-                loaded_reg_count = gen_load_arg(fp, ar, loaded_reg_count);
+            if (arg->size > 8) {
+                loaded_reg_count = gen_load_arg(fp, arg, loaded_reg_count);
             } else {
                 const int reg_ = arg_reg(loaded_reg_count, I64);
-                code3(fp, MOV, mem(RSP, ar->offset), reg_);
+                code3(fp, MOV, mem(RSP, arg->offset), reg_);
                 loaded_reg_count++;
             }
         }
@@ -1052,18 +1040,26 @@ static void gen_load(FILE *fp, const struct ast_node *node,
     }
 }
 
-static void gen_store_a_d(FILE *fp, const struct data_type *type)
+static void gen_store_a(FILE *fp, const struct data_type *type,
+        enum operand addr, int offset)
 {
     const int a_ = register_from_type(A_, type);
 
     if (is_small_object(type)) {
         if (is_float(type))
-            fprintf(fp, "    movss  %%xmm0, (%%rdx)\n");
+        {
+            if (addr == RDX)
+                fprintf(fp, "    movss  %%xmm0, %d(%%rdx)\n", offset);
+            if (addr == RSP)
+                fprintf(fp, "    movss  %%xmm0, %d(%%rsp)\n", offset);
+        }
         else
-            code3(fp, MOV, a_, mem(RDX, 0));
+        {
+            code3(fp, MOV, a_, mem(addr, offset));
+        }
     }
     else {
-        gen_assign_struct(fp, type);
+        gen_copy_large_object(fp, type, addr, offset);
     }
 }
 
@@ -1291,6 +1287,28 @@ static void gen_assign_struct(FILE *fp, const struct data_type *type)
         code3(fp, MOV, mem(RAX, offset), EDI);
         code3(fp, MOV, EDI, mem(RDX, offset));
         offset += 4;
+    }
+}
+
+static void gen_copy_large_object(FILE *fp, const struct data_type *type,
+        enum operand addr, int offset)
+{
+    /* assuming src addess is in rax */
+    const int size = get_size(type);
+    const int N8 = size / 8;
+    const int N4 = (size - 8 * N8) / 4;
+    int disp = 0;
+    int i;
+
+    for (i = 0; i < N8; i++) {
+        code3(fp, MOV, mem(RAX, disp), R10);
+        code3(fp, MOV, R10, mem(addr, offset + disp));
+        disp += 8;
+    }
+    for (i = 0; i < N4; i++) {
+        code3(fp, MOV, mem(RAX, disp), R10D);
+        code3(fp, MOV, R10D, mem(addr, offset + disp));
+        disp += 4;
     }
 }
 
@@ -2066,7 +2084,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         }
 
         gen_convert_a(fp, node->r->type, node->l->type);
-        gen_store_a_d(fp, node->l->type);
+        gen_store_a(fp, node->l->type, RDX, 0);
         break;
 
     case NOD_ADD_ASSIGN:

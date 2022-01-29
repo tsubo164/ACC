@@ -12,6 +12,7 @@
   - [x] `type.c`
 
 * TODO
+  - `const char *c = register_name[addr]` compile erro;
   - move `is_variadic` to type.c
   - move `bit_width` to `struct member` ?
   - remove `data_type.alias` ?
