@@ -8,6 +8,7 @@ enum data_type_kind {
     DATA_TYPE_INT,
     DATA_TYPE_LONG,
     DATA_TYPE_FLOAT,
+    DATA_TYPE_DOUBLE,
     DATA_TYPE_POINTER,
     DATA_TYPE_ARRAY,
     DATA_TYPE_STRUCT,
@@ -80,6 +81,7 @@ extern int is_short(const struct data_type *type);
 extern int is_int(const struct data_type *type);
 extern int is_long(const struct data_type *type);
 extern int is_float(const struct data_type *type);
+extern int is_double(const struct data_type *type);
 extern int is_pointer(const struct data_type *type);
 extern int is_array(const struct data_type *type);
 extern int is_struct(const struct data_type *type);
@@ -101,6 +103,7 @@ extern struct data_type *type_short(void);
 extern struct data_type *type_int(void);
 extern struct data_type *type_long(void);
 extern struct data_type *type_float(void);
+extern struct data_type *type_double(void);
 extern struct data_type *type_pointer(struct data_type *base_type);
 extern struct data_type *type_array(struct data_type *base_type);
 extern struct data_type *type_struct(void);

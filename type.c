@@ -14,6 +14,7 @@ static struct data_type SHORT_    = {DATA_TYPE_SHORT,    2, 2, 1, NULL, NULL};
 static struct data_type INT_      = {DATA_TYPE_INT,      4, 4, 1, NULL, NULL};
 static struct data_type LONG_     = {DATA_TYPE_LONG,     8, 8, 1, NULL, NULL};
 static struct data_type FLOAT_    = {DATA_TYPE_FLOAT,    4, 4, 1, NULL, NULL};
+static struct data_type DOUBLE_   = {DATA_TYPE_DOUBLE,   8, 8, 1, NULL, NULL};
 static struct data_type POINTER_  = {DATA_TYPE_POINTER,  8, 8, 1, NULL, NULL};
 static struct data_type ARRAY_    = {DATA_TYPE_ARRAY,    0, 0, UNKNOWN_ARRAY_LENGTH, NULL, NULL};
 static struct data_type STRUCT_   = {DATA_TYPE_STRUCT,   1, 1, 1, NULL, NULL};
@@ -210,13 +211,13 @@ int is_compatible(const struct data_type *t1, const struct data_type *t2)
     if (is_integer(t1) && is_integer(t2))
         return 1;
 
-    if (is_integer(t1) && is_float(t2))
+    if (is_integer(t1) && is_fpnum(t2))
         return 1;
 
-    if (is_float(t1) && is_integer(t2))
+    if (is_fpnum(t1) && is_integer(t2))
         return 1;
 
-    if (is_float(t1) && is_float(t2))
+    if (is_fpnum(t1) && is_fpnum(t2))
         return 1;
 
     if (is_struct(t1) && is_struct(t2))
@@ -264,7 +265,7 @@ int is_integer(const struct data_type *type)
 
 int is_fpnum(const struct data_type *type)
 {
-    if (is_float(type))
+    if (is_float(type) || is_double(type))
         return 1;
     return 0;
 }
@@ -307,6 +308,11 @@ int is_long(const struct data_type *type)
 int is_float(const struct data_type *type)
 {
     return type && type->kind == DATA_TYPE_FLOAT;
+}
+
+int is_double(const struct data_type *type)
+{
+    return type && type->kind == DATA_TYPE_DOUBLE;
 }
 
 int is_pointer(const struct data_type *type)
@@ -556,6 +562,11 @@ struct data_type *type_long(void)
 struct data_type *type_float(void)
 {
     return clone(&FLOAT_);
+}
+
+struct data_type *type_double(void)
+{
+    return clone(&DOUBLE_);
 }
 
 struct data_type *type_pointer(struct data_type *base_type)
