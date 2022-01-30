@@ -405,6 +405,8 @@ static void gen_cast(FILE *fp, const struct ast_node *node);
 static void gen_assign_struct(FILE *fp, const struct data_type *type);
 static void gen_copy_large_object(FILE *fp, const struct data_type *type,
         enum operand addr, int offset);
+static void gen_convert_a(FILE *fp,
+        const struct data_type *src, const struct data_type *dst);
 
 static void gen_comment(FILE *fp, const char *cmt)
 {
@@ -613,6 +615,7 @@ static void gen_func_epilogue(FILE *fp, const struct ast_node *node)
 
 struct arg_area {
     const struct ast_node *expr;
+    const struct data_type *param_type;
     int offset;
     int size;
     char pass_by_stack;
@@ -681,6 +684,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             int type_size = 0;
 
             arg->expr = arg_node->l;
+            arg->param_type = arg_node->type;
             type_size = get_size(arg->expr->type);
 
             if (is_fpnum(arg->expr->type))
@@ -774,19 +778,8 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 continue;
 
             gen_code(fp, arg->expr);
-
-            if (arg->is_fp) {
-                gen_store_a(fp, arg->expr->type, RSP, arg->offset);
-                continue;
-            }
-
-            if (arg->size > 8) {
-                gen_store_a(fp, arg->expr->type, RSP, arg->offset);
-            } else {
-                /* sign extensions on parameter passing */
-                gen_cast(fp, arg->expr);
-                code3(fp, MOV, RAX, mem(RSP, arg->offset));
-            }
+            gen_convert_a(fp, arg->expr->type, arg->param_type);
+            gen_store_a(fp, arg->param_type, RSP, arg->offset);
         }
 
         /* load to registers */
@@ -808,8 +801,10 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 continue;
 
             if (arg->is_fp) {
-                fprintf(fp, "    movss  %d(%%rsp), %%xmm%d\n", arg->offset, loaded_fp);
-                fprintf(fp, "    cvtss2sd  %%xmm%d, %%xmm%d\n", loaded_fp, loaded_fp);
+                if (is_float(arg->param_type))
+                    fprintf(fp, "    movss  %d(%%rsp), %%xmm%d\n", arg->offset, loaded_fp);
+                else
+                    fprintf(fp, "    movsd  %d(%%rsp), %%xmm%d\n", arg->offset, loaded_fp);
                 loaded_fp++;
                 continue;
             }
@@ -817,7 +812,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             if (arg->size > 8) {
                 loaded_reg_count = gen_load_arg(fp, arg, loaded_reg_count);
             } else {
-                const int reg_ = arg_reg(loaded_reg_count, I64);
+                const int reg_ = arg_reg(loaded_reg_count, operand_size(arg->param_type));
                 code3(fp, MOV, mem(RSP, arg->offset), reg_);
                 loaded_reg_count++;
             }
@@ -1243,29 +1238,38 @@ static void gen_cast(FILE *fp, const struct ast_node *node)
 
 static void gen_convert_a(FILE *fp, const struct data_type *src, const struct data_type *dst)
 {
-    if (is_long(dst)) {
-        if (is_char(src)) {
-            if (is_unsigned(src))
-                code3(fp, MOVZB, AL, RAX);
-            else
-                code3(fp, MOVSB, AL, RAX);
-        }
-        else if (is_short(src)) {
+    if (is_identical(src, dst))
+        return;
+
+    if (is_char(src)) {
+        const int SRC_ = register_from_type(A_, src);
+        const int DST_ = register_from_type(A_, dst);
+        const int MOV_ = is_unsigned(src) ? MOVZB : MOVSB;
+        code3(fp, MOV_, SRC_, DST_);
+    }
+    else if (is_short(src)) {
+        if (is_long(dst) || is_int(dst)) {
             if (is_unsigned(src))
                 code3(fp, MOVZW, AX, RAX);
             else
                 code3(fp, MOVSW, AX, RAX);
         }
-        else if (is_int(src)) {
+    }
+    else if (is_int(src)) {
+        if (is_long(dst) || is_int(dst)) {
             if (is_unsigned(src))
                 code3(fp, MOV,   EAX, EAX);
             else
                 code3(fp, MOVSL, EAX, RAX);
         }
-    }
-    else if (is_int(src)) {
-        if (is_float(dst))
+        else if (is_float(dst)) {
             fprintf(fp, "    cvtsi2ssl  %%eax, %%xmm0\n");
+        }
+    }
+    else if (is_float(src)) {
+        if (is_void(dst)) {
+            fprintf(fp, "    cvtss2sd  %%xmm0, %%xmm0\n");
+        }
     }
 }
 

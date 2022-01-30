@@ -685,8 +685,10 @@ static struct ast_node *argument_expression(struct parser *p)
  *     argument_expression_list
  *     argument_expression_list ',' argument_expression
  */
-static struct ast_node *argument_expression_list(struct parser *p)
+static struct ast_node *argument_expression_list(struct parser *p,
+        const struct data_type *func_type)
 {
+    const struct parameter *param = first_param(func_type);
     struct ast_node *tree = NULL, *list = NULL;
     int count = 0;
 
@@ -695,6 +697,10 @@ static struct ast_node *argument_expression_list(struct parser *p)
 
         if (!arg)
             break;
+
+        if (param)
+            arg->type = param->sym->type;
+        param = next_param(param);
 
         list = new_node_(NOD_LIST, tokpos(p));
         tree = branch_(list, tree, arg);
@@ -757,7 +763,8 @@ static struct ast_node *postfix_expression(struct parser *p)
         case '(':
             call = new_node_(NOD_CALL, tokpos(p));
             if (!nexttok(p, ')')) {
-                args = argument_expression_list(p);
+                const struct data_type *func_type = underlying(tree->type);
+                args = argument_expression_list(p, func_type);
                 call->ival = args ? args->ival : 0;
             }
             tree = branch_(call, tree, args);

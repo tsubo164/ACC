@@ -161,7 +161,7 @@ int has_typedef_name(const struct data_type *type)
     return type->alias != NULL;
 }
 
-static int is_identical(const struct data_type *t1, const struct data_type *t2)
+int is_identical(const struct data_type *t1, const struct data_type *t2)
 {
     if (!t1 || !t2)
         return 0;

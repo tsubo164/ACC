@@ -406,13 +406,16 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
             return;
         }
 
-        if (!is_compatible(node->type, ctx->param->sym->type) &&
-            !is_ellipsis(ctx->param->sym)) {
-            make_type_name(node->type, type_name1);
-            make_type_name(ctx->param->sym->type, type_name2);
-            add_error(ctx->diag, &node->pos,
-                    "passing '%s' to parameter of incompatible type '%s'",
-                    type_name1, type_name2);
+        {
+            const struct data_type *arg_type = node->l->type;
+            if (!is_compatible(arg_type, ctx->param->sym->type) &&
+                !is_ellipsis(ctx->param->sym)) {
+                make_type_name(arg_type, type_name1);
+                make_type_name(ctx->param->sym->type, type_name2);
+                add_error(ctx->diag, &node->pos,
+                        "passing '%s' to parameter of incompatible type '%s'",
+                        type_name1, type_name2);
+            }
         }
         ctx->param = next_param(ctx->param);
 
