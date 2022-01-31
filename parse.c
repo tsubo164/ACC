@@ -353,6 +353,23 @@ static struct ast_node *new_node_decl_ident(struct symbol *sym)
     return typed_(node);
 }
 
+static struct ast_node *implicit_cast(struct ast_node *node, struct data_type *cast_to)
+{
+    struct data_type *t1 = node->type;
+    struct data_type *t2 = cast_to;
+
+    if (is_identical(t1, t2))
+        return node;
+
+    if (is_compatible(t1, t2)) {
+        struct ast_node *tree = new_ast_node(NOD_CAST2, node, NULL);
+        tree->type = t2;
+        return tree;
+    }
+
+    return node;
+}
+
 static int eval_const_expr(const struct ast_node *node, struct parser *p)
 {
     int l, r;
@@ -1276,63 +1293,52 @@ static struct ast_node *assignment_expression(struct parser *p);
 static struct ast_node *assign_(struct parser *p, int node_kind, struct ast_node *lval)
 {
     struct ast_node *asgn = new_node_(node_kind, tokpos(p));
-    return branch_(asgn, lval, assignment_expression(p));
+    struct ast_node *expr = assignment_expression(p);
+
+    expr = implicit_cast(expr, lval->type);
+
+    return branch_(asgn, lval, expr);
 }
 
 static struct ast_node *assignment_expression(struct parser *p)
 {
     struct ast_node *tree = conditional_expression(p);
-    struct ast_node *asgn = NULL;
     const struct token *tok = gettok(p);
 
     switch (tok->kind) {
 
     case '=':
-        /*
-        asgn = new_node_(NOD_ASSIGN, tokpos(p));
-        return branch_(asgn, tree, assignment_expression(p));
-        */
         return assign_(p, NOD_ASSIGN, tree);
 
     case TOK_ADD_ASSIGN:
-        asgn = new_node_(NOD_ADD_ASSIGN, tokpos(p));
-        return branch_(asgn, tree, assignment_expression(p));
+        return assign_(p, NOD_ADD_ASSIGN, tree);
 
     case TOK_SUB_ASSIGN:
-        asgn = new_node_(NOD_SUB_ASSIGN, tokpos(p));
-        return branch_(asgn, tree, assignment_expression(p));
+        return assign_(p, NOD_SUB_ASSIGN, tree);
 
     case TOK_MUL_ASSIGN:
-        asgn = new_node_(NOD_MUL_ASSIGN, tokpos(p));
-        return branch_(asgn, tree, assignment_expression(p));
+        return assign_(p, NOD_MUL_ASSIGN, tree);
 
     case TOK_DIV_ASSIGN:
-        asgn = new_node_(NOD_DIV_ASSIGN, tokpos(p));
-        return branch_(asgn, tree, assignment_expression(p));
+        return assign_(p, NOD_DIV_ASSIGN, tree);
 
     case TOK_MOD_ASSIGN:
-        asgn = new_node_(NOD_MOD_ASSIGN, tokpos(p));
-        return branch_(asgn, tree, assignment_expression(p));
+        return assign_(p, NOD_MOD_ASSIGN, tree);
 
     case TOK_SHL_ASSIGN:
-        asgn = new_node_(NOD_SHL_ASSIGN, tokpos(p));
-        return branch_(asgn, tree, assignment_expression(p));
+        return assign_(p, NOD_SHL_ASSIGN, tree);
 
     case TOK_SHR_ASSIGN:
-        asgn = new_node_(NOD_SHR_ASSIGN, tokpos(p));
-        return branch_(asgn, tree, assignment_expression(p));
+        return assign_(p, NOD_SHR_ASSIGN, tree);
 
     case TOK_OR_ASSIGN:
-        asgn = new_node_(NOD_OR_ASSIGN, tokpos(p));
-        return branch_(asgn, tree, assignment_expression(p));
+        return assign_(p, NOD_OR_ASSIGN, tree);
 
     case TOK_XOR_ASSIGN:
-        asgn = new_node_(NOD_XOR_ASSIGN, tokpos(p));
-        return branch_(asgn, tree, assignment_expression(p));
+        return assign_(p, NOD_XOR_ASSIGN, tree);
 
     case TOK_AND_ASSIGN:
-        asgn = new_node_(NOD_AND_ASSIGN, tokpos(p));
-        return branch_(asgn, tree, assignment_expression(p));
+        return assign_(p, NOD_AND_ASSIGN, tree);
 
     default:
         ungettok(p);

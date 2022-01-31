@@ -2087,7 +2087,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             break;
         }
 
-        gen_convert_a(fp, node->r->type, node->l->type);
         gen_store_a(fp, node->l->type, RDX, 0);
         break;
 
@@ -2212,6 +2211,11 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_CAST:
         gen_code(fp, node->r);
         gen_cast(fp, node);
+        break;
+
+    case NOD_CAST2:
+        gen_code(fp, node->l);
+        gen_convert_a(fp, node->l->type, node->type);
         break;
 
     case NOD_DEREF:
