@@ -2,9 +2,9 @@
 #include <stdio.h>
 */
 
-/*
 #include <stdio.h>
 
+/*
 void foo(float f)
 {
     printf("%g\n", f);
@@ -19,6 +19,7 @@ int main() {
     /*
     foo(f);
     */
+    printf("%g\n", f);
 
     return 42;
 }

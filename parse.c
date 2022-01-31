@@ -684,17 +684,29 @@ static struct ast_node *primary_expression(struct parser *p)
  * argument_expression
  *     assignment_expression
  */
-static struct ast_node *argument_expression(struct parser *p)
+static struct ast_node *argument_expression(struct parser *p, const struct parameter *param)
 {
     struct ast_node *tree = NULL;
-    struct ast_node *asgn = NULL;
+    struct ast_node *expr = NULL;
 
-    asgn = assignment_expression(p);
-    if (!asgn)
+    expr = assignment_expression(p);
+    if (!expr)
         return NULL;
 
+    /* implicit casting to parameter type */
+    if (param) {
+        if (is_ellipsis(param->sym)) {
+            if (is_char(expr->type) || is_short(expr->type))
+                expr = implicit_cast(expr, type_int());
+            else if (is_float(expr->type))
+                expr = implicit_cast(expr, type_double());
+        } else {
+            expr = implicit_cast(expr, param->sym->type);
+        }
+    }
+
     tree = new_node_(NOD_ARG, tokpos(p));
-    return branch_(tree, asgn, NULL);
+    return branch_(tree, expr, NULL);
 }
 
 /*
@@ -710,14 +722,11 @@ static struct ast_node *argument_expression_list(struct parser *p,
     int count = 0;
 
     for (;;) {
-        struct ast_node *arg = argument_expression(p);
+        struct ast_node *arg = argument_expression(p, param);
+        param = next_param(param);
 
         if (!arg)
             break;
-
-        if (param)
-            arg->type = param->sym->type;
-        param = next_param(param);
 
         list = new_node_(NOD_LIST, tokpos(p));
         tree = branch_(list, tree, arg);

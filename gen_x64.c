@@ -615,7 +615,6 @@ static void gen_func_epilogue(FILE *fp, const struct ast_node *node)
 
 struct arg_area {
     const struct ast_node *expr;
-    const struct data_type *param_type;
     int offset;
     int size;
     char pass_by_stack;
@@ -681,17 +680,14 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
         for (; list; list = list->l) {
             const struct ast_node *arg_node = list->r;
-            int type_size = 0;
+            int size;
 
             arg->expr = arg_node->l;
-            arg->param_type = arg_node->type;
-            type_size = get_size(arg->expr->type);
-
-            if (is_fpnum(arg->expr->type))
-                arg->is_fp = 1;
+            arg->is_fp = is_fpnum(arg->expr->type);
 
             /* 8 byte align */
-            arg->size = align_to(type_size, 8);
+            size = get_size(arg->expr->type);
+            arg->size = align_to(size, 8);
             total_area_size += arg->size;
 
             arg--;
@@ -778,8 +774,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 continue;
 
             gen_code(fp, arg->expr);
-            gen_convert_a(fp, arg->expr->type, arg->param_type);
-            gen_store_a(fp, arg->param_type, RSP, arg->offset);
+            gen_store_a(fp, arg->expr->type, RSP, arg->offset);
         }
 
         /* load to registers */
@@ -801,7 +796,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 continue;
 
             if (arg->is_fp) {
-                if (is_float(arg->param_type))
+                if (is_float(arg->expr->type))
                     fprintf(fp, "    movss  %d(%%rsp), %%xmm%d\n", arg->offset, loaded_fp);
                 else
                     fprintf(fp, "    movsd  %d(%%rsp), %%xmm%d\n", arg->offset, loaded_fp);
@@ -812,7 +807,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             if (arg->size > 8) {
                 loaded_reg_count = gen_load_arg(fp, arg, loaded_reg_count);
             } else {
-                const int reg_ = arg_reg(loaded_reg_count, operand_size(arg->param_type));
+                const int reg_ = arg_reg(loaded_reg_count, operand_size(arg->expr->type));
                 code3(fp, MOV, mem(RSP, arg->offset), reg_);
                 loaded_reg_count++;
             }
@@ -1041,15 +1036,19 @@ static void gen_store_a(FILE *fp, const struct data_type *type,
     const int a_ = register_from_type(A_, type);
 
     if (is_small_object(type)) {
-        if (is_float(type))
-        {
+        if (is_float(type)) {
             if (addr == RDX)
                 fprintf(fp, "    movss  %%xmm0, %d(%%rdx)\n", offset);
             if (addr == RSP)
                 fprintf(fp, "    movss  %%xmm0, %d(%%rsp)\n", offset);
         }
-        else
-        {
+        else if (is_double(type)) {
+            if (addr == RDX)
+                fprintf(fp, "    movsd  %%xmm0, %d(%%rdx)\n", offset);
+            if (addr == RSP)
+                fprintf(fp, "    movsd  %%xmm0, %d(%%rsp)\n", offset);
+        }
+        else {
             code3(fp, MOV, a_, mem(addr, offset));
         }
     }
@@ -1267,7 +1266,7 @@ static void gen_convert_a(FILE *fp, const struct data_type *src, const struct da
         }
     }
     else if (is_float(src)) {
-        if (is_void(dst)) {
+        if (is_double(dst)) {
             fprintf(fp, "    cvtss2sd  %%xmm0, %%xmm0\n");
         }
     }

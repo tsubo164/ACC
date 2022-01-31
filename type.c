@@ -406,6 +406,10 @@ static char *make_type_name_(const struct data_type *type, char *buf)
         sprintf(p, "float %n", &n);
         p += n;
     }
+    else if (is_double(type)) {
+        sprintf(p, "double %n", &n);
+        p += n;
+    }
     else if (is_pointer(type)) {
         /* XXX need improvement to orders to write */
         if (is_array(underlying(type)) || is_function(underlying(type))) {
