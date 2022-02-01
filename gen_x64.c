@@ -553,20 +553,23 @@ static void gen_func_param_list(FILE *fp, const struct ast_node *node)
 }
 
 static int local_area_size = 0;
-static void find_max_return_size(const struct ast_node *node, int *max)
+static int find_max_return_size(const struct ast_node *node)
 {
-    if (!node)
-        return;
+    int size = 0, l, r;
 
-    if (node->kind == NOD_CALL) {
-        if (!is_small_object(node->type)) {
-            const int size = get_size(node->type);
-            if (size > *max)
-                *max = size;
-        }
-    }
-    find_max_return_size(node->l, max);
-    find_max_return_size(node->r, max);
+    if (!node)
+        return 0;
+
+    if (node->kind == NOD_CALL)
+        if (!is_small_object(node->type))
+            size = get_size(node->type);
+
+    l = find_max_return_size(node->l);
+    r = find_max_return_size(node->r);
+
+    size = l > size ? l : size;
+    size = r > size ? r : size;
+    return size;
 }
 
 static int get_local_area_size(void)
@@ -582,8 +585,7 @@ static void set_local_area_offset(const struct ast_node *node)
 
     local_var_size = get_mem_offset(func);
 
-    find_max_return_size(node->r, &ret_val_size);
-    /* 16 byte align */
+    ret_val_size = find_max_return_size(node->r);
     ret_val_size = align_to(ret_val_size, 16);
 
     local_area_size = local_var_size + ret_val_size;
@@ -617,8 +619,10 @@ struct argument {
     const struct ast_node *expr;
     int offset;
     int size;
+    int reg, reg2;
     char pass_by_stack;
     char is_fp;
+    char is_return_val;
 };
 
 static void print_arg_area(const struct argument *args, int count)
@@ -629,32 +633,6 @@ static void print_arg_area(const struct argument *args, int count)
         printf("* %2d | size: %d, offset: %d, pass_by_stack: %d, is_fp: %d\n",
                 i, a->size, a->offset, a->pass_by_stack, a->is_fp);
     }
-}
-
-static int gen_load_arg(FILE *fp, const struct argument *arg, int loaded_regs)
-{
-    const int size = get_size(arg->expr->type);
-    const int N8 = size / 8;
-    const int N4 = (size - 8 * N8) / 4;
-    int offset = 0;
-    int r = loaded_regs;
-    int i;
-
-    for (i = 0; i < N8; i++) {
-        const int reg_ = arg_reg(r, I64);
-        code3(fp, MOV, mem(RSP, arg->offset + offset), reg_);
-        r++;
-        offset += 8;
-    }
-
-    for (i = 0; i < N4; i++) {
-        const int reg_ = arg_reg(r, I32);
-        code3(fp, MOV, mem(RSP, arg->offset + offset), reg_);
-        r++;
-        offset += 4;
-    }
-
-    return r;
 }
 
 static void gen_func_call(FILE *fp, const struct ast_node *node)
@@ -692,6 +670,9 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
             arg--;
         }
+
+        if (is_large_object(ret_type))
+            arg[0].is_return_val = 1;
     }
 
     /* adjust area size */
@@ -715,9 +696,12 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         for (i = 0; i < arg_count; i++) {
             struct argument *arg = &args[i];
 
-            /* skip for return value */
-            if (!arg->expr)
+            if (arg->is_return_val) {
+                arg->offset = -get_local_area_size();
+                arg->reg = RDI;
+                used_gp++;
                 continue;
+            }
 
             if (arg->is_fp) {
                 if (arg->size == 8 && used_fp < 6) {
@@ -731,11 +715,19 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             if (arg->size == 8 && used_gp < 6) {
                 reg_offset -= arg->size;
                 arg->offset = reg_offset;
+                arg->reg = arg_reg(used_gp, operand_size(arg->expr->type));
                 used_gp++;
             }
             else if (arg->size == 16 && used_gp < 5) { /* need 2 regs */
                 reg_offset -= arg->size;
                 arg->offset = reg_offset;
+                arg->reg = arg_reg(used_gp, I64);
+
+                /* secondary register */
+                if (get_size(arg->expr->type) > 12)
+                    arg->reg2 = arg_reg(used_gp + 1, I64);
+                else
+                    arg->reg2 = arg_reg(used_gp + 1, I32);
                 used_gp += 2;
             }
             else {
@@ -750,7 +742,6 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         print_arg_area(args, arg_count);
 
     {
-        int loaded_gp = 0;
         int loaded_fp = 0;
         int i;
 
@@ -770,19 +761,17 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         }
 
         /* load to registers */
-        for (i = 0; i < arg_count && loaded_gp < 6; i++) {
+        for (i = 0; i < arg_count; i++) {
             struct argument *arg = &args[i];
-
-            if (!arg->expr) {
-                /* load address to large returned value */
-                const int offset = -get_local_area_size();
-                code3(fp, LEA, mem(RBP, offset), RDI);
-                loaded_gp++;
-                continue;
-            }
 
             if (arg->pass_by_stack)
                 continue;
+
+            if (arg->is_return_val) {
+                /* load address to large returned value */
+                code3(fp, LEA, mem(RBP, arg->offset), arg->reg);
+                continue;
+            }
 
             if (arg->is_fp) {
                 if (is_float(arg->expr->type))
@@ -794,12 +783,13 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             }
 
             if (arg->size > 8) {
-                loaded_gp = gen_load_arg(fp, arg, loaded_gp);
-            } else {
-                const int reg_ = arg_reg(loaded_gp, operand_size(arg->expr->type));
-                code3(fp, MOV, mem(RSP, arg->offset), reg_);
-                loaded_gp++;
+                code3(fp, MOV, mem(RSP, arg->offset),     arg->reg);
+                code3(fp, MOV, mem(RSP, arg->offset + 8), arg->reg2);
+                continue;
             }
+
+            if (arg->size <= 8)
+                code3(fp, MOV, mem(RSP, arg->offset), arg->reg);
         }
 
         /* number of fp */
