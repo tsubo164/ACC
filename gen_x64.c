@@ -42,6 +42,14 @@ enum operand {
     R13_, R13B, R13W, R13D, R13,
     R14_, R14B, R14W, R14D, R14,
     R15_, R15B, R15W, R15D, R15,
+    XMM0_, XMM0D, XMM0,
+    XMM1_, XMM1D, XMM1,
+    XMM2_, XMM2D, XMM2,
+    XMM3_, XMM3D, XMM3,
+    XMM4_, XMM4D, XMM4,
+    XMM5_, XMM5D, XMM5,
+    XMM6_, XMM6D, XMM6,
+    XMM7_, XMM7D, XMM7,
     OPR_IMM,
     OPR_MEM,
     OPR_LBL,
@@ -64,10 +72,20 @@ static const char register_name[][8] = {
     "r12_", "r12b", "r12w", "r12d", "r12",
     "r13_", "r13b", "r13w", "r13d", "r13",
     "r14_", "r14b", "r14w", "r14d", "r14",
-    "r15_", "r15b", "r15w", "r15d", "r15"
+    "r15_", "r15b", "r15w", "r15d", "r15",
+    "xmm0_", "xmm0", "xmm0",
+    "xmm1_", "xmm1", "xmm1",
+    "xmm2_", "xmm2", "xmm2",
+    "xmm3_", "xmm3", "xmm3",
+    "xmm4_", "xmm4", "xmm4",
+    "xmm5_", "xmm5", "xmm5",
+    "xmm6_", "xmm6", "xmm6",
+    "xmm7_", "xmm7", "xmm7"
 };
 
 static const enum operand arg_reg_list[] = {DI_, SI_, D_, C_, R8_, R9_};
+static const enum operand arg_fp_list[] = {
+    XMM0_, XMM1_, XMM2_, XMM3_, XMM4_, XMM5_, XMM6_, XMM7_};
 
 static int is_register(int oper)
 {
@@ -257,6 +275,14 @@ enum operand arg_reg(int index, int size)
     return regi(arg_reg_list[index], size);
 }
 
+enum operand arg_fp(int index, int size)
+{
+    if (index < 0 || index > 7)
+        return XMM0_;
+
+    return arg_fp_list[index] + (size - 2);
+}
+
 enum operand imm(long val)
 {
     operand_immediate = val;
@@ -369,6 +395,10 @@ static int operand_size(const struct data_type *type)
     if (is_int(type))
         return I32;
     if (is_long(type))
+        return I64;
+    if (is_float(type))
+        return I32;
+    if (is_double(type))
         return I64;
     if (is_pointer(type))
         return I64;
@@ -617,7 +647,7 @@ static void gen_func_epilogue(FILE *fp, const struct ast_node *node)
 
 struct argument {
     const struct ast_node *expr;
-    int offset;
+    int offset, offset2;
     int size;
     int reg, reg2;
     char pass_by_stack;
@@ -643,6 +673,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
     struct argument *args = NULL;
     int arg_count = node->ival;
     int total_area_size = 0;
+    int total_fp = 0;
 
     /* use the first register(rdi) for pointer to return value space */
     if (is_large_object(ret_type))
@@ -707,6 +738,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 if (arg->size == 8 && used_fp < 6) {
                     reg_offset -= arg->size;
                     arg->offset = reg_offset;
+                    arg->reg = arg_fp(used_fp, operand_size(arg->expr->type));
                     used_fp++;
                 }
                 continue;
@@ -724,6 +756,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 arg->reg = arg_reg(used_gp, I64);
 
                 /* secondary register */
+                arg->offset2 = reg_offset + 8;
                 if (get_size(arg->expr->type) > 12)
                     arg->reg2 = arg_reg(used_gp + 1, I64);
                 else
@@ -736,13 +769,13 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 mem_offset += arg->size;
             }
         }
+        total_fp = used_fp;
     }
 
     if (0)
         print_arg_area(args, arg_count);
 
     {
-        int loaded_fp = 0;
         int i;
 
         /* allocate arg area */
@@ -774,17 +807,17 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             }
 
             if (arg->is_fp) {
+                const char *x = register_name[arg->reg];
                 if (is_float(arg->expr->type))
-                    fprintf(fp, "    movss  %d(%%rsp), %%xmm%d\n", arg->offset, loaded_fp);
+                    fprintf(fp, "    movss  %d(%%rsp), %%%s\n", arg->offset, x);
                 else
-                    fprintf(fp, "    movsd  %d(%%rsp), %%xmm%d\n", arg->offset, loaded_fp);
-                loaded_fp++;
+                    fprintf(fp, "    movsd  %d(%%rsp), %%%s\n", arg->offset, x);
                 continue;
             }
 
             if (arg->size > 8) {
-                code3(fp, MOV, mem(RSP, arg->offset),     arg->reg);
-                code3(fp, MOV, mem(RSP, arg->offset + 8), arg->reg2);
+                code3(fp, MOV, mem(RSP, arg->offset),  arg->reg);
+                code3(fp, MOV, mem(RSP, arg->offset2), arg->reg2);
                 continue;
             }
 
@@ -794,7 +827,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
 
         /* number of fp */
         if (is_variadic(func_sym))
-            code3(fp, MOV, imm(loaded_fp), AL);
+            code3(fp, MOV, imm(total_fp), AL);
 
         /* call */
         if (is_pointer(func_sym->type)) {
@@ -907,10 +940,9 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
             if (!strcmp(sym->name, "__stdinp") ||
                 !strcmp(sym->name, "__stdoutp") ||
                 !strcmp(sym->name, "__stderrp")) {
-                const int a_ = regi(A_, I64);
                 char buf[128] = {'\0'};
                 sprintf(buf, "%s@GOTPCREL", sym->name);
-                code3(fp, MOV, symb(buf, -1), a_);
+                code3(fp, MOV, symb(buf, -1), RAX);
                 code3(fp, MOV, mem(RAX, 0), RAX);
             } else {
                 const int a_ = register_from_type(A_, node->type);
