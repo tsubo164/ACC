@@ -613,7 +613,7 @@ static void gen_func_epilogue(FILE *fp, const struct ast_node *node)
     code1(fp, RET);
 }
 
-struct arg_area {
+struct argument {
     const struct ast_node *expr;
     int offset;
     int size;
@@ -621,17 +621,17 @@ struct arg_area {
     char is_fp;
 };
 
-static void print_arg_area(const struct arg_area *args, int count)
+static void print_arg_area(const struct argument *args, int count)
 {
     int i;
     for (i = 0; i < count; i++) {
-        const struct arg_area *a = &args[i];
+        const struct argument *a = &args[i];
         printf("* %2d | size: %d, offset: %d, pass_by_stack: %d, is_fp: %d\n",
                 i, a->size, a->offset, a->pass_by_stack, a->is_fp);
     }
 }
 
-static int gen_load_arg(FILE *fp, const struct arg_area *arg, int loaded_regs)
+static int gen_load_arg(FILE *fp, const struct argument *arg, int loaded_regs)
 {
     const int size = get_size(arg->expr->type);
     const int N8 = size / 8;
@@ -662,7 +662,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
     /* TODO divide this function */
     const struct symbol *func_sym = node->l->sym;
     const struct data_type *ret_type = node->type;
-    struct arg_area *args = NULL;
+    struct argument *args = NULL;
     int arg_count = node->ival;
     int total_area_size = 0;
 
@@ -671,12 +671,12 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         arg_count++;
 
     /* allocate arg area */
-    args = calloc(arg_count, sizeof(struct arg_area));
+    args = calloc(arg_count, sizeof(struct argument));
 
     /* compute total arg area size */
     {
         const struct ast_node *list = node->r;
-        struct arg_area *arg = &args[arg_count - 1];
+        struct argument *arg = &args[arg_count - 1];
 
         for (; list; list = list->l) {
             const struct ast_node *arg_node = list->r;
@@ -708,13 +708,12 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         int reg_offset = total_area_size;
         /* start from top of arg area */
         int mem_offset = 0;
-        int used_reg_count = 0;
+        int used_gp = 0;
+        int used_fp = 0;
         int i;
 
-        int used_fp = 0;
-
         for (i = 0; i < arg_count; i++) {
-            struct arg_area *arg = &args[i];
+            struct argument *arg = &args[i];
 
             /* skip for return value */
             if (!arg->expr)
@@ -729,24 +728,19 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 continue;
             }
 
-            if (arg->size == 8 && used_reg_count < 6) {
+            if (arg->size == 8 && used_gp < 6) {
                 reg_offset -= arg->size;
-
                 arg->offset = reg_offset;
-
-                used_reg_count++;
+                used_gp++;
             }
-            else if (arg->size == 16 && used_reg_count < 5) { /* need 2 regs */
+            else if (arg->size == 16 && used_gp < 5) { /* need 2 regs */
                 reg_offset -= arg->size;
-
                 arg->offset = reg_offset;
-
-                used_reg_count += 2;
+                used_gp += 2;
             }
             else {
                 arg->offset = mem_offset;
                 arg->pass_by_stack = 1;
-
                 mem_offset += arg->size;
             }
         }
@@ -756,18 +750,16 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         print_arg_area(args, arg_count);
 
     {
-        int loaded_reg_count = 0;
+        int loaded_gp = 0;
+        int loaded_fp = 0;
         int i;
 
-        int loaded_fp = 0;
-
-        gen_comment(fp, "allocate arg area");
+        /* allocate arg area */
         gen_sub_stack_pointer(fp, total_area_size);
 
-        /* eval arg expr */
-        gen_comment(fp, "store args");
+        /* store to stack */
         for (i = 0; i < arg_count; i++) {
-            struct arg_area *arg = &args[i];
+            struct argument *arg = &args[i];
 
             /* skip for return value */
             if (!arg->expr)
@@ -778,17 +770,14 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         }
 
         /* load to registers */
-        gen_comment(fp, "load args");
-        for (i = 0; i < arg_count && loaded_reg_count < 6; i++) {
-            struct arg_area *arg = &args[i];
+        for (i = 0; i < arg_count && loaded_gp < 6; i++) {
+            struct argument *arg = &args[i];
 
             if (!arg->expr) {
-                /* large return value */
+                /* load address to large returned value */
                 const int offset = -get_local_area_size();
-                const int reg_ = arg_reg(0, I64);
-                gen_comment(fp, "load address to returned value");
-                code3(fp, LEA, mem(RBP, offset), reg_);
-                loaded_reg_count++;
+                code3(fp, LEA, mem(RBP, offset), RDI);
+                loaded_gp++;
                 continue;
             }
 
@@ -805,11 +794,11 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             }
 
             if (arg->size > 8) {
-                loaded_reg_count = gen_load_arg(fp, arg, loaded_reg_count);
+                loaded_gp = gen_load_arg(fp, arg, loaded_gp);
             } else {
-                const int reg_ = arg_reg(loaded_reg_count, operand_size(arg->expr->type));
+                const int reg_ = arg_reg(loaded_gp, operand_size(arg->expr->type));
                 code3(fp, MOV, mem(RSP, arg->offset), reg_);
-                loaded_reg_count++;
+                loaded_gp++;
             }
         }
 
@@ -818,7 +807,6 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             code3(fp, MOV, imm(loaded_fp), AL);
 
         /* call */
-        gen_comment(fp, "call");
         if (is_pointer(func_sym->type)) {
             const int id = is_static(func_sym) ? func_sym->id : -1;
             if (is_global_var(func_sym))
@@ -829,7 +817,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             code2(fp, CALL, label(func_sym->name, -1));
         }
 
-        gen_comment(fp, "free up arg area");
+        /* free up arg area */
         gen_add_stack_pointer(fp, total_area_size);
     }
 
@@ -838,10 +826,10 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
     if (is_medium_object(ret_type)) {
         const int offset = -get_local_area_size();
 
-        gen_comment(fp, "store returned value");
+        /* store returned value */
         code3(fp, MOV, RAX, mem(RBP, offset));
         code3(fp, MOV, RDX, mem(RBP, offset + 8));
-        gen_comment(fp, "load address to returned value");
+        /* load address to returned value */
         code3(fp, LEA, mem(RBP, offset), RAX);
     }
 }
