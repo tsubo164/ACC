@@ -656,23 +656,36 @@ static void gen_func_epilogue(FILE *fp, const struct ast_node *node)
 }
 
 struct argument {
+    struct argument *next;
     const struct ast_node *expr;
+
     int offset, offset2;
     int reg, reg2;
     int size;
+
     char pass_by_stack;
     char is_fp;
     char is_return_val;
 };
 
-static void print_arg_area(const struct argument *args, int count)
+static void free_argument_list(struct argument *args)
 {
-    int i;
-    for (i = 0; i < count; i++) {
-        const struct argument *a = &args[i];
-        printf("* %2d | size: %d, offset: %d, pass_by_stack: %d, is_fp: %d\n",
-                i, a->size, a->offset, a->pass_by_stack, a->is_fp);
+    struct argument *arg = args, *tmp;
+    while (arg) {
+        tmp = arg->next;
+        free(arg);
+        arg = tmp;
     }
+}
+
+static void print_argument_list(const struct argument *args)
+{
+    int i = 0;
+    const struct argument *a;
+
+    for (a = args; a; a = a->next)
+        printf("* %2d | size: %d, offset: %d, pass_by_stack: %d, is_fp: %d\n",
+                i++, a->size, a->offset, a->pass_by_stack, a->is_fp);
 }
 
 static void gen_func_call(FILE *fp, const struct ast_node *node)
@@ -681,30 +694,29 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
     const struct symbol *func_sym = node->l->sym;
     const struct data_type *ret_type = node->type;
     struct argument *args = NULL;
-    int arg_count = node->ival;
     int total_area_size = 0;
     int total_fp = 0;
 
-    /* use the first register(rdi) for pointer to return value space */
-    if (is_large_object(ret_type))
-        arg_count++;
-
-    /* allocate arg area */
-    args = calloc(arg_count, sizeof(struct argument));
-
-    /* compute total arg area size */
     {
         const struct ast_node *list = node->r;
-        struct argument *arg = &args[0];
+        struct argument head = {0};
+        struct argument *tail = &head;
+
+        /* use the first register as large return value address */
         if (is_large_object(ret_type)) {
+            struct argument *arg = calloc(1, sizeof(struct argument));
             arg->is_return_val = 1;
-            arg++;
+
+            tail->next = arg;
+            tail = arg;
         }
 
         for (; list; list = list->r) {
             const struct ast_node *arg_node = list->l;
+            struct argument *arg;
             int size;
 
+            arg = calloc(1, sizeof(struct argument));
             arg->expr = arg_node->l;
             arg->is_fp = is_fpnum(arg->expr->type);
 
@@ -713,8 +725,10 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             arg->size = align_to(size, 8);
             total_area_size += arg->size;
 
-            arg++;
+            tail->next = arg;
+            tail = arg;
         }
+        args = head.next;
     }
 
     /* adjust area size */
@@ -733,11 +747,9 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         int mem_offset = 0;
         int used_gp = 0;
         int used_fp = 0;
-        int i;
+        struct argument *arg;
 
-        for (i = 0; i < arg_count; i++) {
-            struct argument *arg = &args[i];
-
+        for (arg = args; arg; arg = arg->next) {
             if (arg->is_return_val) {
                 arg->offset = -get_local_area_size();
                 arg->reg = RDI;
@@ -784,18 +796,16 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
     }
 
     if (0)
-        print_arg_area(args, arg_count);
+        print_argument_list(args);
 
     {
-        int i;
+        struct argument *arg;
 
         /* allocate arg area */
         gen_sub_stack_pointer(fp, total_area_size);
 
         /* store to stack */
-        for (i = 0; i < arg_count; i++) {
-            struct argument *arg = &args[i];
-
+        for (arg = args; arg; arg = arg->next) {
             /* skip for return value */
             if (!arg->expr)
                 continue;
@@ -805,9 +815,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         }
 
         /* load to registers */
-        for (i = 0; i < arg_count; i++) {
-            struct argument *arg = &args[i];
-
+        for (arg = args; arg; arg = arg->next) {
             if (arg->pass_by_stack)
                 continue;
 
@@ -851,7 +859,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
         gen_add_stack_pointer(fp, total_area_size);
     }
 
-    free(args);
+    free_argument_list(args);
 
     if (is_medium_object(ret_type)) {
         const int offset = -get_local_area_size();

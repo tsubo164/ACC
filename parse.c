@@ -719,7 +719,6 @@ static struct ast_node *argument_expression_list(struct parser *p,
 {
     const struct parameter *param = first_param(func_type);
     struct ast_list list = {0};
-    int count = 0;
 
     for (;;) {
         struct ast_node *arg = argument_expression(p, param);
@@ -729,14 +728,10 @@ static struct ast_node *argument_expression_list(struct parser *p,
             break;
 
         append(&list, arg);
-        count++;
 
         if (!consume(p, ','))
             break;
     }
-
-    if (list.head)
-        list.head->ival = count;
 
     return list.head;
 }
