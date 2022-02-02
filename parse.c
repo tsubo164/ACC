@@ -718,7 +718,7 @@ static struct ast_node *argument_expression_list(struct parser *p,
         const struct data_type *func_type)
 {
     const struct parameter *param = first_param(func_type);
-    struct ast_node *tree = NULL, *list = NULL;
+    struct ast_list list = {0};
     int count = 0;
 
     for (;;) {
@@ -728,18 +728,17 @@ static struct ast_node *argument_expression_list(struct parser *p,
         if (!arg)
             break;
 
-        list = new_node_(NOD_LIST, tokpos(p));
-        tree = branch_(list, tree, arg);
+        append(&list, arg);
         count++;
 
         if (!consume(p, ','))
             break;
     }
 
-    if (tree)
-        tree->ival = count;
+    if (list.head)
+        list.head->ival = count;
 
-    return tree;
+    return list.head;
 }
 
 static struct ast_node *struct_ref(struct parser *p, struct ast_node *strc)

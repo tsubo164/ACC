@@ -658,8 +658,8 @@ static void gen_func_epilogue(FILE *fp, const struct ast_node *node)
 struct argument {
     const struct ast_node *expr;
     int offset, offset2;
-    int size;
     int reg, reg2;
+    int size;
     char pass_by_stack;
     char is_fp;
     char is_return_val;
@@ -695,10 +695,14 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
     /* compute total arg area size */
     {
         const struct ast_node *list = node->r;
-        struct argument *arg = &args[arg_count - 1];
+        struct argument *arg = &args[0];
+        if (is_large_object(ret_type)) {
+            arg->is_return_val = 1;
+            arg++;
+        }
 
-        for (; list; list = list->l) {
-            const struct ast_node *arg_node = list->r;
+        for (; list; list = list->r) {
+            const struct ast_node *arg_node = list->l;
             int size;
 
             arg->expr = arg_node->l;
@@ -709,11 +713,8 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             arg->size = align_to(size, 8);
             total_area_size += arg->size;
 
-            arg--;
+            arg++;
         }
-
-        if (is_large_object(ret_type))
-            arg[0].is_return_val = 1;
     }
 
     /* adjust area size */
