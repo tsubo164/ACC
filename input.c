@@ -4,11 +4,11 @@
 
 #include <stdio.h>
 
-/*
 void foo(float f)
 {
     printf("%g\n", f);
 }
+/*
 */
 
 int main() {
@@ -16,10 +16,10 @@ int main() {
 
     f = 19;
 
-    /*
     foo(f);
-    */
+    /*
     printf("%g\n", f);
+    */
 
     return 42;
 }

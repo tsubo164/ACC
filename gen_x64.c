@@ -99,10 +99,12 @@ enum opecode {
     LEA, PUSH, POP,
     CALL, RET, JE, JNE, JMP,
     SETE, SETNE, SETL, SETG, SETLE, SETGE,
-    CLTD, CQTO
+    CLTD, CQTO,
+    CVTSI2SSL,
+    CVTSS2SD
 };
 
-static const char instruction_name[][8] = {
+static const char *instruction_name[] = {
     "mov", "movsb", "movsw", "movsl", "movzb", "movzw",
     "movs",
     "add", "sub", "imul", "div", "idiv",
@@ -111,7 +113,9 @@ static const char instruction_name[][8] = {
     "lea", "push", "pop",
     "call", "ret", "je", "jne", "jmp",
     "sete", "setne", "setl", "setg", "setle", "setge",
-    "cltd", "cqto"
+    "cltd", "cqto",
+    "cvtsi2ssl",
+    "cvtss2sd"
 };
 
 static const char directive[][8] =  {"?", "byte", "word", "dword", "qword"};
@@ -549,8 +553,9 @@ static void gen_func_param_list_(FILE *fp, const struct data_type *func_type)
             break;
 
         if (is_fpnum(param_type)) {
+            const int x_ = register_from_type(XMM0_, param_type);
             const int disp = -1 * sym->mem_offset;
-            fprintf(fp, "    movss  %%xmm%d, %d(%%rbp)\n", next_fp, disp);
+            code3(fp, MOVS, x_, mem(RBP, disp));
             next_fp++;
             continue;
         }
@@ -1044,22 +1049,13 @@ static void gen_load(FILE *fp, const struct ast_node *node,
 static void gen_store_a(FILE *fp, const struct data_type *type,
         enum operand addr, int offset)
 {
-    const int a_ = register_from_type(A_, type);
-
     if (is_small_object(type)) {
-        if (is_float(type)) {
-            if (addr == RDX)
-                fprintf(fp, "    movss  %%xmm0, %d(%%rdx)\n", offset);
-            if (addr == RSP)
-                fprintf(fp, "    movss  %%xmm0, %d(%%rsp)\n", offset);
-        }
-        else if (is_double(type)) {
-            if (addr == RDX)
-                fprintf(fp, "    movsd  %%xmm0, %d(%%rdx)\n", offset);
-            if (addr == RSP)
-                fprintf(fp, "    movsd  %%xmm0, %d(%%rsp)\n", offset);
+        if (is_fpnum(type)) {
+            const int x_ = register_from_type(XMM0_, type);
+            code3(fp, MOVS, x_, mem(addr, offset));
         }
         else {
+            const int a_ = register_from_type(A_, type);
             code3(fp, MOV, a_, mem(addr, offset));
         }
     }
@@ -1273,12 +1269,12 @@ static void gen_convert_a(FILE *fp, const struct data_type *src, const struct da
                 code3(fp, MOVSL, EAX, RAX);
         }
         else if (is_float(dst)) {
-            fprintf(fp, "    cvtsi2ssl  %%eax, %%xmm0\n");
+            code3(fp, CVTSI2SSL, EAX, XMM0);
         }
     }
     else if (is_float(src)) {
         if (is_double(dst)) {
-            fprintf(fp, "    cvtss2sd  %%xmm0, %%xmm0\n");
+            code3(fp, CVTSS2SD, XMM0, XMM0);
         }
     }
 }
