@@ -21,9 +21,7 @@ static int  opecode_len = 0;
  * (rbp % 0x10) == 0x08 */
 static int stack_offset = 8;
 
-enum operand_size {
-    I0, I8, I16, I32, I64
-};
+enum operand_size { I0, I8, I16, I32, I64 };
 
 enum operand {
     A_,   AL,   AX,   EAX,  RAX,
@@ -42,14 +40,14 @@ enum operand {
     R13_, R13B, R13W, R13D, R13,
     R14_, R14B, R14W, R14D, R14,
     R15_, R15B, R15W, R15D, R15,
-    XMM0_, XMM0D, XMM0,
-    XMM1_, XMM1D, XMM1,
-    XMM2_, XMM2D, XMM2,
-    XMM3_, XMM3D, XMM3,
-    XMM4_, XMM4D, XMM4,
-    XMM5_, XMM5D, XMM5,
-    XMM6_, XMM6D, XMM6,
-    XMM7_, XMM7D, XMM7,
+    XMM0_, XMM0B, XMM0W, XMM0D, XMM0,
+    XMM1_, XMM1B, XMM1W, XMM1D, XMM1,
+    XMM2_, XMM2B, XMM2W, XMM2D, XMM2,
+    XMM3_, XMM3B, XMM3W, XMM3D, XMM3,
+    XMM4_, XMM4B, XMM4W, XMM4D, XMM4,
+    XMM5_, XMM5B, XMM5W, XMM5D, XMM5,
+    XMM6_, XMM6B, XMM6W, XMM6D, XMM6,
+    XMM7_, XMM7B, XMM7W, XMM7D, XMM7,
     OPR_IMM,
     OPR_MEM,
     OPR_LBL,
@@ -73,14 +71,14 @@ static const char register_name[][8] = {
     "r13_", "r13b", "r13w", "r13d", "r13",
     "r14_", "r14b", "r14w", "r14d", "r14",
     "r15_", "r15b", "r15w", "r15d", "r15",
-    "xmm0_", "xmm0", "xmm0",
-    "xmm1_", "xmm1", "xmm1",
-    "xmm2_", "xmm2", "xmm2",
-    "xmm3_", "xmm3", "xmm3",
-    "xmm4_", "xmm4", "xmm4",
-    "xmm5_", "xmm5", "xmm5",
-    "xmm6_", "xmm6", "xmm6",
-    "xmm7_", "xmm7", "xmm7"
+    "xmm0_", "xmm0", "xmm0", "xmm0", "xmm0",
+    "xmm1_", "xmm1", "xmm1", "xmm1", "xmm1",
+    "xmm2_", "xmm2", "xmm2", "xmm2", "xmm2",
+    "xmm3_", "xmm3", "xmm3", "xmm3", "xmm3",
+    "xmm4_", "xmm4", "xmm4", "xmm4", "xmm4",
+    "xmm5_", "xmm5", "xmm5", "xmm5", "xmm5",
+    "xmm6_", "xmm6", "xmm6", "xmm6", "xmm6",
+    "xmm7_", "xmm7", "xmm7", "xmm7", "xmm7"
 };
 
 static const enum operand arg_reg_list[] = {DI_, SI_, D_, C_, R8_, R9_};
@@ -89,11 +87,12 @@ static const enum operand arg_fp_list[] = {
 
 static int is_register(int oper)
 {
-    return oper >= A_ && oper <= R15;
+    return oper >= A_ && oper <= XMM7;
 }
 
 enum opecode {
     MOV, MOVSB, MOVSW, MOVSL, MOVZB, MOVZW,
+    MOVS,
     ADD, SUB, IMUL, DIV, IDIV,
     SHL, SHR, SAR,
     OR, XOR, AND, NOT, CMP,
@@ -105,6 +104,7 @@ enum opecode {
 
 static const char instruction_name[][8] = {
     "mov", "movsb", "movsw", "movsl", "movzb", "movzw",
+    "movs",
     "add", "sub", "imul", "div", "idiv",
     "shl", "shr", "sar",
     "or", "xor", "and", "not", "cmp",
@@ -117,6 +117,7 @@ static const char instruction_name[][8] = {
 static const char directive[][8] =  {"?", "byte", "word", "dword", "qword"};
 static const char data_name[][8] =  {"?", "byte", "word", "long",  "quad"};
 static const char suffix_letter[] = {'?', 'b',    'w',    'l',     'q'};
+static const char suffix_letter_fp[] = {'?', '?', '?', 's', 'd'};
 
 static void inc_stack_pointer(int byte)
 {
@@ -159,6 +160,10 @@ static void print_opecode(FILE *fp, int op, int suffix)
     const char *inst = instruction_name[op];
     int len = strlen(inst);
 
+    if (op == MOVS) {
+        fprintf(fp, "%s%c", inst, suffix_letter_fp[suffix]);
+        len++;
+    } else
     if (op < LEA) {
         fprintf(fp, "%s%c", inst, suffix_letter[suffix]);
         len++;
@@ -280,7 +285,7 @@ enum operand arg_fp(int index, int size)
     if (index < 0 || index > 7)
         return XMM0_;
 
-    return arg_fp_list[index] + (size - 2);
+    return regi(arg_fp_list[index], size);
 }
 
 enum operand imm(long val)
@@ -386,7 +391,7 @@ static void gen_string_literal_name(FILE *fp, int label_id)
         fprintf(fp, "_%s_%d", STR_LIT_NAME_PREFIX, label_id);
 }
 
-static int operand_size(const struct data_type *type)
+static int opsize(const struct data_type *type)
 {
     if (is_char(type))
         return I8;
@@ -409,13 +414,13 @@ static int operand_size(const struct data_type *type)
 
 static const char *data_name_from_type(const struct data_type *type)
 {
-    const int size = operand_size(type);
+    const int size = opsize(type);
     return data_name[size];
 }
 
 static enum operand register_from_type(enum operand oper, const struct data_type *type)
 {
-    const int size = operand_size(type);
+    const int size = opsize(type);
     return regi(oper, size);
 }
 
@@ -551,7 +556,7 @@ static void gen_func_param_list_(FILE *fp, const struct data_type *func_type)
         }
 
         if (param_size <= 8 && stored_reg_count < 6) {
-            const int reg_ = arg_reg(stored_reg_count, operand_size(sym->type));
+            const int reg_ = arg_reg(stored_reg_count, opsize(sym->type));
             const int disp = -1 * sym->mem_offset;
 
             code3(fp, MOV, reg_, mem(RBP, disp));
@@ -738,7 +743,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 if (arg->size == 8 && used_fp < 6) {
                     reg_offset -= arg->size;
                     arg->offset = reg_offset;
-                    arg->reg = arg_fp(used_fp, operand_size(arg->expr->type));
+                    arg->reg = arg_fp(used_fp, opsize(arg->expr->type));
                     used_fp++;
                 }
                 continue;
@@ -747,7 +752,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             if (arg->size == 8 && used_gp < 6) {
                 reg_offset -= arg->size;
                 arg->offset = reg_offset;
-                arg->reg = arg_reg(used_gp, operand_size(arg->expr->type));
+                arg->reg = arg_reg(used_gp, opsize(arg->expr->type));
                 used_gp++;
             }
             else if (arg->size == 16 && used_gp < 5) { /* need 2 regs */
@@ -807,11 +812,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
             }
 
             if (arg->is_fp) {
-                const char *x = register_name[arg->reg];
-                if (is_float(arg->expr->type))
-                    fprintf(fp, "    movss  %d(%%rsp), %%%s\n", arg->offset, x);
-                else
-                    fprintf(fp, "    movsd  %d(%%rsp), %%%s\n", arg->offset, x);
+                code3(fp, MOVS, mem(RSP, arg->offset), arg->reg);
                 continue;
             }
 
@@ -957,13 +958,13 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
         code3(fp, LEA, symb(sym->name, -1), RAX);
     }
     else {
+        const int x_ = register_from_type(XMM0_, node->type);
         const int disp = -get_mem_offset(node);
 
         if (is_array(node->type))
             code3(fp, LEA, mem(RBP, disp), RAX);
-        else if (is_fpnum(node->type)) {
-            fprintf(fp, "    movss  %d(%%rbp), %%xmm0\n", disp);
-        }
+        else if (is_fpnum(node->type))
+            code3(fp, MOVS, mem(RBP, disp), x_);
         else
             gen_load(fp, node, mem(RBP, disp), A_);
     }
