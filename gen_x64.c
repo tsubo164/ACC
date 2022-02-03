@@ -92,7 +92,6 @@ static int is_register(int oper)
 
 enum opecode {
     MOV, MOVSB, MOVSW, MOVSL, MOVZB, MOVZW,
-    MOVS,
     ADD, SUB, IMUL, DIV, IDIV,
     SHL, SHR, SAR,
     OR, XOR, AND, NOT, CMP,
@@ -100,13 +99,13 @@ enum opecode {
     CALL, RET, JE, JNE, JMP,
     SETE, SETNE, SETL, SETG, SETLE, SETGE,
     CLTD, CQTO,
+    MOVS, ADDS,
     CVTSI2SSL,
     CVTSS2SD
 };
 
 static const char *instruction_name[] = {
     "mov", "movsb", "movsw", "movsl", "movzb", "movzw",
-    "movs",
     "add", "sub", "imul", "div", "idiv",
     "shl", "shr", "sar",
     "or", "xor", "and", "not", "cmp",
@@ -114,6 +113,7 @@ static const char *instruction_name[] = {
     "call", "ret", "je", "jne", "jmp",
     "sete", "setne", "setl", "setg", "setle", "setge",
     "cltd", "cqto",
+    "movs", "adds",
     "cvtsi2ssl",
     "cvtss2sd"
 };
@@ -164,7 +164,7 @@ static void print_opecode(FILE *fp, int op, int suffix)
     const char *inst = instruction_name[op];
     int len = strlen(inst);
 
-    if (op == MOVS) {
+    if (op == MOVS || op == ADDS) {
         fprintf(fp, "%s%c", inst, suffix_letter_fp[suffix]);
         len++;
     } else
@@ -1071,6 +1071,18 @@ static void gen_store_a(FILE *fp, const struct data_type *type,
     else {
         gen_copy_large_object(fp, type, addr, offset);
     }
+}
+
+static void gen_push_a(FILE *fp, const struct data_type *type)
+{
+    gen_add_stack_pointer(fp, 8);
+    gen_store_a(fp, type, RSP, 0);
+}
+
+static void gen_pop_to(FILE *fp, const struct data_type *type, enum operand reg)
+{
+    code3(fp, MOVS, mem(RSP, 0), reg);
+    gen_add_stack_pointer(fp, 8);
 }
 
 static void gen_div(FILE *fp, const struct ast_node *node, enum operand divider)
@@ -2251,6 +2263,17 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_ADD:
+        if (is_float(node->type)) {
+            const int x0_ = register_from_type(XMM0_, node->type);
+            gen_code(fp, node->l);
+            gen_push_a(fp, node->type);
+            gen_code(fp, node->r);
+            gen_pop_to(fp, node->type, XMM1);
+
+            code3(fp, ADDS, XMM1_, x0_);
+            break;
+        }
+
         gen_code(fp, node->l);
         code2(fp, PUSH, RAX);
         gen_code(fp, node->r);

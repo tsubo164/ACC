@@ -6,24 +6,26 @@
 
 void foo(float f)
 {
-    printf("%g\n", f);
+    printf("%f\n", f);
 }
 /*
 */
 int add(int a, int b)
 {
-    return a - b;
+    return a + b;
 }
 
-int main() {
+int main()
+{
+    int i = 3;
     float f;
 
     f = 19;
 
-    foo(f);
+    foo(f + i);
     /*
     printf("%g\n", f);
     */
 
-    return add(33, 22);
+    return add(31, 11);
 }

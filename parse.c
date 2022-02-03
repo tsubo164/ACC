@@ -198,6 +198,8 @@ static struct data_type *promote_type(struct ast_node *n1, struct ast_node *n2)
     return promote(n1->type, n2->type);
 }
 
+static struct ast_node *implicit_cast(struct ast_node *node, struct data_type *cast_to);
+
 static struct ast_node *typed_(struct ast_node *node)
 {
     if (!node)
@@ -314,6 +316,18 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_POSTINC:
     case NOD_POSTDEC:
         node->type = promote_type(node->l, node->r);
+        break;
+
+    case NOD_ADD:
+        {
+            struct data_type *t1 = node->l->type;
+            struct data_type *t2 = node->r->type;
+
+            if (is_float(t1) && is_int(t2)) {
+                node->r = implicit_cast(node->r, t1);
+            }
+            node->type = promote_type(node->l, node->r);
+        }
         break;
 
     default:
