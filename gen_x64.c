@@ -21,7 +21,7 @@ static int  opecode_len = 0;
  * (rbp % 0x10) == 0x08 */
 static int stack_offset = 8;
 
-enum operand_size { I0, I8, I16, I32, I64 };
+enum operand_size {I0, I8, I16, I32, I64, F32, F64};
 
 enum operand {
     A_,   AL,   AX,   EAX,  RAX,
@@ -84,6 +84,10 @@ static const char register_name[][8] = {
 static const enum operand arg_reg_list[] = {DI_, SI_, D_, C_, R8_, R9_};
 static const enum operand arg_fp_list[] = {
     XMM0_, XMM1_, XMM2_, XMM3_, XMM4_, XMM5_, XMM6_, XMM7_};
+static const char directive[][8] =  {"?", "byte", "word", "dword", "qword"};
+static const char data_name[][8] =  {"?", "byte", "word", "long",  "quad"};
+static const char suffix_letter[] = {'?', 'b', 'w', 'l', 'q', 's', 'd'};
+static const int  size_to_offset[] = {0, 1, 2, 3, 4, 3, 4};
 
 static int is_register(int oper)
 {
@@ -91,15 +95,19 @@ static int is_register(int oper)
 }
 
 enum opecode {
+    /* gp */
     MOV, MOVSB, MOVSW, MOVSL, MOVZB, MOVZW,
     ADD, SUB, IMUL, DIV, IDIV,
     SHL, SHR, SAR,
     OR, XOR, AND, NOT, CMP,
+    /* fp */
+    MOVS, ADDS,
+    /* 64 bit gp */
     LEA, PUSH, POP,
     CALL, RET, JE, JNE, JMP,
+    /* no suffixes */
     SETE, SETNE, SETL, SETG, SETLE, SETGE,
     CLTD, CQTO,
-    MOVS, ADDS,
     CVTSI2SSL,
     CVTSS2SD
 };
@@ -109,19 +117,14 @@ static const char *instruction_name[] = {
     "add", "sub", "imul", "div", "idiv",
     "shl", "shr", "sar",
     "or", "xor", "and", "not", "cmp",
+    "movs", "adds",
     "lea", "push", "pop",
     "call", "ret", "je", "jne", "jmp",
     "sete", "setne", "setl", "setg", "setle", "setge",
     "cltd", "cqto",
-    "movs", "adds",
     "cvtsi2ssl",
     "cvtss2sd"
 };
-
-static const char directive[][8] =  {"?", "byte", "word", "dword", "qword"};
-static const char data_name[][8] =  {"?", "byte", "word", "long",  "quad"};
-static const char suffix_letter[] = {'?', 'b',    'w',    'l',     'q'};
-static const char suffix_letter_fp[] = {'?', '?', '?', 's', 'd'};
 
 static void inc_stack_pointer(int byte)
 {
@@ -140,8 +143,12 @@ static int is_stack_aligned(void)
 
 static int get_operand_size(int oper)
 {
-    if (is_register(oper))
-        return oper % 5;
+    if (is_register(oper)) {
+        if (oper >= XMM0_)
+            return oper % 5 + 2;
+        else
+            return oper % 5;
+    }
     /* '?' */
     return I0;
 }
@@ -164,10 +171,6 @@ static void print_opecode(FILE *fp, int op, int suffix)
     const char *inst = instruction_name[op];
     int len = strlen(inst);
 
-    if (op == MOVS || op == ADDS) {
-        fprintf(fp, "%s%c", inst, suffix_letter_fp[suffix]);
-        len++;
-    } else
     if (op < LEA) {
         fprintf(fp, "%s%c", inst, suffix_letter[suffix]);
         len++;
@@ -200,7 +203,7 @@ static void print_operand(FILE *fp, int oper, int suffix)
     if (is_register(oper)) {
         const int size = oper % 5;
         if (size == 0)
-            reg = register_name[oper + suffix];
+            reg = register_name[oper + size_to_offset[suffix]];
         else
             reg = register_name[oper];
 
@@ -270,26 +273,29 @@ static void print_operand(FILE *fp, int oper, int suffix)
 
 enum operand regi(enum operand oper, enum operand_size size)
 {
+    /* TODO fix enum in array[] */
+    const int sz = size;
+
     if (is_register(oper) && oper % 5 == 0)
-        return oper + size;
+        return oper + size_to_offset[sz];
     else
         return A_;
 }
 
 enum operand arg_reg(int index, int size)
 {
-    if (index < 0 || index > 5)
-        return A_;
-
-    return regi(arg_reg_list[index], size);
-}
-
-enum operand arg_fp(int index, int size)
-{
-    if (index < 0 || index > 7)
-        return XMM0_;
-
-    return regi(arg_fp_list[index], size);
+    if (size == F32 || size == F64) {
+        if (index < 0 || index > 7)
+            return XMM0_;
+        else
+            return regi(arg_fp_list[index], size);
+    }
+    else {
+        if (index < 0 || index > 5)
+            return A_;
+        else
+            return regi(arg_reg_list[index], size);
+    }
 }
 
 enum operand imm(long val)
@@ -406,9 +412,9 @@ static int opsize(const struct data_type *type)
     if (is_long(type))
         return I64;
     if (is_float(type))
-        return I32;
+        return F32;
     if (is_double(type))
-        return I64;
+        return F64;
     if (is_pointer(type))
         return I64;
     if (is_enum(type))
@@ -761,7 +767,7 @@ static void gen_func_call(FILE *fp, const struct ast_node *node)
                 if (arg->size == 8 && used_fp < 6) {
                     reg_offset -= arg->size;
                     arg->offset = reg_offset;
-                    arg->reg = arg_fp(used_fp, opsize(arg->expr->type));
+                    arg->reg = arg_reg(used_fp, opsize(arg->expr->type));
                     used_fp++;
                 }
                 continue;
