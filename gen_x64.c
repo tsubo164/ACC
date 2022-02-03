@@ -952,23 +952,24 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
 
     sym = node->sym;
 
+    if (is_array(node->type) || !is_small_object(node->type)) {
+        gen_address(fp, node);
+        return;
+    }
+
     if (is_global_var(sym)) {
-        const int id = is_static(sym) ? sym->id : -1;
-        if (is_array(node->type)) {
-            code3(fp, LEA, symb(sym->name, id), RAX);
+        /* TODO come up with better idea */
+        if (!strcmp(sym->name, "__stdinp") ||
+            !strcmp(sym->name, "__stdoutp") ||
+            !strcmp(sym->name, "__stderrp")) {
+            char buf[128] = {'\0'};
+            sprintf(buf, "%s@GOTPCREL", sym->name);
+            code3(fp, MOV, symb(buf, -1), RAX);
+            code3(fp, MOV, mem(RAX, 0), RAX);
         } else {
-            /* TODO come up with better idea */
-            if (!strcmp(sym->name, "__stdinp") ||
-                !strcmp(sym->name, "__stdoutp") ||
-                !strcmp(sym->name, "__stderrp")) {
-                char buf[128] = {'\0'};
-                sprintf(buf, "%s@GOTPCREL", sym->name);
-                code3(fp, MOV, symb(buf, -1), RAX);
-                code3(fp, MOV, mem(RAX, 0), RAX);
-            } else {
-                const int a_ = register_from_type(A_, node->type);
-                code3(fp, MOV, symb(sym->name, id), a_);
-            }
+            const int id = is_static(sym) ? sym->id : -1;
+            const int a_ = register_from_type(A_, node->type);
+            code3(fp, MOV, symb(sym->name, id), a_);
         }
     }
     else if (is_enumerator(sym)) {
@@ -978,33 +979,13 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
         code3(fp, LEA, symb(sym->name, -1), RAX);
     }
     else {
-        const int x_ = register_from_type(XMM0_, node->type);
+        const int x0_ = register_from_type(XMM0_, node->type);
         const int disp = -get_mem_offset(node);
 
-        if (is_array(node->type))
-            code3(fp, LEA, mem(RBP, disp), RAX);
-        else if (is_fpnum(node->type))
-            code3(fp, MOVS, mem(RBP, disp), x_);
+        if (is_fpnum(node->type))
+            code3(fp, MOVS, mem(RBP, disp), x0_);
         else
             gen_load(fp, node, mem(RBP, disp), A_);
-    }
-}
-
-static void gen_ident_lvalue(FILE *fp, const struct ast_node *node)
-{
-    const struct symbol *sym;
-
-    if (!node || !node->sym)
-        return;
-
-    sym = node->sym;
-
-    if (is_global_var(sym)) {
-        const int id = is_static(sym) ? sym->id : -1;
-        code3(fp, LEA, symb(sym->name, id), RAX);
-    } else {
-        code3(fp, MOV, RBP, RAX);
-        code3(fp, SUB, imm(get_mem_offset(node)), RAX);
     }
 }
 
@@ -1018,7 +999,13 @@ static void gen_address(FILE *fp, const struct ast_node *node)
         /* TODO need this for initialization. may not need this for IR */
     case NOD_DECL_IDENT:
     case NOD_IDENT:
-        gen_ident_lvalue(fp, node);
+        if (is_global_var(node->sym)) {
+            const int id = is_static(node->sym) ? node->sym->id : -1;
+            code3(fp, LEA, symb(node->sym->name, id), RAX);
+        } else {
+            const int disp = -get_mem_offset(node);
+            code3(fp, LEA, mem(RBP, disp), RAX);
+        }
         break;
 
     case NOD_DEREF:
@@ -1026,15 +1013,12 @@ static void gen_address(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_STRUCT_REF:
-        {
-            const int disp = get_mem_offset(node->r);
-            gen_address(fp, node->l);
-            code3(fp, ADD, imm(disp), RAX);
-        }
+        gen_address(fp, node->l);
+        code3(fp, ADD, imm(get_mem_offset(node->r)), RAX);
         break;
 
     default:
-        gen_comment(fp, "not an lvalue");
+        fprintf(fp, "not an object\n");
         break;
     }
 }
@@ -1052,7 +1036,6 @@ static void gen_load(FILE *fp, const struct ast_node *node,
     if (!is_small_object(node->type))
         return;
 
-    gen_comment(fp, "load");
     code3(fp, MOV, addr, reg_);
 
     if (is_char(node->type) || is_short(node->type)) {
@@ -1367,7 +1350,6 @@ static void gen_init_scalar_local(FILE *fp, const struct data_type *type,
         gen_code(fp, expr);
         /* assign expr */
         code2(fp, POP,  RDX);
-        gen_comment(fp, "assign object");
         if (is_small_object(type))
             code3(fp, MOV, a_, mem(RDX, 0));
         else
@@ -2040,10 +2022,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_IDENT:
-        if (is_small_object(node->type))
-            gen_ident(fp, node);
-        else
-            gen_address(fp, node);
+        gen_ident(fp, node);
         break;
 
     case NOD_DECL_IDENT:
@@ -2218,7 +2197,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_XOR_ASSIGN:
-        gen_comment(fp, "or-assign");
+        gen_comment(fp, "xor-assign");
         gen_address(fp, node->l);
         code2(fp, PUSH, RAX);
         gen_code(fp, node->r);
@@ -2228,7 +2207,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_AND_ASSIGN:
-        gen_comment(fp, "or-assign");
+        gen_comment(fp, "and-assign");
         gen_address(fp, node->l);
         code2(fp, PUSH, RAX);
         gen_code(fp, node->r);
