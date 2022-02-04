@@ -8,6 +8,11 @@ void foo(float f)
 {
     printf("%f\n", f);
 }
+
+void bar(int i)
+{
+    printf("%d\n", i);
+}
 /*
 */
 
@@ -16,11 +21,16 @@ int main()
     /*
     int i = 3;
     float f, g;
-    */
-    double g;
+    float g;
 
     g = 3.14;
+    */
+    double g = 3.14;
     foo(g);
+    /*
+
+    bar(g);
+    */
     /*
     f = 19;
 

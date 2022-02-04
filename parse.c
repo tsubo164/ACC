@@ -323,9 +323,13 @@ static struct ast_node *typed_(struct ast_node *node)
             struct data_type *t1 = node->l->type;
             struct data_type *t2 = node->r->type;
 
-            if (is_float(t1) && is_int(t2)) {
+            if ((is_float(t1) && is_int(t2)) ||
+                (is_double(t1) && is_int(t2)))
                 node->r = implicit_cast(node->r, t1);
-            }
+            else
+            if ((is_int(t1) && is_float(t2)) ||
+                (is_int(t1) && is_double(t2)))
+                node->l = implicit_cast(node->l, t2);
             node->type = promote_type(node->l, node->r);
         }
         break;

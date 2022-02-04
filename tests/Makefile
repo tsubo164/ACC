@@ -3,7 +3,7 @@ CC = cc
 RM = rm -f
 
 SRCS   := \
-		array enum expr func global goto for local macro pointer string \
+		array enum expr fpnum func global goto for local macro pointer string \
 		struct switch type union while
 TARGETS := $(SRCS)
 

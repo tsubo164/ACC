@@ -110,7 +110,9 @@ enum opecode {
     CLTD, CQTO,
     CVTSI2SSL,
     CVTSS2SD,
-    CVTSD2SS
+    CVTSD2SS,
+    CVTTSS2SI,
+    CVTTSD2SI
 };
 
 static const char *instruction_name[] = {
@@ -125,7 +127,9 @@ static const char *instruction_name[] = {
     "cltd", "cqto",
     "cvtsi2ssl",
     "cvtss2sd",
-    "cvtsd2ss"
+    "cvtsd2ss",
+    "cvttss2si",
+    "cvttsd2si"
 };
 
 static void inc_stack_pointer(int byte)
@@ -458,7 +462,6 @@ static void gen_load(FILE *fp, const struct ast_node *node,
 static void gen_store_a(FILE *fp, const struct data_type *type,
         enum operand addr, int offset);
 static void gen_cast(FILE *fp, const struct ast_node *node);
-static void gen_assign_struct(FILE *fp, const struct data_type *type);
 static void gen_copy_large_object(FILE *fp, const struct data_type *type,
         enum operand addr, int offset);
 static void gen_convert_a(FILE *fp,
@@ -1294,33 +1297,16 @@ static void gen_convert_a(FILE *fp, const struct data_type *src, const struct da
         }
     }
     else if (is_float(src)) {
-        if (is_double(dst))
+        if (is_int(dst))
+            code3(fp, CVTTSS2SI, XMM0, EAX);
+        else if (is_double(dst))
             code3(fp, CVTSS2SD, XMM0, XMM0);
     }
     else if (is_double(src)) {
-        if (is_float(dst))
+        if (is_int(dst))
+            code3(fp, CVTTSD2SI, XMM0, EAX);
+        else if (is_float(dst))
             code3(fp, CVTSD2SS, XMM0, XMM0);
-    }
-}
-
-static void gen_assign_struct(FILE *fp, const struct data_type *type)
-{
-    /* assuming src addess is in rax, and dest address is in rdx */
-    const int size = get_size(type);
-    const int N8 = size / 8;
-    const int N4 = (size - 8 * N8) / 4;
-    int offset = 0;
-    int i;
-
-    for (i = 0; i < N8; i++) {
-        code3(fp, MOV, mem(RAX, offset), RDI);
-        code3(fp, MOV, RDI, mem(RDX, offset));
-        offset += 8;
-    }
-    for (i = 0; i < N4; i++) {
-        code3(fp, MOV, mem(RAX, offset), EDI);
-        code3(fp, MOV, EDI, mem(RDX, offset));
-        offset += 4;
     }
 }
 
@@ -1358,19 +1344,14 @@ static void gen_init_scalar_local(FILE *fp, const struct data_type *type,
     code2(fp, PUSH, RAX);
 
     if (expr) {
-        const int a_ = register_from_type(A_, type);
-
         /* init expr */
         gen_code(fp, expr);
         /* assign expr */
         code2(fp, POP,  RDX);
-        if (is_small_object(type))
-            code3(fp, MOV, a_, mem(RDX, 0));
-        else
-            gen_assign_struct(fp, type);
+        gen_store_a(fp, type, RDX, 0);
     } else {
         const int d_ = register_from_type(D_, type);
-        /* assign zero */
+        /* TODO assign zero for all scalars. temp need for array initializer */
         /* need pop to align */
         code2(fp, POP,  RAX);
         code3(fp, MOV, imm(0), d_);
@@ -2001,17 +1982,15 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_code(fp, node->l);
 
         if (is_medium_object(node->type)) {
-            /* use rax and rdx */
-            gen_comment(fp, "load returning value");
+            /* use rax and rdx to load returning value */
             code3(fp, MOV, RAX, RSI);
             code3(fp, MOV, mem(RSI, 0), RAX);
             code3(fp, MOV, mem(RSI, 8), RDX);
         }
         else if (is_large_object(node->type)) {
-            gen_comment(fp, "fill returning value");
+            /* fill returning value and load the address to the value */
             code2(fp, POP, RDX);
-            gen_assign_struct(fp, node->type);
-            gen_comment(fp, "load address to returning value");
+            gen_copy_large_object(fp, node->type, RDX, 0);
             code3(fp, MOV, RDX, RAX);
         }
 
