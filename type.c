@@ -170,7 +170,9 @@ int is_identical(const struct data_type *t1, const struct data_type *t2)
     if ((is_char(t1) && is_char(t2)) ||
         (is_short(t1) && is_short(t2)) ||
         (is_int(t1) && is_int(t2)) ||
-        (is_long(t1) && is_long(t2)))
+        (is_long(t1) && is_long(t2)) ||
+        (is_float(t1) && is_float(t2)) ||
+        (is_double(t1) && is_double(t2)))
         return 1;
 
     if (is_struct(t1) && is_struct(t2))

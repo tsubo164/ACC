@@ -120,6 +120,11 @@ int is_string_literal(const struct symbol *sym)
     return sym && sym->kind == SYM_STRING;
 }
 
+int is_fpnum_literal(const struct symbol *sym)
+{
+    return sym && sym->kind == SYM_FPNUM;
+}
+
 int is_variadic(const struct symbol *sym)
 {
     return is_func(sym) && sym->is_variadic;
@@ -193,6 +198,7 @@ const char *symbol_to_string(const struct symbol *sym)
     case SYM_DEFAULT: return "SYM_DEFAULT";
     case SYM_LABEL: return "SYM_LABEL";
     case SYM_STRING: return "SYM_STRING";
+    case SYM_FPNUM: return "SYM_FPNUM";
     case SYM_VAR: return "SYM_VAR";
     case SYM_FUNC: return "SYM_FUNC";
     case SYM_PARAM: return "SYM_PARAM";
@@ -604,15 +610,32 @@ struct symbol *define_string_symbol(struct symbol_table *table, const char *str)
     struct symbol *str_sym = NULL;
     struct data_type *str_type = NULL;
 
-    for (sym = table->tail; sym; sym = sym->prev) {
+    for (sym = table->tail; sym; sym = sym->prev)
         if (match_name(sym, str) && is_string_literal(sym))
             return sym;
-    }
 
     str_type = type_array(type_char());
     set_array_length(str_type, strlen(str) + 1);
 
     str_sym = push_symbol(table, str, SYM_STRING, str_type);
+    str_sym->is_defined = 1;
+
+    return str_sym;
+}
+
+struct symbol *define_fpnum_symbol(struct symbol_table *table, const char *str)
+{
+    struct symbol *sym;
+    struct symbol *str_sym = NULL;
+    struct data_type *fp_type = NULL;
+
+    for (sym = table->tail; sym; sym = sym->prev)
+        if (match_name(sym, str) && is_fpnum_literal(sym))
+            return sym;
+
+    fp_type = type_double();
+
+    str_sym = push_symbol(table, str, SYM_FPNUM, fp_type);
     str_sym->is_defined = 1;
 
     return str_sym;

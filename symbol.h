@@ -13,6 +13,7 @@ enum symbol_kind {
     SYM_DEFAULT,
     SYM_LABEL,
     SYM_STRING,
+    SYM_FPNUM,
     SYM_VAR,
     SYM_FUNC,
     SYM_PARAM,
@@ -85,6 +86,7 @@ extern int is_label(const struct symbol *sym);
 extern int is_typedef(const struct symbol *sym);
 extern int is_ellipsis(const struct symbol *sym);
 extern int is_string_literal(const struct symbol *sym);
+extern int is_fpnum_literal(const struct symbol *sym);
 extern int is_variadic(const struct symbol *sym);
 extern int is_builtin(const struct symbol *sym);
 extern int is_origin(const struct symbol *sym);
@@ -108,8 +110,9 @@ extern struct symbol *define_case_symbol(struct symbol_table *table, int kind, i
 extern struct symbol *define_label_symbol(struct symbol_table *table, const char *label);
 extern struct symbol *use_label_symbol(struct symbol_table *table, const char *label);
 
-/* string symbol */
+/* literal symbol */
 extern struct symbol *define_string_symbol(struct symbol_table *table, const char *str);
+extern struct symbol *define_fpnum_symbol(struct symbol_table *table, const char *str);
 
 /* type name symbol */
 extern struct symbol *find_type_name_symbol(struct symbol_table *table, const char *name);

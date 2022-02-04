@@ -16,5 +16,6 @@ void exit(int status);
 
 long strtol(const char *str, char **endptr, int base);
 float strtof(const char *str, char **endptr);
+double strtod(const char *str, char **endptr);
 
 #endif /* __STDLIB_H */

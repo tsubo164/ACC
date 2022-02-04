@@ -296,7 +296,7 @@ static struct ast_node *typed_(struct ast_node *node)
         break;
 
     case NOD_FPNUM:
-        node->type = type_float();
+        node->type = type_double();
         break;
 
     /* pionter arithmetic */
@@ -538,6 +538,11 @@ static struct symbol *define_string(struct parser *p, const char *str)
     return define_string_symbol(p->symtab, str);
 }
 
+static struct symbol *define_fpnum(struct parser *p, const char *str)
+{
+    return define_fpnum_symbol(p->symtab, str);
+}
+
 static struct symbol *define_ellipsis(struct parser *p)
 {
     return define_ellipsis_symbol(p->symtab);
@@ -572,6 +577,7 @@ static int is_type_spec(int kind)
     case TOK_INT:
     case TOK_LONG:
     case TOK_FLOAT:
+    case TOK_DOUBLE:
     case TOK_SIGNED:
     case TOK_UNSIGNED:
     case TOK_STRUCT:
@@ -669,7 +675,9 @@ static struct ast_node *primary_expression(struct parser *p)
         return new_node_num(tok->value, tokpos(p));
 
     case TOK_FPNUM:
-        return new_node_fpnum(tok->fpnum, tokpos(p));
+        tree = new_node_fpnum(tok->fpnum, tokpos(p));
+        tree->sym = define_fpnum(p, tok->text);
+        return tree;
 
     case TOK_STRING_LITERAL:
         tree = new_node_(NOD_STRING, tokpos(p));
@@ -2167,6 +2175,9 @@ static struct data_type *type_specifier(struct parser *p, struct data_type *type
 
     case TOK_FLOAT:
         return type_float();
+
+    case TOK_DOUBLE:
+        return type_double();
 
     case TOK_SIGNED:
         *sign = 1;

@@ -109,7 +109,8 @@ enum opecode {
     SETE, SETNE, SETL, SETG, SETLE, SETGE,
     CLTD, CQTO,
     CVTSI2SSL,
-    CVTSS2SD
+    CVTSS2SD,
+    CVTSD2SS
 };
 
 static const char *instruction_name[] = {
@@ -123,7 +124,8 @@ static const char *instruction_name[] = {
     "sete", "setne", "setl", "setg", "setle", "setge",
     "cltd", "cqto",
     "cvtsi2ssl",
-    "cvtss2sd"
+    "cvtss2sd",
+    "cvtsd2ss"
 };
 
 static void inc_stack_pointer(int byte)
@@ -369,6 +371,7 @@ void code3(FILE *fp, enum opecode op, enum operand oper1, enum operand oper2)
 
 static const char *LABEL_NAME_PREFIX = "LBB";
 static const char *STR_LIT_NAME_PREFIX = "L_str";
+static const char *FP_LIT_NAME_PREFIX = "L_fp";
 
 static enum operand make_label(int block_id, int label_id)
 {
@@ -399,6 +402,14 @@ static void gen_string_literal_name(FILE *fp, int label_id)
         fprintf(fp, "_%s", STR_LIT_NAME_PREFIX);
     else
         fprintf(fp, "_%s_%d", STR_LIT_NAME_PREFIX, label_id);
+}
+
+static void gen_fpnum_literal_name(FILE *fp, int label_id)
+{
+    if (label_id < 0)
+        fprintf(fp, "_%s", FP_LIT_NAME_PREFIX);
+    else
+        fprintf(fp, "_%s_%d", FP_LIT_NAME_PREFIX, label_id);
 }
 
 static int opsize(const struct data_type *type)
@@ -1258,10 +1269,10 @@ static void gen_convert_a(FILE *fp, const struct data_type *src, const struct da
         return;
 
     if (is_char(src)) {
-        const int SRC_ = register_from_type(A_, src);
-        const int DST_ = register_from_type(A_, dst);
-        const int MOV_ = is_unsigned(src) ? MOVZB : MOVSB;
-        code3(fp, MOV_, SRC_, DST_);
+        const int src_ = register_from_type(A_, src);
+        const int dst_ = register_from_type(A_, dst);
+        const int mov_ = is_unsigned(src) ? MOVZB : MOVSB;
+        code3(fp, mov_, src_, dst_);
     }
     else if (is_short(src)) {
         if (is_long(dst) || is_int(dst)) {
@@ -1283,9 +1294,12 @@ static void gen_convert_a(FILE *fp, const struct data_type *src, const struct da
         }
     }
     else if (is_float(src)) {
-        if (is_double(dst)) {
+        if (is_double(dst))
             code3(fp, CVTSS2SD, XMM0, XMM0);
-        }
+    }
+    else if (is_double(src)) {
+        if (is_float(dst))
+            code3(fp, CVTSD2SS, XMM0, XMM0);
     }
 }
 
@@ -2243,6 +2257,10 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code3(fp, LEA, symb(STR_LIT_NAME_PREFIX, node->sym->id), RAX);
         break;
 
+    case NOD_FPNUM:
+        code3(fp, MOVS, symb(FP_LIT_NAME_PREFIX, node->sym->id), XMM0);
+        break;
+
     case NOD_SIZEOF:
         code3(fp, MOV, imm(get_size(node->l->type)), EAX);
         break;
@@ -2507,6 +2525,22 @@ static void gen_string_literal(FILE *fp, const struct symbol_table *table)
     }
 }
 
+static void gen_fpnum_literal(FILE *fp, const struct symbol_table *table)
+{
+    struct symbol *sym;
+
+    for (sym = table->head; sym; sym = sym->next) {
+        if (is_fpnum_literal(sym)) {
+            double d = strtod(sym->name, NULL);
+            long *lp = (long *) &d;
+            gen_fpnum_literal_name(fp, sym->id);
+            fprintf(fp, ":\n");
+            fprintf(fp, "    .quad %ld\n", *lp);
+            fprintf(fp, "\n");
+        }
+    }
+}
+
 void gen_x64(FILE *fp,
         const struct ast_node *tree, const struct symbol_table *table)
 {
@@ -2518,5 +2552,7 @@ void gen_x64(FILE *fp,
 
     fprintf(fp, "    .text\n\n");
     gen_string_literal(fp, table);
+    gen_fpnum_literal(fp, table);
+
     gen_code(fp, tree);
 }

@@ -10,22 +10,25 @@ void foo(float f)
 }
 /*
 */
-int add(int a, int b)
-{
-    return a + b;
-}
 
 int main()
 {
+    /*
     int i = 3;
-    float f;
+    float f, g;
+    */
+    double g;
 
+    g = 3.14;
+    foo(g);
+    /*
     f = 19;
 
     foo(f + i);
+    */
     /*
     printf("%g\n", f);
     */
 
-    return add(31, 11);
+    return 42;
 }

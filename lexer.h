@@ -76,7 +76,7 @@ enum token_kind {
 struct token {
     int kind;
     long value;
-    float fpnum;
+    double fpnum;
     const char *text;
     struct position pos;
 };

@@ -296,7 +296,7 @@ static void scan_number(struct lexer *l, struct token *tok)
             tok->text = make_text(l, buf);
             if (is_fp) {
                 tok->kind = TOK_FPNUM;
-                tok->fpnum = strtof(tok->text, &p);
+                tok->fpnum = strtod(tok->text, &p);
             } else {
                 tok->kind = TOK_NUM;
                 tok->value = strtol(tok->text, &p, 10);
