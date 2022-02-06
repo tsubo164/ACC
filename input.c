@@ -2,6 +2,7 @@
 #include <stdio.h>
 */
 
+/*
 #include <stdio.h>
 
 void foo(float f)
@@ -13,32 +14,52 @@ void bar(int i)
 {
     printf("%d\n", i);
 }
-/*
 */
 
+/*
+enum {A, B, C};
+
+enum operand_size { X, Y, Z};
+const int  size_to_offset[] = {0, 1, 2, 3, 4, 3, 4};
+*/
+
+void assert(int i, int j)
+{
+}
 int main()
 {
     /*
-    int i = 3;
-    float f, g;
-    float g;
+    int array[3];
 
-    g = 3.14;
-    */
     double g = 3.14;
     foo(g);
-    /*
 
-    bar(g);
+    array[C] = 19;
+
+    return array[C];
     */
     /*
-    f = 19;
+    enum operand_size size = Y;
 
-    foo(f + i);
+    return size_to_offset[size];
     */
-    /*
-    printf("%g\n", f);
-    */
+    typedef int Int;
+    Int i = 32;
+    int *p;
 
-    return 42;
+    p = i;
+    {
+        /* enum with no tag */
+        enum {
+            red = 101, green, blue
+        } col;
+
+        col = green;
+
+        assert(102, col);
+
+        p = col;
+        p = green;
+    }
+    return 0;
 }

@@ -12,8 +12,6 @@
   - [x] `type.c`
 
 * TODO
-  - `const char *c = register_name[addr]` compile error;
-    - `/* TODO fix enum in array[] */`
   - move `is_variadic` to type.c
   - move `bit_width` to `struct member` ?
   - remove `data_type.alias` ?
@@ -137,3 +135,5 @@
   - check if still need `node->sval` -> removed
   - add `#if 0` macro
   - move iteration and data types interfaces from symbol.c to type.c
+  - `const char *c = register_name[addr]` compile error;
+    - `/* TODO fix enum in array[] */`

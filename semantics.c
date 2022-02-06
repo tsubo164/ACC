@@ -351,8 +351,14 @@ static void check_tree_(struct ast_node *node, struct tree_context *ctx)
         return;
 
     case NOD_DEREF:
-        check_tree_(node->l, ctx);
-        check_tree_(node->r, ctx);
+        {
+            /* lvalue could have array access with other identifiers */
+            const int tmp = ctx->is_lvalue;
+            ctx->is_lvalue = 0;
+            check_tree_(node->l, ctx);
+            check_tree_(node->r, ctx);
+            ctx->is_lvalue = tmp;
+        }
         if (!underlying(node->l->type))
             add_error(ctx->diag, &node->pos, "indirection requires pointer operand");
         return;

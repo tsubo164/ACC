@@ -279,11 +279,8 @@ static void print_operand(FILE *fp, int oper, int suffix)
 
 enum operand regi(enum operand oper, enum operand_size size)
 {
-    /* TODO fix enum in array[] */
-    const int sz = size;
-
     if (is_register(oper) && oper % 5 == 0)
-        return oper + size_to_offset[sz];
+        return oper + size_to_offset[size];
     else
         return A_;
 }
