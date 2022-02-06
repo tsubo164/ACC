@@ -200,6 +200,35 @@ static struct data_type *promote_type(struct ast_node *n1, struct ast_node *n2)
 
 static struct ast_node *implicit_cast(struct ast_node *node, struct data_type *cast_to);
 
+static struct ast_node *arithmetic_conversion(struct ast_node *node)
+{
+    {
+        struct data_type *t1 = node->l->type;
+        struct data_type *t2 = node->r->type;
+
+        if (is_enum(t1))
+            node->l = implicit_cast(node->l, type_int());
+        if (is_enum(t2))
+            node->r = implicit_cast(node->r, type_int());
+    }
+
+    {
+        struct data_type *t1 = node->l->type;
+        struct data_type *t2 = node->r->type;
+
+        if ((is_float(t1) && is_int(t2)) ||
+            (is_double(t1) && is_int(t2)))
+            node->r = implicit_cast(node->r, t1);
+        else
+        if ((is_int(t1) && is_float(t2)) ||
+            (is_int(t1) && is_double(t2)))
+            node->l = implicit_cast(node->l, t2);
+        node->type = promote_type(node->l, node->r);
+    }
+
+    return node;
+}
+
 static struct ast_node *typed_(struct ast_node *node)
 {
     if (!node)
@@ -299,13 +328,19 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = type_double();
         break;
 
-    /* pionter arithmetic */
     case NOD_SUB:
-        if (is_pointer(node->l->type) && is_pointer(node->r->type))
+        /* pionter arithmetic */
+        if (is_pointer(node->l->type) && is_pointer(node->r->type)) {
             node->type = type_long();
-        else
-            node->type = promote_type(node->l, node->r);
+            break;
+        }
+        node = arithmetic_conversion(node);
         break;
+
+    case NOD_ADD:
+        node = arithmetic_conversion(node);
+        break;
+
 
     case NOD_SIZEOF:
         node->type = type_int();
@@ -316,31 +351,6 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_POSTINC:
     case NOD_POSTDEC:
         node->type = promote_type(node->l, node->r);
-        break;
-
-    case NOD_ADD:
-        {
-            struct data_type *t1 = node->l->type;
-            struct data_type *t2 = node->r->type;
-
-            if (is_enum(t1))
-                node->l = implicit_cast(node->l, type_int());
-            if (is_enum(t2))
-                node->r = implicit_cast(node->r, type_int());
-        }
-        {
-            struct data_type *t1 = node->l->type;
-            struct data_type *t2 = node->r->type;
-
-            if ((is_float(t1) && is_int(t2)) ||
-                (is_double(t1) && is_int(t2)))
-                node->r = implicit_cast(node->r, t1);
-            else
-            if ((is_int(t1) && is_float(t2)) ||
-                (is_int(t1) && is_double(t2)))
-                node->l = implicit_cast(node->l, t2);
-            node->type = promote_type(node->l, node->r);
-        }
         break;
 
     default:
@@ -440,6 +450,10 @@ static int eval_const_expr(const struct ast_node *node, struct parser *p)
         l = eval_const_expr(node->l, p);
         r = eval_const_expr(node->r, p);
         return l >> r;
+
+    case NOD_CAST2:
+        l = eval_const_expr(node->l, p);
+        return l;
 
     case NOD_SIZEOF:
     case NOD_NUM:
@@ -2466,6 +2480,7 @@ static struct ast_node *initializer(struct parser *p, struct initializer_context
     if (init->type) {
         desi->type = init->type;
         desi->ival = init->mem_offset;
+        expr = implicit_cast(expr, init->type);
     }
 
     tree = new_node_(NOD_INIT, tokpos(p));

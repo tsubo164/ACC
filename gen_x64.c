@@ -101,7 +101,7 @@ enum opecode {
     SHL, SHR, SAR,
     OR, XOR, AND, NOT, CMP,
     /* fp */
-    MOVS, ADDS,
+    MOVS, ADDS, SUBS,
     /* 64 bit gp */
     LEA, PUSH, POP,
     CALL, RET, JE, JNE, JMP,
@@ -120,7 +120,7 @@ static const char *instruction_name[] = {
     "add", "sub", "imul", "div", "idiv",
     "shl", "shr", "sar",
     "or", "xor", "and", "not", "cmp",
-    "movs", "adds",
+    "movs", "adds", "subs",
     "lea", "push", "pop",
     "call", "ret", "je", "jne", "jmp",
     "sete", "setne", "setl", "setg", "setle", "setge",
@@ -1073,10 +1073,10 @@ static void gen_store_a(FILE *fp, const struct data_type *type,
     }
 }
 
-static void gen_push_a(FILE *fp, const struct data_type *type)
+static void gen_push_a(FILE *fp, const struct data_type *type, enum operand reg)
 {
-    gen_add_stack_pointer(fp, 8);
-    gen_store_a(fp, type, RSP, 0);
+    gen_sub_stack_pointer(fp, 8);
+    code3(fp, MOVS, reg, mem(RSP, 0));
 }
 
 static void gen_pop_to(FILE *fp, const struct data_type *type, enum operand reg)
@@ -1649,6 +1649,10 @@ static long eval_const_expr__(const struct ast_node *node)
         r = eval_const_expr__(node->r);
         return l >> r;
 
+    case NOD_CAST2:
+        l = eval_const_expr__(node->l);
+        return l;
+
     case NOD_SIZEOF:
     case NOD_NUM:
         return node->ival;
@@ -1712,6 +1716,11 @@ static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
     case NOD_CAST:
         /* TODO come up better way to handle scalar universaly */
         gen_init_scalar_global(fp, type, expr->r);
+        break;
+
+    case NOD_CAST2:
+        /* TODO come up better way to handle scalar universaly */
+        gen_init_scalar_global(fp, type, expr->l);
         break;
 
     case NOD_STRING:
@@ -2244,12 +2253,13 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_ADD:
         if (is_float(node->type)) {
             const int x0_ = register_from_type(XMM0_, node->type);
+            const int x1_ = register_from_type(XMM1_, node->type);
             gen_code(fp, node->l);
-            gen_push_a(fp, node->type);
+            gen_push_a(fp, node->type, x0_);
             gen_code(fp, node->r);
-            gen_pop_to(fp, node->type, XMM1);
+            gen_pop_to(fp, node->type, x1_);
 
-            code3(fp, ADDS, XMM1_, x0_);
+            code3(fp, ADDS, x1_, x0_);
             break;
         }
 
@@ -2268,6 +2278,19 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_SUB:
+        if (is_float(node->type)) {
+            const int x0_ = register_from_type(XMM0_, node->type);
+            const int x1_ = register_from_type(XMM1_, node->type);
+            gen_code(fp, node->l);
+            gen_push_a(fp, node->type, x0_);
+            gen_code(fp, node->r);
+            code3(fp, MOVS, x0_, x1_);
+            gen_pop_to(fp, node->type, x0_);
+
+            code3(fp, SUBS, x1_, x0_);
+            break;
+        }
+
         gen_code(fp, node->l);
         code2(fp, PUSH, RAX);
         gen_code(fp, node->r);

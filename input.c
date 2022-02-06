@@ -2,7 +2,6 @@
 #include <stdio.h>
 */
 
-/*
 #include <stdio.h>
 
 void foo(float f)
@@ -10,56 +9,29 @@ void foo(float f)
     printf("%f\n", f);
 }
 
+/*
 void bar(int i)
 {
     printf("%d\n", i);
 }
 */
+struct bitfield1 {
+    signed int a : 13;
+    signed int b : 17;
+} bf1 = {-73, 991};
 
-/*
-enum {A, B, C};
 
-enum operand_size { X, Y, Z};
-const int  size_to_offset[] = {0, 1, 2, 3, 4, 3, 4};
-*/
-
-void assert(int i, int j)
-{
-}
 int main()
 {
-    /*
-    int array[3];
+    float f = 3.14;
+    float g = 0.5;
+    float h = 0.14;
+    //int i = 1;
 
-    double g = 3.14;
-    foo(g);
+    //printf("%f\n", f);
+    foo(f + g);
+    foo(f - g - h);
+    printf("%d\n", bf1.a);
 
-    array[C] = 19;
-
-    return array[C];
-    */
-    /*
-    enum operand_size size = Y;
-
-    return size_to_offset[size];
-    */
-    typedef int Int;
-    Int i = 32;
-    int *p;
-
-    p = i;
-    {
-        /* enum with no tag */
-        enum {
-            red = 101, green, blue
-        } col;
-
-        col = green;
-
-        assert(102, col);
-
-        p = col;
-        p = green;
-    }
-    return 0;
+    return 42;
 }
