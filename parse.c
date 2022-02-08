@@ -217,11 +217,13 @@ static struct ast_node *arithmetic_conversion(struct ast_node *node)
         struct data_type *t2 = node->r->type;
 
         if ((is_float(t1) && is_int(t2)) ||
-            (is_double(t1) && is_int(t2)))
+            (is_double(t1) && is_int(t2)) ||
+            (is_double(t1) && is_float(t2)))
             node->r = implicit_cast(node->r, t1);
         else
         if ((is_int(t1) && is_float(t2)) ||
-            (is_int(t1) && is_double(t2)))
+            (is_int(t1) && is_double(t2)) ||
+            (is_float(t1) && is_double(t2)))
             node->l = implicit_cast(node->l, t2);
         node->type = promote_type(node->l, node->r);
     }
@@ -338,6 +340,8 @@ static struct ast_node *typed_(struct ast_node *node)
         break;
 
     case NOD_ADD:
+    case NOD_LT:
+    case NOD_GT:
         node = arithmetic_conversion(node);
         break;
 

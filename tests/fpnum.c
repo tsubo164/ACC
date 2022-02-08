@@ -12,6 +12,11 @@ int main()
         assert(3, f);
         assert(4, d);
     }
+    {
+        float f = 2.71828;
+
+        assertf(2.71828, f);
+    }
 
     return 0;
 }

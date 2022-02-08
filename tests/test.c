@@ -1,5 +1,8 @@
-int printf(char *s, int a, int b);
+int printf(const char *format, ...);
 int exit(int code);
+
+double fabs(double x);
+float fabsf(float x);
 
 #include "test.h"
 
@@ -18,6 +21,15 @@ void assertl(long expected, long actual)
 {
     if (expected != actual) {
         printf("error: expected: %ld actual: %ld\n", expected, actual);
+        exit(1);
+    }
+}
+
+void assertf(float expected, float actual)
+{
+    /* TODO use relative machine epsilon */
+    if (fabsf(expected - actual) > 0.000001) {
+        printf("error: expected: %f actual: %f\n", expected, actual);
         exit(1);
     }
 }

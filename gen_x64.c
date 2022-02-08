@@ -101,12 +101,13 @@ enum opecode {
     SHL, SHR, SAR,
     OR, XOR, AND, NOT, CMP,
     /* fp */
-    MOVS, ADDS, SUBS,
+    MOVS, ADDS, SUBS, UCOMIS,
     /* 64 bit gp */
     LEA, PUSH, POP,
     CALL, RET, JE, JNE, JMP,
     /* no suffixes */
     SETE, SETNE, SETL, SETG, SETLE, SETGE,
+    SETA, SETB,
     CLTD, CQTO,
     CVTSI2SSL,
     CVTSS2SD,
@@ -120,10 +121,11 @@ static const char *instruction_name[] = {
     "add", "sub", "imul", "div", "idiv",
     "shl", "shr", "sar",
     "or", "xor", "and", "not", "cmp",
-    "movs", "adds", "subs",
+    "movs", "adds", "subs", "ucomis",
     "lea", "push", "pop",
     "call", "ret", "je", "jne", "jmp",
     "sete", "setne", "setl", "setg", "setle", "setge",
+    "seta", "setb",
     "cltd", "cqto",
     "cvtsi2ssl",
     "cvtss2sd",
@@ -570,9 +572,9 @@ static void gen_func_param_list_(FILE *fp, const struct data_type *func_type)
             break;
 
         if (is_fpnum(param_type)) {
-            const int x_ = register_from_type(XMM0_, param_type);
+            const int x0_ = arg_reg(next_fp, opsize(param_type));
             const int disp = -1 * sym->mem_offset;
-            code3(fp, MOVS, x_, mem(RBP, disp));
+            code3(fp, MOVS, x0_, mem(RBP, disp));
             next_fp++;
             continue;
         }
@@ -700,9 +702,10 @@ static void print_argument_list(const struct argument *args)
     int i = 0;
     const struct argument *a;
 
+    printf("---------------------------------------------------------------\n");
     for (a = args; a; a = a->next)
-        printf("* %2d | size: %d, offset: %d, pass_by_stack: %d, is_fp: %d\n",
-                i++, a->size, a->offset, a->pass_by_stack, a->is_fp);
+        printf("* %2d | size: %d, offset: %d, pass_by_stack: %d, reg: %d, is_fp: %d\n",
+                i++, a->size, a->offset, a->pass_by_stack, a->reg, a->is_fp);
 }
 
 static void gen_func_call(FILE *fp, const struct ast_node *node)
@@ -2466,10 +2469,36 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_LT:
+        if (is_fpnum(node->type)) {
+            const int x0_ = register_from_type(XMM0_, node->type);
+            const int x1_ = register_from_type(XMM1_, node->type);
+            gen_code(fp, node->l);
+            gen_push_a(fp, node->type, x0_);
+            gen_code(fp, node->r);
+            code3(fp, MOVS, x0_, x1_);
+            gen_pop_to(fp, node->type, x0_);
+            code3(fp, UCOMIS, x1_, x0_);
+            code2(fp, SETB, AL);
+            code3(fp, MOVZB, AL, a_);
+            break;
+        }
         gen_relational(fp, node, SETL);
         break;
 
     case NOD_GT:
+        if (is_fpnum(node->type)) {
+            const int x0_ = register_from_type(XMM0_, node->type);
+            const int x1_ = register_from_type(XMM1_, node->type);
+            gen_code(fp, node->l);
+            gen_push_a(fp, node->type, x0_);
+            gen_code(fp, node->r);
+            code3(fp, MOVS, x0_, x1_);
+            gen_pop_to(fp, node->type, x0_);
+            code3(fp, UCOMIS, x1_, x0_);
+            code2(fp, SETA, AL);
+            code3(fp, MOVZB, AL, a_);
+            break;
+        }
         gen_relational(fp, node, SETG);
         break;
 
