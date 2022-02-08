@@ -186,19 +186,41 @@ void free_parser(struct parser *p)
     free(p);
 }
 
-static struct data_type *promote_type(struct ast_node *n1, struct ast_node *n2)
-{
-    if (!n1 && !n2)
-        return type_void();
-    if (!n1)
-        return n2->type;
-    if (!n2)
-        return n1->type;
+static struct ast_node *implicit_cast(struct ast_node *node, struct data_type *cast_to);
 
-    return promote(n1->type, n2->type);
+static int rank_of(const struct data_type *type)
+{
+    if (is_char(type))
+        return 0;
+    if (is_short(type))
+        return 1;
+    if (is_int(type) || is_enum(type))
+        return 2;
+    if (is_long(type))
+        return 3;
+    if (is_float(type))
+        return 4;
+    if (is_double(type))
+        return 5;
+    return -1;
 }
 
-static struct ast_node *implicit_cast(struct ast_node *node, struct data_type *cast_to);
+static struct ast_node *promote_type(struct ast_node *node)
+{
+    struct ast_node *l = node->l;
+    struct ast_node *r = node->r;
+
+    if (!l && !r)
+        node->type = type_void();
+    else if (!l)
+        node->type = r->type;
+    else if (!r)
+        node->type = l->type;
+    else
+        node->type = promote(l->type, r->type);
+
+    return node;
+}
 
 static struct ast_node *arithmetic_conversion(struct ast_node *node)
 {
@@ -215,17 +237,15 @@ static struct ast_node *arithmetic_conversion(struct ast_node *node)
     {
         struct data_type *t1 = node->l->type;
         struct data_type *t2 = node->r->type;
+        const int r1 = rank_of(t1);
+        const int r2 = rank_of(t2);
 
-        if ((is_float(t1) && is_int(t2)) ||
-            (is_double(t1) && is_int(t2)) ||
-            (is_double(t1) && is_float(t2)))
+        if (r1 > r2)
             node->r = implicit_cast(node->r, t1);
-        else
-        if ((is_int(t1) && is_float(t2)) ||
-            (is_int(t1) && is_double(t2)) ||
-            (is_float(t1) && is_double(t2)))
+        else if (r1 < r2)
             node->l = implicit_cast(node->l, t2);
-        node->type = promote_type(node->l, node->r);
+
+        node = promote_type(node);
     }
 
     return node;
@@ -308,7 +328,7 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_LOGICAL_NOT:
     case NOD_EQ:
     case NOD_NE:
-        node->type = promote_type(node->l, node->r);
+        node = promote_type(node);
         if (is_pointer(node->type))
             node->type = type_long();
         else
@@ -354,11 +374,11 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_PREDEC:
     case NOD_POSTINC:
     case NOD_POSTDEC:
-        node->type = promote_type(node->l, node->r);
+        node = promote_type(node);
         break;
 
     default:
-        node->type = promote_type(node->l, node->r);
+        node = promote_type(node);
         break;
     }
 
