@@ -350,6 +350,23 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = type_double();
         break;
 
+    case NOD_ADD:
+        /* pionter arithmetic */
+        if (is_array(node->l->type) || is_pointer(node->l->type)) {
+            /* pointer + x */
+            struct ast_node *num = typed_(NEW_(NOD_NUM));
+            num->ival = get_size(underlying(node->l->type));
+            node->r = typed_(new_ast_node(NOD_MUL, num, node->r));
+        }
+        if (is_array(node->r->type) || is_pointer(node->r->type)) {
+            /* x + pointer */
+            struct ast_node *num = typed_(NEW_(NOD_NUM));
+            num->ival = get_size(underlying(node->r->type));
+            node->l = typed_(new_ast_node(NOD_MUL, num, node->l));
+        }
+        node = arithmetic_conversion(node);
+        break;
+
     case NOD_SUB:
         /* pionter arithmetic */
         if (is_pointer(node->l->type) && is_pointer(node->r->type)) {
@@ -359,7 +376,6 @@ static struct ast_node *typed_(struct ast_node *node)
         node = arithmetic_conversion(node);
         break;
 
-    case NOD_ADD:
     case NOD_LT:
     case NOD_GT:
         node = arithmetic_conversion(node);

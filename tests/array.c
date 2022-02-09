@@ -313,6 +313,14 @@ int main()
         assert(98, a[1]);
         assert(99, a[2]);
     }
+    {
+        /* *(i + array) and i[array] */
+        int a[3];
+
+        *(1 + a) = 13;
+
+        assert(13, 1[a]);
+    }
 
     return 0;
 }

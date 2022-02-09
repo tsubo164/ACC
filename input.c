@@ -8,5 +8,12 @@ int main()
 
     a[2] = 42;
 
-    return a[2];
+    *(1 + a) = 13;
+    /*
+    *(a + 1) = 13;
+
+    return sizeof a;
+    return a[1];
+    */
+    return 1[a];
 }

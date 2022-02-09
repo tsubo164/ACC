@@ -2261,7 +2261,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             gen_push_a(fp, node->type, x0_);
             gen_code(fp, node->r);
             gen_pop_to(fp, node->type, x1_);
-
             code3(fp, ADDS, x1_, x0_);
             break;
         }
@@ -2270,13 +2269,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         code2(fp, PUSH, RAX);
         gen_code(fp, node->r);
         code2(fp, POP, RDX);
-
-        /* TODO find the best place to handle array subscript */
-        if (is_array(node->l->type) || is_pointer(node->l->type)) {
-            const int sz = get_size(underlying(node->l->type));
-            code3(fp, IMUL, imm(sz), RAX);
-        }
-
         code3(fp, ADD, d_, a_);
         break;
 
@@ -2289,7 +2281,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
             gen_code(fp, node->r);
             code3(fp, MOVS, x0_, x1_);
             gen_pop_to(fp, node->type, x0_);
-
             code3(fp, SUBS, x1_, x0_);
             break;
         }
