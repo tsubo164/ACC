@@ -400,6 +400,15 @@ int main()
         assert(3, b--);
         assert(2, b);
     }
+    {
+        /* char > char => int */
+        char c = 4;
+        char d = 9;
+        char e;
+
+        e = d > c;
+        assert(1, e);
+    }
 
     return 0;
 }

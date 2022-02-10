@@ -228,9 +228,9 @@ static struct ast_node *arithmetic_conversion(struct ast_node *node)
         struct data_type *t1 = node->l->type;
         struct data_type *t2 = node->r->type;
 
-        if (is_enum(t1))
+        if (is_enum(t1) || is_char(t1) || is_short(t1))
             node->l = implicit_cast(node->l, type_int());
-        if (is_enum(t2))
+        if (is_enum(t2) || is_char(t2) || is_short(t2))
             node->r = implicit_cast(node->r, type_int());
     }
 
@@ -322,17 +322,15 @@ static struct ast_node *typed_(struct ast_node *node)
             node->type = node->sym->type;
         break;
 
-    /* logical ops */
+    /* logical, equality and relational ops */
     case NOD_LOGICAL_OR:
     case NOD_LOGICAL_AND:
     case NOD_LOGICAL_NOT:
     case NOD_EQ:
     case NOD_NE:
-        node = promote_type(node);
-        if (is_pointer(node->type))
-            node->type = type_long();
-        else
-            node->type = type_int();
+    case NOD_LT:
+    case NOD_GT:
+        node->type = type_int();
         break;
 
     /* nodes without type */
@@ -378,8 +376,6 @@ static struct ast_node *typed_(struct ast_node *node)
 
     case NOD_MUL:
     case NOD_DIV:
-    case NOD_LT:
-    case NOD_GT:
         node = arithmetic_conversion(node);
         break;
 

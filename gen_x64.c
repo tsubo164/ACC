@@ -1154,7 +1154,7 @@ static void gen_relational(FILE *fp, const struct ast_node *node, enum opecode o
     code2(fp, POP, RAX);
     code3(fp, CMP, d_, a_);
     code2(fp, op, AL);
-    code3(fp, MOVZB, AL, a_);
+    code3(fp, MOVZB, AL, EAX);
 }
 
 static void gen_equality(FILE *fp, const struct ast_node *node, enum opecode op)
@@ -1168,7 +1168,7 @@ static void gen_equality(FILE *fp, const struct ast_node *node, enum opecode op)
     code2(fp, POP, RDX);
     code3(fp, CMP, d_, a_);
     code2(fp, op,   AL);
-    code3(fp, MOVZB, AL, a_);
+    code3(fp, MOVZB, AL, EAX);
 }
 
 enum jump_kind {
