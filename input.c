@@ -2,18 +2,31 @@
 #include <stdio.h>
 */
 
+#include <stdio.h>
+/*
+*/
+
 int main()
 {
-    int a[3];
-
-    a[2] = 42;
-
-    *(1 + a) = 13;
     /*
-    *(a + 1) = 13;
-
-    return sizeof a;
-    return a[1];
+    float f = 3.14;
+    char c = 4;
+    char i = c < c;
     */
-    return 1[a];
+
+    /*
+    printf("%f\n", f * 2);
+
+    printf("%f\n", f / 2);
+
+    printf("%d\n", f > 2);
+    */
+
+    float f = 1.234;
+    double g = 0.23;
+
+
+    printf("%f\n", f + g);
+
+    return 19;
 }

@@ -34,6 +34,15 @@ void assertf(float expected, float actual)
     }
 }
 
+void assertd(double expected, double actual)
+{
+    /* TODO use relative machine epsilon */
+    if (fabsf(expected - actual) > 0.000001) {
+        printf("error: expected: %f actual: %f\n", expected, actual);
+        exit(1);
+    }
+}
+
 void set_count(int val)
 {
     g_count = val;

@@ -376,6 +376,8 @@ static struct ast_node *typed_(struct ast_node *node)
         node = arithmetic_conversion(node);
         break;
 
+    case NOD_MUL:
+    case NOD_DIV:
     case NOD_LT:
     case NOD_GT:
         node = arithmetic_conversion(node);
