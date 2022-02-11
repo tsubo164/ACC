@@ -44,6 +44,15 @@ int main()
 
         assert(0, d <= 3.84000 * 0.5);
     }
+    {
+        /* equality operations */
+        double f = 9.87;
+
+        assert(1, f == 9.87);
+        assert(0, f == 9.78);
+        assert(0, f != 9.87);
+        assert(1, f != 9.78);
+    }
 
     return 0;
 }

@@ -2555,10 +2555,40 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_EQ:
+        if (is_fpnum(node->l->type)) {
+            const struct data_type *type = node->l->type;
+            const int x0_ = register_from_type(XMM0_, type);
+            const int x1_ = register_from_type(XMM1_, type);
+            gen_code(fp, node->l);
+            gen_push_a(fp, type, x0_);
+            gen_code(fp, node->r);
+            code3(fp, MOVS, x0_, x1_);
+            gen_pop_to(fp, type, x0_);
+            code3(fp, UCOMIS, x0_, x1_);
+            code2(fp, SETE, AL);
+            code3(fp, AND, imm(1), AL);
+            code3(fp, MOVZB, AL, EAX);
+            break;
+        }
         gen_equality(fp, node, SETE);
         break;
 
     case NOD_NE:
+        if (is_fpnum(node->l->type)) {
+            const struct data_type *type = node->l->type;
+            const int x0_ = register_from_type(XMM0_, type);
+            const int x1_ = register_from_type(XMM1_, type);
+            gen_code(fp, node->l);
+            gen_push_a(fp, type, x0_);
+            gen_code(fp, node->r);
+            code3(fp, MOVS, x0_, x1_);
+            gen_pop_to(fp, type, x0_);
+            code3(fp, UCOMIS, x0_, x1_);
+            code2(fp, SETNE, AL);
+            code3(fp, AND, imm(1), AL);
+            code3(fp, MOVZB, AL, EAX);
+            break;
+        }
         gen_equality(fp, node, SETNE);
         break;
 
