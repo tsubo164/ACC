@@ -107,7 +107,7 @@ enum opecode {
     CALL, RET, JE, JNE, JMP,
     /* no suffixes */
     SETE, SETNE, SETL, SETG, SETLE, SETGE,
-    SETA, SETB,
+    SETA, SETB, SETAE, SETBE,
     CLTD, CQTO,
     CVTSI2SSL,
     CVTSS2SD,
@@ -125,7 +125,7 @@ static const char *instruction_name[] = {
     "lea", "push", "pop",
     "call", "ret", "je", "jne", "jmp",
     "sete", "setne", "setl", "setg", "setle", "setge",
-    "seta", "setb",
+    "seta", "setb", "setae", "setbe",
     "cltd", "cqto",
     "cvtsi2ssl",
     "cvtss2sd",
@@ -1144,8 +1144,8 @@ static void gen_postincdec(FILE *fp, const struct ast_node *node, enum opecode o
 
 static void gen_relational(FILE *fp, const struct ast_node *node, enum opecode op)
 {
-    const int a_ = register_from_type(A_, node->type);
-    const int d_ = register_from_type(D_, node->type);
+    const int a_ = register_from_type(A_, node->l->type);
+    const int d_ = register_from_type(D_, node->l->type);
 
     gen_code(fp, node->l);
     code2(fp, PUSH, RAX);
@@ -1159,8 +1159,8 @@ static void gen_relational(FILE *fp, const struct ast_node *node, enum opecode o
 
 static void gen_equality(FILE *fp, const struct ast_node *node, enum opecode op)
 {
-    const int a_ = register_from_type(A_, node->type);
-    const int d_ = register_from_type(D_, node->type);
+    const int a_ = register_from_type(A_, node->l->type);
+    const int d_ = register_from_type(D_, node->l->type);
 
     gen_code(fp, node->l);
     code2(fp, PUSH, RAX);
@@ -2479,44 +2479,78 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_LT:
-        if (is_fpnum(node->type)) {
-            const int x0_ = register_from_type(XMM0_, node->type);
-            const int x1_ = register_from_type(XMM1_, node->type);
+        if (is_fpnum(node->l->type)) {
+            const struct data_type *type = node->l->type;
+            const int x0_ = register_from_type(XMM0_, type);
+            const int x1_ = register_from_type(XMM1_, type);
             gen_code(fp, node->l);
-            gen_push_a(fp, node->type, x0_);
+            gen_push_a(fp, type, x0_);
             gen_code(fp, node->r);
             code3(fp, MOVS, x0_, x1_);
-            gen_pop_to(fp, node->type, x0_);
-            code3(fp, UCOMIS, x1_, x0_);
-            code2(fp, SETB, AL);
-            code3(fp, MOVZB, AL, a_);
+            gen_pop_to(fp, type, x0_);
+            code3(fp, UCOMIS, x0_, x1_);
+            code2(fp, SETA, AL);
+            code3(fp, AND, imm(1), AL);
+            code3(fp, MOVZB, AL, EAX);
             break;
         }
         gen_relational(fp, node, SETL);
         break;
 
     case NOD_GT:
-        if (is_fpnum(node->type)) {
-            const int x0_ = register_from_type(XMM0_, node->type);
-            const int x1_ = register_from_type(XMM1_, node->type);
+        if (is_fpnum(node->l->type)) {
+            const struct data_type *type = node->l->type;
+            const int x0_ = register_from_type(XMM0_, type);
+            const int x1_ = register_from_type(XMM1_, type);
             gen_code(fp, node->l);
-            gen_push_a(fp, node->type, x0_);
+            gen_push_a(fp, type, x0_);
             gen_code(fp, node->r);
             code3(fp, MOVS, x0_, x1_);
-            gen_pop_to(fp, node->type, x0_);
-            code3(fp, UCOMIS, x1_, x0_);
-            code2(fp, SETA, AL);
-            code3(fp, MOVZB, AL, a_);
+            gen_pop_to(fp, type, x0_);
+            code3(fp, UCOMIS, x0_, x1_);
+            code2(fp, SETB, AL);
+            code3(fp, AND, imm(1), AL);
+            code3(fp, MOVZB, AL, EAX);
             break;
         }
         gen_relational(fp, node, SETG);
         break;
 
     case NOD_LE:
+        if (is_fpnum(node->l->type)) {
+            const struct data_type *type = node->l->type;
+            const int x0_ = register_from_type(XMM0_, type);
+            const int x1_ = register_from_type(XMM1_, type);
+            gen_code(fp, node->l);
+            gen_push_a(fp, type, x0_);
+            gen_code(fp, node->r);
+            code3(fp, MOVS, x0_, x1_);
+            gen_pop_to(fp, type, x0_);
+            code3(fp, UCOMIS, x0_, x1_);
+            code2(fp, SETAE, AL);
+            code3(fp, AND, imm(1), AL);
+            code3(fp, MOVZB, AL, EAX);
+            break;
+        }
         gen_relational(fp, node, SETLE);
         break;
 
     case NOD_GE:
+        if (is_fpnum(node->l->type)) {
+            const struct data_type *type = node->l->type;
+            const int x0_ = register_from_type(XMM0_, type);
+            const int x1_ = register_from_type(XMM1_, type);
+            gen_code(fp, node->l);
+            gen_push_a(fp, type, x0_);
+            gen_code(fp, node->r);
+            code3(fp, MOVS, x0_, x1_);
+            gen_pop_to(fp, type, x0_);
+            code3(fp, UCOMIS, x0_, x1_);
+            code2(fp, SETBE, AL);
+            code3(fp, AND, imm(1), AL);
+            code3(fp, MOVZB, AL, EAX);
+            break;
+        }
         gen_relational(fp, node, SETGE);
         break;
 

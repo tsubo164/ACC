@@ -3,8 +3,8 @@
 */
 
 /*
-#include <stdio.h>
 */
+#include <stdio.h>
 
 int main()
 {
@@ -15,6 +15,7 @@ int main()
 
     e = d + c;
     */
+    /*
     enum foo {A, B, C};
 
     enum foo f = B;
@@ -22,17 +23,24 @@ int main()
 
     a = f;
 
-    /*
-    float f = 3.14;
     */
+    double f = 3.14;
 
     /*
     printf("%f\n", f * 2);
 
     printf("%f\n", f / 2);
 
-    printf("%d\n", f > 2);
+    printf("%d\n", f > 2.3);
+    printf("%d\n", f < 2.3 * 2);
+    */
+    printf("%d\n", f <= 3.14000);
+    printf("%d\n", f >= 3.14000);
+    /*
+    printf("%d\n", f <= 3.14);
+    */
 
+    /*
     float f = 1.234;
     double g = 0.23;
 

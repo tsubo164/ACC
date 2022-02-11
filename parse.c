@@ -322,14 +322,22 @@ static struct ast_node *typed_(struct ast_node *node)
             node->type = node->sym->type;
         break;
 
-    /* logical, equality and relational ops */
+    /* logical ops */
     case NOD_LOGICAL_OR:
     case NOD_LOGICAL_AND:
     case NOD_LOGICAL_NOT:
+        node->type = type_int();
+        break;
+
+    /* equality and relational ops */
     case NOD_EQ:
     case NOD_NE:
     case NOD_LT:
     case NOD_GT:
+    case NOD_LE:
+    case NOD_GE:
+        node = arithmetic_conversion(node);
+        /* TODO may need NOD_CAST to just cast type */
         node->type = type_int();
         break;
 

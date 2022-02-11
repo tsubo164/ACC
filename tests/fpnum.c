@@ -30,6 +30,20 @@ int main()
         assertf(0.28382, f * d);
         assertf(5.3652173913043475, f / d);
     }
+    {
+        /* relational operations */
+        float f = 2.34;
+        double d = 3.84;
+
+        assert(1, f > 2.3);
+        assert(1, f < 2.3 * 2);
+        assert(0, f < 2.3 - 0.3);
+
+        assert(1, d <= 3.84000);
+        assert(1, d >= 3.84000);
+
+        assert(0, d <= 3.84000 * 0.5);
+    }
 
     return 0;
 }
