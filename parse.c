@@ -293,8 +293,6 @@ static struct ast_node *typed_(struct ast_node *node)
 
     case NOD_DEREF:
         node->type = underlying(node->l->type);
-        if (!node->type)
-            node->type = node->l->type;
         break;
 
     case NOD_STRUCT_REF:
@@ -384,6 +382,7 @@ static struct ast_node *typed_(struct ast_node *node)
 
     case NOD_MUL:
     case NOD_DIV:
+    case NOD_MOD:
         node = arithmetic_conversion(node);
         break;
 

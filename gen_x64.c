@@ -458,6 +458,8 @@ static void gen_code(FILE *fp, const struct ast_node *node);
 static void gen_address(FILE *fp, const struct ast_node *node);
 static void gen_load(FILE *fp, const struct ast_node *node,
         enum operand addr, enum operand regist);
+static void gen_load_to_a(FILE *fp, const struct data_type *type,
+        enum operand addr, int offset);
 static void gen_store_a(FILE *fp, const struct data_type *type,
         enum operand addr, int offset);
 static void gen_cast(FILE *fp, const struct ast_node *node);
@@ -993,13 +995,7 @@ static void gen_ident(FILE *fp, const struct ast_node *node)
         code3(fp, LEA, symb(sym->name, -1), RAX);
     }
     else {
-        const int x0_ = register_from_type(XMM0_, node->type);
-        const int disp = -get_mem_offset(node);
-
-        if (is_fpnum(node->type))
-            code3(fp, MOVS, mem(RBP, disp), x0_);
-        else
-            gen_load(fp, node, mem(RBP, disp), A_);
+        gen_load_to_a(fp, node->type, RBP, -get_mem_offset(node));
     }
 }
 
@@ -1058,13 +1054,33 @@ static void gen_load(FILE *fp, const struct ast_node *node,
     }
 }
 
+static void gen_load_to_a(FILE *fp, const struct data_type *type,
+        enum operand addr, int offset)
+{
+    /* array objects cannot be loaded in registers, and converted to pointers */
+    if (is_array(type))
+        return;
+    /* large struct objects cannot be loaded in registers,
+     * and the compiler handle it via pointer */
+    if (!is_small_object(type))
+        return;
+
+    if (is_fpnum(type)) {
+        const int x0_ = register_from_type(XMM0_, type);
+        code3(fp, MOVS, mem(addr, offset), x0_);
+    } else {
+        const int a_ = register_from_type(A_, type);
+        code3(fp, MOV, mem(addr, offset), a_);
+    }
+}
+
 static void gen_store_a(FILE *fp, const struct data_type *type,
         enum operand addr, int offset)
 {
     if (is_small_object(type)) {
         if (is_fpnum(type)) {
-            const int x_ = register_from_type(XMM0_, type);
-            code3(fp, MOVS, x_, mem(addr, offset));
+            const int x0_ = register_from_type(XMM0_, type);
+            code3(fp, MOVS, x0_, mem(addr, offset));
         }
         else {
             const int a_ = register_from_type(A_, type);
