@@ -293,6 +293,8 @@ static struct ast_node *typed_(struct ast_node *node)
 
     case NOD_DEREF:
         node->type = underlying(node->l->type);
+        if (!node->type)
+            node->type = node->l->type;
         break;
 
     case NOD_STRUCT_REF:
@@ -1641,8 +1643,10 @@ static struct ast_node *return_statement(struct parser *p)
     expect(p, TOK_RETURN);
     tree = new_node_(NOD_RETURN, tokpos(p));
 
-    if (!nexttok(p, ';'))
+    if (!nexttok(p, ';')) {
         expr = expression(p);
+        expr = implicit_cast(expr, return_type(p->func));
+    }
     expect(p, ';');
 
     return branch_(tree, expr, NULL);
@@ -2792,11 +2796,13 @@ static struct ast_node *declaration(struct parser *p)
     }
     else if (nexttok(p, '{')) {
         /* a function is being defined */
-        struct ast_node *stmt = compound_statement(p);
-        struct data_type *func_type = tree->type;
+        struct ast_node *stmt = NULL;
+        p->func = tree->type;
+        stmt = compound_statement(p);
         tree = new_node(NOD_FUNC_DEF, tree, stmt);
         end_scope(p);
-        compute_func_size(func_type);
+        compute_func_size(p->func);
+        p->func = NULL;
         return tree;
     }
     else if (is_function(tree->type)) {
