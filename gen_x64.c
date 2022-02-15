@@ -2005,8 +2005,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
         gen_comment(fp, "switch-value");
         gen_code(fp, node->l);
-        /* TODO tmp char_to_int */
-        gen_char_to_int(fp, node->l->type);
         gen_switch_table(fp, node, scope.curr);
         gen_code(fp, node->r);
         gen_label(fp, scope.curr, JMP_EXIT);

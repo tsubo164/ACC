@@ -222,6 +222,16 @@ static struct ast_node *promote_type(struct ast_node *node)
     return node;
 }
 
+static struct ast_node *integer_promotion(struct ast_node *node)
+{
+    struct data_type *t = node->type;
+
+    if (is_enum(t) || is_char(t) || is_short(t))
+        return implicit_cast(node, type_int());
+
+    return node;
+}
+
 static struct ast_node *arithmetic_conversion(struct ast_node *node)
 {
     {
@@ -1711,6 +1721,9 @@ static struct ast_node *switch_statement(struct parser *p)
     expect(p, TOK_SWITCH);
     expect(p, '(');
     expr = expression(p);
+    /* 6.8.4.2 The integer promotions are performed
+     * on the controlling expression. */
+    expr = integer_promotion(expr);
     expect(p, ')');
 
     begin_switch(p);

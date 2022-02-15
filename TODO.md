@@ -12,6 +12,7 @@
   - [x] `type.c`
 
 * TODO
+  - support enum that can hold long int value
   - make `NOD_CONV` to convert values and have `NOD_CAST` just does casting
   - support floating point literal `f = .01`;
   - move `is_variadic` to type.c
