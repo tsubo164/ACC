@@ -1054,13 +1054,6 @@ static void gen_load(FILE *fp, const struct ast_node *node,
     }
 }
 
-/* TODO tmp char_to_int */
-static void gen_char_to_int(FILE *fp, const struct data_type *type)
-{
-    if (is_char(type))
-        code3(fp, MOVSB, AL, EAX);
-}
-
 static void gen_load_to_a(FILE *fp, const struct data_type *type,
         enum operand addr, int offset)
 {
@@ -2264,11 +2257,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
     case NOD_DEREF:
         gen_code(fp, node->l);
         gen_load_to_a(fp, node->type, RAX, 0);
-        /* TODO tmp char_to_int */
-        /*
-        if (is_char(node->type))
-            code3(fp, MOVSB, AL, EAX);
-        */
         break;
 
     case NOD_NUM:
@@ -2486,9 +2474,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_LOGICAL_NOT:
         gen_code(fp, node->l);
-        /* TODO tmp char_to_int */
-        gen_char_to_int(fp, node->l->type);
-        code3(fp, CMP, imm(0), a_);
+        gen_compare_to_zero(fp, node->l->type);
         code2(fp, SETE,  AL);
         code3(fp, MOVZB, AL, a_);
         break;

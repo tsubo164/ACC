@@ -339,7 +339,7 @@ static struct ast_node *typed_(struct ast_node *node)
             node->type = node->sym->type;
         break;
 
-    /* logical ops */
+    /* 6.5.13 - 14 Logical operators. The result has type int */
     case NOD_LOGICAL_OR:
     case NOD_LOGICAL_AND:
     case NOD_LOGICAL_NOT:

@@ -27,5 +27,11 @@ int main()
         break;
     }
 
+    if (!c)
+        return 42;
+
+    if (c == c)
+        return 42;
+
     return c;
 }
