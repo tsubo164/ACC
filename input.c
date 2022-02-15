@@ -4,7 +4,7 @@
 
 int main()
 {
-    enum etag {A, B, C = 1232432144412 } e;
+    enum etag {A, B, C } e;
     char c = 'A';
 
     if (c)
@@ -17,6 +17,13 @@ int main()
     }
 
     while (c) {
+        break;
+    }
+
+    while (A) {
+        break;
+    }
+    for (; c; ) {
         break;
     }
 

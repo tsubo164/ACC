@@ -82,6 +82,18 @@ int main()
 
         assert(22, a);
     }
+    {
+        /* controlling expression with char type */
+        char *s = "abc";
+        char *c = s;
+        int a = 0;
+
+        while (*c) {
+            a += *c;
+            c++;
+        }
+        assert(294, a);
+    }
 
     return 0;
 }

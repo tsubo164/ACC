@@ -1559,6 +1559,8 @@ static struct ast_node *for_statement(struct parser *p)
     pre  = expression_statement(p);
     if (!pre)
         pre = NEW_(NOD_NOP);
+    /* 6.8.5 The controlling expression of an iteration statement
+     * shall have scalar type. */
     cond = expression_statement(p);
     if (!cond)
         cond = new_node_num(1, tokpos(p));
@@ -1586,6 +1588,8 @@ static struct ast_node *while_statement(struct parser *p)
 
     expect(p, TOK_WHILE);
     expect(p, '(');
+    /* 6.8.5 The controlling expression of an iteration statement
+     * shall have scalar type. */
     cond = expression(p);
     expect(p, ')');
     body = statement(p);
@@ -1608,6 +1612,8 @@ static struct ast_node *dowhile_statement(struct parser *p)
     expect(p, TOK_WHILE);
 
     expect(p, '(');
+    /* 6.8.5 The controlling expression of an iteration statement
+     * shall have scalar type. */
     cond = expression(p);
     expect(p, ')');
     expect(p, ';');
@@ -1697,9 +1703,9 @@ static struct ast_node *if_statement(struct parser *p)
 
     expect(p, TOK_IF);
     expect(p, '(');
-    cond = expression(p);
     /* 6.8.4.1 The controlling expression of an if statement
      * shall have scalar type. */
+    cond = expression(p);
     expect(p, ')');
     then = statement(p);
     if (consume(p, TOK_ELSE))
@@ -1722,9 +1728,9 @@ static struct ast_node *switch_statement(struct parser *p)
 
     expect(p, TOK_SWITCH);
     expect(p, '(');
-    expr = expression(p);
     /* 6.8.4.2 The integer promotions are performed
      * on the controlling expression. */
+    expr = expression(p);
     expr = integer_promotion(expr);
     expect(p, ')');
 

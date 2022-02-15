@@ -1915,9 +1915,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_comment(fp, "for-cond");
         gen_label(fp, scope.curr, JMP_ENTER);
         gen_code(fp, node->r);
-        /* TODO tmp char_to_int */
-        gen_char_to_int(fp, node->r->type);
-        code3(fp, CMP, imm(0), a_);
+        gen_compare_to_zero(fp, node->r->type);
         code2(fp, JE, make_label(scope.curr, JMP_EXIT));
         break;
 
@@ -1942,9 +1940,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_comment(fp, "while-cond");
         gen_label(fp, scope.curr, JMP_CONTINUE);
         gen_code(fp, node->l);
-        /* TODO tmp char_to_int */
-        gen_char_to_int(fp, node->l->type);
-        code3(fp, CMP, imm(0), a_);
+        gen_compare_to_zero(fp, node->l->type);
         code2(fp, JE,  make_label(scope.curr, JMP_EXIT));
         gen_comment(fp, "while-body");
         gen_code(fp, node->r);
@@ -1966,9 +1962,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_comment(fp, "do-while-cond");
         gen_label(fp, scope.curr, JMP_CONTINUE);
         gen_code(fp, node->r);
-        /* TODO tmp char_to_int */
-        gen_char_to_int(fp, node->r->type);
-        code3(fp, CMP, imm(0), a_);
+        gen_compare_to_zero(fp, node->r->type);
         code2(fp, JE,  make_label(scope.curr, JMP_EXIT));
         code2(fp, JMP, make_label(scope.curr, JMP_ENTER));
         gen_label(fp, scope.curr, JMP_EXIT);
