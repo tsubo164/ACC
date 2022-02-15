@@ -295,6 +295,13 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = underlying(node->l->type);
         if (!node->type)
             node->type = node->l->type;
+
+        /* TODO tmp char_to_int */
+        /* TODO char *dst = &s->buf[s->len]; ??? */
+        /*
+        if (is_char(node->type))
+            node = implicit_cast(node, type_int());
+        */
         break;
 
     case NOD_STRUCT_REF:
@@ -387,7 +394,6 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_MOD:
         node = arithmetic_conversion(node);
         break;
-
 
     case NOD_SIZEOF:
         node->type = type_int();

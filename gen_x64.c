@@ -1054,6 +1054,13 @@ static void gen_load(FILE *fp, const struct ast_node *node,
     }
 }
 
+/* TODO tmp char_to_int */
+static void gen_char_to_int(FILE *fp, const struct data_type *type)
+{
+    if (is_char(type))
+        code3(fp, MOVSB, AL, EAX);
+}
+
 static void gen_load_to_a(FILE *fp, const struct data_type *type,
         enum operand addr, int offset)
 {
@@ -1902,6 +1909,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_comment(fp, "for-cond");
         gen_label(fp, scope.curr, JMP_ENTER);
         gen_code(fp, node->r);
+        /* TODO tmp char_to_int */
+        gen_char_to_int(fp, node->r->type);
         code3(fp, CMP, imm(0), a_);
         code2(fp, JE, make_label(scope.curr, JMP_EXIT));
         break;
@@ -1927,6 +1936,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_comment(fp, "while-cond");
         gen_label(fp, scope.curr, JMP_CONTINUE);
         gen_code(fp, node->l);
+        /* TODO tmp char_to_int */
+        gen_char_to_int(fp, node->l->type);
         code3(fp, CMP, imm(0), a_);
         code2(fp, JE,  make_label(scope.curr, JMP_EXIT));
         gen_comment(fp, "while-body");
@@ -1949,6 +1960,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         gen_comment(fp, "do-while-cond");
         gen_label(fp, scope.curr, JMP_CONTINUE);
         gen_code(fp, node->r);
+        /* TODO tmp char_to_int */
+        gen_char_to_int(fp, node->r->type);
         code3(fp, CMP, imm(0), a_);
         code2(fp, JE,  make_label(scope.curr, JMP_EXIT));
         code2(fp, JMP, make_label(scope.curr, JMP_ENTER));
@@ -1964,6 +1977,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
         gen_comment(fp, "if-cond");
         gen_code(fp, node->l);
+        /* TODO tmp char_to_int */
+        /* need CMP with expression type */
         code3(fp, CMP, imm(0), a_);
         code2(fp, JE,  make_label(scope.curr, JMP_ELSE));
         gen_code(fp, node->r);
@@ -1990,6 +2005,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
         gen_comment(fp, "switch-value");
         gen_code(fp, node->l);
+        /* TODO tmp char_to_int */
+        gen_char_to_int(fp, node->l->type);
         gen_switch_table(fp, node, scope.curr);
         gen_code(fp, node->r);
         gen_label(fp, scope.curr, JMP_EXIT);
@@ -2250,7 +2267,12 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_DEREF:
         gen_code(fp, node->l);
-        gen_load(fp, node, mem(RAX, 0), A_);
+        gen_load_to_a(fp, node->type, RAX, 0);
+        /* TODO tmp char_to_int */
+        /*
+        if (is_char(node->type))
+            code3(fp, MOVSB, AL, EAX);
+        */
         break;
 
     case NOD_NUM:
@@ -2468,6 +2490,8 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_LOGICAL_NOT:
         gen_code(fp, node->l);
+        /* TODO tmp char_to_int */
+        gen_char_to_int(fp, node->l->type);
         code3(fp, CMP, imm(0), a_);
         code2(fp, SETE,  AL);
         code3(fp, MOVZB, AL, a_);
