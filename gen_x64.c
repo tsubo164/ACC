@@ -1099,6 +1099,12 @@ static void gen_store_a(FILE *fp, const struct data_type *type,
     }
 }
 
+static void gen_compare_to_zero(FILE *fp, const struct data_type *type)
+{
+    const int a_  = register_from_type(A_, type);
+    code3(fp, CMP, imm(0), a_);
+}
+
 static void gen_push_a(FILE *fp, const struct data_type *type, enum operand reg)
 {
     gen_sub_stack_pointer(fp, 8);
@@ -1977,9 +1983,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
         gen_comment(fp, "if-cond");
         gen_code(fp, node->l);
-        /* TODO tmp char_to_int */
-        /* need CMP with expression type */
-        code3(fp, CMP, imm(0), a_);
+        gen_compare_to_zero(fp, node->l->type);
         code2(fp, JE,  make_label(scope.curr, JMP_ELSE));
         gen_code(fp, node->r);
 

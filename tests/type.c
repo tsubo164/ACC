@@ -61,6 +61,21 @@ int main()
         assert(88, c);
     }
     {
+        /* if controlling expression with char type */
+        char c = 12;
+
+        if (c)
+            c = 14;
+        assert(14, c);
+
+        c = 0;
+        if (c)
+            c = 93;
+        else
+            c = 13;
+        assert(13, c);
+    }
+    {
         /*
         void i = 0;
         */

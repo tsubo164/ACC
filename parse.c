@@ -1698,6 +1698,8 @@ static struct ast_node *if_statement(struct parser *p)
     expect(p, TOK_IF);
     expect(p, '(');
     cond = expression(p);
+    /* 6.8.4.1 The controlling expression of an if statement
+     * shall have scalar type. */
     expect(p, ')');
     then = statement(p);
     if (consume(p, TOK_ELSE))
