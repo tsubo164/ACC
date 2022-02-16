@@ -456,8 +456,6 @@ static int get_mem_offset(const struct ast_node *node)
 /* forward declaration */
 static void gen_code(FILE *fp, const struct ast_node *node);
 static void gen_address(FILE *fp, const struct ast_node *node);
-static void gen_load(FILE *fp, const struct ast_node *node,
-        enum operand addr, enum operand regist);
 static void gen_load_to_a(FILE *fp, const struct data_type *type,
         enum operand addr, int offset);
 static void gen_store_a(FILE *fp, const struct data_type *type,
@@ -1033,27 +1031,6 @@ static void gen_address(FILE *fp, const struct ast_node *node)
     }
 }
 
-static void gen_load(FILE *fp, const struct ast_node *node,
-        enum operand addr, enum operand regist)
-{
-    const int reg_ = register_from_type(regist, node->type);
-
-    /* array objects cannot be loaded in registers, and converted to pointers */
-    if (is_array(node->type))
-        return;
-    /* large struct objects cannot be loaded in registers,
-     * and the compiler handle it via pointer */
-    if (!is_small_object(node->type))
-        return;
-
-    code3(fp, MOV, addr, reg_);
-
-    if (is_char(node->type) || is_short(node->type)) {
-        gen_comment(fp, "cast");
-        gen_cast(fp, node);
-    }
-}
-
 static void gen_load_to_a(FILE *fp, const struct data_type *type,
         enum operand addr, int offset)
 {
@@ -1167,7 +1144,7 @@ static void gen_postincdec(FILE *fp, const struct ast_node *node, enum opecode o
 static void gen_relational(FILE *fp, const struct ast_node *node, enum opecode op)
 {
     const int a_ = register_from_type(A_, node->l->type);
-    const int d_ = register_from_type(D_, node->l->type);
+    const int d_ = register_from_type(D_, node->r->type);
 
     gen_code(fp, node->l);
     code2(fp, PUSH, RAX);
@@ -1182,7 +1159,7 @@ static void gen_relational(FILE *fp, const struct ast_node *node, enum opecode o
 static void gen_equality(FILE *fp, const struct ast_node *node, enum opecode op)
 {
     const int a_ = register_from_type(A_, node->l->type);
-    const int d_ = register_from_type(D_, node->l->type);
+    const int d_ = register_from_type(D_, node->r->type);
 
     gen_code(fp, node->l);
     code2(fp, PUSH, RAX);
@@ -2056,7 +2033,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
 
     case NOD_STRUCT_REF:
         gen_address(fp, node);
-        gen_load(fp, node, mem(RAX, 0), A_);
+        gen_load_to_a(fp, node->type, RAX, 0);
 
         if (is_bitfield(node->r->sym)) {
             const struct symbol *sym = node->r->sym;
