@@ -234,15 +234,9 @@ static struct ast_node *integer_promotion(struct ast_node *node)
 
 static struct ast_node *arithmetic_conversion(struct ast_node *node)
 {
-    {
-        struct data_type *t1 = node->l->type;
-        struct data_type *t2 = node->r->type;
-
-        if (is_enum(t1) || is_char(t1) || is_short(t1))
-            node->l = implicit_cast(node->l, type_int());
-        if (is_enum(t2) || is_char(t2) || is_short(t2))
-            node->r = implicit_cast(node->r, type_int());
-    }
+    /* 6.3.1.8 the integer promotions are performed on both operands. */
+    node->l = integer_promotion(node->l);
+    node->r = integer_promotion(node->r);
 
     {
         struct data_type *t1 = node->l->type;
@@ -255,10 +249,8 @@ static struct ast_node *arithmetic_conversion(struct ast_node *node)
         else if (r1 < r2)
             node->l = implicit_cast(node->l, t2);
 
-        node = promote_type(node);
+        return promote_type(node);
     }
-
-    return node;
 }
 
 static struct ast_node *typed_(struct ast_node *node)
