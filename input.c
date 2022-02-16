@@ -6,9 +6,12 @@ int main()
 {
     enum etag {A, B, C } e;
     char c = 'A';
+    int a;
 
+    /*
     if (c)
         return 42;
+    */
 
     c = c;
     switch (e) {
@@ -27,10 +30,14 @@ int main()
         break;
     }
 
+    /*
     if (!c)
         return 42;
+    */
 
-    if (c == c)
+    a = 2342132;
+    c = 0;
+    if (c && c)
         return 42;
 
     return c;

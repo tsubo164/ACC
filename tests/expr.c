@@ -409,6 +409,27 @@ int main()
         e = d > c;
         assert(1, e);
     }
+    {
+        /* logical operator with char expressions */
+        int a;
+        char c = 0;
+
+        /* this overrides eax register */
+        a = 2241;
+
+        if (c && c)
+            c = 99;
+
+        assert(0, c);
+
+        /* this overrides eax register */
+        a = 2241;
+
+        if (c || c)
+            c = 37;
+
+        assert(0, c);
+    }
 
     return 0;
 }

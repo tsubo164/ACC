@@ -346,7 +346,9 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = type_int();
         break;
 
-    /* equality and relational ops */
+    /* 6.5.8 - 9 Equality and relational operators. If both of the operands
+     * have arithmetic type, the usual arithmetic conversions are performed.
+     * The result has type int */
     case NOD_EQ:
     case NOD_NE:
     case NOD_LT:
@@ -354,7 +356,6 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_LE:
     case NOD_GE:
         node = arithmetic_conversion(node);
-        /* TODO may need NOD_CAST to just cast type */
         node->type = type_int();
         break;
 

@@ -2444,13 +2444,19 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         scope.curr = next_scope++;
 
         gen_code(fp, node->l);
-        code3(fp, CMP, imm(0), a_);
-        code2(fp, JNE, make_label(scope.curr, JMP_CONTINUE));
-        gen_code(fp, node->r);
-        code3(fp, CMP, imm(0), a_);
-        code2(fp, JE,  make_label(scope.curr, JMP_EXIT));
-        gen_label(fp, scope.curr, JMP_CONTINUE);
+        gen_compare_to_zero(fp, node->l->type);
+        /* set true and jump */
         code3(fp, MOV, imm(1), EAX);
+        code2(fp, JNE, make_label(scope.curr, JMP_EXIT));
+
+        gen_code(fp, node->r);
+        gen_compare_to_zero(fp, node->r->type);
+        /* set true and jump */
+        code3(fp, MOV, imm(1), EAX);
+        code2(fp, JNE,  make_label(scope.curr, JMP_EXIT));
+
+        /* set false */
+        code3(fp, MOV, imm(0), EAX);
         gen_label(fp, scope.curr, JMP_EXIT);
 
         scope = tmp;
@@ -2461,11 +2467,18 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         scope.curr = next_scope++;
 
         gen_code(fp, node->l);
-        code3(fp, CMP, imm(0), a_);
+        gen_compare_to_zero(fp, node->l->type);
+        /* set false and jump */
+        code3(fp, MOV, imm(0), EAX);
         code2(fp, JE,  make_label(scope.curr, JMP_EXIT));
+
         gen_code(fp, node->r);
-        code3(fp, CMP, imm(0), a_);
+        gen_compare_to_zero(fp, node->r->type);
+        /* set false and jump */
+        code3(fp, MOV, imm(0), EAX);
         code2(fp, JE,  make_label(scope.curr, JMP_EXIT));
+
+        /* set true */
         code3(fp, MOV, imm(1), EAX);
         gen_label(fp, scope.curr, JMP_EXIT);
 
