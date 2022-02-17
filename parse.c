@@ -186,23 +186,21 @@ void free_parser(struct parser *p)
     free(p);
 }
 
-static struct ast_node *implicit_cast(struct ast_node *node, struct data_type *cast_to);
-
-static int rank_of(const struct data_type *type)
+static struct ast_node *implicit_cast(struct ast_node *node, struct data_type *cast_to)
 {
-    if (is_char(type))
-        return 0;
-    if (is_short(type))
-        return 1;
-    if (is_int(type) || is_enum(type))
-        return 2;
-    if (is_long(type))
-        return 3;
-    if (is_float(type))
-        return 4;
-    if (is_double(type))
-        return 5;
-    return -1;
+    struct data_type *t1 = node->type;
+    struct data_type *t2 = cast_to;
+
+    if (is_identical(t1, t2))
+        return node;
+
+    if (is_compatible(t1, t2)) {
+        struct ast_node *tree = new_ast_node(NOD_CAST2, node, NULL);
+        tree->type = t2;
+        return tree;
+    }
+
+    return node;
 }
 
 static struct ast_node *promote_type(struct ast_node *node)
@@ -234,22 +232,76 @@ static struct ast_node *integer_promotion(struct ast_node *node)
 
 static struct ast_node *arithmetic_conversion(struct ast_node *node)
 {
+    struct data_type *t1 = node->l->type;
+    struct data_type *t2 = node->r->type;
+
+    /* real floating */
+    if (is_fpnum(t1) || is_fpnum(t2)) {
+        if (is_double(t1)) {
+            node->r = implicit_cast(node->r, t1);
+            node->type = t1;
+        }
+        else if (is_double(t2)) {
+            node->l = implicit_cast(node->l, t2);
+            node->type = t2;
+        }
+        else if (is_float(t1)) {
+            node->r = implicit_cast(node->r, t1);
+            node->type = t1;
+        }
+        else if (is_float(t2)) {
+            node->l = implicit_cast(node->l, t2);
+            node->type = t2;
+        }
+
+        return node;
+    }
+
     /* 6.3.1.8 the integer promotions are performed on both operands. */
     node->l = integer_promotion(node->l);
     node->r = integer_promotion(node->r);
 
+    /* pointer */
+    t1 = node->l->type;
+    t2 = node->r->type;
+
+    if (is_pointer(t1)) {
+        node->type = t1;
+        return node;
+    }
+    if (is_pointer(t2)) {
+        node->type = t2;
+        return node;
+    }
+
+    /* array */
+    if (is_array(t1)) {
+        node->type = t1;
+        return node;
+    }
+    if (is_array(t2)) {
+        node->type = t2;
+        return node;
+    }
+
+    /* integer */
     {
-        struct data_type *t1 = node->l->type;
-        struct data_type *t2 = node->r->type;
-        const int r1 = rank_of(t1);
-        const int r2 = rank_of(t2);
+        const int r1 = integer_rank(t1);
+        const int r2 = integer_rank(t2);
 
-        if (r1 > r2)
+        if (r1 == r2) {
+            node->type = t1;
+        }
+        else if (r1 > r2) {
             node->r = implicit_cast(node->r, t1);
-        else if (r1 < r2)
+            node->type = t1;
+        }
+        else if (r1 < r2) {
             node->l = implicit_cast(node->l, t2);
+            node->type = t2;
+        }
 
-        return promote_type(node);
+        return node;
     }
 }
 
@@ -365,12 +417,18 @@ static struct ast_node *typed_(struct ast_node *node)
             struct ast_node *num = typed_(NEW_(NOD_NUM));
             num->ival = get_size(underlying(node->l->type));
             node->r = typed_(new_ast_node(NOD_MUL, num, node->r));
+
+            node->type = node->l->type;
+            break;
         }
         if (is_array(node->r->type) || is_pointer(node->r->type)) {
             /* x + pointer */
             struct ast_node *num = typed_(NEW_(NOD_NUM));
             num->ival = get_size(underlying(node->r->type));
             node->l = typed_(new_ast_node(NOD_MUL, num, node->l));
+
+            node->type = node->r->type;
+            break;
         }
         node = arithmetic_conversion(node);
         break;
@@ -436,23 +494,6 @@ static struct ast_node *new_node_decl_ident(struct symbol *sym)
     struct ast_node *node = new_node_(NOD_DECL_IDENT, &sym->pos);
     node->sym = sym;
     return typed_(node);
-}
-
-static struct ast_node *implicit_cast(struct ast_node *node, struct data_type *cast_to)
-{
-    struct data_type *t1 = node->type;
-    struct data_type *t2 = cast_to;
-
-    if (is_identical(t1, t2))
-        return node;
-
-    if (is_compatible(t1, t2)) {
-        struct ast_node *tree = new_ast_node(NOD_CAST2, node, NULL);
-        tree->type = t2;
-        return tree;
-    }
-
-    return node;
 }
 
 static int eval_const_expr(const struct ast_node *node, struct parser *p)

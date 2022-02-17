@@ -130,6 +130,19 @@ struct data_type *make_unsigned(struct data_type *orig)
     return type;
 }
 
+int integer_rank(const struct data_type *type)
+{
+    if (is_char(type))
+        return 0;
+    if (is_short(type))
+        return 1;
+    if (is_int(type) || is_enum(type))
+        return 2;
+    if (is_long(type))
+        return 3;
+    return -1;
+}
+
 struct data_type *promote(struct data_type *t1, struct data_type *t2)
 {
     if (!t1 && !t2)
