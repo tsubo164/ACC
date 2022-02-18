@@ -143,28 +143,6 @@ int integer_rank(const struct data_type *type)
     return -1;
 }
 
-struct data_type *promote(struct data_type *t1, struct data_type *t2)
-{
-    if (!t1 && !t2)
-        return type_void();
-    if (!t1)
-        return t2;
-    if (!t2)
-        return t1;
-
-    if (t1->kind == t2->kind) {
-        if (is_unsigned(t1))
-            return t1;
-        else
-            return t2;
-    }
-
-    if (t1->kind > t2->kind)
-        return t1;
-    else
-        return t2;
-}
-
 int has_unkown_array_length(const struct data_type *type)
 {
     return get_array_length(type) == UNKNOWN_ARRAY_LENGTH;

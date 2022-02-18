@@ -203,23 +203,6 @@ static struct ast_node *implicit_cast(struct ast_node *node, struct data_type *c
     return node;
 }
 
-static struct ast_node *promote_type(struct ast_node *node)
-{
-    struct ast_node *l = node->l;
-    struct ast_node *r = node->r;
-
-    if (!l && !r)
-        node->type = type_void();
-    else if (!l)
-        node->type = r->type;
-    else if (!r)
-        node->type = l->type;
-    else
-        node->type = promote(l->type, r->type);
-
-    return node;
-}
-
 static struct ast_node *integer_promotion(struct ast_node *node)
 {
     struct data_type *t = node->type;
@@ -354,10 +337,6 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = node->r->type;
         break;
 
-    case NOD_COND:
-        node->type = node->r->type;
-        break;
-
     case NOD_COMMA:
         node->type = node->r->type;
         break;
@@ -456,11 +435,45 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_PREDEC:
     case NOD_POSTINC:
     case NOD_POSTDEC:
-        node = promote_type(node);
+        /* TODO tmp */
+        node->type = node->l->type;
         break;
 
+    /* 6.5.15 Conditional operator. The result is the value of
+     * the second or third operand */
+    case NOD_COND:
+        node->type = node->r->type;
+        break;
+
+    case NOD_COND_THEN:
+        node = arithmetic_conversion(node);
+        break;
+
+    /* 6.5.10 - 12 Bitwise operator. The usual arithmetic conversions
+     * are performed on the operands. */
+    case NOD_OR:
+    case NOD_XOR:
+    case NOD_AND:
+        node = arithmetic_conversion(node);
+        break;
+
+    /* 6.5.3.3 Unary arithmetic operators. The integer promotions
+     * are performed on the operand, and the result has the promoted type. */
+    case NOD_NOT:
+        node->l = integer_promotion(node->l);
+        node->type = node->l->type;
+        break;
+
+        /* TODO tmp for case and return */
+        /*
+    case NOD_RETURN:
+    case NOD_CASE:
+    case NOD_ARG:
+    case NOD_CONST_EXPR:
+        break;
+        */
+
     default:
-        node = promote_type(node);
         break;
     }
 

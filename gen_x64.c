@@ -1987,19 +1987,22 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_RETURN:
-        gen_code(fp, node->l);
+        if (node->l) {
+            const struct data_type *expr_type = node->l->type;
+            gen_code(fp, node->l);
 
-        if (is_medium_object(node->type)) {
-            /* use rax and rdx to load returning value */
-            code3(fp, MOV, RAX, RSI);
-            code3(fp, MOV, mem(RSI, 0), RAX);
-            code3(fp, MOV, mem(RSI, 8), RDX);
-        }
-        else if (is_large_object(node->type)) {
-            /* fill returning value and load the address to the value */
-            code2(fp, POP, RDX);
-            gen_copy_large_object(fp, node->type, RDX, 0);
-            code3(fp, MOV, RDX, RAX);
+            if (is_medium_object(expr_type)) {
+                /* use rax and rdx to load returning value */
+                code3(fp, MOV, RAX, RSI);
+                code3(fp, MOV, mem(RSI, 0), RAX);
+                code3(fp, MOV, mem(RSI, 8), RDX);
+            }
+            else if (is_large_object(expr_type)) {
+                /* fill returning value and load the address to the value */
+                code2(fp, POP, RDX);
+                gen_copy_large_object(fp, expr_type, RDX, 0);
+                code3(fp, MOV, RDX, RAX);
+            }
         }
 
         code2(fp, JMP, make_label(scope.func, JMP_RETURN));
