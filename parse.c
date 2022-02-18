@@ -466,10 +466,7 @@ static struct ast_node *typed_(struct ast_node *node)
 
         /* TODO tmp for case and return */
         /*
-    case NOD_RETURN:
     case NOD_CASE:
-    case NOD_ARG:
-    case NOD_CONST_EXPR:
         break;
         */
 
