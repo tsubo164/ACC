@@ -1205,7 +1205,7 @@ static void gen_switch_table_(FILE *fp, const struct ast_node *node,
 
     case NOD_CASE:
         {
-            const int a_ = register_from_type(A_, node->type);
+            const int a_ = register_from_type(A_, node->l->type);
 
             code3(fp, CMP, imm(node->l->ival), a_);
             code2(fp, JE,  make_label(switch_scope, jump_id(node)));

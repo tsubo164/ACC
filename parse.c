@@ -435,7 +435,6 @@ static struct ast_node *typed_(struct ast_node *node)
     case NOD_PREDEC:
     case NOD_POSTINC:
     case NOD_POSTDEC:
-        /* TODO tmp */
         node->type = node->l->type;
         break;
 
@@ -464,11 +463,9 @@ static struct ast_node *typed_(struct ast_node *node)
         node->type = node->l->type;
         break;
 
-        /* TODO tmp for case and return */
-        /*
-    case NOD_CASE:
+    case NOD_CONST_EXPR:
+        node->type = type_int();
         break;
-        */
 
     default:
         break;
@@ -506,9 +503,9 @@ static struct ast_node *new_node_decl_ident(struct symbol *sym)
     return typed_(node);
 }
 
-static int eval_const_expr(const struct ast_node *node, struct parser *p)
+static long eval_const_expr(const struct ast_node *node, struct parser *p)
 {
-    int l, r;
+    long l, r;
 
     if (!node)
         return 0;

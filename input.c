@@ -2,19 +2,18 @@
 #include <stdio.h>
 */
 
-typedef struct foo {
-    int x;
-    char y;
-} Foo;
-
-long foo(char a)
-{
-    return 2 * a;
-}
-
 int main()
 {
-    Foo f = {11, 22};
+    char a = 13;
 
-    return foo(23);
+    switch (a) {
+    case 2:
+        break;
+    case 13:
+        break;
+    default:
+        break;
+    }
+
+    return 42;
 }
