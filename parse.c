@@ -195,7 +195,7 @@ static struct ast_node *implicit_cast(struct ast_node *node, struct data_type *c
         return node;
 
     if (is_compatible(t1, t2)) {
-        struct ast_node *tree = new_ast_node(NOD_CAST2, node, NULL);
+        struct ast_node *tree = new_ast_node(NOD_CAST, node, NULL);
         tree->type = t2;
         return tree;
     }
@@ -316,11 +316,6 @@ static struct ast_node *typed_(struct ast_node *node)
 
     case NOD_CALL:
         node->type = return_type(underlying(node->l->type));
-        break;
-
-    case NOD_CAST:
-        if (node->r)
-            node->type = node->r->type;
         break;
 
     case NOD_ADDR:
@@ -547,7 +542,7 @@ static long eval_const_expr(const struct ast_node *node, struct parser *p)
         r = eval_const_expr(node->r, p);
         return l >> r;
 
-    case NOD_CAST2:
+    case NOD_CAST:
         l = eval_const_expr(node->l, p);
         return l;
 

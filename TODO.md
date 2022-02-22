@@ -14,8 +14,6 @@
 * TODO
   - support enum that can hold long int value
   - support switch controlling expression and case value that can hold long int value
-  - make `NOD_CONV` to convert values and have `NOD_CAST` just does casting
-    - May need `NOD_CAST` to just cast type in typed_ under case `NOD_EQ`
   - support floating point literal `f = .01`;
   - move `is_variadic` to type.c
   - move `bit_width` to `struct member` ?
@@ -142,3 +140,6 @@
   - move iteration and data types interfaces from symbol.c to type.c
   - `const char *c = register_name[addr]` compile error;
     - `/* TODO fix enum in array[] */`
+  - make `NOD_CONV` to convert values and have `NOD_CAST` just does casting
+    - (keep using `NOD_CAST`)
+    - May need `NOD_CAST` to just cast type in typed_ under case `NOD_EQ`

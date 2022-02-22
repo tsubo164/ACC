@@ -460,7 +460,6 @@ static void gen_load_to_a(FILE *fp, const struct data_type *type,
         enum operand addr, int offset);
 static void gen_store_a(FILE *fp, const struct data_type *type,
         enum operand addr, int offset);
-static void gen_cast(FILE *fp, const struct ast_node *node);
 static void gen_copy_large_object(FILE *fp, const struct data_type *type,
         enum operand addr, int offset);
 static void gen_convert_a(FILE *fp,
@@ -1238,33 +1237,6 @@ static void gen_switch_table(FILE *fp, const struct ast_node *node, int switch_s
     gen_comment(fp, "end jump table");
 }
 
-static void gen_cast(FILE *fp, const struct ast_node *node)
-{
-    struct data_type *type = node->type;
-
-    if (is_pointer(type))
-        return;
-
-    if (is_char(type)) {
-        if (is_unsigned(type))
-            code3(fp, MOVZB, AL, RAX);
-        else
-            code3(fp, MOVSB, AL, RAX);
-    }
-    else if (is_short(type)) {
-        if (is_unsigned(type))
-            code3(fp, MOVZW, AX, RAX);
-        else
-            code3(fp, MOVSW, AX, RAX);
-    }
-    else if (is_int(type)) {
-        if (is_unsigned(type))
-            code3(fp, MOV,   EAX, EAX);
-        else
-            code3(fp, MOVSL, EAX, RAX);
-    }
-}
-
 static void gen_convert_a(FILE *fp, const struct data_type *src, const struct data_type *dst)
 {
     if (is_identical(src, dst))
@@ -1651,7 +1623,7 @@ static long eval_const_expr__(const struct ast_node *node)
         r = eval_const_expr__(node->r);
         return l >> r;
 
-    case NOD_CAST2:
+    case NOD_CAST:
         l = eval_const_expr__(node->l);
         return l;
 
@@ -1716,11 +1688,6 @@ static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
         break;
 
     case NOD_CAST:
-        /* TODO come up better way to handle scalar universaly */
-        gen_init_scalar_global(fp, type, expr->l);
-        break;
-
-    case NOD_CAST2:
         /* TODO come up better way to handle scalar universaly */
         gen_init_scalar_global(fp, type, expr->l);
         break;
@@ -2225,11 +2192,6 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_CAST:
-        gen_code(fp, node->l);
-        gen_cast(fp, node);
-        break;
-
-    case NOD_CAST2:
         gen_code(fp, node->l);
         gen_convert_a(fp, node->l->type, node->type);
         break;
