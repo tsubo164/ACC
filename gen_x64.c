@@ -1717,7 +1717,7 @@ static void gen_init_scalar_global(FILE *fp, const struct data_type *type,
 
     case NOD_CAST:
         /* TODO come up better way to handle scalar universaly */
-        gen_init_scalar_global(fp, type, expr->r);
+        gen_init_scalar_global(fp, type, expr->l);
         break;
 
     case NOD_CAST2:
@@ -2225,7 +2225,7 @@ static void gen_code(FILE *fp, const struct ast_node *node)
         break;
 
     case NOD_CAST:
-        gen_code(fp, node->r);
+        gen_code(fp, node->l);
         gen_cast(fp, node);
         break;
 

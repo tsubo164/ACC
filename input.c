@@ -4,6 +4,7 @@
 
 int main()
 {
+    int i = 333342;
     char a = 13;
 
     switch (a) {
@@ -14,6 +15,9 @@ int main()
     default:
         break;
     }
+
+    a = (short) i;
+    a = sizeof (long);
 
     return 42;
 }

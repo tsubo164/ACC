@@ -319,8 +319,8 @@ static struct ast_node *typed_(struct ast_node *node)
         break;
 
     case NOD_CAST:
-        if (node->l)
-            node->type = node->l->type;
+        if (node->r)
+            node->type = node->r->type;
         break;
 
     case NOD_ADDR:
@@ -580,7 +580,7 @@ static struct ast_node *convert_(struct parser *p, struct ast_node *node)
         !(p->is_array_initializer && node->kind == NOD_STRING)) {
 
         struct ast_node *tree = new_node_(NOD_CAST, tokpos(p));
-        tree = branch_(tree, NULL, node);
+        tree = branch_(tree, node, NULL);
         tree->type = type_pointer(underlying(node->type));
 
         return tree;
@@ -761,7 +761,7 @@ static struct ast_node *statement(struct parser *p);
 static struct ast_node *expression(struct parser *p);
 static struct ast_node *unary_expression(struct parser *p);
 static struct ast_node *assignment_expression(struct parser *p);
-static struct ast_node *type_name(struct parser *p);
+static struct data_type *type_name(struct parser *p);
 static struct data_type *pointer(struct parser *p, struct data_type *type);
 static struct data_type *type_specifier(struct parser *p, struct data_type *type, int *sign);
 static struct data_type *declaration_specifiers(struct parser *p, int *sclass);
@@ -970,17 +970,18 @@ static struct ast_node *postfix_expression(struct parser *p)
  */
 static struct ast_node *cast_expression(struct parser *p)
 {
-    struct ast_node *tree = NULL, *tname = NULL;
-
     if (consume(p, '(')) {
         const int next = peektok(p);
 
         if (is_type_spec_qual(next)) {
-            tname = type_name(p);
+            struct ast_node *tree = NULL;
+            struct data_type *type = type_name(p);
             expect(p, ')');
 
             tree = new_node_(NOD_CAST, tokpos(p));
-            return branch_(tree, tname, cast_expression(p));
+            tree->l = cast_expression(p);
+            tree->type = type;
+            return tree;
         }
         else {
             /* unget '(' then try unary_expression */
@@ -1043,13 +1044,15 @@ static struct ast_node *unary_expression(struct parser *p)
         return branch_(tree, unary_expression(p), NULL);
 
     case TOK_SIZEOF:
+        tree = new_node_(NOD_SIZEOF, tokpos(p));
         if (consume(p, '(')) {
             const int next = peektok(p);
 
             if (is_type_spec_qual(next)) {
-                struct ast_node *tname = type_name(p);
+                struct data_type *type = type_name(p);
+                struct ast_node *tname = new_node_(NOD_TYPE_NAME, tokpos(p));
+                tname->type = type;
 
-                tree = new_node_(NOD_SIZEOF, tokpos(p));
                 expect(p, ')');
                 tree = branch_(tree, tname, NULL);
                 tree->ival = get_size(tree->l->type);
@@ -1060,7 +1063,6 @@ static struct ast_node *unary_expression(struct parser *p)
             }
         }
         p->is_sizeof_operand = 1;
-        tree = new_node_(NOD_SIZEOF, tokpos(p));
         tree = branch_(tree, unary_expression(p), NULL);
         tree->ival = tree->l ? get_size(tree->l->type) : 0;
         p->is_sizeof_operand = 0;
@@ -2007,18 +2009,14 @@ static struct data_type *specifier_qualifier_list(struct parser *p)
  *     specifier_qualifier_list
  *     specifier_qualifier_list abstract_declarator
  */
-static struct ast_node *type_name(struct parser *p)
+static struct data_type *type_name(struct parser *p)
 {
-    struct ast_node *tree = NULL;
     struct data_type *type = NULL;
 
     type = specifier_qualifier_list(p);
     type = abstract_declarator(p, type);
 
-    tree = NEW_(NOD_TYPE_NAME);
-    tree->type = type;
-
-    return tree;
+    return type;
 }
 
 static const char *decl_identifier(struct parser *p, struct position *pos)
